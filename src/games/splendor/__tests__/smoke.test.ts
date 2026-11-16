@@ -237,7 +237,7 @@ describe('splendor smoke', () => {
         expect(core.hostStarted).toBe(false);
     });
 
-    test.each(['local', 'tutorial'] as const)('explicit %s setup starts the local game before interaction', (mode) => {
+    test.each(['local', 'tutorial', 'test'] as const)('explicit %s setup starts the local game before interaction', (mode) => {
         const core = SplendorDomain.setup(['0', '1'], makeRandom(), undefined, { mode });
 
         expect(core.hostStarted).toBe(true);

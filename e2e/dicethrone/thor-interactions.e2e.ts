@@ -3,6 +3,7 @@ import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshot
 import { waitForTestHarness } from '../helpers/common';
 import { dragDiceThroneHandCardToPlay, closeDebugPanelIfOpen } from '../helpers/dicethrone';
 import { expectDiceHintSurface, finalizeThorEvidenceSourceIdentity, shot, waitForCardSpotlightToClose, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 
 test.afterEach(async ({ page }) => {
  await finalizeThorEvidenceSourceIdentity(page);
@@ -37,6 +38,14 @@ test('奥丁效果骰召回神锤后同时结算骰面驭电', async ({ page, ga
 
 test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},info)=>{
  test.setTimeout(240000); await clearEvidenceScreenshotsForTest(info);
+ const evidence = await createThorBehaviorEvidence(page, info, 'thor-paid-throw-and-odin', async () => {
+  const state = await game.getState();
+  return { cp: state.core.players['0'].resources.cp, hand: state.core.players['0'].hand.map((item: { id: string }) => item.id),
+   opponentHp: state.core.players['1'].resources.hp,
+   bonusDice: state.core.pendingBonusDiceSettlement?.dice.map((die: { value: number }) => die.value) ?? [],
+   rerolls: state.core.pendingBonusDiceSettlement?.rerollCount ?? 0, phase: state.sys.phase,
+   odinLevel: state.core.players['0'].abilityLevels['thor-odinforce'] ?? 1 };
+ });
  page.on('pageerror',error=>console.error('Thor page error:',error.message));
  await page.setViewportSize({width:1920,height:1080});
  await game.openTestGame('dicethrone',{playerID:'0',seat1:'human'},180000);
@@ -53,7 +62,10 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(page.locator('[data-testid="hand-area"] .atlas-shimmer')).toHaveCount(0);
  await page.mouse.move(15,15);await page.waitForTimeout(650);
  await shot(page,info,'01-索尔正式角色板与卡牌');
- await page.getByTestId('passive-action-thor-mjolnir-0').click();
+ await evidence.step('enter-discard', '点击原主动栏发起弃牌飞掷', async () => {
+  await page.getByTestId('passive-action-thor-mjolnir-0').click();
+  await expect(page.getByTestId('dicethrone-hand-discard-hint')).toBeVisible();
+ }, after => [{ name: '进入选择时手牌保留', actual: (after.authoritative.hand as string[]).length, expected: 4 }]);
   const discardHint=page.getByTestId('dicethrone-hand-discard-hint');
   const discardOverlay=page.getByTestId('dt-card-pool-overlay');
   await expect(discardHint).toBeVisible();
@@ -61,32 +73,44 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
   await expect(page.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]')).toHaveCount(4);
   await expect(page.getByTestId('dicethrone-hand-discard-cancel')).toHaveText('取消');
   await expect(discardOverlay).toBeHidden();
- await shot(page,info,'02-弃牌飞掷选择成本');
-  await page.getByTestId('dicethrone-hand-discard-cancel').click();
+ await evidence.capture('thor-discard-cost','enter-discard','02-弃牌飞掷选择成本','interaction-mode');
+  await evidence.step('cancel-discard', '使用手牌区原取消按钮', async () => {
+   await page.getByTestId('dicethrone-hand-discard-cancel').click();
+   await expect(discardHint).toHaveCount(0);
+  }, after => [{ name: '取消保留四张手牌', actual: (after.authoritative.hand as string[]).length, expected: 4 }]);
   await expect(discardHint).toHaveCount(0);
   await expect.poll(async()=>{const s=await game.getState();return {cp:s.core.players['0'].resources.cp,hand:s.core.players['0'].hand.length,holder:s.core.players['0'].tokens.mjolnir};}).toEqual({cp:10,hand:4,holder:1});
   await shot(page,info,'03-取消弃牌支付且资源未扣');
-  await page.getByTestId('passive-action-thor-mjolnir-0').click();
-  await expect(discardHint).toBeVisible();
-  await page.locator('[data-testid="hand-area"] [data-card-id="card-thor-thunderous"]').click();
- await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,holder:s.core.players['1'].tokens.mjolnir,count:s.core.mjolnirThrowsThisTurn?.['0']};}).toEqual({hp:49,holder:1,count:1});
+  await evidence.step('pay-discard', '重新发起并点击手牌支付飞掷成本', async () => {
+   await page.getByTestId('passive-action-thor-mjolnir-0').click();
+   await expect(discardHint).toBeVisible();
+   await page.locator('[data-testid="hand-area"] [data-card-id="card-thor-thunderous"]').click();
+   await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,holder:s.core.players['1'].tokens.mjolnir,count:s.core.mjolnirThrowsThisTurn?.['0']};}).toEqual({hp:49,holder:1,count:1});
+   await expect(page.locator('[data-tutorial-id="opponent-health"][data-feedback-player-id="1"]')).toHaveText('49');
+  }, after => [{ name: '飞掷对手生命减一', actual: after.authoritative.opponentHp, expected: 49 },
+   { name: '玩家画面显示对手生命', actual: (after.visible.health as Record<string, string>)['1'], expected: '49' }]);
   await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-thor-thunderous"]')).toHaveCount(0);
   await expect(page.getByText('飞掷或召回姆乔尔尼尔',{exact:true})).toHaveCount(0);
  await waitForDamageNumbersToSettle(page);
  await waitForCardSpotlightToClose(page);
  await shot(page,info,'04-手牌区弃置成本后飞掷结算');
- await dragDiceThroneHandCardToPlay(page,'upgrade-thor-odinforce-2');
- await expect.poll(async()=>(await game.getState()).core.players['0'].abilityLevels['thor-odinforce']).toBe(2);
- await waitForCardSpotlightToClose(page);
- await shot(page,info,'05-奥丁之力二级升级完成');
- await page.locator('[data-tutorial-id="advance-phase-button"]').click();
- await page.locator('[data-tutorial-id="dice-roll-button"]').click();
- await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,4,4,4]);
- await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
- const sky=page.locator('[data-ability-slot="sky"][data-can-click="true"]').first();
- await expect(sky).toBeVisible({timeout:10000});
- await sky.click();
- await page.locator('[data-tutorial-id="advance-phase-button"]').click();
+ await evidence.step('upgrade-and-activate-odin', '从手牌升级奥丁之力、投骰并点击原技能槽', async () => {
+  await dragDiceThroneHandCardToPlay(page,'upgrade-thor-odinforce-2');
+  await expect.poll(async()=>(await game.getState()).core.players['0'].abilityLevels['thor-odinforce']).toBe(2);
+  await waitForCardSpotlightToClose(page);
+  await shot(page,info,'05-奥丁之力二级升级完成');
+  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
+  await page.locator('[data-tutorial-id="dice-roll-button"]').click();
+  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,4,4,4]);
+  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+  const sky=page.locator('[data-ability-slot="sky"][data-can-click="true"]').first();
+  await expect(sky).toBeVisible({timeout:10000});
+  await sky.click();
+ }, after => [{ name: '奥丁之力升级至二级', actual: after.authoritative.odinLevel, expected: 2 }]);
+ await evidence.step('enter-odin-reroll', '发动奥丁之力后推进到效果骰重掷', async () => {
+  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
+  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（0/5）');
+ }, after => [{ name: '重掷尚未使用', actual: after.authoritative.rerolls, expected: 0 }]);
  await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（0/5）');
  await expectDiceHintSurface(page,'dice-tray-left-center');
@@ -94,8 +118,11 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(page.getByTestId('dice-reroll-selected-group')).toHaveCount(0);
  await expect(page.getByTestId('dice-bonus-settlement-confirm-button')).toHaveText('确认');
  await expect(page.getByTestId('dice-bonus-settlement-confirm-button')).toBeEnabled();
- await shot(page,info,'06-奥丁效果骰等待选择重掷骰子');
- await page.getByTestId('die-button-0').click(); await page.getByTestId('die-button-2').click();
+ await evidence.capture('thor-odin-reroll-empty','enter-odin-reroll','06-奥丁效果骰等待选择重掷骰子','interaction-mode');
+ await evidence.step('select-odin-dice', '在原骰盘选择第一和第三颗效果骰', async () => {
+  await page.getByTestId('die-button-0').click(); await page.getByTestId('die-button-2').click();
+  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（2/5）');
+ }, after => [{ name: '选骰尚未重掷', actual: after.authoritative.rerolls, expected: 0 }]);
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-selected','true');
  await expect(page.getByTestId('die-button-2')).toHaveAttribute('data-selected','true');
  const rerollSelected = page.getByTestId('dice-reroll-selected-group');
@@ -110,9 +137,11 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(settleBonusDice).toHaveAttribute('data-tutorial-id','dice-confirm-button');
  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（2/5）');
  await expectDiceHintSurface(page,'dice-tray-left-center');
- await shot(page,info,'07-使用原整组重掷动作提交两颗所选骰子');
- await rerollSelected.click();
- await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.rerollCount).toBe(1);
+ await evidence.capture('thor-odin-reroll-selected','select-odin-dice','07-使用原整组重掷动作提交两颗所选骰子','target-highlight');
+ await evidence.step('reroll-odin-dice', '点击原重掷按钮提交两颗骰子', async () => {
+  await rerollSelected.click();
+  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.rerollCount).toBe(1);
+ }, after => [{ name: '所选骰组重掷一次', actual: after.authoritative.rerolls, expected: 1 }]);
  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice.filter((die:{index:number})=>die.index===0||die.index===2).map((die:{value:number})=>die.value)).toEqual([6,6]);
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-selected','false');
  await expect(page.getByTestId('die-button-2')).toHaveAttribute('data-selected','false');
@@ -120,14 +149,17 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(settleBonusDice).toBeVisible();
  await expect(settleBonusDice).toBeEnabled();
  await shot(page,info,'08-整组重掷一次完成并保留原确认收口');
- await settleBonusDice.click();
- // 效果骰可能触发一次召回选择，只有玩家明确确认后才结束。
- const retrieve=page.locator('[data-option-id="option-0"]');
- if(await retrieve.isVisible({timeout:1500}).catch(()=>false)) await retrieve.click();
- const skip=page.getByText('跳过',{exact:true});
- if(await skip.isVisible({timeout:1000}).catch(()=>false)) await skip.click();
- await expect.poll(async()=>(await game.getState()).sys.phase).toBe('defensiveRoll');
+ await evidence.step('confirm-odin-dice', '确认效果骰并处理可能出现的召回选择', async () => {
+  await settleBonusDice.click();
+  // 效果骰可能触发一次召回选择，只有玩家明确确认后才结束。
+  const retrieve=page.locator('[data-option-id="option-0"]');
+  if(await retrieve.isVisible({timeout:1500}).catch(()=>false)) await retrieve.click();
+  const skip=page.getByText('跳过',{exact:true});
+  if(await skip.isVisible({timeout:1000}).catch(()=>false)) await skip.click();
+  await expect.poll(async()=>(await game.getState()).sys.phase).toBe('defensiveRoll');
+ }, after => [{ name: '效果骰收口进入防御', actual: after.authoritative.phase, expected: 'defensiveRoll' }]);
  await shot(page,info,'09-效果骰收口后进入主攻击防御');
+ await evidence.finish('弃牌飞掷后升级奥丁之力，选择两颗骰子重掷一次并进入防御。');
 });
 
 test('索尔奥丁之力II可用原确认入口跳过额外重掷', async ({ page, game }, info) => {
@@ -188,6 +220,11 @@ test('索尔奥丁之力II可用原确认入口跳过额外重掷', async ({ pag
 
 test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',async({page,game},info)=>{
  test.setTimeout(120000);await clearEvidenceScreenshotsForTest(info);await page.setViewportSize({width:1920,height:1080});
+ const evidence = await createThorBehaviorEvidence(page, info, 'thor-worthy-fixed-die', async () => {
+  const state = await game.getState();
+  return { dice: state.core.currentRollContext?.dice.map((die: { value: number }) => die.value) ?? [],
+   cp: state.core.players['0'].resources.cp, hand: state.core.players['0'].hand.map((item: { id: string }) => item.id) };
+ });
  await game.openTestGame('dicethrone',{playerID:'0',seat1:'human'},60000);await waitForTestHarness(page,20000);
  await game.setupScene({gameId:'dicethrone',randomQueue:[0.08,0.08,0.08,0.08,0.08],player0:{hand:['card-thor-worthy','card-thor-hammer-time'],resources:{cp:5,hp:50}},player1:{hand:[],resources:{cp:2,hp:50}},currentPlayer:'0',phase:'main1',extra:{selectedCharacters:{'0':'thor','1':'monk'},hostStarted:true,pendingAttack:null,pendingDamage:undefined,dice:[],rollCount:0,rollConfirmed:false}});
  await closeDebugPanelIfOpen(page);
@@ -203,27 +240,43 @@ test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',asy
  await expect(page.getByTestId('board-magnify-overlay')).toBeVisible();
  await expect(page.getByTestId('board-magnify-overlay').locator('.atlas-shimmer')).toHaveCount(0);
  await shot(page,info,'01-手牌放大完整阅读挥锤时刻');
+ const previewBox = await page.getByTestId('board-magnify-overlay-close').locator('..').boundingBox();
+ expect(previewBox).not.toBeNull();
+ await page.mouse.move(previewBox!.x + previewBox!.width / 2, previewBox!.y + previewBox!.height / 2);
+ await page.mouse.move(previewBox!.x + previewBox!.width / 2 + 2, previewBox!.y + previewBox!.height / 2);
+ await expect(page.getByTestId('board-magnify-overlay-close').locator('..')).toHaveAttribute('data-close-pointer-ready', 'true');
  await page.getByTestId('board-magnify-overlay-close').click();
  await page.locator('[data-tutorial-id="advance-phase-button"]').click();await page.locator('[data-tutorial-id="dice-roll-button"]').click();
  await expect.poll(async()=>(await game.getState()).core.rollCount).toBe(1);
  await shot(page,info,'02-改骰前自己的五颗骰子');
- await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
+ await evidence.step('play-worthy', '从原手牌打出当之无愧', async () => {
+  await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
+  await expect(page.getByTestId('dt-choice-options')).toBeVisible();
+ }, after => [{ name: '出牌前五颗骰子保持原值', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
  await expect(page.getByTestId('dt-choice-options')).toBeVisible();
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择目标点数');
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.locator('[data-option-id="4"]')).toBeVisible();
  await expect(page.locator('[data-option-id="5"]')).toBeVisible();
  await expect(page.locator('[data-testid^="die-adjust-"]')).toHaveCount(0);
- await shot(page,info,'03-当之无愧直接选择固定目标四或五');
+ await evidence.capture('thor-worthy-value-choice','play-worthy','03-当之无愧直接选择固定目标四或五','panel');
  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,1,1,1]);
- await page.locator('[data-option-id="4"]').click();
+ await evidence.step('choose-four', '在既有选项中选择固定值四', async () => {
+  await page.locator('[data-option-id="4"]').click();
+  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为4的骰子');
+ }, after => [{ name: '选定值尚未改动骰子', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为4的骰子');
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','1');
- await shot(page,info,'04-选择四后沿原固定值流程点选骰子');
- await page.getByTestId('die-button-0').click();
- await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([4,1,1,1,1]);
+ await evidence.capture('thor-worthy-die-choice','choose-four','04-选择四后沿原固定值流程点选骰子','interaction-mode');
+ await evidence.step('choose-die', '点击原骰盘第一颗骰子', async () => {
+  await page.getByTestId('die-button-0').click();
+  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([4,1,1,1,1]);
+  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','4');
+ }, after => [{ name: '仅所选骰改为四', actual: after.authoritative.dice, expected: [4,1,1,1,1] },
+  { name: '玩家画面显示所选骰为四', actual: (after.visible.dice as Array<string | null>)[0], expected: '4' }]);
  await shot(page,info,'05-改为四且其余骰子保持');
+ await evidence.finish('当之无愧选择四后，仅所选骰变为四。');
 });
 
 test('索尔当之无愧选择五后取消不提交改骰',async({page,game},info)=>{
@@ -254,6 +307,11 @@ test('索尔当之无愧选择五后取消不提交改骰',async({page,game},inf
 
 test('索尔连锁闪电选择效果骰并自动结算唯一附属目标',async({page,game},info)=>{
  test.setTimeout(120000);await clearEvidenceScreenshotsForTest(info);
+ const evidence = await createThorBehaviorEvidence(page, info, 'thor-chain-dice', async () => {
+  const state = await game.getState();
+  return { phase: state.sys.phase, opponentHp: state.core.players['1'].resources.hp,
+   bonus: state.core.pendingAttack?.bonusDamage ?? null, bonusDice: state.core.pendingBonusDiceSettlement?.dice.length ?? 0 };
+ }, 'e2e/dicethrone/thor-chain-required-ui-states.json');
  await page.setViewportSize({width:1920,height:1080});
  await game.openTestGame('dicethrone',{playerID:'0',seat1:'human'},60000);
  await waitForTestHarness(page,20000);
@@ -269,7 +327,10 @@ test('索尔连锁闪电选择效果骰并自动结算唯一附属目标',async(
  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(3);
  await shot(page,info,'02-三颗效果骰等待确认');
- await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+ await evidence.step('confirm-chain-effect-dice', '确认三颗效果骰并进入选择', async () => {
+  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+  await expect(page.getByText('选择两颗效果骰',{exact:true})).toBeVisible();
+ }, after => [{ name: '选择前对手生命未减少', actual: after.authoritative.opponentHp, expected: 50 }]);
  await expect(page.getByText('选择两颗效果骰',{exact:true})).toBeVisible();
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择两颗效果骰');
@@ -277,23 +338,36 @@ test('索尔连锁闪电选择效果骰并自动结算唯一附属目标',async(
  await expect(page.locator('[data-option-id]')).toHaveCount(0);
  // 等待原按钮的 200ms 状态过渡结束，避免把过渡色当成最终可用性。
  await page.waitForTimeout(350);
- await shot(page,info,'03-效果骰投影到旧骰盘并显示选择提示');
- await page.getByTestId('die-button-1').click(); await page.getByTestId('die-button-2').click();
+ await evidence.capture('thor-chain-dice-choose','confirm-chain-effect-dice','03-效果骰投影到旧骰盘并显示选择提示','interaction-mode');
+ await evidence.step('select-chain-dice', '在原骰盘选择第二和第三颗效果骰', async () => {
+  await page.getByTestId('die-button-1').click(); await page.getByTestId('die-button-2').click();
+  await expect(page.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
+ }, after => [{ name: '确认前对手生命未减少', actual: after.authoritative.opponentHp, expected: 50 }]);
  await expect(page.getByTestId('die-button-1')).toHaveAttribute('data-selected','true');
  await expect(page.getByTestId('die-button-2')).toHaveAttribute('data-selected','true');
  await expect(page.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
  await page.waitForTimeout(350);
- await shot(page,info,'04-两颗骰子选中后启用原确认动作');
- await page.getByTestId('dice-interaction-confirm-button').click();
- await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,bonus:s.core.pendingAttack?.bonusDamage,phase:s.sys.phase};}).toEqual({hp:48,bonus:10,phase:'defensiveRoll'});
+ await evidence.capture('thor-chain-dice-selected','select-chain-dice','04-两颗骰子选中后启用原确认动作','target-highlight');
+ await evidence.step('confirm-chain-dice', '点击原确认按钮并结算附属伤害', async () => {
+  await page.getByTestId('dice-interaction-confirm-button').click();
+  await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,bonus:s.core.pendingAttack?.bonusDamage,phase:s.sys.phase};}).toEqual({hp:48,bonus:10,phase:'defensiveRoll'});
+  await expect(page.locator('[data-tutorial-id="opponent-health"][data-feedback-player-id="1"]')).toHaveText('48');
+ }, after => [{ name: '附属伤害命中并保留主攻击', actual: { hp: after.authoritative.opponentHp, bonus: after.authoritative.bonus, phase: after.authoritative.phase }, expected: { hp: 48, bonus: 10, phase: 'defensiveRoll' } },
+  { name: '玩家画面显示对手生命', actual: (after.visible.health as Record<string, string>)['1'], expected: '48' }]);
   await expect(page.getByText('选择附属伤害目标',{exact:true})).toHaveCount(0);
   await waitForDamageNumbersToSettle(page);
   await shot(page,info,'05-附属伤害自动命中唯一对手并保留主攻击');
+  await evidence.finish('选择两颗效果骰后，唯一敌人受到附属伤害，主攻击进入防御。');
 });
 
 
 test('索尔破防连续消费失败后仍可再次使用',async({page,game},info)=>{
  test.setTimeout(120000);await clearEvidenceScreenshotsForTest(info);await page.setViewportSize({width:1920,height:1080});
+ const evidence = await createThorBehaviorEvidence(page, info, 'thor-guard-break', async () => {
+  const state = await game.getState();
+  return { hp: state.core.players['1'].resources.hp, guard: state.core.players['0'].tokens.guard_break ?? 0,
+   phase: state.sys.phase, die: state.core.pendingBonusDiceSettlement?.dice[0]?.value ?? null };
+ }, 'e2e/dicethrone/thor-guard-required-ui-states.json', '预置起始手牌与资源并固定随机源；技能、破防与结算由页面操作产生。');
  await game.openTestGame('dicethrone',{playerID:'0',seat1:'human'},60000);await waitForTestHarness(page,20000);
  await game.setupScene({gameId:'dicethrone',randomQueue:[6,6,6,6,1,1,4].map(value=>(value-.5)/6),player0:{hand:[],resources:{cp:2,hp:50}},player1:{hand:[],resources:{cp:2,hp:50}},currentPlayer:'0',phase:'main1',extra:{selectedCharacters:{'0':'thor','1':'monk'},hostStarted:true,pendingAttack:null,pendingDamage:undefined,dice:[],rollCount:0,rollConfirmed:false}});
  await closeDebugPanelIfOpen(page);
@@ -303,13 +377,29 @@ test('索尔破防连续消费失败后仍可再次使用',async({page,game},inf
  await page.locator('[data-ability-slot="lightning"][data-can-click="true"]').first().click();await page.locator('[data-tutorial-id="advance-phase-button"]').click();
  await page.getByRole('button',{name:'停止移动',exact:true}).click();
  const guard=page.getByRole('button',{name:'破防',exact:true});await expect(guard).toBeVisible();
- await shot(page,info,'01-破防正式图标与消费入口');await guard.click();
- await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice[0].value).toBe(1);
- await shot(page,info,'02-第一枚破防效果骰失败');await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
- await expect(guard).toBeVisible();await shot(page,info,'03-失败后仍可使用第二枚破防');await guard.click();
- await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice[0].value).toBe(4);
- await shot(page,info,'04-第二枚破防效果骰成功');await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
- await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,guard:s.core.players['0'].tokens.guard_break,phase:s.sys.phase};}).toEqual({hp:43,guard:0,phase:'main2'});
+ await shot(page,info,'01-破防正式图标与消费入口');
+ await evidence.step('roll-first-guard', '使用第一枚破防并投效果骰', async () => {
+  await guard.click();
+  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice[0].value).toBe(1);
+ }, after => [{ name: '第一枚破防投出一点', actual: after.authoritative.die, expected: 1 }]);
+ await evidence.capture('thor-guard-break-bonus-die','roll-first-guard','02-第一枚破防效果骰失败','interaction-mode');
+ await evidence.step('confirm-first-guard', '确认失败结果并返回原破防入口', async () => {
+  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+  await expect(guard).toBeVisible();
+ }, after => [{ name: '失败后仍剩一枚破防', actual: after.authoritative.guard, expected: 1 }]);
+ await shot(page,info,'03-失败后仍可使用第二枚破防');
+ await evidence.step('roll-second-guard', '使用第二枚破防并投效果骰', async () => {
+  await guard.click();
+  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.dice[0].value).toBe(4);
+ }, after => [{ name: '第二枚破防投出四点', actual: after.authoritative.die, expected: 4 }]);
+ await shot(page,info,'04-第二枚破防效果骰成功');
+ await evidence.step('confirm-second-guard', '确认成功结果并完成攻击结算', async () => {
+  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+  await expect.poll(async()=>{const s=await game.getState();return {hp:s.core.players['1'].resources.hp,guard:s.core.players['0'].tokens.guard_break,phase:s.sys.phase};}).toEqual({hp:43,guard:0,phase:'main2'});
+  await expect(page.locator('[data-tutorial-id="opponent-health"][data-feedback-player-id="1"]')).toHaveText('43');
+ }, after => [{ name: '攻击结算且两枚破防已消费', actual: { hp: after.authoritative.hp, guard: after.authoritative.guard, phase: after.authoritative.phase }, expected: { hp: 43, guard: 0, phase: 'main2' } },
+  { name: '玩家画面显示对手生命', actual: (after.visible.health as Record<string, string>)['1'], expected: '43' }]);
  await waitForDamageNumbersToSettle(page);
  await shot(page,info,'05-不可防御主攻击结算后收口');
+ await evidence.finish('第一枚破防失败后第二枚成功，攻击结算且对手生命为四十三。');
 });

@@ -3674,7 +3674,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         position: absolute;
                         inset: clamp(54px, 8vh, 92px) 0 0;
                         --fr-live-center-row-width: calc(var(--fr-live-content-width) - 250px * var(--fr-live-desktop-ui-scale));
-                        --fr-live-center-card-width: min(28vh, calc((var(--fr-live-center-row-width) - 250px * var(--fr-live-desktop-ui-scale)) / 6.6));
+                        --fr-live-center-card-width: min(28vh, calc(var(--fr-live-center-row-width) / 7.2));
                         --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
                         --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
                         --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + var(--fr-live-center-card-height) - (var(--fr-live-center-card-width) * ${LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER}));

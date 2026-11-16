@@ -50,6 +50,7 @@ export type GameSocketRouteHooks<TMatch extends GameSocketRouteMatch> = {
     validateAdminDebugToken?: (token: string | null | undefined) => Promise<string | null>;
     captureFeedbackReplay?: (match: TMatch, playerId: string, request: FeedbackReplayCaptureRequest) => Promise<FeedbackReplayCaptureResult>;
     isAdminDebugCommand?: (match: TMatch, commandType: string) => boolean;
+    allowSeatDebugCommands?: boolean;
     handleAdminDebugCommand?: (
         matchID: string,
         adminUserId: string,
@@ -263,7 +264,7 @@ async function handleCommandRoute<TMatch extends GameSocketRouteMatch>(args: {
 
     const meta = parseDispatchPayloadMeta(payload);
     const match = hooks.getMatch(matchID);
-    if (match && hooks.isAdminDebugCommand?.(match, commandType)) {
+    if (match && !hooks.allowSeatDebugCommands && hooks.isAdminDebugCommand?.(match, commandType)) {
         socket.emit('error', matchID, 'admin_debug_channel_required');
         return { accepted: false };
     }
@@ -326,7 +327,7 @@ async function handleBatchRoute<TMatch extends GameSocketRouteMatch>(args: {
         return;
     }
     const match = hooks.getMatch(matchID);
-    if (match && commands.some((command) => (
+    if (match && !hooks.allowSeatDebugCommands && commands.some((command) => (
         Boolean(command)
         && typeof command.type === 'string'
         && hooks.isAdminDebugCommand?.(match, command.type) === true

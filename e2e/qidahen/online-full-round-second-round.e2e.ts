@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
+import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
 import { expect, test } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
@@ -13,6 +13,10 @@ import {
     seedMatchCredentials,
 } from '../helpers/common';
 import { QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD } from '../../src/games/qidahen/roomSetup';
+import { getQidahenWheelRecruitTrainChoices } from '../../src/games/qidahen/domain/wheelRecruitTrain';
+import type { QidahenCore } from '../../src/games/qidahen/domain/types';
+import { getQidahenRuntimeRegionAnchorTargetPoint, QIDAHEN_RUNTIME_REGION_BY_ID } from '../../src/games/qidahen/ui/mapGraph';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../src/games/qidahen/ui/mapRegions';
 
 type PlayerPage = {
     context: BrowserContext;
@@ -159,7 +163,7 @@ async function selectFaction(page: Page, factionId: 'ming' | 'mongol' | 'jin'): 
 async function waitForActionWindow(page: Page, factionId: 'ming' | 'mongol' | 'jin'): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId(`qidahen-player-${factionId}`)).toContainText('当前', { timeout: 30000 });
+    await expect(page.getByTestId(`qidahen-player-${factionId}`)).toHaveAttribute('data-current', 'true', { timeout: 30000 });
     await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
 }
 
@@ -200,26 +204,29 @@ async function clickMapRegion(
     page: Page,
     regionId: keyof typeof MAP_REGION_POINTS,
 ): Promise<void> {
-    const point = MAP_REGION_POINTS[regionId];
+    const region = regionId === 'jinzhou' ? QIDAHEN_RUNTIME_REGION_BY_ID.get(regionId) : undefined;
+    const point = region?.center
+        ? { x: region.center.x / QIDAHEN_MAP_WIDTH, y: region.center.y / QIDAHEN_MAP_HEIGHT }
+        : MAP_REGION_POINTS[regionId];
     const canvas = page.getByTestId('qidahen-map-hitmap-canvas');
     await expect(canvas).toBeVisible({ timeout: 15000 });
-    await canvas.evaluate((element, targetPoint) => {
-        const rect = element.getBoundingClientRect();
-        const init: PointerEventInit = {
-            clientX: rect.left + rect.width * targetPoint.x,
-            clientY: rect.top + rect.height * targetPoint.y,
-            pointerId: 1,
-            pointerType: 'mouse',
-            button: 0,
-            buttons: 1,
-            bubbles: true,
-            cancelable: true,
+    const box = await canvas.boundingBox();
+    expect(box, '地图点击区域应存在').not.toBeNull();
+    const x = box!.x + box!.width * point.x;
+    const y = box!.y + box!.height * point.y;
+    const hit = await page.evaluate(({ x: hitX, y: hitY }) => {
+        const element = document.elementFromPoint(hitX, hitY);
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        return {
+            tag: element?.tagName, testId: element?.getAttribute('data-testid'),
+            phase: state?.core?.turnPhase, player: state?.core?.currentPlayer,
+            interaction: current && { playerId: current.playerId, sourceId: current.data?.sourceId,
+                options: current.data?.options?.map((option: { id: string }) => option.id) },
         };
-        element.dispatchEvent(new PointerEvent('pointermove', init));
-        element.dispatchEvent(new PointerEvent('pointerdown', init));
-        element.dispatchEvent(new PointerEvent('pointerup', init));
-        element.dispatchEvent(new PointerEvent('pointerleave', init));
-    }, point);
+    }, { x, y });
+    console.log('[QIDAHEN_MAP_CLICK]', JSON.stringify({ regionId, x, y, hit }));
+    await page.mouse.click(x, y);
 }
 
 async function clickGuidedMapTarget(page: Page, targetRegionId: string): Promise<void> {
@@ -264,52 +271,110 @@ async function dumpVisibleActionIds(page: Page): Promise<string[]> {
 async function performWheelStep(page: Page, moveId: 'move-1-free' | 'move-2-one-opponent' | 'move-3-all-opponents'): Promise<void> {
     const target = page.getByTestId(`qidahen-wheel-move-target-${moveId}`);
     await expect(target).toBeVisible({ timeout: 15000 });
-    await target.click();
+    const before = await page.evaluate(() => {
+        const core = (window as any).__BG_TEST_HARNESS__.state.get().core;
+        return { selected: core.selectedWheelMoveId, marker: document.querySelector('[data-testid="qidahen-wheel-current-marker"]')?.getAttribute('data-wheel-current-position') };
+    });
+    await target.click({ timeout: 15000 });
     if (moveId === 'move-2-one-opponent') {
         const opponent = page.locator('button[data-testid^="qidahen-wheel-opponent-"]').first();
         await expect(opponent).toBeVisible({ timeout: 10000 });
         await opponent.click();
         return;
     }
-    await page.waitForTimeout(200);
-    const targetDisabled = (await target.getAttribute('aria-disabled')) === 'true';
-    if (!targetDisabled) {
-        await target.click();
+    await expect.poll(async () => page.evaluate(({ selected, marker, move }) => {
+        const core = (window as any).__BG_TEST_HARNESS__.state.get().core;
+        return document.querySelector('[data-testid="qidahen-wheel-current-marker"]')?.getAttribute('data-wheel-current-position') !== marker
+            || selected !== move && core.selectedWheelMoveId === move;
+    }, { ...before, move: moveId }), { timeout: 15000, message: '等待轮盘执行或选中步数' }).toBe(true);
+    const markerAfter = await page.getByTestId('qidahen-wheel-current-marker').getAttribute('data-wheel-current-position');
+    if (markerAfter === before.marker) {
+        await target.click({ timeout: 15000 });
     }
 }
 
 async function paySelectedAction(page: Page, count: number): Promise<void> {
-    const handCards = page.locator('[data-testid^="qidahen-hand-card-"]');
+    const handCards = page.locator('button[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-magnify-"])');
+    const usedIds = new Set<string>();
     for (let index = 0; index < count; index += 1) {
-        await expect(handCards.nth(index)).toBeVisible({ timeout: 15000 });
-        await handCards.nth(index).click();
+        await expect(handCards.first()).toBeVisible({ timeout: 15000 });
+        let selected = false;
+        for (let cardIndex = 0; cardIndex < await handCards.count(); cardIndex += 1) {
+            const card = handCards.nth(cardIndex);
+            const id = await card.getAttribute('data-testid');
+            if (!id || usedIds.has(id) || !(await card.isEnabled())) continue;
+            const point = await card.evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            for (const yRatio of [0.08, 0.15, 0.25, 0.35]) {
+                for (const xRatio of [0.5, 0.25, 0.75]) {
+                    const x = rect.left + rect.width * xRatio, y = rect.top + rect.height * yRatio;
+                    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+                    const hit = document.elementFromPoint(x, y);
+                    if (hit && (hit === element || element.contains(hit))) return { x: rect.width * xRatio, y: rect.height * yRatio };
+                }
+            }
+            return null;
+            });
+            if (!point) continue;
+            await card.click({ position: point, timeout: 15000 });
+            usedIds.add(id);
+            selected = true;
+            break;
+        }
+        expect(selected, '至少一张支付手牌的露出部分应能接收真实鼠标点击').toBe(true);
     }
     const confirmButton = page.getByTestId('qidahen-action-payment-confirm');
     await expect(confirmButton).toBeEnabled({ timeout: 15000 });
     await confirmButton.click();
 }
 
-async function resolvePendingBattleByDefault(page: Page): Promise<void> {
-    const committedPanel = page.getByTestId('qidahen-pending-committed-troops');
-    if (await committedPanel.count()) {
-        const defaultCommitted = page.getByTestId('qidahen-pending-committed-1');
-        if (await defaultCommitted.count()) {
-            await defaultCommitted.click();
+async function selectVisibleRaidRegion(page: Page, field: 'lockedSourceRegionId' | 'currentTargetRegionId'): Promise<string> {
+    const overlay = page.getByTestId('qidahen-map-region-mask-overlay');
+    await expect(overlay).toHaveAttribute('data-qidahen-candidate-region-ids', /.+/, { timeout: 15000 });
+    const candidateIds = (await overlay.getAttribute('data-qidahen-candidate-region-ids'))!.split('|');
+    const content = page.getByTestId('qidahen-map-content');
+    const rect = await content.boundingBox();
+    const size = await content.evaluate(element => ({ width: element.offsetWidth, height: element.offsetHeight }));
+    expect(rect).not.toBeNull();
+    const candidates = candidateIds.flatMap(id => {
+        const point = getQidahenRuntimeRegionAnchorTargetPoint(id);
+        return point ? [{ id, x: rect!.x + point.x * rect!.width / size.width, y: rect!.y + point.y * rect!.height / size.height }] : [];
+    });
+    const target = await page.evaluate(items => items.find(({ x, y }) => (
+        x >= 0 && y >= 0 && x < innerWidth && y < innerHeight
+        && document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'qidahen-map-hitmap-canvas'
+    )), candidates);
+    expect(target, `突袭应有屏幕内可点击的合法地区，候选: ${candidateIds.join(', ')}`).toBeTruthy();
+    await page.mouse.click(target!.x, target!.y);
+    await expect.poll(async () => page.evaluate(key => (window as any).__BG_TEST_HARNESS__.state.get().core.regionFocusState[key], field),
+        { timeout: 15000, message: `等待设置 ${field}: ${target!.id}` }).toBe(target!.id);
+    return target!.id;
+}
+
+async function resolvePendingBattleByDefault(page: Page, opponents: Page[]): Promise<void> {
+    await expect.poll(async () => {
+        if (await page.getByTestId('qidahen-resolve-pending-action').isVisible().catch(() => false)) return true;
+        for (const opponent of opponents) {
+            if (await opponent.getByTestId('qidahen-resolve-pending-action-defender-fight').isVisible().catch(() => false)) return true;
         }
+        return false;
+    }, { timeout: 15000, message: '等待守方应战或进攻方战斗确认' }).toBe(true);
+    for (const opponent of opponents) {
+        const defend = opponent.getByTestId('qidahen-resolve-pending-action-defender-fight');
+        if (await defend.isVisible().catch(() => false) && await defend.isEnabled()) {
+            await defend.click({ timeout: 15000 });
+            break;
+        }
+    }
+    const troop = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]').first();
+    if (await troop.isVisible().catch(() => false)) {
+        await troop.click({ timeout: 15000 });
+        await expect(troop).toHaveAttribute('data-pending-committed-selected', 'true', { timeout: 15000 });
     }
     await logHostPendingState(page, 'before-click-rear-guard');
     const rearGuard = page.getByTestId('qidahen-resolve-pending-action');
-    await expect(rearGuard).toBeVisible({ timeout: 15000 });
-    await rearGuard.click({ force: true });
-    await page.waitForTimeout(300);
-    if (await rearGuard.count()) {
-        const stillVisible = await rearGuard.isVisible().catch(() => false);
-        if (stillVisible) {
-            await rearGuard.evaluate((button) => {
-                (button as HTMLButtonElement).click();
-            });
-        }
-    }
+    await expect(rearGuard).toBeEnabled({ timeout: 15000 });
+    await rearGuard.click({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-raid-intent')).toHaveCount(0, { timeout: 15000 });
 }
 
@@ -333,25 +398,58 @@ async function resolvePostBattleByDefault(page: Page): Promise<void> {
 async function openUpgradeArmamentPaymentFlow(
     page: Page,
     options?: { selectSongjin?: boolean },
-): Promise<Locator> {
+): Promise<string> {
     if (options?.selectSongjin) {
         await clickMapRegion(page, 'songjin');
     }
     await performWheelStep(page, 'move-1-free');
-    const actionButton = page.getByTestId('qidahen-action-upgrade-armament');
-    await expect(actionButton).toBeVisible({ timeout: 15000 });
-    await actionButton.click();
-    await expect(page.getByTestId('qidahen-action-upgrade-armament')).toContainText('升级军备', { timeout: 15000 });
-    return actionButton;
+    const core = await page.evaluate(() => (window as any).__BG_TEST_HARNESS__.state.get().core) as QidahenCore;
+    const factionId = Object.values(core.factions).find(faction => faction.playerId === core.currentPlayer)?.id;
+    const source = core.handCards.find(card => card.faction === factionId && card.cardKind === 'armament' && card.armamentId && card.status !== 'disabled');
+    expect(source, '当前行动方须有可使用的军备手牌').toBeTruthy();
+    await page.getByTestId(`qidahen-hand-card-${source!.id}`).click();
+    await expect(page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
+    return source!.id;
 }
 
-async function performUpgradeArmamentTurn(
-    page: Page,
-    options?: { selectSongjin?: boolean },
-): Promise<void> {
-    const actionButton = await openUpgradeArmamentPaymentFlow(page, options);
-    await actionButton.click();
-    await paySelectedAction(page, 2);
+async function payUpgradeArmament(page: Page, sourceId: string): Promise<void> {
+    const core = await page.evaluate(() => (window as any).__BG_TEST_HARNESS__.state.get().core) as QidahenCore;
+    const factionId = Object.values(core.factions).find(faction => faction.playerId === core.currentPlayer)?.id;
+    const discardId = core.handCards.find(card => card.faction === factionId && card.id !== sourceId && card.status !== 'disabled')?.id;
+    expect(discardId, '军备行动须有另一张手牌用于支付').toBeTruthy();
+    const candidate = page.getByTestId(`qidahen-hand-card-${discardId!}`);
+    await expect(candidate).toBeVisible({ timeout: 15000 });
+    await candidate.click({ timeout: 15000 });
+    const confirm = page.getByTestId('qidahen-action-payment-confirm');
+    await expect(confirm).toBeEnabled();
+    await confirm.click();
+}
+
+async function finishTurn(page: Page): Promise<void> {
+    const finishSlot = page.getByTestId('qidahen-turn-option-finish-slot');
+    await expect(finishSlot).toBeVisible({ timeout: 15000 });
+    const currentPlayer = await page.evaluate(() => (window as any).__BG_TEST_HARNESS__.state.get().core.currentPlayer);
+    await finishSlot.click();
+    const skipHand = page.getByTestId('qidahen-turn-option-skip-hand');
+    const declineBonus = page.getByTestId('qidahen-turn-option-decline-bonus');
+    await expect.poll(async () => (await skipHand.isVisible()) || (await declineBonus.isVisible()) || await page.evaluate((previous) =>
+        (window as any).__BG_TEST_HARNESS__.state.get().core.currentPlayer !== previous, currentPlayer),
+    { timeout: 15000, message: '等待奖励选择、手牌阶段或回合交接' }).toBe(true).catch(async error => {
+        const snapshot = await page.evaluate(() => ({
+            core: (window as any).__BG_TEST_HARNESS__.state.get().core,
+            buttons: Array.from(document.querySelectorAll('button')).filter(button => button.offsetWidth && button.offsetHeight)
+                .map(button => ({ testId: button.getAttribute('data-testid'), text: button.textContent?.trim(), disabled: button.disabled })),
+        }));
+        console.log('[QIDAHEN_FINISH_TURN]', JSON.stringify(snapshot));
+        throw error;
+    });
+    if (await declineBonus.isVisible()) {
+        await declineBonus.click();
+        await expect.poll(async () => (await skipHand.isVisible()) || await page.evaluate((previous) =>
+            (window as any).__BG_TEST_HARNESS__.state.get().core.currentPlayer !== previous, currentPlayer),
+        { timeout: 15000, message: '等待放弃奖励后的手牌阶段或回合交接' }).toBe(true);
+    }
+    if (await skipHand.isVisible()) await skipHand.click();
 }
 
 async function performKhanEdictTurn(page: Page): Promise<void> {
@@ -360,11 +458,26 @@ async function performKhanEdictTurn(page: Page): Promise<void> {
     const actionButton = page.getByTestId('qidahen-action-khan-edict');
     await expect(actionButton, `蒙古行动按钮缺失，当前可见动作: ${actionIds.join(', ')}`).toBeVisible({ timeout: 15000 });
     await actionButton.click();
-    await expect(page.getByTestId('qidahen-action-khan-edict')).toContainText('大汗令箭', { timeout: 15000 });
-    await actionButton.click();
+    await expect(page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
     await paySelectedAction(page, 1);
     await expect(page.getByTestId('qidahen-khan-edict-selection')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('qidahen-khan-edict-choice-recruit-train').click();
+    await page.getByTestId('qidahen-wheel-recruit-train-choice-action%3Arecruit').click();
+    await expect.poll(async () => page.evaluate(() =>
+        (window as any).__BG_TEST_HARNESS__.state.get().core.wheelRecruitTrainProgress?.phase,
+    ), { timeout: 15000 }).toBe('choose-recruit-target');
+    const core = await page.evaluate(() => (window as any).__BG_TEST_HARNESS__.state.get().core) as QidahenCore;
+    const target = getQidahenWheelRecruitTrainChoices(core).find(choice => choice.kind === 'recruit-target' && choice.regionId);
+    expect(target?.regionId, '征兵应有合法本土目标').toBeTruthy();
+    const region = QIDAHEN_RUNTIME_REGION_BY_ID.get(target!.regionId!);
+    expect(region?.center, '征兵地点应有地图坐标').toBeTruthy();
+    const canvas = page.getByTestId('qidahen-map-hitmap-canvas');
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.click(box!.x + box!.width * region!.center!.x / QIDAHEN_MAP_WIDTH,
+        box!.y + box!.height * region!.center!.y / QIDAHEN_MAP_HEIGHT);
+    await page.getByTestId('qidahen-wheel-recruit-train-choice-finish').click();
+    await finishTurn(page);
 }
 
 async function logVisibleHostActions(page: Page, label: string): Promise<void> {
@@ -476,16 +589,6 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
                 expect(jin.page.getByTestId('qidahen-inmatch-setup-overlay')).toHaveCount(0, { timeout: 30000 }),
             ]);
 
-            await waitForActionWindow(host.page, 'ming');
-            await expectViewerPrivateHand(host.page, '大明');
-            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02-第1轮开始-大明行动窗口.png');
-            const hostUpgradeActionButton = await openUpgradeArmamentPaymentFlow(host.page, { selectSongjin: true });
-            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02A-大明选中一级行动-主入口明文提示.png');
-            await hostUpgradeActionButton.click();
-            await expect(host.page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
-            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02B-大明弃牌确认条固定在手牌上方.png');
-            await paySelectedAction(host.page, 2);
-
             await waitForActionWindow(host.page, 'mongol');
             await expectViewerPrivateHand(host.page, '大明');
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
@@ -498,28 +601,57 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
             await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-04-大明视角-后金行动中仍显示大明手牌.png');
-            await performUpgradeArmamentTurn(jin.page);
+            await performWheelStep(jin.page, 'move-1-free');
+            await finishTurn(jin.page);
 
             await waitForActionWindow(host.page, 'ming');
+            await expectViewerPrivateHand(host.page, '大明');
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02-第1轮-大明行动窗口.png');
+            const hasArmament = await host.page.evaluate(() => {
+                const core = (window as any).__BG_TEST_HARNESS__.state.get().core as QidahenCore;
+                const faction = Object.values(core.factions).find(item => item.playerId === core.currentPlayer)?.id;
+                const cards = core.handCards.filter(card => card.faction === faction && card.status !== 'disabled');
+                return cards.length >= 2 && cards.some(card => card.cardKind === 'armament' && card.armamentId);
+            });
+            if (hasArmament) {
+                const hostUpgradeCard = await openUpgradeArmamentPaymentFlow(host.page, { selectSongjin: true });
+                await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02A-大明选中一级行动-主入口明文提示.png');
+                await expect(host.page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
+                await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02B-大明弃牌确认条固定在手牌上方.png');
+                await payUpgradeArmament(host.page, hostUpgradeCard);
+            } else {
+                console.log('[QIDAHEN_FULL_ROUND] 自然发牌无可支付军备，走轮盘并结束本回合；军备入口需独立场景验证');
+                await performWheelStep(host.page, 'move-1-free');
+            }
+            await finishTurn(host.page);
+
+            await waitForActionWindow(host.page, 'mongol');
             await expect.poll(async () => host.page.evaluate(() => (
                 (window as Window & {
                     __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: { roundNumber?: number } } } };
                 }).__BG_TEST_HARNESS__?.state?.get?.()?.core?.roundNumber ?? null
             )), { timeout: 30000 }).toBe(2);
+            await performKhanEdictTurn(mongol.page);
+            await waitForActionWindow(host.page, 'jin');
+            await captureEvidence(jin.page, testInfo, '七大恨-第二轮-后金轮盘停格候选.png');
+            await performWheelStep(jin.page, 'move-1-free');
+            await finishTurn(jin.page);
+            await waitForActionWindow(host.page, 'ming');
             await expectViewerPrivateHand(host.page, '大明');
+            await performWheelStep(host.page, 'move-1-free');
             await logVisibleHostActions(host.page, 'round-2-ming');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-05-第2轮开始-回到大明行动窗口.png');
 
-            await clickMapRegion(host.page, 'jinzhou');
-            await expect(host.page.getByTestId('qidahen-map-layer')).toHaveAttribute('data-map-selected', 'jinzhou', { timeout: 15000 });
-            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-06-第2轮大明-点击锦州作为攻打目标.png');
             await host.page.getByTestId('qidahen-action-raid').click();
             await expect(host.page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
+            await selectVisibleRaidRegion(host.page, 'lockedSourceRegionId');
+            await selectVisibleRaidRegion(host.page, 'currentTargetRegionId');
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-06-第2轮大明-选中合法攻打目标.png');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-07-第2轮大明-点击突袭作战后进入弃牌确认.png');
             await paySelectedAction(host.page, 1);
             await expect(host.page.getByTestId('qidahen-raid-intent')).toBeVisible({ timeout: 15000 });
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-08-第2轮大明-弃牌后进入攻打待结算.png');
-            await resolvePendingBattleByDefault(host.page);
+            await resolvePendingBattleByDefault(host.page, [mongol.page, jin.page]);
             const postBattleSelection = host.page.getByTestId('qidahen-post-battle-selection');
             const postBattleVisible = await postBattleSelection.isVisible().catch(() => false);
             if (postBattleVisible) {

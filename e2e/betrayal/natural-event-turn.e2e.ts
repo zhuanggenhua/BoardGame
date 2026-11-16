@@ -47,7 +47,7 @@ function firstEventRoomSlot(core: BetrayalCore): string | null {
   return null;
 }
 
-test("自然开局后探索事件并推进到下一回合", async ({ page, context }) => {
+test("自然开局探索事件后 AI 自主行动并交回真人", async ({ page, context }) => {
   test.setTimeout(180000);
   await initBetrayalContext(context);
   const diagnostics = attachPageDiagnostics(page, "betrayal-natural-event-turn");
@@ -218,6 +218,45 @@ test("自然开局后探索事件并推进到下一回合", async ({ page, conte
   const nextTurnCore = await readCore(page);
   expect(nextTurnCore.currentPlayer).not.toBe(beforeEndTurn.currentPlayer);
   await saveScreenshot(page, "evidence/betrayal-natural-event-turn/05-next-turn.png");
+
+  // 记录 AI 探索者的实际位置，防止只凭回合计数增长误认为 AI 已行动。
+  const initialAiRooms = Object.fromEntries(
+    beforeEndTurn.otherExplorers.map((explorer) => [explorer.playerId, explorer.roomId]),
+  );
+  await expect.poll(async () => {
+    const core = await readCore(page);
+    const explorers = [core.currentExplorer, ...core.otherExplorers];
+    return explorers.some((explorer) =>
+      explorer.playerId !== endingPlayerId && initialAiRooms[explorer.playerId] !== undefined
+      && explorer.roomId !== initialAiRooms[explorer.playerId],
+    );
+  }, { timeout: 60000, message: "至少一名 AI 应自主移动，不能以回合数字代替行动" }).toBe(true);
+  // 公共事件投骰结果可能需要真人确认；只能通过可见按钮确认。
+  const handoffDeadline = Date.now() + 60000;
+  while (Date.now() < handoffDeadline && (await readCore(page)).currentPlayer !== endingPlayerId) {
+    const confirm = page.locator('[data-testid="betrayal-roll-continue"]:visible, [data-testid="betrayal-discovery-continue"]:visible')
+      .filter({ hasText: /^确认/ });
+    if (await confirm.count() && await confirm.first().isEnabled()) {
+      await confirm.first().click();
+    } else {
+      await page.waitForTimeout(250);
+    }
+  }
+  const handoffCore = await readCore(page);
+  expect(handoffCore.currentPlayer, JSON.stringify({
+    currentPlayer: handoffCore.currentPlayer,
+    turnNumber: handoffCore.turnNumber,
+    movesRemaining: handoffCore.movesRemaining,
+    pendingEventRollStart: handoffCore.pendingEventRollStart,
+    recentRoll: handoffCore.recentRoll && {
+      kind: handoffCore.recentRoll.kind,
+      playerId: handoffCore.recentRoll.playerId,
+      sourceTitle: handoffCore.recentRoll.sourceTitle,
+      requiredPlayerIds: handoffCore.recentRoll.requiredPlayerIds,
+      acknowledgedPlayerIds: handoffCore.recentRoll.acknowledgedPlayerIds,
+    },
+  })).toBe(endingPlayerId);
+  await expect(page.getByTestId("betrayal-action-endTurn")).toBeEnabled({ timeout: 30000 });
 
   assertNoFatalFrontendErrors([
     { label: "betrayal-natural-event-turn", diagnostics },

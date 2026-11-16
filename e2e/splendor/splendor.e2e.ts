@@ -544,10 +544,10 @@ test.describe('Splendor E2E', () => {
         await game.screenshot('splendor-take-two-after', testInfo);
     });
 
-    test('Splendor：超过 10 宝石后应进入弃牌流程并在弃到上限后推进回合', async ({ page, game }, testInfo) => {
+    test('Splendor：预置超限弃宝石后 AI 自主行动并交还真人', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
-        await page.goto('/play/splendor');
+        await page.goto('/play/splendor?players=2&playerID=0&seat1=local-ai&seat1Delay=1000');
         await page.waitForFunction(
             () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
             { timeout: 20000, polling: 200 },
@@ -615,6 +615,21 @@ test.describe('Splendor E2E', () => {
         });
 
         await game.screenshot('splendor-discard-resolved', testInfo);
+
+        // 弃回上限只是交接前提：AI 自主完成行动后，还必须把页面操作权交回真人。
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const ai = state.core.players['1'];
+            return {
+                currentPlayer: state.core.currentPlayer,
+                aiActed: Object.values(ai.tokens).some((count) => Number(count) > 0)
+                    || ai.reservedCardIds.length > 0 || ai.purchasedCardIds.length > 0,
+                pending: state.core.pendingResolution ?? null,
+            };
+        }, { timeout: 30000, message: '超限弃宝石后 AI 应完成行动并交还真人' }).toEqual({
+            currentPlayer: '0', aiActed: true, pending: null,
+        });
+        await expect(page.getByTestId('splendor-board')).toBeVisible();
     });
 
     test('Splendor：映射工具应保留其他查询参数并在清空草稿后回到默认映射', async ({ page, game }, testInfo) => {
@@ -802,7 +817,7 @@ test.describe('Splendor E2E', () => {
     test('Splendor：多贵族选择应只获得一个贵族并清除待处理状态', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
-        await page.goto('/play/splendor');
+        await page.goto('/play/splendor?players=2&playerID=0&seat1=human');
         await page.waitForFunction(
             () => (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
             { timeout: 20000, polling: 200 },

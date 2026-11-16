@@ -4,6 +4,7 @@ import { getGameServerBaseURL } from '../helpers/common';
 import { cleanupDTMatch, closeDebugPanelIfOpen, continueAttackShowcaseIfVisible, dragDiceThroneHandCardToPlay, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForGameBoard } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { finalizeThorEvidenceSourceIdentity, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 import { createMainRollContext } from '../../src/games/dicethrone/domain/rollContext';
 import { getDieFaceByDefinition } from '../../src/games/dicethrone/domain/rules';
 import { FAN_THE_HAMMER_2 } from '../../src/games/dicethrone/heroes/gunslinger/abilities';
@@ -51,38 +52,57 @@ test('枪手实际发动枪托击打时索尔可用无懈可击防止独立伤�
         sys.flowHalted = false;
         await injectMatchState(match.matchId, stored, match.hostPage);
         const current = async () => { const value = await getMatchState(match.matchId, match.hostPage) as any; return value.G ?? value; };
+        const evidence = await createThorBehaviorEvidence(match.hostPage, info, 'thor-direct-damage-response', async () => {
+            const state = await current();
+            return { hp: state.core.players['0'].resources.hp, electro: state.core.players['0'].tokens.electrokinesis ?? 0,
+                damage: state.core.pendingDamage?.currentDamage ?? null, scope: state.core.pendingDamage?.damageScope ?? null,
+                target: state.core.pendingDamage?.targetPlayerId ?? null };
+        }, 'e2e/dicethrone/thor-direct-response-required-ui-states.json', '真实开局后预置枪手升级、合法攻击骰及索尔手牌资源；技能和响应由玩家操作产生。');
         const skill = match.guestPage.locator('[data-ability-slot="calm"][data-can-click="true"]');
         await expect(skill).toBeVisible();
-        await skill.click();
-        const variant = match.guestPage.getByRole('button', { name: /枪托击打/ });
-        if (await variant.isVisible().catch(() => false)) await variant.click();
-        await expect.poll(async () => (await current()).core.pendingAttack?.sourceAbilityId).toBe('pistol-whip');
-        await Promise.all([match.hostPage, match.guestPage].map(page => continueAttackShowcaseIfVisible(page)));
-        await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
-        const state = await current();
-        if (state.sys.interaction.current?.kind === 'simple-choice') {
-            const option = match.guestPage.locator('[data-option-id="option-1"]');
-            await expect(option).toBeVisible();
-            await option.click();
-        }
-        await expect.poll(async () => {
-            const damage = (await current()).core.pendingDamage;
-            return { target: damage?.targetPlayerId, scope: damage?.damageScope, amount: damage?.currentDamage };
-        }).toEqual({ target: '0', scope: 'direct', amount: 1 });
+        await evidence.step('open-direct-response', '枪手发动枪托击打并产生独立伤害响应', async () => {
+            await skill.click();
+            const variant = match.guestPage.getByRole('button', { name: /枪托击打/ });
+            if (await variant.isVisible().catch(() => false)) await variant.click();
+            await expect.poll(async () => (await current()).core.pendingAttack?.sourceAbilityId).toBe('pistol-whip');
+            await Promise.all([match.hostPage, match.guestPage].map(page => continueAttackShowcaseIfVisible(page)));
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const state = await current();
+            if (state.sys.interaction.current?.kind === 'simple-choice') {
+                const option = match.guestPage.locator('[data-option-id="option-1"]');
+                await expect(option).toBeVisible();
+                await option.click();
+            }
+            await expect.poll(async () => {
+                const damage = (await current()).core.pendingDamage;
+                return { target: damage?.targetPlayerId, scope: damage?.damageScope, amount: damage?.currentDamage };
+            }).toEqual({ target: '0', scope: 'direct', amount: 1 });
+        }, after => [{ name: '索尔收到一点独立待伤害', actual: { target: after.authoritative.target, scope: after.authoritative.scope, damage: after.authoritative.damage }, expected: { target: '0', scope: 'direct', damage: 1 } }]);
         await continueAttackShowcaseIfVisible(match.hostPage);
-        await shot(match.hostPage, info, '01-枪托独立伤害产生正式响应');
-        await dragDiceThroneHandCardToPlay(match.hostPage, 'card-thor-impenetrable');
-        await expect.poll(async () => {
-            const live = await current();
-            return { damage: live.core.pendingDamage?.currentDamage, electro: live.core.players['0'].tokens.electrokinesis ?? 0 };
-        }).toEqual({ damage: 0, electro: 0 });
+        const responseCard = match.hostPage.locator('[data-testid="hand-area"] [data-card-id="card-thor-impenetrable"]');
+        await expect(responseCard).toHaveAttribute('data-is-flipped', 'true');
+        await expect(responseCard.locator('.atlas-shimmer')).toHaveCount(0, { timeout: 15000 });
+        await expect.poll(() => responseCard.locator('img').evaluateAll(images => images.some(image => image.complete && image.naturalWidth > 0)), { timeout: 15000 }).toBe(true);
+        await evidence.capture('thor-direct-damage-response-entry', 'open-direct-response', '01-枪托独立伤害产生正式响应', 'interaction-mode');
+        await evidence.step('prevent-direct-damage', '从原手牌打出无懈可击并支付驭电', async () => {
+            await dragDiceThroneHandCardToPlay(match.hostPage, 'card-thor-impenetrable');
+            await expect.poll(async () => {
+                const live = await current();
+                return { damage: live.core.pendingDamage?.currentDamage, electro: live.core.players['0'].tokens.electrokinesis ?? 0 };
+            }).toEqual({ damage: 0, electro: 0 });
+        }, after => [{ name: '独立伤害归零并支付驭电', actual: { damage: after.authoritative.damage, electro: after.authoritative.electro }, expected: { damage: 0, electro: 0 } }]);
         await shot(match.hostPage, info, '02-无懈可击防止独立伤害');
         const pass = match.hostPage.getByTestId('dicethrone-response-pass-button');
-        if (await pass.isVisible()) await pass.click();
-        await expect.poll(async () => (await current()).core.pendingDamage ?? null).toBeNull();
-        await expect.poll(async () => (await current()).core.players['0'].resources.hp).toBe(50);
+        await evidence.step('finish-direct-response', '沿原响应按钮继续结算', async () => {
+            if (await pass.isVisible()) await pass.click();
+            await expect.poll(async () => (await current()).core.pendingDamage ?? null).toBeNull();
+            await expect.poll(async () => (await current()).core.players['0'].resources.hp).toBe(50);
+            await expect(match.hostPage.locator('[data-dicethrone-resource="health"]')).toContainText(/\b50$/);
+        }, after => [{ name: '生命保持五十', actual: after.authoritative.hp, expected: 50 },
+            { name: '玩家画面生命保持五十', actual: Number(String(after.visible.ownHealth).match(/(\d+)\s*$/)?.[1]), expected: 50 }]);
         await waitForDamageNumbersToSettle(match.hostPage);
         await shot(match.hostPage, info, '03-独立伤害结算后索尔生命保持');
+        await evidence.finish('无懈可击防止独立伤害并保持索尔生命。');
         await finalizeThorEvidenceSourceIdentity(match.hostPage);
     } finally { await cleanupDTMatch(match); }
 });

@@ -92,7 +92,7 @@ export function BetrayalPreviewOverlaySurface({
         overlayClassName="bg-[rgba(3,6,5,0.76)] p-4 md:p-6"
         containerClassName="rounded-none overflow-visible bg-transparent"
         closeLabel={t("board.reference.close")}
-        closeButtonClassName="!top-2 !right-2 !min-h-11 !min-w-[72px] !border !border-[rgba(238,204,126,0.55)] !bg-[rgba(18,15,12,0.90)] !text-[#f3dfab] !opacity-100 shadow-[0_8px_18px_rgba(0,0,0,0.36)]"
+        closeButtonClassName="!top-2 !right-2 !min-h-11 !min-w-[72px] !border !border-[rgba(238,204,126,0.55)] !bg-[rgba(18,15,12,0.55)] !text-[#f3dfab] shadow-[0_8px_18px_rgba(0,0,0,0.36)]"
       >
         {previewRoom && previewRoomVisual ? (
           <button

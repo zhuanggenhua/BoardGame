@@ -11,6 +11,7 @@ import type { MatchStorage, StoredMatchState } from '../../engine/transport/stor
 import type { MatchState } from '../../engine/types';
 import { validateMatchState, deepMerge, type StateValidatorRegistry } from '../../engine/transport/stateValidator';
 import { resolveSharedTestApiToken } from '../testApiToken';
+import { armOnlineAiTestBarrier, getOnlineAiTestBarrier, releaseOnlineAiTestBarrier } from '../../engine/transport/onlineAiTestBarrier';
 
 const TEST_PLAYER_ID_HEADER = 'x-test-player-id';
 const TEST_PLAYER_CREDENTIALS_HEADER = 'x-test-player-credentials';
@@ -127,6 +128,24 @@ export function createTestRoutes(
             return;
         }
         await next();
+    });
+
+    router.post('/ai-step-barrier', async (ctx) => {
+        if (process.env.NODE_ENV !== 'test') { ctx.status = 403; return; }
+        const { matchId, playerId, commandType, operation } = ctx.request.body as {
+            matchId?: string; playerId?: string; commandType?: string; operation?: string;
+        };
+        if (!matchId) { ctx.status = 400; ctx.body = { error: 'Missing matchId' }; return; }
+        if (!(await requireMatchAccess(ctx, matchId))) return;
+        if (operation === 'arm' && playerId && commandType) {
+            try { armOnlineAiTestBarrier(matchId, playerId, commandType); }
+            catch (error) { ctx.status = 409; ctx.body = { error: (error as Error).message }; return; }
+        } else if (operation === 'release') {
+            releaseOnlineAiTestBarrier(matchId);
+        } else if (operation !== 'status') {
+            ctx.status = 400; ctx.body = { error: 'Invalid barrier operation' }; return;
+        }
+        ctx.body = { barrier: getOnlineAiTestBarrier(matchId) };
     });
 
     /**

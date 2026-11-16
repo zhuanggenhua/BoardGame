@@ -1,0 +1,15 @@
+/* 与法师状态提示使用同一暖色皮肤；保留通用提示的尺寸和定位。 */
+.mw-phase-tooltip {
+    background-color: rgba(28, 25, 23, 0.96);
+    border-color: rgba(254, 243, 199, 0.25);
+}
+
+.mw-phase-tooltip [data-tooltip-arrow] {
+    background-color: rgb(28, 25, 23);
+    border-color: rgba(254, 243, 199, 0.25);
+}
+
+.mw-phase-tooltip [data-testid='info-tooltip-title'],
+.mw-phase-tooltip [data-testid='info-tooltip-content-line'] {
+    color: rgb(255, 251, 235);
+}

@@ -788,7 +788,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
         }
     });
 
-    test('七大恨在线房间房主可替两个 AI 选择阵营且 AI 不会抢先自动选择', async ({ browser }, testInfo) => {
+    test('七大恨真人选阵营后两个 AI 自主行动并交回真人', async ({ browser }, testInfo) => {
         test.setTimeout(180000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -938,10 +938,66 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
                 },
             });
 
+            // 后金真人仍须完成局内人物选择，不能把这段前置当成 AI 卡住。
+            const setupOverlay = page.getByTestId('qidahen-inmatch-setup-overlay');
+            await expect(setupOverlay).toBeVisible({ timeout: 30000 });
+            const character = setupOverlay.locator('[data-testid^="qidahen-inmatch-setup-character-option-"]').first();
+            await expect(character).toBeVisible();
+            await character.click();
+            const confirmCharacter = setupOverlay.locator('[data-testid^="qidahen-inmatch-setup-character-confirm-"]').first();
+            await expect(confirmCharacter).toBeEnabled();
+            await confirmCharacter.click();
+            await expect(setupOverlay).toHaveCount(0, { timeout: 30000 });
+
+            // 1619 剧本的行动顺序是蒙古、后金、大明；真人须在两席 AI 之间行动。
+            const aiActors = new Set<string>();
+            const readActors = async () => {
+                const state = await getMatchState(matchId, page);
+                for (const entry of state.sys?.eventStream?.entries ?? []) {
+                    const event = entry.event as { type?: string; payload?: { playerId?: string } };
+                    if (event.type === 'SELECTED_ACTION_EXECUTED' && event.payload?.playerId
+                        && ['1', '2'].includes(event.payload.playerId)) aiActors.add(event.payload.playerId);
+                }
+                return { aiActors: [...aiActors].sort(), currentPlayer: state.core?.currentPlayer ?? null };
+            };
+            await expect.poll(readActors, { timeout: 60000, message: '蒙古 AI 行动后应交给后金真人' })
+                .toMatchObject({ aiActors: ['2'], currentPlayer: '0' });
+            await expect(page.getByTestId('qidahen-action-wheel')).toBeVisible({ timeout: 15000 });
+            await expect(page.getByTestId('qidahen-player-jin')).toContainText('当前');
+            await page.getByRole('button', { name: '回到轮盘' }).click();
+            const wheelTarget = page.getByTestId('qidahen-wheel-move-target-move-1-free');
+            await expect(wheelTarget).toBeVisible();
+            const clickWheelTarget = async () => {
+                const point = await wheelTarget.evaluate((element) => {
+                    const rect = element.getBoundingClientRect();
+                    for (let y = 1; y < 10; y += 1) {
+                        for (let x = 1; x < 10; x += 1) {
+                            const px = rect.left + rect.width * x / 10;
+                            const py = rect.top + rect.height * y / 10;
+                            if (document.elementFromPoint(px, py) === element) return { x: px, y: py };
+                        }
+                    }
+                    throw new Error('轮盘目标没有未遮挡的可点击位置');
+                });
+                await page.mouse.click(point.x, point.y);
+            };
+            await clickWheelTarget();
+            await page.waitForTimeout(200);
+            if (await wheelTarget.getAttribute('aria-disabled') !== 'true') await clickWheelTarget();
+            // 落点由蒙古的实际行动决定；真人可通过轮盘页面放弃本轮剩余行动。
+            const endWheelTurn = page.getByRole('button', { name: '放弃剩余轮盘行动' });
+            await expect(endWheelTurn).toBeEnabled({ timeout: 15000 });
+            await endWheelTurn.click();
+            const endHandTurn = page.getByRole('button', { name: '放弃手牌行动并结束回合' });
+            await expect(endHandTurn).toBeEnabled({ timeout: 15000 });
+            await endHandTurn.click();
+            await expect.poll(readActors, { timeout: 90000, message: '真人行动后大明 AI 应自主行动并继续交接' })
+                .toMatchObject({ aiActors: ['1', '2'] });
+
             await page.screenshot({
-                path: getEvidenceScreenshotPath(testInfo, '七大恨-手动代AI选阵营-03-全部确认进入前置', {
+                path: getEvidenceScreenshotPath(testInfo, '七大恨-手动代AI选阵营-03-真人与AI行动交接', {
                     subdir: 'qidahen/manual-ai-setup',
-                    filename: '七大恨-手动代AI选阵营-03-全部确认进入前置.png',
+                    filename: '七大恨-手动代AI选阵营-03-真人与AI行动交接.png',
                     format: 'png',
                 }),
                 fullPage: false,

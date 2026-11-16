@@ -105,6 +105,12 @@ export interface GameEngineConfig<
             phase: string;
             fallbackPlayerId: string | null;
         }) => string | null | undefined;
+        /** 区分同一席位、阶段中不同的真实决策；同一决策重试必须保持稳定。 */
+        buildActiveTurnRecoveryFingerprint?: (args: {
+            state: MatchState<TCore>;
+            phase: string;
+            playerId: string;
+        }) => string | undefined;
         /** 为在线 AI watchdog 反馈生成游戏专属、去隐私的状态摘要。 */
         buildFeedbackDiagnosticContext?: (args: {
             state: MatchState<TCore>;

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-common-any", "uiStateId": "thor-common-any-preview", "viewport": "desktop", "reason": "公共任意改骰须显示原骰盘预览和确认入口。" },
+    { "chainId": "thor-common-adjust", "uiStateId": "thor-common-adjust-preview", "viewport": "desktop", "reason": "对手锁定骰单步调整须显示原骰盘预览和确认入口。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

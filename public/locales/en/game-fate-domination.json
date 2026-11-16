@@ -12,6 +12,7 @@
       "cancelDeployment": "Cancel deployment",
       "cancelMovement": "Cancel movement",
       "confirmAttack": "Confirm attack",
+      "confirmRiding": "Confirm mount summon",
       "confirmDeploymentTo": "Confirm deployment to {{location}}",
       "confirmMoveTo": "Confirm movement to {{location}}",
       "pendingDeployment": "Pending confirmation",

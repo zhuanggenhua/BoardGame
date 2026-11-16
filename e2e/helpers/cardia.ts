@@ -498,6 +498,8 @@ export const waitForPhase = async (page: Page, phase: string, timeout = 10000) =
  * Cardia 测试场景配置
  */
 export interface CardiaTestScenario {
+    /** 构造新遭遇时清除房间启动期间可能产生的当前出牌。 */
+    resetCurrentCards?: boolean;
     /** 玩家1配置（可选，用于 AI-only 场景） */
     player1?: PlayerScenario;
     
@@ -744,6 +746,15 @@ async function buildStateFromScenario(
         '1'
     );
     (state.players as Record<string, unknown>)['1'] = player2State;
+
+    if (scenario.resetCurrentCards) {
+        for (const player of [player1State, player2State]) {
+            player.currentCard = null;
+            player.hasPlayed = false;
+            player.cardRevealed = false;
+        }
+        state.currentEncounter = undefined;
+    }
     
     // 3. 设置阶段
     if (scenario.phase) {

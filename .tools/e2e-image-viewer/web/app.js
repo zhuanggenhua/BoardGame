@@ -208,7 +208,14 @@ const applyTransform = () => {
 
 const applyDetailTransform = () => {
   if (!detailMediaElement) return;
-  detailMediaElement.style.transform = `translate(${detailTransform.x}px, ${detailTransform.y}px) scale(${detailTransform.scale})`;
+  if (detailMediaElement instanceof HTMLVideoElement) {
+    // 视频控件必须按实际显示尺寸布局，否则原生控制条也会被 transform 缩小。
+    detailMediaElement.style.width = `${detailNaturalSize.width * detailTransform.scale}px`;
+    detailMediaElement.style.height = `${detailNaturalSize.height * detailTransform.scale}px`;
+    detailMediaElement.style.transform = `translate(${detailTransform.x}px, ${detailTransform.y}px)`;
+  } else {
+    detailMediaElement.style.transform = `translate(${detailTransform.x}px, ${detailTransform.y}px) scale(${detailTransform.scale})`;
+  }
   updateDetailSummary();
 };
 

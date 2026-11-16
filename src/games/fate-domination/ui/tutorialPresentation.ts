@@ -17,7 +17,7 @@ interface VisibleTutorialUi {
     movement: boolean;
     identity: boolean;
 }
-export const FATE_TUTORIAL_TABLE_PROTECTION = ['.fd-play-summary','.fd-phase-control','.fd-self-dock','.fd-self-stats','.fd-self-pile-info','.fd-self-piles','.fd-master-abilities','.fd-event-deck-count','.fd-runtime-map-card-hit','.fd-runtime-deployment-slot:not(:disabled)','.fd-runtime-card','.fd-runtime-pawn','.fd-riding-controls','.fd-runtime-opponent-cards','.fd-runtime-seat'];
+export const FATE_TUTORIAL_TABLE_PROTECTION = ['.fd-play-summary','.fd-phase-control','.fd-self-dock','.fd-self-stats','.fd-self-pile-info','.fd-self-piles','.fd-master-abilities','.fd-event-deck-count','.fd-runtime-map-card-hit','.fd-runtime-deployment-slot:not(:disabled)','.fd-runtime-card','.fd-runtime-pawn','.fd-runtime-opponent-cards','.fd-runtime-seat'];
 // 路线课保护地点、地利与箭头。当前战果由常驻读数承载，未放置棋子的印刷积分轨道是底图。
 export const FATE_TUTORIAL_MAP_PROTECTION = ['.fd-runtime-map-landmark:not([data-tutorial-map-landmark="battle-track"])'];
 

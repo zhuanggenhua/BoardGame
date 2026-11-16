@@ -12,6 +12,7 @@
       "cancelDeployment": "取消部署",
       "cancelMovement": "取消移动",
       "confirmAttack": "确认攻击",
+      "confirmRiding": "确认坐骑召唤",
       "confirmDeploymentTo": "确认部署至{{location}}",
       "confirmMoveTo": "确认移动至{{location}}",
       "pendingDeployment": "待确认",

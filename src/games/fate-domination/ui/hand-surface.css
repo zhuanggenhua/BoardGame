@@ -8,7 +8,6 @@
     z-index: 20;
     left: calc(var(--fd-hud-inline) + var(--fd-hand-hud-clearance));
     right: var(--fd-hud-inline);
-    /* 费用、威力与规则必须在静息态完整可见，卡牌贴底而不越出视口。 */
     bottom: var(--fd-hand-floor);
     display: flex;
     align-items: flex-end;
@@ -55,6 +54,11 @@
     box-sizing: border-box;
     padding: 0;
     pointer-events: none;
+}
+
+/* 攻击手牌清空时，保留牌面的空间，让上方出牌与威力区域保持原位。 */
+.fd-attack-cards {
+    min-height: calc(var(--fd-hand-card-width) * 214 / 148);
 }
 
 /* 只有卡牌本体命中，排内留白不拦截地图。 */
@@ -106,6 +110,7 @@
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); }
 .fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
 .fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: -2px; }
+.fd-skill-cards .fd-runtime-card.is-available { outline: 3px solid #ffe08a; outline-offset: -3px; box-shadow:0 0 10px #e9bd5980; }
 .fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: -2px; }
 .fd-runtime-card[aria-disabled="true"] { cursor: default; }
 
@@ -149,9 +154,6 @@
 .fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1))); }
 .fd-hand-parallel > .fd-runtime-card-shell,
 .fd-skill-slot > .fd-runtime-card-shell { transition: translate .18s ease, filter .18s ease; }
-/* Hover lifts the card without covering the next card's exposed click strip. */
-.fd-runtime-card-shell:hover,
-.fd-runtime-card-shell:has(:focus-visible),
 .fd-runtime-card-shell:has(.is-requested) { translate: 0 -16px; }
 .fd-runtime-hand-zone:focus-within,
 .fd-runtime-hand-zone:hover { z-index: 4; }
@@ -164,25 +166,6 @@
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
 .fd-runtime-card.is-riding-selected { outline: 2px solid #dcc68c; outline-offset: -2px; }
 
-.fd-riding-controls {
-    display: flex;
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    max-width: 100%;
-    padding: 4px 8px;
-    color: #f0e7d0;
-    font-size: 14px;
-    pointer-events: auto;
-}
-
-.fd-riding-status { padding: 4px 8px; background: rgb(9 12 13 / .9); color: #f0e7d0; text-align: center; }
-.fd-riding-controls button { min-height: 44px; padding: 6px 12px; border: 1px solid #758578; border-radius: 4px; background: #182321; color: #f8e8b3; pointer-events: auto; }
-.fd-riding-controls button:disabled { opacity: .5; cursor: not-allowed; }
-.fd-riding-controls button:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 2px; }
-
 @media (max-width: 1023px) {
     .fd-runtime-table { --fd-hand-card-width: 108px; }
     .fd-runtime-hand-grid {
@@ -194,9 +177,6 @@
     .fd-runtime-play-area { gap: 8px; }
     .fd-play-summary { min-width: 144px; padding-inline: 6px; font-size: 13px; }
     .fd-play-power { font-size: 16px; }
-    .fd-riding-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0; font-size: 13px; }
-    .fd-riding-status { grid-column: 1 / -1; }
-    .fd-riding-controls button { min-height: 44px; padding: 4px 6px; }
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {

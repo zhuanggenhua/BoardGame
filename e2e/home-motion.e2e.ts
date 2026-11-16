@@ -155,7 +155,7 @@ for (const mobile of [false, true]) {
     test(`${label}现代首页真实交互录屏`, async ({ browser, accounts }, info) => {
         info.setTimeout(150_000);
         await mkdir(stageDir, { recursive: true });
-        const viewport = mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 };
+        const viewport = mobile ? { width: 375, height: 812 } : { width: 1462, height: 747 };
         // 登录是录屏前置条件；避免登录退场与展示起点共用同一个录制管线。
         const preparation = await browser.newContext({ baseURL: info.project.use.baseURL, viewport, isMobile: mobile, hasTouch: mobile });
         let storageState: Awaited<ReturnType<BrowserContext['storageState']>>;
@@ -235,7 +235,7 @@ for (const mobile of [false, true]) {
                             await expect(favorite).toHaveText('');
                             await favorite.hover();
                             await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).borderRadius)).toBe('0px');
-                            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).backgroundColor.replace(/\s+/g, ''))).toMatch(/rgba?\(0,0,0,0\.(6|7|8)/);
+                            await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).backgroundColor.replace(/\s+/g, ''))).toBe('rgba(0,0,0,0)');
                             await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).color)).toBe('rgb(213, 255, 0)');
                             await expect.poll(() => favorite.evaluate(node => getComputedStyle(node).transform)).toBe('none');
                             expect(await favorite.evaluate(node => getComputedStyle(node).color)).not.toBe('rgb(255, 0, 138)');

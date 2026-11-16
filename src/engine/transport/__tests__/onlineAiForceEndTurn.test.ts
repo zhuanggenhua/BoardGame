@@ -5,6 +5,33 @@ import diceThroneEngineConfig from '../../../games/dicethrone/game';
 import { createOnlineAiRecoveryState } from './helpers/serverTestHarness';
 
 describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
+    it('legal-only 恢复按游戏声明的决策标识区分新回合，但同一回合保持重复保护', () => {
+        const sharedState = createOnlineAiRecoveryState({ activePlayerId: '1', phase: 'play' }).G as any;
+        sharedState.core.turnNumber = 4;
+        const args = {
+            sharedState,
+            seatControllers: { '0': { type: 'human' as const }, '1': { type: 'local-ai' as const } },
+            seatStates: {},
+            engineConfig: {
+                gameId: 'test',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                    buildActiveTurnRecoveryFingerprint: ({ state }: { state: { core: unknown } }) => (
+                        `turn-${(state.core as { turnNumber: number }).turnNumber}`
+                    ),
+                },
+            },
+        };
+        const first = resolveForceEndTurnForStalledAi(args);
+        expect(first?.fingerprintHint).toBe('active-turn-legal-only:1:play:turn-4');
+        expect(resolveForceEndTurnForStalledAi(args)?.fingerprintHint).toBe(first?.fingerprintHint);
+        sharedState.core.turnNumber = 5;
+        expect(resolveForceEndTurnForStalledAi(args)?.fingerprintHint).toBe('active-turn-legal-only:1:play:turn-5');
+        expect(first?.resolution.action.commands).toEqual([]);
+        expect(resolveForceEndTurnForStalledAi({
+            ...args, seatControllers: { '0': { type: 'human' }, '1': { type: 'human' } },
+        })).toBeNull();
+    });
     it('重复交替动作循环应触发 action-loop 兜底', () => {
         const sharedState = createOnlineAiRecoveryState({
             activePlayerId: '1',

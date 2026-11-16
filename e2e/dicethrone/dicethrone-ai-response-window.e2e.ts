@@ -153,10 +153,21 @@ const applyOnlineAiResponseMatchState = async (
     matchId: string,
     page: Page,
     mutator: (state: OnlineAiResponseMatchState) => OnlineAiResponseMatchState,
+    options: { privateInteraction?: boolean } = {},
 ) => {
     const current = await getMatchState(matchId, page) as OnlineAiResponseMatchState;
     const next = mutator(structuredClone(current) as OnlineAiResponseMatchState);
-    await injectMatchState(matchId, next, page);
+    if (options.privateInteraction) {
+        const access = await page.evaluate((id) => {
+            const stored = localStorage.getItem(`match_creds_${id}`);
+            if (!stored) throw new Error('缺少真人座位凭据');
+            const credentials = JSON.parse(stored) as { playerID: string; credentials: string };
+            return { playerId: credentials.playerID, credentials: credentials.credentials };
+        }, matchId);
+        await injectMatchState(matchId, next, undefined, access);
+    } else {
+        await injectMatchState(matchId, next, page);
+    }
 };
 
 const buildSamuraiHonorAiResponseState = (
@@ -905,8 +916,21 @@ test.describe('DiceThrone AI 响应窗口', () => {
                 expect(finalSnapshot.pendingDamageHonorUsage).toBeGreaterThanOrEqual(1);
             } else {
                 expect(finalSnapshot.damageEventCount).toBeGreaterThan(0);
-                expect(finalSnapshot.hostHp).toBeLessThanOrEqual(45);
+                // 起始 50 点生命、基础伤害 4；消耗 Honor 后应恰好受到 5 点伤害。
+                expect(finalSnapshot.aiHonor).toBe(0);
+                expect(finalSnapshot.hostHp).toBe(45);
             }
+
+            // 检查玩家实际看到的操作日志，而不只检查内部事件或血量。
+            const logButton = hostPage.locator('[data-fab-id="action-log"]').first();
+            if (!await logButton.isVisible().catch(() => false)) {
+                await hostPage.locator('[data-testid="fab-menu"] [data-fab-id]').first().click();
+            }
+            await expect(logButton).toBeVisible();
+            await logButton.click();
+            const logPanel = hostPage.getByTestId('fab-panel-action-log').first();
+            await expect(logPanel).toBeVisible();
+            await expect(logPanel.getByTestId('hud-action-log-row').filter({ hasText: /使用.*荣誉/ }).first()).toBeVisible();
 
             await hostPage.screenshot({
                 path: testInfo.outputPath('dicethrone-ai-response-samurai-honor-consumed.png'),
@@ -979,9 +1003,14 @@ test.describe('DiceThrone AI 响应窗口', () => {
                 matchId,
                 hostPage,
                 (state) => buildAiRightTrayBonusDiceConfirmState(state, { aiControllerType: 'human' }),
+                { privateInteraction: true },
             );
             await waitForTestHarness(hostPage, 15000);
             await waitForGameBoard(hostPage, 30000);
+            await expect.poll(async () => hostPage.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return { phase: state?.sys?.phase, blocked: state?.sys?.interaction?.isBlocked, current: state?.sys?.interaction?.current ?? null };
+            })).toEqual({ phase: 'main2', blocked: true, current: null });
 
             const injectedState = await getMatchState(matchId, hostPage) as OnlineAiResponseMatchState;
             const legalActions = buildDiceThroneAiLegalActions({
@@ -997,7 +1026,7 @@ test.describe('DiceThrone AI 响应窗口', () => {
             await expect(hostPage.getByTestId('bonus-die-overlay')).toHaveCount(0);
             await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
 
-            await applyOnlineAiResponseMatchState(matchId, hostPage, buildAiRightTrayBonusDiceConfirmState);
+            await applyOnlineAiResponseMatchState(matchId, hostPage, buildAiRightTrayBonusDiceConfirmState, { privateInteraction: true });
 
             await expect.poll(async () => readAiBonusDiceConfirmSnapshot(matchId, hostPage), {
                 timeout: 30000,

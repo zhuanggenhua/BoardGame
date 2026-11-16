@@ -34,8 +34,8 @@ describe('Fate 角色演出事件', () => {
       { playerId: '2', power: 2, status: 'deferred' },
     ]), core);
     expect(result).toEqual({ id: 42, kind: 'battle', locationId: 'miyama', laneCount: 3, actors: [
-      { playerId: '1', servantId: 'servant-cu-chulainn', role: 'damage', lane: 0, targetLane: 1, facing: 'right' },
-      { playerId: '0', servantId: 'servant-saber', role: 'attack', lane: 1, targetLane: 0, facing: 'left' },
+      { playerId: '0', servantId: 'servant-saber', role: 'attack', lane: 0, targetLane: 1, facing: 'right' },
+      { playerId: '1', servantId: 'servant-cu-chulainn', role: 'damage', lane: 1, targetLane: 0, facing: 'left' },
     ] });
     ready.characters.clear();
     expect(fateFgoSequenceFor(location([
@@ -44,7 +44,7 @@ describe('Fate 角色演出事件', () => {
     ]), core)).toBeUndefined();
   });
 
-  it('按地图棋子站位确定左右和相向，交换胜负不交换玩家位置', () => {
+  it('无论地图站位如何，攻击方在左、受击方在右并相向', () => {
     ready.characters.add('servant-saber'); ready.characters.add('servant-cu-chulainn');
     const result = (winner: string) => fateFgoSequenceFor(location([
       { playerId: '0', power: winner === '0' ? 8 : 4, status: winner === '0' ? 'representative-win' : 'deferred' },
@@ -57,7 +57,7 @@ describe('Fate 角色演出事件', () => {
       ['1', 0, 'right', 'attack'], ['0', 1, 'left', 'damage'],
     ]);
     expect(rightWins.actors.map(a => [a.playerId, a.lane, a.facing, a.role])).toEqual([
-      ['1', 0, 'right', 'damage'], ['0', 1, 'left', 'attack'],
+      ['0', 0, 'right', 'attack'], ['1', 1, 'left', 'damage'],
     ]);
   });
 
@@ -66,6 +66,20 @@ describe('Fate 角色演出事件', () => {
     const tied = [{ playerId: '0', power: 4, status: 'representative-win' }, { playerId: '1', power: 4, status: 'representative-win' }];
     expect(fateFgoSequenceFor(location(tied), core)).toBeUndefined();
     expect(fateFgoSequenceFor(location(tied, 'recon'), core)).toBeUndefined();
+  });
+
+  it('同一战场的多个可见对手保留在同一段演出', () => {
+    ready.characters.add('servant-saber'); ready.characters.add('servant-cu-chulainn'); ready.characters.add('servant-medusa');
+    const visibleCore = { ...core, players: { ...core.players, '2': { ...core.players['2'], isRevealed: true } } };
+    const sequences = fateFgoSequencesFor(location([
+      { playerId: '0', power: 8, status: 'representative-win' },
+      { playerId: '1', power: 4, status: 'deferred' },
+      { playerId: '2', power: 2, status: 'deferred' },
+    ]), visibleCore);
+    expect(sequences).toHaveLength(1);
+    const sequence = sequences[0];
+    expect(sequence.kind === 'battle' && sequence.actors.map(actor => [actor.playerId, actor.role]))
+      .toEqual([['0', 'attack'], ['1', 'damage'], ['2', 'damage']]);
   });
 
   it('行动确认不播放宝具，地点结算时播放事件记录的宝具', () => {

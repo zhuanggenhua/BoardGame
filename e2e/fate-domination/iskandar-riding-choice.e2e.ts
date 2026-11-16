@@ -193,18 +193,18 @@ async function snapshot(page: Page): Promise<Snapshot> {
     const state = await readState(page);
     const player = state.core.players['0'];
     const visible = await page.evaluate(() => {
-        const choice = document.querySelector('[data-testid="fate-riding-controls"]');
-        const confirm = document.querySelector<HTMLButtonElement>('[data-testid="fate-riding-confirm"]');
+        const choice = document.querySelector('[data-riding-choice="true"]');
+        const confirm = document.querySelector<HTMLButtonElement>('[data-testid="fate-domination-primary-action"]');
         const selectedCards = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-card-id][aria-pressed="true"]'))
             .map(card => card.dataset.cardId ?? '')
             .filter(Boolean);
         return {
             phaseText: document.querySelector('.fd-runtime-round')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-            ridingCostPreview: document.querySelector('[data-testid="fate-riding-controls"] .fd-riding-status')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-            ridingCostAccessibleLabel: document.querySelector('[data-testid="fate-riding-controls"] .fd-riding-status')?.getAttribute('aria-label') ?? '',
+            ridingCostPreview: document.querySelector('[data-testid="fate-self-mana"] b')?.textContent?.trim() ?? '',
+            ridingCostAccessibleLabel: document.querySelector('[data-testid="fate-self-mana"] small')?.textContent?.trim() ?? '',
             choiceVisible: Boolean(choice),
             selectedCards,
-            confirmText: confirm?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            confirmText: confirm?.getAttribute('aria-label') ?? '',
             confirmDisabled: confirm?.disabled ?? null,
             currentPrimary: document.querySelector('[data-testid="fate-domination-primary-action"]')?.getAttribute('aria-label') ?? '',
         };
@@ -310,8 +310,8 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
 
 async function openRidingChoice(page: Page) {
     await page.getByRole('button', { name: '发动 骑乘' }).click();
-    await expect(page.getByTestId('fate-riding-controls')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('fate-riding-confirm')).toBeVisible();
+    await expect(page.locator('[data-riding-choice="true"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('fate-domination-primary-action')).toBeVisible();
     return readState(page);
 }
 
@@ -417,8 +417,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
             assertion('card-not-committed', staged.authoritative.activeAttackIds, beforeStage.authoritative.activeAttackIds),
         ]));
         const beforeCancel = staged;
-        await page.getByTestId('fate-riding-cancel').click();
-        await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
+        await page.getByRole('button',{name:'取消骑乘',exact:true}).click();
+        await expect(page.locator('[data-riding-choice="true"]')).toHaveCount(0);
         const afterCancel = await snapshot(page);
         expect(afterCancel.authoritative.usedAbilityIds).toEqual(beforeCancel.authoritative.usedAbilityIds);
         expect(afterCancel.authoritative.mana).toBe(beforeCancel.authoritative.mana);
@@ -441,8 +441,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
             assertion('reopened-choice-visible', reopened.visible.choiceVisible, true),
         ]));
         const beforeConfirm = await snapshot(page);
-        await page.getByTestId('fate-riding-confirm').click();
-        await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
+        await page.getByTestId('fate-domination-primary-action').click();
+        await expect(page.locator('[data-riding-choice="true"]')).toHaveCount(0);
         const afterConfirm = await snapshot(page);
         const ridingSkillId = beforeConfirm.authoritative.activeSkills.find((id: string) => id.startsWith('sc_iskandar_1:'));
         expect(typeof ridingSkillId).toBe('string');
@@ -502,11 +502,11 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         await page.locator(`[data-card-id="${paidId}"]`).click();
         await expect(page.locator(`[data-card-id="${paidId}"]`)).toHaveAttribute('aria-pressed', 'true');
         const selected = await snapshot(page);
-        expect(selected.visible.confirmText).toContain('1');
+        expect(selected.visible.confirmText).toBe('确认坐骑召唤');
         const captured = await captureUniqueState(page, testInfo, '骑乘单张费用牌');
         const beforeCommit = await snapshot(page);
-        await page.getByTestId('fate-riding-confirm').click();
-        await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
+        await page.getByTestId('fate-domination-primary-action').click();
+        await expect(page.locator('[data-riding-choice="true"]')).toHaveCount(0);
         await waitForState(page, value => value.core.players['0'].activeAttackIds.includes(paidId), '等待骑乘单张正式打出');
         const committed = await snapshot(page);
         expect(committed.authoritative.mana).toBe(beforeCommit.authoritative.mana - printedCost);
@@ -515,8 +515,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         expect(committed.authoritative.currentPlayerId).toBe('0');
         expect(committed.authoritative.activeRidingFrames).toEqual([]);
         expect(committed.visible.currentPrimary).toContain('结束行动');
-        const expectedRidingCostPreview = `已选 1/3 · 实付 ${printedCost}/${beforeSelect.authoritative.mana} 魔力`;
-        const expectedRidingCostAccessibleLabel = `坐骑召唤 · 已选 1 张（最多 3 张）· 实付 ${printedCost} / ${beforeSelect.authoritative.mana} 魔力 · 本次选牌固定明置`;
+        const expectedRidingCostPreview = String(beforeSelect.authoritative.mana - printedCost);
+        const expectedRidingCostAccessibleLabel = `预计 −${printedCost}`;
         const expectedHighPowerObservations = highPowerIds.map((id: string) => ({ id, ariaDisabled: 'true', selected: false }));
         const steps = [
             step('arrange-fee-card-fixture', '明确牌区代表态：交换本局真实实例保证一张费用牌，不代表自然抽牌', beforeFixture, beforeOpen, [assertion('official-fee-card-in-hand', (beforeOpen.authoritative.handIds as string[]).includes(feeFixture.cardId), true), assertion('hand-count-preserved', (beforeOpen.authoritative.handIds as string[]).length, (beforeFixture.authoritative.handIds as string[]).length)]),
@@ -530,7 +530,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
                 assertion('one-card-selected', selected.visible.selectedCards.length, 1),
                 assertion('visible-printed-cost-preview', selected.visible.ridingCostPreview, expectedRidingCostPreview),
                 assertion('printed-cost-preview-accessible-label', selected.visible.ridingCostAccessibleLabel, expectedRidingCostAccessibleLabel),
-                assertion('confirm-button-count', selected.visible.confirmText, '确认打出（1）'),
+                assertion('confirm-riding', selected.visible.confirmText, '确认坐骑召唤'),
             ]),
             step('confirm-paid-card', '确认后按印刷魔耗支付并明置打出', beforeCommit, committed, [
                 assertion('exact-printed-cost-paid', beforeCommit.authoritative.mana - committed.authoritative.mana, printedCost),
@@ -576,7 +576,7 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
             const card = before.core.players['0'].hand.find((candidate: any) => candidate.id === id);
             return sum + (card ? FATE_ATTACK_BY_ID[card.definitionId]?.manaCost ?? 0 : 0);
         }, 0);
-        await page.getByTestId('fate-riding-confirm').click();
+        await page.getByTestId('fate-domination-primary-action').click();
         await waitForState(page, state => selectedIds.every(id => state.core.players['0'].activeAttackIds.includes(id)), '等待三张骑乘牌结算');
         const committed = await snapshot(page);
         expect(committed.authoritative.mana).toBe(beforeCommit.authoritative.mana - cost);
@@ -638,8 +638,8 @@ test.describe('伊斯坎达尔骑乘独立交互链', () => {
         expect(afterAttempt.authoritative.activeAttackIds).toEqual(beforeOpen.authoritative.activeAttackIds);
         const captured = await captureUniqueState(page, testInfo, '骑乘费用不足且候选不可选');
         const beforeCancel = afterAttempt;
-        await page.getByTestId('fate-riding-cancel').click();
-        await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
+        await page.getByRole('button',{name:'取消骑乘',exact:true}).click();
+        await expect(page.locator('[data-riding-choice="true"]')).toHaveCount(0);
         const afterCancel = await snapshot(page);
         expect(afterCancel.authoritative.usedAbilityIds).toEqual(beforeInjection.authoritative.usedAbilityIds);
         expect(afterCancel.authoritative.mana).toBe(0);

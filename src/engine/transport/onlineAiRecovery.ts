@@ -1205,6 +1205,10 @@ export function resolveForceEndTurnForStalledAi(args: {
         engineConfig: args.engineConfig,
     });
     if (currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human') {
+        const decisionFingerprint = args.engineConfig?.onlineAiRecovery?.buildActiveTurnRecoveryFingerprint?.({
+            state: args.sharedState as MatchState<unknown>, phase, playerId: currentPlayerId,
+        });
+        const legalOnlyFingerprint = `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}${decisionFingerprint ? `:${decisionFingerprint}` : ''}`;
         if (shouldSuppressOnlineAiWatchdogActiveTurnCandidate({
             state: args.sharedState as MatchState<unknown>,
             phase,
@@ -1227,10 +1231,10 @@ export function resolveForceEndTurnForStalledAi(args: {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',
                 legalActionOnly: true,
-                fingerprintHint: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                fingerprintHint: legalOnlyFingerprint,
                 resolution: buildForceEndTurnResolution({
                     playerId: currentPlayerId,
-                    suffix: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                    suffix: legalOnlyFingerprint,
                     commands: [],
                 }),
             };
@@ -1253,10 +1257,10 @@ export function resolveForceEndTurnForStalledAi(args: {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',
                 legalActionOnly: true,
-                fingerprintHint: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                fingerprintHint: legalOnlyFingerprint,
                 resolution: buildForceEndTurnResolution({
                     playerId: currentPlayerId,
-                    suffix: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                    suffix: legalOnlyFingerprint,
                     commands: [],
                 }),
             };

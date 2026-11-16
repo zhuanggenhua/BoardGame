@@ -4,6 +4,7 @@ import { getGameServerBaseURL } from '../helpers/common';
 import { cleanupDTMatch, closeDebugPanelIfOpen, continueAttackShowcaseIfVisible, dragDiceThroneHandCardToPlay, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForGameBoard } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { finalizeThorEvidenceSourceIdentity, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 import { createMainRollContext } from '../../src/games/dicethrone/domain/rollContext';
 import { getDieFaceByDefinition } from '../../src/games/dicethrone/domain/rules';
 import type { DiceThroneCore } from '../../src/games/dicethrone/domain/types';
@@ -55,16 +56,27 @@ for (const input of [
         sys.flowHalted = false;
         await injectMatchState(match.matchId, stored, match.hostPage);
         const current = async () => { const value = await getMatchState(match.matchId, match.hostPage) as any; return value.G ?? value; };
+        const evidence = await createThorBehaviorEvidence(match.hostPage, info,
+            input.cardId === 'card-thor-undaunted' ? 'thor-undaunted-response' : 'thor-impenetrable-response', async () => {
+                const state = await current();
+                return { hp: state.core.players['0'].resources.hp, cp: state.core.players['0'].resources.cp,
+                    electro: state.core.players['0'].tokens.electrokinesis ?? 0,
+                    damage: state.core.pendingDamage?.currentDamage ?? null,
+                    target: state.core.pendingDamage?.targetPlayerId ?? null,
+                    discarded: state.core.players['0'].discard.some((item: { id: string }) => item.id === input.cardId) };
+            }, 'e2e/dicethrone/thor-response-required-ui-states.json', '双人开局后预置合法攻击骰和索尔手牌、资源；攻击、响应与结算由真实玩家动作产生。');
         await expect.poll(async () => ({ attack: (await current()).core.pendingAttack ?? null, damage: (await current()).core.pendingDamage ?? null })).toEqual({ attack: null, damage: null });
         await expect(match.guestPage.locator('[data-ability-slot="lightning"][data-resolved-ability-id="lotus-palm"][data-can-click="true"]')).toBeVisible();
-        await match.guestPage.locator('[data-ability-slot="lightning"][data-resolved-ability-id="lotus-palm"]').click();
-        await expect.poll(async () => (await current()).core.pendingAttack?.sourceAbilityId).toBe('lotus-palm');
-        await Promise.all([match.hostPage, match.guestPage].map(page => continueAttackShowcaseIfVisible(page)));
-        await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
-        await expect.poll(async () => {
-            const damage = (await current()).core.pendingDamage;
-            return { target: damage?.targetPlayerId, amount: damage?.currentDamage, source: damage?.sourceAbilityId };
-        }).toEqual({ target: '0', amount: 5, source: 'lotus-palm' });
+        await evidence.step('attack-and-open-response', '对手发动莲花掌并推进到实际伤害响应', async () => {
+            await match.guestPage.locator('[data-ability-slot="lightning"][data-resolved-ability-id="lotus-palm"]').click();
+            await expect.poll(async () => (await current()).core.pendingAttack?.sourceAbilityId).toBe('lotus-palm');
+            await Promise.all([match.hostPage, match.guestPage].map(page => continueAttackShowcaseIfVisible(page)));
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            await expect.poll(async () => {
+                const damage = (await current()).core.pendingDamage;
+                return { target: damage?.targetPlayerId, amount: damage?.currentDamage, source: damage?.sourceAbilityId };
+            }).toEqual({ target: '0', amount: 5, source: 'lotus-palm' });
+        }, after => [{ name: '索尔收到五点待结算伤害', actual: { target: after.authoritative.target, damage: after.authoritative.damage }, expected: { target: '0', damage: 5 } }]);
         await continueAttackShowcaseIfVisible(match.hostPage);
         const responseCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${input.cardId}"]`);
         await expect(responseCard).toHaveAttribute('data-is-flipped', 'true');
@@ -72,36 +84,44 @@ for (const input of [
         await expect.poll(() => responseCard.locator('img').evaluateAll(images => (
             images.some(image => image.complete && image.naturalWidth > 0)
         )), { timeout: 15000 }).toBe(true);
-        await shot(match.hostPage, info, '01-实际攻击生成致命伤害响应');
-        await dragDiceThroneHandCardToPlay(match.hostPage, input.cardId);
+        await evidence.capture(input.cardId === 'card-thor-undaunted' ? 'thor-undaunted-card-response' : 'thor-impenetrable-card-response',
+            'attack-and-open-response', '01-实际攻击生成致命伤害响应', 'interaction-mode');
         let expectedHp = 5;
-        if (input.cardId === 'card-thor-undaunted') {
-            await expect.poll(async () => (await current()).core.pendingBonusDiceSettlement?.dice?.[0]?.value).toBeGreaterThanOrEqual(1);
-            const roll = (await current()).core.pendingBonusDiceSettlement.dice[0].value as number;
-            expect(roll).toBeLessThanOrEqual(6);
-            expectedHp = roll === 4 || roll === 5 ? 1 : 0;
-            await shot(match.hostPage, info, '02-不屈意志使用原效果骰盘');
-            await match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]').click();
-        } else {
-            await expect.poll(async () => {
-                const state = await current();
-                return { damage: state.core.pendingDamage?.currentDamage, electro: state.core.players['0'].tokens.electrokinesis ?? 0 };
-            }).toEqual({ damage: 0, electro: 0 });
-            await shot(match.hostPage, info, '02-无懈可击支付驭电并防止全部伤害');
-        }
+        await evidence.step('play-response-card', `从原手牌打出${input.label}并处理效果`, async () => {
+            await dragDiceThroneHandCardToPlay(match.hostPage, input.cardId);
+            if (input.cardId === 'card-thor-undaunted') {
+                await expect.poll(async () => (await current()).core.pendingBonusDiceSettlement?.dice?.[0]?.value).toBeGreaterThanOrEqual(1);
+                const roll = (await current()).core.pendingBonusDiceSettlement.dice[0].value as number;
+                expect(roll).toBeLessThanOrEqual(6);
+                expectedHp = roll === 4 || roll === 5 ? 1 : 0;
+                await shot(match.hostPage, info, '02-不屈意志使用原效果骰盘');
+                await match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]').click();
+            } else {
+                await expect.poll(async () => {
+                    const state = await current();
+                    return { damage: state.core.pendingDamage?.currentDamage, electro: state.core.players['0'].tokens.electrokinesis ?? 0 };
+                }).toEqual({ damage: 0, electro: 0 });
+                await shot(match.hostPage, info, '02-无懈可击支付驭电并防止全部伤害');
+            }
+        }, after => [{ name: '响应牌已消耗', actual: after.authoritative.discarded, expected: true }]);
         const pass = match.hostPage.getByTestId('dicethrone-response-pass-button');
-        if (await pass.isVisible()) await pass.click();
-        await expect.poll(async () => (await current()).core.pendingDamage ?? null).toBeNull();
-        await expect.poll(async () => (await current()).core.players['0'].resources.hp).toBe(expectedHp);
-        await expect.poll(async () => {
-            const player = (await current()).core.players['0'];
-            return { cp: player.resources.cp, discarded: player.discard.some((card: { id: string }) => card.id === input.cardId) };
-        }).toEqual({ cp: 3, discarded: true });
+        await evidence.step('finish-response', '使用原响应入口继续并结算伤害', async () => {
+            if (await pass.isVisible()) await pass.click();
+            await expect.poll(async () => (await current()).core.pendingDamage ?? null).toBeNull();
+            await expect.poll(async () => (await current()).core.players['0'].resources.hp).toBe(expectedHp);
+            await expect.poll(async () => {
+                const player = (await current()).core.players['0'];
+                return { cp: player.resources.cp, discarded: player.discard.some((card: { id: string }) => card.id === input.cardId) };
+            }).toEqual({ cp: 3, discarded: true });
+            await expect(match.hostPage.locator('[data-dicethrone-resource="health"]')).toContainText(new RegExp(`\\b${expectedHp}$`));
+        }, after => [{ name: '响应结果生命符合实际骰面', actual: after.authoritative.hp, expected: expectedHp },
+            { name: '玩家画面显示结算后生命', actual: Number(String(after.visible.ownHealth).match(/(\d+)\s*$/)?.[1]), expected: expectedHp }]);
         await continueAttackShowcaseIfVisible(match.hostPage);
         await waitForDamageNumbersToSettle(match.hostPage);
         await shot(match.hostPage, info, input.cardId === 'card-thor-undaunted'
             ? '03-实际骰值对应的致命伤害结算'
             : '03-无懈可击防护后生命保持');
+        await evidence.finish(`${input.label}响应实际攻击并完成伤害结算。`);
         await finalizeThorEvidenceSourceIdentity(match.hostPage);
     } finally {
         await cleanupDTMatch(match);

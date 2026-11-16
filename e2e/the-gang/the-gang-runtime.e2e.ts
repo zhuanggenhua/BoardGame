@@ -4014,7 +4014,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByRole('button', { name: '开始抢劫' })).toBeVisible();
     });
 
-    test('直接本地开局默认 AI 座位可自动选筹码并确认进入下一轮', async ({ game, page }) => {
+    test('直接本地开局真人与 AI 连续四轮选筹码、摊牌并进入下一局', async ({ game, page }) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1920, height: 1080 });
         await game.openTestGame(THE_GANG_GAME_ID, {
@@ -4036,5 +4036,30 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await page.getByRole('button', { name: '下一轮' }).click();
         await expectChipRound(page, '黄筹码');
+
+        // 第二轮再次验证真人选择与 AI 自动选筹码、确认交接，而非仅停在新轮界面。
+        const yellowChip = page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: /黄筹码 .* 星/u }).first();
+        await expect(yellowChip).toBeVisible();
+        await yellowChip.click();
+        await expectCurrentRoundChips(page, 3);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await page.getByRole('button', { name: '下一轮' }).click();
+        await expectChipRound(page, '橙筹码');
+
+        for (const [prefix, nextButton] of [['橙筹码', '下一轮'], ['红筹码', '摊牌']] as const) {
+            const chip = page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: new RegExp(`${prefix} .* 星`, 'u') }).first();
+            await expect(chip).toBeVisible();
+            await chip.click();
+            await expectCurrentRoundChips(page, 3);
+            await expect(page.getByRole('button', { name: nextButton })).toBeEnabled();
+            await page.getByRole('button', { name: nextButton }).click();
+            if (prefix === '橙筹码') await expectChipRound(page, '红筹码');
+        }
+        await expect(page.getByLabel('摊牌结算')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
+        await expect(page.getByRole('button', { name: '下一次抢劫' })).toBeEnabled();
+        await page.getByRole('button', { name: '下一次抢劫' }).click();
+        await expect(page.getByText('抢劫 2')).toBeVisible({ timeout: 30000 });
+        await expectChipRound(page, '白筹码');
     });
 });

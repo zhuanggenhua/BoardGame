@@ -1,6 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { aiStepBarrier } from '../helpers/state-injection';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -286,6 +287,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
         const { context, page, matchId } = match!;
         const diagnostics = attachPageDiagnostics(page);
+        const access = { playerId: match!.hostPlayerId, credentials: match!.hostCredentials };
+        let barrierArmed = false;
 
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
@@ -302,6 +305,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 hostHandCount: injectedCore.players['0']?.hand.length ?? 0,
             };
 
+            await aiStepBarrier(matchId, 'arm', access, { playerId: '1', commandType: 'DISCARD_CARD' });
+            barrierArmed = true;
             await injectMatchState(matchId, {
                 ...currentState,
                 sys: {
@@ -312,25 +317,39 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                     currentPlayerIndex: injectedCore.playerIds.indexOf(injectedCore.currentPlayer),
                 },
                 core: injectedCore,
-            }, page);
+            }, undefined, { playerId: match.hostPlayerId, credentials: match.hostCredentials });
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '1'
-                    && summary.stage === 'discard'
-                    && (summary.turn ?? 0) === injectedSummary.turn
-                    && summary.drawPileCount === injectedSummary.drawPileCount
-                    && summary.discardCount === injectedSummary.discardCount - 1
-                    && (summary.handCounts['1'] ?? 0) === 8
-                    && summary.discardSignature !== injectedSummary.discardSignature;
+                return {
+                    currentPlayer: summary.currentPlayer,
+                    stage: summary.stage,
+                    turn: summary.turn,
+                    drawPileCount: summary.drawPileCount,
+                    discardCount: summary.discardCount,
+                    aiHandCount: summary.handCounts['1'] ?? 0,
+                    discardChanged: summary.discardSignature !== injectedSummary.discardSignature,
+                };
             }, {
                 timeout: 20000,
                 message: '等待 seat1 local AI 在更优公开弃牌代表态下先完成 TAKE_FROM_DISCARD 并停在 discard，再在深分支中刷新',
-            }).toBe(true);
+            }).toEqual({
+                currentPlayer: '1', stage: 'discard', turn: injectedSummary.turn,
+                drawPileCount: injectedSummary.drawPileCount, discardCount: injectedSummary.discardCount - 1,
+                aiHandCount: 8, discardChanged: true,
+            });
+
+            await expect.poll(async () => (await aiStepBarrier(matchId, 'status', access))?.reached,
+                { timeout: 10000, message: 'AI 必须已自主选择弃牌并停在测试同步点' }).toBe(true);
 
             const afterTakeSummary = await readOnlineAiStateSummary(matchId, page);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(page, '0');
+            const reloadedSummary = await readOnlineAiStateSummary(matchId, page);
+            expect(reloadedSummary.currentPlayer).toBe('1');
+            expect(reloadedSummary.stage).toBe('discard');
+            await aiStepBarrier(matchId, 'release', access);
+            barrierArmed = false;
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -359,7 +378,11 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
             assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-ai-refresh-during-take-discard-branch', diagnostics }]);
         } finally {
-            await context.close().catch(() => {});
+            try {
+                if (barrierArmed) await aiStepBarrier(matchId, 'release', access);
+            } finally {
+                await context.close().catch(() => {});
+            }
         }
     });
 

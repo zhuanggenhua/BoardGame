@@ -2637,6 +2637,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         )}
                         isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive}
                         canRerollBonusDice={canRerollBonusDiceFromRightTray}
+                        bonusRerollCostAmount={rightTrayBonusDiceSettlement?.rerollCostAmount}
                         onRerollBonusDice={isRightTrayBonusDiceSettlementActive && !rightTrayBonusDiceSettlement?.groupReroll
                             ? handleRerollBonusDiceFromRightTray
                             : undefined}

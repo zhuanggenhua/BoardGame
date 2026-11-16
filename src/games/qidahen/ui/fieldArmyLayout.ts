@@ -14,6 +14,7 @@ export function packExpandedArmiesWithinRegions(
     tokens: readonly QidahenMapToken[], callouts: readonly QidahenArmyCallout[], sites: ReadonlyMap<string, PopulationSite>,
     width: number, height: number, expandedRegionIds: ReadonlySet<string>, populationRegionIds: ReadonlySet<string>,
     selectedOnlyRegions: ReadonlySet<string> = new Set(), selectedPieceIds: ReadonlySet<string> = new Set(),
+    quantityControlRegions: ReadonlySet<string> = new Set(),
 ): { tokens: readonly QidahenMapToken[]; callouts: QidahenArmyCallout[]; unresolvedRegionIds: string[] } {
     const positions = new Map<string, Point>();
     const packedIds = new Set<string>();
@@ -35,8 +36,9 @@ export function packExpandedArmiesWithinRegions(
         let points = site.candidates.filter(point => obstacles.every(box => Math.abs(point.x - box.x) >= half + box.half + 4
             || Math.abs(point.y - box.y) >= half + box.half + 4));
         if (points.length < pieces.length) { if (hasCallouts) unresolvedRegionIds.push(regionId); continue; }
-        const separate = (a: Point, b: Point, gap: number) => Math.abs(a.x - b.x) >= gap || Math.abs(a.y - b.y) >= gap;
-        const distance = half * 2 + 8 * (half * 2 / 26);
+        const separate = (a: Point, b: Point, gap: number, verticalGap = gap) => Math.abs(a.x - b.x) >= gap || Math.abs(a.y - b.y) >= verticalGap;
+        const distance = half * 2 + 3 * (half * 2 / 26);
+        const verticalDistance = half * 2 + (quantityControlRegions.has(regionId) ? 11 : 3) * (half * 2 / 26);
         // 出兵后的剩余兵堆带顶部数量标签，需要与已出兵牌额外留距。
         const stackDistance = half * 2 + 24 * (half * 2 / 26);
         const selectedCount = selectedOnlyRegions.has(regionId)
@@ -44,6 +46,7 @@ export function packExpandedArmiesWithinRegions(
         // 按真实区域候选点尝试紧凑方阵，让同一区域的兵牌可作为一组阅读。
         // 找不到完整方阵时保留原有布局 / 溢出路径，不把兵牌推到别的地区。
         const step = Math.ceil(distance / 3) * 3;
+        const rowStep = Math.ceil(verticalDistance / 3) * 3;
         const pointKeys = new Set(points.map(point => `${point.x},${point.y}`));
         const starts = points.slice().sort((a, b) => ((a.x - site.anchor.x) ** 2 + (a.y - site.anchor.y) ** 2)
             - ((b.x - site.anchor.x) ** 2 + (b.y - site.anchor.y) ** 2)).slice(0, 100);
@@ -51,12 +54,12 @@ export function packExpandedArmiesWithinRegions(
         let compactScore = Infinity;
         // 候选点按 26px 人口方块生成；更大的兵牌不能仅凭这些点证明完整落区。
         for (const start of half <= 13 && !selectedCount ? starts : []) for (let columns = 1; columns <= Math.min(pieces.length, 5); columns++) {
-            const grid = pieces.map((_, index) => ({ x: start.x + step * (index % columns), y: start.y + step * Math.floor(index / columns) }));
+            const grid = pieces.map((_, index) => ({ x: start.x + step * (index % columns), y: start.y + rowStep * Math.floor(index / columns) }));
             if (!grid.every(point => pointKeys.has(`${point.x},${point.y}`))) continue;
             if (populationRegionIds.has(regionId) && !points.some(point => grid.every(other => separate(point, other, half + 13 + 4)))) continue;
             const rows = Math.ceil(pieces.length / columns);
-            const center = { x: start.x + step * (columns - 1) / 2, y: start.y + step * (rows - 1) / 2 };
-            const score = columns * rows * step * step + (center.x - site.anchor.x) ** 2 + (center.y - site.anchor.y) ** 2;
+            const center = { x: start.x + step * (columns - 1) / 2, y: start.y + rowStep * (rows - 1) / 2 };
+            const score = columns * rows * step * rowStep + (center.x - site.anchor.x) ** 2 + (center.y - site.anchor.y) ** 2;
             if (score < compactScore) { compact = grid; compactScore = score; }
         }
         if (!compact && half <= 13) {
@@ -72,7 +75,8 @@ export function packExpandedArmiesWithinRegions(
                     let bestScore = Infinity;
                     for (const point of points) {
                         if (!chosen.every((other, index) => separate(point, other,
-                            selectedCount && (index >= selectedCount || chosen.length >= selectedCount) ? stackDistance : distance))) continue;
+                            selectedCount && (index >= selectedCount || chosen.length >= selectedCount) ? stackDistance : distance,
+                            selectedCount && (index >= selectedCount || chosen.length >= selectedCount) ? stackDistance : verticalDistance))) continue;
                         const nearest = Math.min(...chosen.map(other => Math.hypot(point.x - other.x, point.y - other.y)));
                         const alignment = Math.min(...chosen.map(other => Math.min(Math.abs(point.x - other.x), Math.abs(point.y - other.y))));
                         const score = nearest + alignment * 0.35 + Math.hypot(point.x - seed.x, point.y - seed.y) * 0.08;
@@ -105,7 +109,7 @@ export function packExpandedArmiesWithinRegions(
                     const chosen: Point[] = [];
                     for (const point of order) {
                         if (population && !separate(point, population, half + 13 + 4)) continue;
-                        if (chosen.every(other => separate(point, other, distance))) chosen.push(point);
+                        if (chosen.every(other => separate(point, other, distance, verticalDistance))) chosen.push(point);
                         if (chosen.length === pieces.length) { greedy = chosen; break; }
                     }
                     if (greedy) break;
@@ -122,7 +126,7 @@ export function packExpandedArmiesWithinRegions(
             points = points.filter(point => point.x % step === 0 && point.y % step === 0);
             if (points.length < pieces.length) { unresolvedRegionIds.push(regionId); continue; }
         }
-        const compatible = points.map((point, i) => Uint8Array.from(points, (other, j) => i !== j && separate(point, other, distance) ? 1 : 0));
+        const compatible = points.map((point, i) => Uint8Array.from(points, (other, j) => i !== j && separate(point, other, distance, verticalDistance) ? 1 : 0));
         const ids = points.map((_, index) => index);
         const populationCandidates = populationRegionIds.has(regionId)
             ? ids.slice().sort((a, b) => ((points[b].x - site.anchor.x) ** 2 + (points[b].y - site.anchor.y) ** 2)

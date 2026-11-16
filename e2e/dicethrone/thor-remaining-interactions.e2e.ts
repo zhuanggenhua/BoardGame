@@ -2,6 +2,7 @@ import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { closeDebugPanelIfOpen, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
 import { dismissCardSpotlightWithBackdrop, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 
 for (const entry of [
     { id: 'card-worthy-of-me', repeated: true, expected: [6, 1, 1, 1, 1] },
@@ -174,6 +175,10 @@ for (const entry of [
 test('索尔意不意外沿旧骰盘修改两颗骰子并确认', async ({ page, game }, info) => {
     test.setTimeout(120000);
     await clearEvidenceScreenshotsForTest(info);
+    const evidence = await createThorBehaviorEvidence(page, info, 'thor-common-any', async () => {
+        const state = await game.getState();
+        return { dice: state.core.currentRollContext?.dice.map((die: { value: number }) => die.value) ?? [] };
+    }, 'e2e/dicethrone/thor-common-dice-required-ui-states.json', '预置公共牌和起始资源并固定随机源；出牌、预览及确认由页面操作产生。');
     await page.setViewportSize({ width: 1920, height: 1080 });
     await game.openTestGame('dicethrone', { playerID: '0', seat1: 'human' }, 120000);
     await game.setupScene({ gameId: 'dicethrone', phase: 'main1', currentPlayer: '0', randomQueue: [.08, .08, .08, .08, .08],
@@ -182,14 +187,26 @@ test('索尔意不意外沿旧骰盘修改两颗骰子并确认', async ({ page,
     await closeDebugPanelIfOpen(page);
     await page.locator('[data-tutorial-id="advance-phase-button"]').click();
     await page.locator('[data-tutorial-id="dice-roll-button"]').click();
-    await dragDiceThroneHandCardToPlay(page, 'card-unexpected');
+    await evidence.step('play-common-any', '从原手牌打出意不意外', async () => {
+        await dragDiceThroneHandCardToPlay(page, 'card-unexpected');
+        await expect(page.getByTestId('die-adjust-increment-0')).toBeVisible();
+    }, after => [{ name: '打开改骰时原骰值保持', actual: after.authoritative.dice, expected: [1, 1, 1, 1, 1] }]);
     await shot(page, info, '01-原骰盘显示两骰调整入口');
-    await page.getByTestId('die-adjust-increment-0').click();
-    await page.getByTestId('die-adjust-increment-1').click();
-    await shot(page, info, '02-两颗骰子预览后沿原按钮确认');
-    await page.getByTestId('dice-interaction-confirm-button').click();
-    await expect.poll(async () => (await game.getState()).core.currentRollContext?.dice.map((d: { value: number }) => d.value)).toEqual([2, 2, 1, 1, 1]);
+    await evidence.step('preview-common-any', '在旧骰盘分别调整两颗骰子', async () => {
+        await page.getByTestId('die-adjust-increment-0').click();
+        await page.getByTestId('die-adjust-increment-1').click();
+        await expect(page.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
+    }, after => [{ name: '确认前权威骰值保持', actual: after.authoritative.dice, expected: [1, 1, 1, 1, 1] }]);
+    await evidence.capture('thor-common-any-preview', 'preview-common-any', '02-两颗骰子预览后沿原按钮确认', 'interaction-mode');
+    await evidence.step('confirm-common-any', '点击原确认按钮提交两颗改骰', async () => {
+        await page.getByTestId('dice-interaction-confirm-button').click();
+        await expect.poll(async () => (await game.getState()).core.currentRollContext?.dice.map((d: { value: number }) => d.value)).toEqual([2, 2, 1, 1, 1]);
+        await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value', '2');
+        await expect(page.getByTestId('die-button-1')).toHaveAttribute('data-display-value', '2');
+    }, after => [{ name: '仅两颗骰改变', actual: after.authoritative.dice, expected: [2, 2, 1, 1, 1] },
+        { name: '玩家画面显示两颗骰为二', actual: (after.visible.dice as Array<string | null>).slice(0, 2), expected: ['2', '2'] }]);
     await shot(page, info, '03-确认后仅两颗骰子改变');
+    await evidence.finish('沿原骰盘预览并确认，两颗骰子各变为二。');
 });
 
 for (const roll of [1, 6]) test(`索尔一掷千金投出${roll}后沿原效果骰确认`, async ({ page, game }, info) => {

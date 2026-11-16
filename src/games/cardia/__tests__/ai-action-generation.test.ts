@@ -7,12 +7,37 @@
 import { describe, it, expect } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import type { CardiaCore } from '../domain/types';
-import { cardiaAiRuntime } from '../ai';
+import { cardiaAiRuntime, resolveCardiaDecisionPlayerId } from '../ai';
 import { createTagContainer } from '../../../engine/primitives/tags';
 import { createModifierStack } from '../../../engine/primitives/modifier';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 describe('Cardia AI - 动作生成', () => {
+    it('一方出牌后交给未出牌的对手，强制出牌顺序优先，能力交互归属对应玩家', () => {
+        const state = {
+            core: {
+                players: { '0': { hasPlayed: false }, '1': { hasPlayed: false } },
+                playerOrder: ['0', '1'],
+                forcedPlayOrderNextEncounter: null,
+                currentEncounter: { loserId: '1' },
+            },
+            sys: { phase: 'play', interaction: { current: null } },
+        } as unknown as MatchState<CardiaCore>;
+        const resolve = () => resolveCardiaDecisionPlayerId({ state, fallbackPlayerId: '0' });
+        expect(resolve()).toBe('0');
+        state.core.forcedPlayOrderNextEncounter = '1';
+        expect(resolve()).toBe('1');
+        state.core.players['1'].hasPlayed = true;
+        expect(resolve()).toBe('0');
+        state.core.forcedPlayOrderNextEncounter = null;
+        state.core.players['0'].hasPlayed = true;
+        state.core.players['1'].hasPlayed = false;
+        expect(resolve()).toBe('1');
+        state.sys.phase = 'ability';
+        expect(resolve()).toBe('1');
+        state.sys.interaction.current = { playerId: '0' } as typeof state.sys.interaction.current;
+        expect(resolve()).toBe('0');
+    });
     describe('打牌阶段', () => {
         it('应该为手牌中的每张卡牌生成打牌动作', () => {
             const state: MatchState<CardiaCore> = {

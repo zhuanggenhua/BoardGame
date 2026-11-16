@@ -23,7 +23,7 @@ it('重连同步清除尚未结束的演出，避免旧画面继续覆盖新状�
     <FateFgoEffects state={makeState(entries)} viewerId={null} />
   </EventStreamRollbackContext.Provider>;
   const view = render(draw([], 0));
-  view.rerender(draw([{ id: 1, event: { type: 'ATTACKS_CONFIRMED', payload: { playerId: '0', cardIds: ['sc_saber_np:1'] } } }], 0));
+  view.rerender(draw([{ id: 1, event: { type: 'LOCATION_RESOLVED', payload: { locationId: 'miyama', results: [], noblePlayerIds: ['0'] } } }], 0));
   expect(screen.getByTestId('fate-fgo-noble')).toBeTruthy();
   view.rerender(draw([], 1));
   expect(screen.queryByTestId('fate-fgo-noble')).toBeNull();

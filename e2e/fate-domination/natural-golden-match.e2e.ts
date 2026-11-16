@@ -10,6 +10,7 @@ import type { MatchState } from '../../src/engine/types';
 import { buildFateAiLegalActions } from '../../src/games/fate-domination/ai';
 import { resolveFateMovement } from '../../src/games/fate-domination/domain/movement';
 import { fateAttackManaCost } from '../../src/games/fate-domination/domain/attackSelection';
+import { fateRidingCandidates } from '../../src/games/fate-domination/domain/ridingChoice';
 import { sampleFateMapMotion } from './mapContinuityEvidence';
 import type { FateDominationCore } from '../../src/games/fate-domination/domain';
 
@@ -28,8 +29,10 @@ const requiredScreens = {
     'inspection-close-hover': '鼠标悬浮放大对象，关闭叉号可见',
     draft: '常规混选与正费用魔力预览',
     'confirmed-attack': '确认后已出牌与游戏服扣费',
+    'riding-choice': '骑乘选择多张手牌',
+    'riding-resolved': '骑乘确认后的追加出牌',
     battle: '战斗阶段按地点结算',
-    'opponent-cards': '悬浮对手公开出牌与一级威力',
+    'opponent-cards': '悬浮头像查看对手已打出牌',
     terminal: '同一在线房间的正式终局',
 };
 
@@ -108,7 +111,9 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
         shots.push({
             path: path.relative(process.cwd(), path.join(run.stableDir, file)).replace(/\\/g, '/'),
             chainId, chainStep: shots.length + 1, stage: '独特界面态', role: 'main-flow', transition: action,
-            viewport: 'desktop', viewportSize: `${viewport.width}x${viewport.height}`, description: shot[0],
+            viewport: 'desktop', viewportSize: `${viewport.width}x${viewport.height}`, description: id === 'riding-choice'
+                ? `${shot[0]}。卡牌原文：打出时：若此牌与一张基础攻击一同打出，抽一张牌。坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。来源：中文 CHM 伊斯坎达尔卡图（first-batch-servant-skills-ocr.md）。`
+                : shot[0],
             uiStateId: id, uiChange: shot[1], uiChangeReason: shot[0], behaviorStepId: id, requirements: [shot[0]], sha256,
         });
     };
@@ -254,9 +259,9 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 const costOf = (pair: typeof choices[number]) => pair.cardIds.reduce((sum, id) =>
                     sum + (fateAttackManaCost(actor, id, pair.faceDownIds.includes(id)) ?? 0), 0);
                 const mixesHandAndSkill = (choice: typeof choices[number]) => choice.cardIds.some(id => hand.has(id)) && choice.cardIds.some(id => !hand.has(id));
-                const pair = (!seen.has('attack') ? choices.find(choice => choice.faceDownIds.length === 1 && mixesHandAndSkill(choice) && costOf(choice) > 0)
-                    ?? choices.find(choice => choice.faceDownIds.length === 1 && costOf(choice) > 0)
-                    ?? choices.find(choice => costOf(choice) > 0) : undefined)
+                const ridingId = actor.skills.find(skill => skill.id.startsWith('sc_iskandar_1:'))?.id;
+                const pair = (!seen.has('attack') ? choices.find(choice => ridingId && choice.cardIds.includes(ridingId)
+                    && choice.faceDownIds.length === 1 && mixesHandAndSkill(choice) && costOf(choice) > 0) : undefined)
                     ?? choices.find(choice => choice.faceDownIds.length === 1) ?? choices[0];
                 if (pair) {
                     const card = (id: string, staged = false) => hand.has(id)
@@ -317,6 +322,43 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     continue;
                 }
             }
+            if (core.phase === 'action' && actor.normalAttackPlayed && !seen.has('riding')) {
+                const riding = page.getByRole('button', { name: '发动 骑乘', exact: true });
+                if (await riding.isVisible() && await riding.getAttribute('aria-disabled') !== 'true') {
+                    const candidates = fateRidingCandidates(core, '0');
+                    const chosen: string[] = [];
+                    let cost = 0;
+                    for (const candidate of candidates) {
+                        const cardCost = fateAttackManaCost(actor, candidate.id) ?? Infinity;
+                        if (chosen.length < 3 && cost + cardCost <= actor.mana) {
+                            chosen.push(candidate.id);
+                            cost += cardCost;
+                        }
+                    }
+                    expect(chosen.length, '自然手牌应提供至少两张骑乘候选').toBeGreaterThanOrEqual(2);
+                    await riding.click();
+                    await expect(board.locator('[data-riding-choice="true"]')).toBeVisible();
+                    for (const id of chosen) {
+                        const card = board.locator(`[data-card-zone="hand"][data-card-id="${id}"]`);
+                        await card.click({ position: { x: 12, y: 70 } });
+                        await expect(card).toHaveAttribute('aria-pressed', 'true');
+                    }
+                    await mark('riding-choice', '发动骑乘并选择追加攻击牌', [
+                        check('选择期间服务端魔力未扣', (await read()).core.players['0'].mana, actor.mana),
+                        check('骑乘选择数量', chosen.length >= 2 && chosen.length <= 3),
+                    ], ['骑乘选择多张手牌', 'interaction-mode']);
+                    await primary.click();
+                    await expect.poll(async () => (await read()).core.players['0'].mana).toBe(actor.mana - cost);
+                    const afterRide = (await read()).core.players['0'];
+                    await mark('riding-resolved', '确认骑乘追加攻击并结算费用', [
+                        check('骑乘追加牌已打出', chosen.every(id => afterRide.activeAttackIds.includes(id))),
+                        check('骑乘实付魔力', afterRide.mana, actor.mana - cost),
+                        check('骑乘后仍是本人行动', (await read()).core.currentPlayerId, '0'),
+                    ], ['骑乘确认后的追加出牌', 'interaction-mode']);
+                    seen.add('riding');
+                    continue;
+                }
+            }
             if (core.phase === 'battle' && core.battleResolution?.step === 'locations' && !seen.has('battle')) {
                 await mark('battle', '行动交接给正式电脑玩家并进入战斗地点结算', [
                     check('电脑至少一方实际出牌', core.playerIds.filter(id => id !== '0').some(id => core.players[id].normalAttackPlayed)),
@@ -330,7 +372,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 await mark('opponent-cards', '悬浮对手头像，指针移入公开出牌单排', [
                     check('对手公开出牌可检视', await row.isVisible()),
                     check('威力仍在头像旁一级显示', await board.locator('.fd-seat-power').first().isVisible()),
-                ], ['对手公开出牌与一级威力', 'interaction-mode']);
+                ], ['悬浮头像查看对手已打出牌', 'interaction-mode']);
                 await page.mouse.move(12, 12);
                 seen.add('battle');
             }
@@ -351,7 +393,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
         const { core, sys } = await read();
         await expect(result).toBeVisible();
         expect(core.round).toBeGreaterThan(1);
-        expect(['deploy', 'move', 'seal', 'inspection', 'attack', 'battle'].every(id => seen.has(id))).toBe(true);
+        expect(['deploy', 'move', 'seal', 'inspection', 'attack', 'riding', 'battle'].every(id => seen.has(id))).toBe(true);
         expect(motionFrameCounts.handoff).toBeGreaterThanOrEqual(6);
         await mark('terminal', '同一局自然推进到正式胜负结算', [
             check('正式终局阶段', core.phase, 'complete'), check('引擎记录终局', Boolean(sys.gameover)),
@@ -366,7 +408,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
             captureContract: { sha256: createHash('sha256').update(captureContract).digest('hex') },
             motionFrameCounts,
             outcome: '一名真人通过正式在线房间 UI 自选角色，与两名正式 AI 自然对局至服务器终局',
-            coverage: { actions: [...seen], rounds: [...rounds], deferred: ['真人多端', '骑乘专属响应', '所有角色与效果分支'] },
+            coverage: { actions: [...seen], rounds: [...rounds], deferred: ['真人多端', '骑乘第四张拒绝', '所有角色与效果分支'] },
             steps, terminalStepId: 'terminal',
             uiStates: shots.map(shot => ({ id: shot.uiStateId, stepId: shot.behaviorStepId, change: shot.uiChange, viewport: shot.viewport, viewportSize: shot.viewportSize, sha256: shot.sha256 })),
         }, null, 2));

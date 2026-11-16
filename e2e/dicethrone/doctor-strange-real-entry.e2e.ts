@@ -457,6 +457,46 @@ async function captureState(page: Page, run: EvidenceScreenshotRun, name: string
     return filename;
 }
 
+async function recordDoctorScaleEvidence(page: Page, name: string): Promise<void> {
+    await waitForDoctorScale(page);
+    await page.waitForFunction(() => document.getAnimations().every(animation => (
+        animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity
+    )), undefined, { timeout: 10000 });
+    const directory = join(process.cwd(), 'temp', 'doctor-scale-comparison-20261116');
+    await mkdir(directory, { recursive: true });
+    const geometry = await page.evaluate(() => {
+        const rect = (element: Element) => {
+            const box = element.getBoundingClientRect();
+            return { x: box.x, y: box.y, width: box.width, height: box.height };
+        };
+        const selectors = [
+            'dt-card-pool-title', 'dt-card-pool-search', 'dt-card-pool-surface',
+            'dt-card-pool-actions', 'dt-interaction-confirm', 'dt-game-modal',
+            'dt-status-owner-0', 'dt-status-owner-1', 'dt-status-effect-0-blinded',
+            'dt-status-effect-1-dazzle', 'info-tooltip',
+        ];
+        const elements = Object.fromEntries(selectors.flatMap(id => {
+            const element = document.querySelector(`[data-testid="${id}"]`);
+            return element ? [[id, rect(element)]] : [];
+        }));
+        const cards = Array.from(document.querySelectorAll('[data-card-pool-mode="preview"]')).map(rect);
+        return { viewport: { width: innerWidth, height: innerHeight }, elements, cards };
+    });
+    await writeFile(join(directory, `${name}.json`), JSON.stringify(geometry, null, 2));
+    await page.screenshot({ path: join(directory, `${name}.png`), fullPage: false });
+}
+
+async function waitForDoctorScale(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const frame = document.querySelector('[data-testid="dt-doctor-reference-frame"]');
+        const modal = document.querySelector('[data-testid="dt-game-modal"][data-reference-scale]');
+        const element = frame ?? modal;
+        if (!element) return false;
+        const expected = Math.min(innerWidth / 1920, innerHeight / 960) * (frame ? 1 : 1.4);
+        return Math.abs(Number(element.getAttribute('data-reference-scale')) - expected) < 0.00001;
+    });
+}
+
 async function assertStatusTooltipClearOfActions(page: Page): Promise<void> {
     await page.getByTestId('dt-status-effect-1-blinded').hover();
     const tooltip = page.locator('[data-testid="info-tooltip"]:visible').first();
@@ -883,7 +923,12 @@ async function runAwarenessPrepareFlow(
         uiStateId: `doctor-strange-${viewportName}-discard-reader`, behaviorStepId: 'discard-card-existing-reader',
         description: '弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。', role: 'main-flow', viewport: viewportName,
         transition: '悬停候选并点击原放大镜。' });
-    await page.getByTestId('board-magnify-overlay-close').click();
+    const readerClose = page.getByTestId('board-magnify-overlay-close');
+    const readerCloseBounds = await readerClose.boundingBox();
+    expect(readerCloseBounds).not.toBeNull();
+    await page.mouse.move(readerCloseBounds!.x - 10, readerCloseBounds!.y + readerCloseBounds!.height / 2);
+    await page.mouse.move(readerCloseBounds!.x + readerCloseBounds!.width / 2, readerCloseBounds!.y + readerCloseBounds!.height / 2);
+    await readerClose.click();
     await expect(page.getByTestId('board-magnify-overlay')).toHaveCount(0);
     await expect(spellOption).toHaveAttribute('data-selected', 'false');
     await spellOption.click();
@@ -2805,6 +2850,21 @@ for (const empty of [false, true]) test(`代表态真实打出瓦图姆之风覆
     const candidates = page.locator('#modal-root [data-testid^="dt-status-effect-"]');
     await expect(candidates).toHaveCount(empty ? 0 : 2);
     await expect(page.getByRole('button', { name: '跳过', exact: true })).toBeVisible();
+    if (!empty) {
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await waitForDoctorScale(page);
+        await page.getByTestId('dt-status-effect-0-blinded').hover();
+        await expect(page.getByTestId('info-tooltip')).toBeVisible();
+        await recordDoctorScaleEvidence(page, 'status-pc-1920');
+        await page.setViewportSize({ width: 2560, height: 1304 });
+        await waitForDoctorScale(page);
+        await page.getByTestId('dt-status-effect-0-blinded').hover();
+        await recordDoctorScaleEvidence(page, 'status-pc-2560');
+        await page.setViewportSize({ width: 936, height: 432 });
+        await waitForDoctorScale(page);
+        await page.getByTestId('dt-status-effect-0-blinded').hover();
+        await recordDoctorScaleEvidence(page, 'status-mobile-936');
+    }
     for (const viewport of (empty ? [{ width: 1440, height: 900 }] : [{ width: 1440, height: 900 }, { width: 812, height: 375 }])) {
         await page.setViewportSize(viewport);
         if (!empty) await page.getByTestId('dt-status-effect-0-blinded').hover();
@@ -2816,6 +2876,7 @@ for (const empty of [false, true]) test(`代表态真实打出瓦图姆之风覆
                     return tip.right <= rect.left || tip.left >= rect.right || tip.bottom <= rect.top || tip.top >= rect.bottom;
                 });
         }), { message: '状态说明须避让全部持有人、原标题与原操作' }).toBe(true);
+        if (!empty && viewport.width === 812) await recordDoctorScaleEvidence(page, 'status-mobile-812');
         const id = `status-${empty ? 'empty' : 'multiple'}-${viewport.width}`;
         const image = await captureTracedState(page, game, evidenceRun, trace, `${empty ? '无合法状态仅跳过' : '多持有人状态候选'}-${viewport.width > 1000 ? '桌面' : '横屏'}`,
             id, '真实准备瓦图姆之风后查看合法状态', '只显示实际合法候选', snapshot => (snapshot.visible.choiceIds as string[]).length, empty ? 1 : 2);
@@ -2824,7 +2885,18 @@ for (const empty of [false, true]) test(`代表态真实打出瓦图姆之风覆
             role: 'main-flow', viewport: viewport.width > 1000 ? 'desktop' : 'mobile', transition: '通过真实手牌准备瓦图姆之风。' });
     }
     if (!empty) {
-        await page.getByTestId('dt-status-effect-0-blinded').click();
+        const badgeBounds = await page.getByTestId('dt-status-effect-0-blinded').boundingBox();
+        expect(badgeBounds).not.toBeNull();
+        const badgeTouch = await page.context().newCDPSession(page);
+        try {
+            await badgeTouch.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+            const point = { x: badgeBounds!.x + badgeBounds!.width / 2, y: badgeBounds!.y + badgeBounds!.height / 2 + 20 };
+            await badgeTouch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+            await badgeTouch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        } finally {
+            await badgeTouch.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+            await badgeTouch.detach();
+        }
         await expect(page.getByTestId('dt-status-effect-0-blinded')).toHaveAttribute('data-selected', 'true');
         for (const viewport of [{ width: 1440, height: 900 }, { width: 812, height: 375 }]) {
             await page.setViewportSize(viewport);
@@ -2894,12 +2966,40 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
         description: '施放拉格伽多尔之环后，从弃牌堆选择法术，可搜索和滚动查看全部候选。', role: 'main-flow', viewport: 'desktop', transition: '从准备区真实选择并施放法术。' });
     const search = page.getByTestId('dt-card-pool-search-input');
     await expect(search).toBeVisible();
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await clearHandCardHover(page);
+    await recordDoctorScaleEvidence(page, 'cards-pc-1920');
+    await page.setViewportSize({ width: 2560, height: 1304 });
+    await recordDoctorScaleEvidence(page, 'cards-pc-2560');
+    await page.setViewportSize({ width: 936, height: 432 });
+    await recordDoctorScaleEvidence(page, 'cards-mobile-936');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await waitForDoctorScale(page);
+    await clearHandCardHover(page);
     const desktopActionBeforeSearch = await page.getByTestId('dt-interaction-confirm').boundingBox();
     const expectStableAction = (before: Awaited<ReturnType<typeof search.boundingBox>>, after: Awaited<ReturnType<typeof search.boundingBox>>) => {
         expect(before).not.toBeNull();
         expect(after).not.toBeNull();
         for (const key of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(before![key] - after![key])).toBeLessThan(0.5);
     };
+    const allChoices = page.locator('#modal-root [data-testid^="dt-discard-card-option-"]');
+    const firstChoiceBox = await allChoices.first().boundingBox();
+    const lastChoiceBox = await allChoices.last().boundingBox();
+    expect(firstChoiceBox).not.toBeNull();
+    expect(lastChoiceBox).not.toBeNull();
+    expect(lastChoiceBox!.y, '八张候选应换行而不是缩小挤进一行').toBeGreaterThan(firstChoiceBox!.y + firstChoiceBox!.height / 2);
+    await search.fill('瓦尔托尔之汽');
+    await expect(allChoices).toHaveCount(1);
+    const filteredChoiceBox = await allChoices.first().boundingBox();
+    expect(filteredChoiceBox).not.toBeNull();
+    expect(Math.abs(filteredChoiceBox!.width - firstChoiceBox!.width), '筛选前后牌面大小应保持一致').toBeLessThan(0.5);
+    expectStableAction(desktopActionBeforeSearch, await page.getByTestId('dt-interaction-confirm').boundingBox());
+    const filteredImage = await captureTracedState(page, game, evidenceRun, trace, '弃牌搜索单张候选-桌面',
+        'discard-cast-desktop-search-one', '搜索缩小候选集合', '单张候选保持原有尺寸',
+        snapshot => (snapshot.visible.choiceIds as string[]).length, 1);
+    media.push({ path: filteredImage, chainId: '弃牌直接施放', chainStep: '桌面单张搜索结果', stage: '中态',
+        uiStateId: 'doctor-strange-discard-cast-desktop-search-one', behaviorStepId: 'discard-cast-desktop-search-one',
+        description: '筛选到一张法术时保持与八张候选相同的卡面尺寸。', role: 'main-flow', viewport: 'desktop', transition: '输入法术搜索词。' });
     await search.fill('没有这张法术');
     await expect(page.getByTestId('dt-card-pool-empty')).toBeVisible();
     expectStableAction(desktopActionBeforeSearch, await page.getByTestId('dt-interaction-confirm').boundingBox());
@@ -2913,6 +3013,7 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
     await expect(page.locator('#modal-root [data-testid^="dt-discard-card-option-"]')).toHaveCount(8);
     expectStableAction(desktopActionBeforeSearch, await page.getByTestId('dt-interaction-confirm').boundingBox());
     await page.setViewportSize({ width: 812, height: 375 });
+    await recordDoctorScaleEvidence(page, 'cards-mobile-812');
     const assertSearchPoolActionsVisible = async () => {
         const box = await page.getByTestId('dt-interaction-confirm').boundingBox();
         expect(box).not.toBeNull();
@@ -2968,12 +3069,6 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
         return Boolean(last && pool && last.y >= pool.y && last.y + last.height <= pool.y + pool.height + 1);
     }, { message: '横屏滚动后最后一张弃牌必须完整可见' }).toBe(true);
     expectStableAction(confirmBeforeScroll, await page.getByTestId('dt-interaction-confirm').boundingBox());
-    const lastPhoneImage = await captureTracedState(page, game, evidenceRun, trace, '弃牌直接施放浏览末张-横屏',
-        'discard-cast-phone-scrolled', '滚动浏览最后一张弃牌法术', '末张候选完整可见，确认位置保持不动',
-        snapshot => (snapshot.visible.choiceIds as string[]).length, 8);
-    media.push({ path: lastPhoneImage, chainId: '弃牌直接施放', chainStep: '横屏浏览末张', stage: '中态',
-        uiStateId: 'doctor-strange-discard-cast-phone-scrolled', behaviorStepId: 'discard-cast-phone-scrolled',
-        description: '横屏滚动候选区至末张，操作区保持固定。', role: 'main-flow', viewport: 'mobile', transition: '在候选区向下滚动。' });
     await discardPool.hover();
     await page.mouse.wheel(0, -600);
     await expect.poll(() => discardPool.evaluate(element => element.scrollTop)).toBe(0);
@@ -3006,11 +3101,21 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
         description: '搜索无匹配时明确显示空结果，并保留清空搜索和跳过入口。', role: 'main-flow', viewport: 'mobile', transition: '在原搜索框输入不匹配词语。' });
     await page.getByTestId('dt-card-pool-search-clear').click();
     await expect(page.locator('#modal-root [data-testid^="dt-discard-card-option-"]')).toHaveCount(8);
-    await page.setViewportSize({ width: 1440, height: 900 });
     const target = page.getByTestId('dt-discard-card-option-spell-vapors-of-valtorr');
     await target.scrollIntoViewIfNeeded();
     await target.click();
-    await page.getByTestId('dt-interaction-confirm').click();
+    const confirmBounds = await page.getByTestId('dt-interaction-confirm').boundingBox();
+    expect(confirmBounds).not.toBeNull();
+    const confirmTouch = await page.context().newCDPSession(page);
+    try {
+        await confirmTouch.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+        const point = { x: confirmBounds!.x + confirmBounds!.width / 2, y: confirmBounds!.y + confirmBounds!.height / 2 + 20 };
+        await confirmTouch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+        await confirmTouch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } finally {
+        await confirmTouch.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await confirmTouch.detach();
+    }
     await expect(page.getByTestId('dt-discard-card-option-spell-vapors-of-valtorr')).toHaveCount(0);
     await expect(page.getByTestId('dt-interaction-confirm')).toHaveText('跳过');
     await page.getByTestId('dt-interaction-confirm').click();

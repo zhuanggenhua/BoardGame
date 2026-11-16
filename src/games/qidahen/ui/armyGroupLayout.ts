@@ -62,10 +62,10 @@ export function compactCrowdedArmies(
         if (selectiveRegionIds.has(token.regionId)) {
             if (token.pieceId && preservedPieceIds.has(token.pieceId)) return true;
         } else if (expandedRegionIds.has(token.regionId)) return true;
-        const key = JSON.stringify([token.regionId, token.faction]);
+        const face = visibleFaceKey(token);
+        const key = JSON.stringify([token.regionId, token.faction, face]);
         const representative = representatives.get(key);
         const representativeId = representative?.id ?? token.id;
-        const face = visibleFaceKey(token);
         if (face == null) hiddenStacks.add(representativeId);
         else {
             const faces = visibleFaces.get(representativeId) ?? new Set<string>();

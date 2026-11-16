@@ -5,6 +5,7 @@ import { getQidahenTurnResolutionFrame } from '../domain/turnResolutionOpportuni
 import { QIDAHEN_TURN_RESOLUTION_CHOICE, type QidahenTurnResolutionFact } from '../domain/turnResolutionTypes';
 import type { QidahenCore } from '../domain/types';
 import { getQidahenDispatchDraftTargets } from '../domain/wheelDispatchDraft';
+import { setDispatchGroupCount } from './dispatchGroupSelection';
 
 /** UI仅选择正式请求中的实体；候选、数量和最终效果仍由规则owner决定。 */
 export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: string | null, dispatch: (type: string, payload?: unknown) => void, disabled: boolean) {
@@ -40,6 +41,12 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
         if (!canAct || !options.some(option => option.id === id && !option.disabled)) return;
         setDraft({ interactionId: current!.id, ids: selectedIds.includes(id) ? selectedIds.filter(value => value !== id) : max === 1 ? [id] : selectedIds.length < max ? [...selectedIds, id] : selectedIds });
     };
+    const setGroupCount = (pieceIds: readonly string[], count: number) => {
+        if (!canAct || step !== 'dispatch-troops' || !current) return;
+        const eligible = new Set(options.filter(option => !option.disabled).map(option => option.id));
+        setDraft(previous => ({ interactionId: current.id,
+            ids: setDispatchGroupCount(previous.interactionId === current.id ? previous.ids : [], pieceIds, eligible, max, count) }));
+    };
     const selectRegion = (regionId: string, tokenId?: string): boolean => {
         if (!active) return false;
         if (step === 'dispatch-troops' || step === 'upkeep') {
@@ -70,6 +77,7 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     };
     const actorName = active ? Object.values(state.core.factions).find(faction => faction.playerId === current?.playerId)?.name : undefined;
     return { active, canAct, step, maintenanceFortificationId, actorName, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
+        dispatchEligiblePieceIds: step === 'dispatch-troops' && canAct ? options.filter(option => !option.disabled && pieceIds.includes(option.id)).map(option => option.id) : [],
         committedPieceIds: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.selectedPieceIds ?? [] : [],
         dispatchSourceRegionId: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.sourceRegionId ?? null : null,
         season: frame?.metadata.qidahenTurn.season ?? null, choose, isDirectChoice,
@@ -77,6 +85,6 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
             && frame.metadata.qidahenTurn.yearCharacterIndex >= 0
             && ['year-characters', 'character-conflict', 'wei-extra-character', 'reveal-next-year'].includes(step ?? ''),
         selectedPieceIds: selectedIds.filter(id => pieceIds.includes(id)), selectedCardIds: selectedIds.filter(id => cardIds.includes(id)), selectedRegionId: selectedIds.find(id => regionIds.has(id)),
-        canConfirm: canAct && troopsCanReach && selectedIds.length >= min && selectedIds.length <= max, toggle, selectRegion, confirm,
+        canConfirm: canAct && troopsCanReach && selectedIds.length >= min && selectedIds.length <= max, toggle, setGroupCount, selectRegion, confirm,
     };
 }

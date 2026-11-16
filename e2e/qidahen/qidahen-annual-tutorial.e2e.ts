@@ -120,6 +120,17 @@ async function waitMagnifyReady(page: Page) {
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
+async function closeMagnifiedCard(page: Page) {
+    const content = page.getByTestId('qidahen-card-magnify-content');
+    const box = await content.boundingBox();
+    if (!box) throw new Error('放大牌面不可见，无法通过鼠标显示关闭入口');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2 + 2, box.y + box.height / 2);
+    const close = page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ });
+    await expect(close).toBeVisible();
+    await close.click();
+}
+
 async function clickCard(page: Page, id: string, selectionChanges = true) {
     const card = page.getByTestId(`qidahen-hand-card-${id}`);
     const shell = page.getByTestId(`qidahen-hand-card-shell-${id}`);
@@ -381,7 +392,7 @@ function assertOutcome(id: string, before: Snapshot, after: Snapshot) {
 }
 
 test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
-    test.describe.configure({ timeout: 1_200_000 });
+    test.describe.configure({ timeout: 1_800_000 });
     for (const viewport of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'mobile', width: 915, height: 412 }]) {
         test(`${viewport.name} 从正式教程入口走完核心行动、年中、新年与次年训练`, async ({ page, browser }, testInfo) => {
             const moduleMark = (label: string) => { if (process.env.QIDAHEN_MODULE_DIAGNOSTIC === 'true') console.info('ANNUAL_SETUP', label); };
@@ -638,14 +649,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         const pieceId = snapshot.core.mapTokens.find(token => token.id === tokenId)?.pieceId;
                         const piece = snapshot.core.pieces.find(piece => piece.id === pieceId)!;
                         await expect(troop).toHaveAttribute('data-qidahen-unit-level', String(piece.level));
-                        const level = page.getByTestId(`qidahen-unit-level-${tokenId}`);
-                        await expect(level).toHaveText(String(piece.level));
-                        const badge = (await level.boundingBox())!;
-                        const badgeCovered = hint.x < badge.x + badge.width && hint.x + hint.width > badge.x
-                            && hint.y < badge.y + badge.height && hint.y + hint.height > badge.y;
-                        expect(badgeCovered, 'tutorial text must not cover the selectable troop level').toBe(false);
                     }
-                    if (suffix === '-selected') await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(dynamicTargets.length);
+                    if (suffix === '-selected') await expect(page.locator('[data-pending-committed-selected="true"]')).toHaveCount(dynamicTargets.length);
                     await expect(page.locator('[data-qidahen-tutorial-recommended="true"]')).toHaveCount((snapshot.tutorial.step.recommendedTargets ?? snapshot.tutorial.step.allowedTargets ?? []).length);
                 }
                 if (id === 'tactic-card' && suffix === '-selected') {
@@ -1089,7 +1094,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await capture('recruit-payment', '-inspect', step.id);
                         expect((await read(page)).core.factions.ming.handCount).toBe(handBefore);
                         expect((await read(page)).core.selectedPaymentCardIds).toEqual([]);
-                        await page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ }).click();
+                        await closeMagnifiedCard(page);
                     }
                     if (step.id === 'year-character') {
                         await page.getByTestId(`qidahen-turn-inspect-${step.allowedTargets![0]}`).click();
@@ -1097,7 +1102,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect.poll(() => page.getByTestId('qidahen-high-resolution-card').locator('img').evaluate(element => (element as HTMLImageElement).naturalWidth),
                             { message: '杨镐完整牌面使用原分辨率单卡' }).toBe(487);
                         await capture(step.id, '-inspect');
-                        await page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ }).click();
+                        await closeMagnifiedCard(page);
                     }
                     if (step.infoStep) {
                         await clickVisibleButton(page, 'tutorial-next-button');

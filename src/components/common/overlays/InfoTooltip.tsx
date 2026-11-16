@@ -16,6 +16,7 @@ interface InfoTooltipProps {
     className?: string; // 额外样式
     /** 自定义 z-index，弹窗内使用时传入 UI_Z_INDEX.modalTooltip */
     zIndex?: number;
+    referenceScale?: number;
 }
 
 /**
@@ -31,6 +32,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     avoidSelector,
     className = '',
     zIndex,
+    referenceScale,
 }) => {
     const resolvedZIndex = useResolvedOverlayTooltipZIndex(zIndex);
     const tooltipRef = React.useRef<HTMLDivElement | null>(null);
@@ -58,8 +60,8 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             if (!placementBoundary) throw new Error(`Tooltip placement boundary not found: ${placementBoundarySelector}`);
             const placementRect = placementBoundary.getBoundingClientRect();
             const tooltipRect = tooltip.getBoundingClientRect();
-            const viewportPadding = 12;
-            const gap = 10;
+            const viewportPadding = 12 * (referenceScale ?? 1);
+            const gap = 10 * (referenceScale ?? 1);
             const preferredSide = position;
             const fitsOnPreferredSide = preferredSide === 'right'
                 ? placementRect.right + gap + tooltipRect.width <= window.innerWidth - viewportPadding
@@ -129,8 +131,8 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 arrowOffset: Math.max(
                     6,
                     Math.min(
-                        anchorRect.left + anchorRect.width / 2 - left,
-                        tooltipRect.width - 6,
+                        (anchorRect.left + anchorRect.width / 2 - left) / (referenceScale ?? 1),
+                        tooltipRect.width / (referenceScale ?? 1) - 6,
                     ),
                 ),
             });
@@ -143,7 +145,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             window.removeEventListener('resize', updateLayout);
             window.removeEventListener('scroll', updateLayout, true);
         };
-    }, [isVisible, position, placementBoundarySelector, avoidSelector]);
+    }, [isVisible, position, placementBoundarySelector, avoidSelector, referenceScale]);
 
     if (!isVisible || typeof document === 'undefined') return null;
 
@@ -171,6 +173,15 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                         overflowY: 'auto',
                         visibility: layout ? 'visible' : 'hidden',
                         opacity: layout ? 1 : 0,
+                        ...(referenceScale ? {
+                            transform: `scale(${referenceScale})`,
+                            transformOrigin: 'top left',
+                            width: 320,
+                            maxWidth: 320,
+                            padding: 12,
+                            borderRadius: 8,
+                            maxHeight: `calc((100vh - 24px) / ${referenceScale})`,
+                        } : {}),
                     }}
                 >
                     {/* 箭头 */}
@@ -200,17 +211,19 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                         <div
                             data-testid="info-tooltip-title"
                             className="min-w-0 break-words text-amber-400 font-bold mb-[clamp(4px,0.4vw,8px)] pb-[clamp(3px,0.2vw,4px)] border-b border-white/10 leading-tight"
-                            style={{ fontSize: 'clamp(12px, 0.9vw, 18px)' }}
+                            style={referenceScale
+                                ? { fontSize: 16, marginBottom: 6, paddingBottom: 4 }
+                                : { fontSize: 'clamp(12px, 0.9vw, 18px)' }}
                         >
                             {title}
                         </div>
                     )}
 
                     {/* 内容列表 */}
-                    <div className="flex flex-col gap-[clamp(3px,0.2vw,4px)]">
+                    <div className="flex flex-col gap-[clamp(3px,0.2vw,4px)]" style={referenceScale ? { gap: 4 } : undefined}>
                         {content.map((line, i) => (
-                            <div key={i} data-testid="info-tooltip-content-line" className="min-w-0 text-slate-300 flex items-start leading-snug" style={{ fontSize: 'clamp(11px, 0.7vw, 14px)' }}>
-                                <span className="mr-[0.4vw] text-amber-500">•</span>
+                            <div key={i} data-testid="info-tooltip-content-line" className="min-w-0 text-slate-300 flex items-start leading-snug" style={{ fontSize: referenceScale ? 14 : 'clamp(11px, 0.7vw, 14px)' }}>
+                                <span className="mr-[0.4vw] text-amber-500" style={referenceScale ? { marginRight: 8 } : undefined}>•</span>
                                 <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{line}</span>
                             </div>
                         ))}

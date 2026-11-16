@@ -43,6 +43,8 @@ interface Props {
         onConfirm: (cardIds: string[]) => void;
         onCancel: () => void;
         onSelectionCountChange?: (count: number) => void;
+        onSelectionChange?: (ids: string[]) => void;
+        sourceSkillId?: string;
     };
 }
 
@@ -84,6 +86,8 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
     const ridingSelection = ridingSelectionState.scope === interactionScope ? ridingSelectionState.ids : [];
     const onRidingSelectionCountChange=ridingChoice?.onSelectionCountChange;
     useLayoutEffect(()=>onRidingSelectionCountChange?.(ridingSelection.length),[onRidingSelectionCountChange,ridingSelection.length]);
+    const onRidingSelectionChange=ridingChoice?.onSelectionChange;
+    useLayoutEffect(()=>onRidingSelectionChange?.(ridingSelection),[onRidingSelectionChange,ridingSelectionState,interactionScope]);
     const toggleRidingSelection = (id: string) => setRidingSelectionState(previous => {
         const ids = previous.scope === interactionScope ? previous.ids : [];
         return {scope: interactionScope, ids: ids.includes(id) ? ids.filter(candidate => candidate !== id) : [...ids, id]};
@@ -91,8 +95,6 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
     const zones = projectFateHand(player);
     const ridingCandidateIds = new Set(ridingChoice?.candidateIds ?? []);
     const ridingCost = ridingSelection.reduce((sum, id) => sum + (fateAttackManaCost(player, id) ?? Infinity), 0);
-    const canConfirmRiding = Boolean(ridingChoice && ridingSelection.length <= 3
-        && ridingSelection.every(id => ridingCandidateIds.has(id)) && ridingCost <= player.mana);
     const playedIds = [...new Set([...player.activeAttackIds, ...player.activeSkills, ...player.selectedAttackIds])];
     const staged = player.selectedAttackIds.length > 0;
     const readySkillIds = new Set(skills.filter(item => !player.activeSkills.includes(item.skill.id) && !player.selectedAttackIds.includes(item.skill.id)).map(item=>item.skill.id));
@@ -114,9 +116,9 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             layoutId={`fate-skill-${player.id}-${skill.id}`}
             key={skill.id}
             type="button"
-            className={`fd-runtime-card${requestedCardId===skill.id?' is-requested':''}${stagedSkill ? ' is-staged' : !ridingChoice && (active ? abilityAvailable : available&&!faceDownMode) ? ' is-available' : ''}`}
-            aria-label={t('ui.hand.skillAction', { action: stagedSkill ? t('ui.hand.actions.retract') : active ? t('ui.hand.actions.activate') : t('ui.hand.actions.select'), name: skill.name })}
-            aria-disabled={Boolean(ridingChoice) || (active ? !abilityAvailable : !stagedSkill&&(!available||faceDownMode))}
+            className={`fd-runtime-card${requestedCardId===skill.id?' is-requested':''}${stagedSkill ? ' is-staged' : ridingChoice?.sourceSkillId===skill.id || (!ridingChoice && (active ? abilityAvailable : available&&!faceDownMode)) ? ' is-available' : ''}`}
+            aria-label={ridingChoice?.sourceSkillId===skill.id ? t('ui.hand.cancelRide') : t('ui.hand.skillAction', { action: stagedSkill ? t('ui.hand.actions.retract') : active ? t('ui.hand.actions.activate') : t('ui.hand.actions.select'), name: skill.name })}
+            aria-disabled={ridingChoice ? ridingChoice.sourceSkillId!==skill.id : (active ? !abilityAvailable : !stagedSkill&&(!available||faceDownMode))}
             data-focus-card={`skill-${player.id}-${skill.id}`}
             data-tutorial-id={`fate-card-${skill.id}`}
             data-card-zone={stagedSkill ? 'staged-skill' : active ? 'active-skill' : 'skill'}
@@ -131,7 +133,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             onContextMenu={event => {event.preventDefault(); onInspect(assetPath, skill.name, true);}}
             onClick={() => {
                 if(touchInspection.shouldBlockClick(`skill-${skill.id}`))return;
-                if (ridingChoice) {onReject?.(t('feedback.ridingOnlyAttacks'));return;}
+                if (ridingChoice) {if(ridingChoice.sourceSkillId===skill.id) ridingChoice.onCancel();else onReject?.(t('feedback.ridingOnlyAttacks'));return;}
                 if (active) {
                     if (abilityAvailable) onPlaySkill(skill.id);else onRejectCard?.(skill.id,false,true);
                 } else if (stagedSkill || (available&&!faceDownMode)) {
@@ -235,16 +237,9 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             }}
         >
             <section className="fd-runtime-hand-zone fd-attack-hand-zone" aria-label={t('ui.hand.attackHand')}>
-                {ridingChoice && <div className="fd-riding-controls" data-testid="fate-riding-controls" aria-live="polite">
-                    <span className="fd-riding-status" aria-label={t('ui.hand.ridingStatus', { selected: ridingSelection.length, maximum: 3, cost: Number.isFinite(ridingCost) ? ridingCost : '—', mana: player.mana })}>
-                        {t('ui.hand.ridingSelectionSummary', { selected: ridingSelection.length, cost: Number.isFinite(ridingCost) ? ridingCost : '—', mana: player.mana })}
-                    </span>
-                    <button type="button" data-testid="fate-riding-confirm" disabled={!canConfirmRiding} onClick={() => ridingChoice.onConfirm([...ridingSelection])}>{t('ui.hand.confirmRide', { count: ridingSelection.length })}</button>
-                    <button type="button" data-testid="fate-riding-cancel" onClick={ridingChoice.onCancel}>{t('ui.hand.cancelRide')}</button>
-                </div>}
                 <div className="fd-runtime-play-area" data-testid="fate-play-area">
                     <div className="fd-play-summary" data-testid="fate-play-summary">
-                        {playedIds.length>0&&<span>{staged ? t('ui.hand.preparedToPlay') : t('ui.hand.played')} · {staged ? player.selectedAttackIds.length : playedIds.length}</span>}
+                        {playedIds.length>0 && !staged && <span>{t('ui.hand.played')} · {playedIds.length}</span>}
                         <div className="fd-play-summary-heading">
                             {canSelect && !ridingChoice && <button type="button" className="fd-hand-mode" aria-label={t('ui.hand.selectionMode')} aria-pressed={faceDownMode} onClick={() => setFaceDownState(previous => ({scope: interactionScope, value: !(previous.scope === interactionScope && previous.value)}))}>{faceDownMode ? t('ui.hand.faceDownSelection') : t('ui.hand.faceUpSelection')}</button>}
                             <strong className="fd-play-power">{staged ? t('ui.hand.expectedTotalPower') : t('ui.hand.totalPower')} {power}</strong>

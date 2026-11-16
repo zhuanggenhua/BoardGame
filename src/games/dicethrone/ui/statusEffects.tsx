@@ -1215,6 +1215,7 @@ export const SelectableStatusBadge = ({
     visualDefinitions,
     tooltipPlacementBoundarySelector,
     tooltipAvoidSelector,
+    tooltipScale,
 }: {
     effectId: string;
     stacks: number;
@@ -1229,6 +1230,7 @@ export const SelectableStatusBadge = ({
     visualDefinitions?: TokenDef[];
     tooltipPlacementBoundarySelector?: string;
     tooltipAvoidSelector?: string;
+    tooltipScale?: number;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const preferredDefinitions = resolveVisualDefinitions(characterId, visualDefinitions);
@@ -1283,6 +1285,16 @@ export const SelectableStatusBadge = ({
                 onSelect?.();
             }}
         >
+            {clickable && tooltipScale && (
+                <span aria-hidden="true" style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: `${44 / tooltipScale}px`,
+                    height: `${44 / tooltipScale}px`,
+                    transform: 'translate(-50%, -50%)',
+                }} />
+            )}
             <div
                 className={`
                     rounded-full flex items-center justify-center overflow-hidden
@@ -1318,6 +1330,7 @@ export const SelectableStatusBadge = ({
                 position="right"
                 placementBoundarySelector={tooltipPlacementBoundarySelector}
                 avoidSelector={tooltipAvoidSelector}
+                referenceScale={tooltipScale}
             />
         </div>
     );
@@ -1340,6 +1353,7 @@ export const SelectableEffectsContainer = ({
     visualDefinitions,
     tooltipPlacementBoundarySelector,
     tooltipAvoidSelector,
+    tooltipScale,
 }: {
     effects: Record<string, number>;
     tokens?: Record<string, number>;
@@ -1356,6 +1370,7 @@ export const SelectableEffectsContainer = ({
     visualDefinitions?: TokenDef[];
     tooltipPlacementBoundarySelector?: string;
     tooltipAvoidSelector?: string;
+    tooltipScale?: number;
 }) => {
     const activeEffects = Object.entries(effects).filter(([, stacks]) => stacks > 0);
     const activeTokens = tokens ? Object.entries(tokens).filter(([, amount]) => amount > 0) : [];
@@ -1381,6 +1396,7 @@ export const SelectableEffectsContainer = ({
                     visualDefinitions={visualDefinitions}
                     tooltipPlacementBoundarySelector={tooltipPlacementBoundarySelector}
                     tooltipAvoidSelector={tooltipAvoidSelector}
+                    tooltipScale={tooltipScale}
                 />
             ))}
         </div>

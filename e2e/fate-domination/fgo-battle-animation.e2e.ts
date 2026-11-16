@@ -69,7 +69,8 @@ test('代表态真实地点结算播放胜者攻击和对手受击，结算不�
   const before = await fgoEvidenceSnapshot(page);
   await action.click();
   const battle = page.getByTestId('fate-fgo-battle');
-  await expect(battle).toBeVisible({ timeout: 15000 });
+  // 宝具若已载入，先播放完整宝具，再进入地点攻击序列。
+  await expect(battle).toBeVisible({ timeout: 90000 });
   const during = await fgoEvidenceSnapshot(page);
   await expect(battle.locator('canvas')).toHaveCount(1);
   await expect(page.getByTestId('fate-fgo-anchor-miyama').getByTestId('fate-fgo-battle')).toBeVisible();

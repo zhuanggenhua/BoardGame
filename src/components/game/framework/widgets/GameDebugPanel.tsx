@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import * as matchApi from '../../../../services/matchApi';
@@ -304,7 +305,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         }
     };
 
-    return (
+    return createPortal(
         <>
             {/* 浮动切换按钮 - 可拖拽 */}
             <motion.div
@@ -760,7 +761,8 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                     </div>
                 </div>
             )}
-        </>
+        </>,
+        document.body,
     );
 };
 

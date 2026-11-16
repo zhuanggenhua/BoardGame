@@ -2744,6 +2744,8 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect.poll(async () => (await host.page.locator('.fr-card-button--live-center').first().boundingBox())?.width ?? 0).toBeGreaterThan(240);
             await captureSettlementChoice(host.page, testInfo, '终局复盘大屏');
             await host.page.setViewportSize({ width: 1366, height: 768 });
+            await expect.poll(async () => host.page.locator('.fr-card-button--live-center').count()).toBe(10);
+            await expect.poll(async () => host.page.locator('.fr-card-button--live-center').evaluateAll((cards) => cards.every(card => { const r = card.getBoundingClientRect(); return r.left >= 16 && r.right <= 1366 - 16; }))).toBe(true);
             const layers = await host.page.evaluate(() => {
                 const center = document.querySelector<HTMLElement>('.fr-live-center-row')!;
                 const hand = document.querySelector<HTMLElement>('.fr-live-hand-zone')!;
@@ -2755,6 +2757,23 @@ test.describe('FantasyRealms online basic flow', () => {
             expect(layers.centerBottom).toBeGreaterThanOrEqual(layers.handBottom - 2);
             expect(layers.handHit).toBe(true);
             await captureSettlementChoice(host.page, testInfo, '终局复盘小屏');
+            for (const [width, height] of [[1920, 1080], [1600, 900], [1440, 900], [1280, 720], [2560, 1304]]) {
+                await host.page.setViewportSize({ width, height });
+                await injectMatchState(matchId, { ...reviewState, sys: { ...reviewState.sys, gameover: null } }, host.page);
+                await expect(host.page.getByTestId('endgame-overlay')).toHaveCount(0);
+                await injectMatchState(matchId, {
+                    ...reviewState,
+                    core: {
+                        ...reviewCore,
+                        discardPile: [...reviewCore.discardPile, reviewHand[reviewHand.length - 1]],
+                        players: { ...reviewCore.players, '0': { ...reviewCore.players['0']!, hand: reviewHand.slice(0, -1) } },
+                    },
+                }, host.page);
+                await expect(host.page.getByLabel('最终排名')).toBeVisible();
+                await expect.poll(async () => host.page.locator('.fr-card-button--live-center').evaluateAll((cards) => cards.length === 10 && cards.every(card => { const r = card.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth; }))).toBe(true);
+                await expect(host.page.getByTestId('endgame-overlay')).toHaveCount(0);
+                await captureSettlementChoice(host.page, testInfo, `终局复盘-${width}x${height}`);
+            }
             await injectMatchState(matchId, reviewState, host.page);
             const result = await readFantasyRealmsCore(matchId, host.page);
             expect(result.players['0']!.hand.some((card) => card.id === 'leader-queen')).toBe(true);

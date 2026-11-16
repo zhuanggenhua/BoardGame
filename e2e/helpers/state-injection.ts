@@ -112,6 +112,22 @@ function buildTestHeaders(access: TestMatchAccess): Record<string, string> {
     };
 }
 
+/** 仅测试服务：在指定 AI 的下一条命令前暂停，测试结束必须释放。 */
+export async function aiStepBarrier(
+    matchId: string,
+    operation: 'arm' | 'status' | 'release',
+    access: TestMatchAccess,
+    target?: { playerId: string; commandType: string },
+): Promise<{ reached: boolean } | null> {
+    const base = await resolveTestApiBase();
+    const response = await fetch(`${base}/test/ai-step-barrier`, {
+        method: 'POST', headers: buildTestHeaders(access),
+        body: JSON.stringify({ matchId, operation, ...target }),
+    });
+    if (!response.ok) throw new Error(`AI step barrier ${operation} failed: ${response.status} ${await response.text()}`);
+    return (await response.json() as { barrier: { reached: boolean } | null }).barrier;
+}
+
 /**
  * 完整状态注入
  * 

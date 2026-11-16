@@ -3,6 +3,7 @@ import { SourceActor } from './fgoSceneActor';
 import { SourceMaterials, sourceTransparentSort } from './fgoSceneMaterials';
 import { clipValues } from './fgoSceneMath';
 import { cloneFgoTextures, type LoadedCharacter } from './fgoPreload';
+import { groundedFgoAttacks } from './fgoAttackSelection';
 
 export type FgoBattleActorInput = {
   playerId: string;
@@ -24,16 +25,29 @@ type Actor = FgoBattleActorInput & {
   duration: number;
   impact: number;
   homeX: number;
+  homeY: number;
+  laneX: number;
   travel: number;
 };
+type BattleTurn = { attacker: Actor; target: Actor; animation: string; start: number; duration: number; impactAt: number; returnAt: number; travel: number; lanes: Map<Actor, number> };
 
 const MODEL_HEIGHT = 2.4;
 const VIEW_HEIGHT = 3.6;
-const ATTACK_ANIMATIONS: Record<string, { name: string; impact: number }> = {
-  'servant-saber': { name: 'attack_b', impact: 0.65 },
-  'servant-cu-chulainn': { name: 'attack_q', impact: 0.43 },
-  'servant-medusa': { name: 'attack_q', impact: 0.65 },
+const FADE_IN_SECONDS = 0.2;
+const FADE_OUT_SECONDS = 0.35;
+const RETURN_SECONDS = 0.3;
+const ATTACK_IMPACT: Record<string, number> = {
+  'servant-saber': 0.65,
+  'servant-cu-chulainn': 0.43,
+  'servant-medusa': 0.65,
 };
+
+/** 攻击动作结束前保持接近目标；动作和受击都结束后再平滑回位。 */
+export function fgoAttackMovement(time: number, impactAt: number, returnAt: number): number {
+  if (time < impactAt) return impactAt > 0 ? Math.max(0, time / impactAt) : 1;
+  if (time < returnAt) return 1;
+  return Math.max(0, 1 - (time - returnAt) / RETURN_SECONDS);
+}
 
 /** 在同一镜头和坐标空间播放来源动作，角色与对手才能真实接触。 */
 export function createFgoBattleRuntime(
@@ -41,6 +55,7 @@ export function createFgoBattleRuntime(
   inputs: FgoBattleActorInput[],
   laneCount: number,
   onComplete: () => void,
+  onImpact?: (point: { x: number; y: number }) => void,
 ): FgoBattleRuntimeHandle | null {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 2000);
@@ -50,7 +65,7 @@ export function createFgoBattleRuntime(
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.setTransparentSort((a, b) => sourceTransparentSort(a, b, camera.position));
-  renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
+  renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;opacity:0';
   host.replaceChildren(renderer.domElement);
 
   const actors: Actor[] = [];
@@ -58,10 +73,10 @@ export function createFgoBattleRuntime(
   let observer: ResizeObserver | undefined;
   let destroyed = false;
   let complete = false;
-  let elapsed = 0;
+  let elapsed = -FADE_IN_SECONDS;
   let lastTick = 0;
-  let impactAt = 0;
   let duration = 0;
+  let lastImpact: BattleTurn | undefined;
 
   const dispose = () => {
     if (destroyed) return;
@@ -77,12 +92,13 @@ export function createFgoBattleRuntime(
     renderer.domElement.remove();
   };
 
-  const pose = (item: Actor, time: number) => {
-    item.actor.pose(item.animation, Math.min(time, item.duration), 1, false);
-    const tracks = item.loaded.data.visibility[item.animation];
+  const pose = (item: Actor, time: number, animation = item.animation, loop = false) => {
+    const clip = item.loaded.data.skin.animations!.find(candidate => candidate.name === animation)!;
+    const sampleTime = loop ? time : Math.min(time, clip.duration);
+    item.actor.pose(animation, sampleTime, 1, loop);
+    const tracks = item.loaded.data.visibility[animation];
     if (tracks?.length) {
-      const clip = item.loaded.data.skin.animations!.find(candidate => candidate.name === item.animation)!;
-      const values = clipValues(clip, Math.min(time, item.duration), false, true);
+      const values = clipValues(clip, sampleTime, loop, true);
       for (const track of tracks) item.actor.setMeshVisible(track.mesh, values[track.scalarOffset] > 0.5);
     }
   };
@@ -90,12 +106,17 @@ export function createFgoBattleRuntime(
   try {
     const width = Math.max(1, host.clientWidth);
     const height = Math.max(1, host.clientHeight);
-    const span = Math.max(2.4, Math.min(3.2, width / height * VIEW_HEIGHT * 0.4));
+    const span = Math.max(2.4, Math.min(4.5, width / height * VIEW_HEIGHT * 0.5));
     for (const input of inputs) {
-      const attack = ATTACK_ANIMATIONS[input.servantId];
-      const animation = input.role === 'attack' ? attack?.name : 'damage_01';
+      // Extra 是完整连段，不适合作为对单个对手的一次普通攻击。
+      const attacks = groundedFgoAttacks(input.loaded.data.skin.animations ?? []);
+      const animation = input.role === 'attack' ? attacks[0]?.name : 'damage_01';
       const clip = input.loaded.data.skin.animations?.find(candidate => candidate.name === animation);
       if (!clip || !animation) continue;
+      if (!input.loaded.data.skin.animations?.some(candidate => candidate.name === 'wait')) {
+        console.warn(`Fate 角色缺少待机动作：${input.servantId}`);
+        continue;
+      }
       const textures = cloneFgoTextures(input.loaded.textures);
       const materials = new SourceMaterials(input.loaded.data, textures);
       let actor: SourceActor | undefined;
@@ -103,20 +124,22 @@ export function createFgoBattleRuntime(
         actor = new SourceActor(input.loaded.data.skin, input.loaded.data.materials, materials, 90);
         actor.root.rotation.y = input.facing === 'left' ? Math.PI : 0;
         scene.add(actor.root);
-        const item: Actor = { ...input, actor, materials, textures, animation, duration: clip.duration, impact: attack?.impact ?? 0, homeX: 0, travel: 0 };
+        const item: Actor = { ...input, actor, materials, textures, animation, duration: clip.duration, impact: ATTACK_IMPACT[input.servantId] ?? 0.65, homeX: 0, homeY: 0, laneX: 0, travel: 0 };
         actors.push(item);
-        pose(item, 0);
+        pose(item, 0, 'wait');
         const original = actor.bounds(true);
         const modelHeight = original.max.y - original.min.y;
         if (!Number.isFinite(modelHeight) || modelHeight <= 0) throw new Error(`角色模型尺寸无效：${input.playerId}`);
         actor.root.scale.setScalar(MODEL_HEIGHT / modelHeight);
-        pose(item, 0);
+        pose(item, 0, 'wait');
         const fitted = actor.bounds(true);
         const center = fitted.getCenter(new THREE.Vector3());
         const laneX = laneCount <= 1 ? 0 : -span / 2 + span * input.lane / (laneCount - 1);
+        item.laneX = laneX;
         actor.root.position.set(laneX - center.x, -fitted.min.y, 0);
         item.homeX = actor.root.position.x;
-        pose(item, 0);
+        item.homeY = actor.root.position.y;
+        pose(item, 0, 'wait');
       } catch (error) {
         if (actor) { scene.remove(actor.root); actor.destroy(); }
         const index = actors.findIndex(item => item.actor === actor);
@@ -128,26 +151,45 @@ export function createFgoBattleRuntime(
     if (!actors.length) { dispose(); return null; }
 
     const attackers = actors.filter(actor => actor.role === 'attack');
-    impactAt = attackers.length ? Math.min(...attackers.map(actor => actor.duration * actor.impact)) : 0;
-    duration = Math.max(...actors.map(actor => actor.role === 'attack' ? actor.duration : impactAt + actor.duration));
+    const targets = actors.filter(actor => actor.role === 'damage');
+    const turns: BattleTurn[] = [];
+    const lastAnimation = new Map<string, string>();
 
-    // 用双方模型在命中帧的包围盒确定接触距离，而不是各自在独立画布中播放。
+    // 所有角色共用画布；每次仅让当前对手受击，其他角色继续待机。
     for (const attacker of attackers) {
-      const target = actors.find(candidate => candidate.lane === attacker.targetLane && candidate.role === 'damage');
-      if (!target) continue;
-      pose(attacker, attacker.duration * attacker.impact);
-      const attackBounds = attacker.actor.bounds(true);
-      pose(target, 0);
-      const targetBounds = target.actor.bounds(true);
+      for (const target of targets) {
+      // 当前目标站在接敌位，其他对手保留在后方；交接在回位阶段完成。
+      const slots = targets.map(item => item.laneX).sort((a, b) => attacker.facing === 'right' ? a - b : b - a);
+      const orderedTargets = [target, ...targets.filter(item => item !== target)];
+      const lanes = new Map(orderedTargets.map((item, index) => [item, slots[index]]));
+      const clips = groundedFgoAttacks(attacker.loaded.data.skin.animations!);
+      const remaining = clips.filter(clip => clip.name !== lastAnimation.get(attacker.playerId));
+      const choices = remaining.length ? remaining : clips;
+      const clip = choices[Math.floor(Math.random() * choices.length)];
+      if (!clip) continue;
+      lastAnimation.set(attacker.playerId, clip.name);
+      const impactAt = clip.duration * attacker.impact;
+      pose(attacker, impactAt, clip.name);
+      const attackBounds = attacker.actor.bounds(true, true);
+      target.actor.root.position.x = target.homeX + lanes.get(target)! - target.laneX;
+      pose(target, 0, 'wait');
+      const targetBounds = target.actor.bounds(true, true);
+      target.actor.root.position.x = target.homeX;
       const gap = attacker.facing === 'right'
         ? targetBounds.min.x - attackBounds.max.x
         : targetBounds.max.x - attackBounds.min.x;
-      const distance = Math.abs(target.homeX - attacker.homeX) * 0.8;
-      attacker.travel = attacker.facing === 'right'
+      const distance = Math.abs(target.homeX + lanes.get(target)! - target.laneX - attacker.homeX) * 0.8;
+      const travel = attacker.facing === 'right'
         ? Math.max(0, Math.min(distance, gap))
         : Math.min(0, Math.max(-distance, gap));
-      pose(attacker, 0);
+      const returnAt = Math.max(clip.duration, impactAt + target.duration);
+      const turnDuration = returnAt + RETURN_SECONDS;
+      turns.push({ attacker, target, animation: clip.name, start: duration, duration: turnDuration, impactAt, returnAt, travel, lanes });
+      duration += turnDuration;
+      pose(attacker, 0, 'wait');
+      }
     }
+    if (!turns.length) { dispose(); return null; }
 
     const resize = () => {
       const w = Math.max(1, host.clientWidth), h = Math.max(1, host.clientHeight);
@@ -167,28 +209,63 @@ export function createFgoBattleRuntime(
     const tick = (timestamp: number) => {
       if (destroyed) return;
       try {
+        // 帧间隔过长时保留动作过程，避免卡顿后直接跳过受击。
         if (lastTick) elapsed += Math.min((timestamp - lastTick) / 1000, 0.1);
         lastTick = timestamp;
-        for (const item of actors) {
-          const time = item.role === 'attack' ? elapsed : Math.max(0, elapsed - impactAt);
-          if (item.role === 'attack') {
-            const progress = Math.min(1, elapsed / item.duration);
-            const movement = progress < item.impact ? progress / item.impact : Math.max(0, (1 - progress) / (1 - item.impact));
-            item.actor.root.position.x = item.homeX + item.travel * movement;
-          }
-          pose(item, time);
+        const playTime = Math.max(0, elapsed);
+        const opacity = elapsed < 0 ? (elapsed + FADE_IN_SECONDS) / FADE_IN_SECONDS
+          : elapsed > duration ? Math.max(0, 1 - (elapsed - duration) / FADE_OUT_SECONDS) : 1;
+        renderer.domElement.style.opacity = String(opacity);
+        const turn = turns.find(item => playTime >= item.start && playTime < item.start + item.duration);
+        // 最后一击结束后仍沿用最终队形，直到整个画布淡出。
+        const formation = turn ?? (elapsed >= duration ? turns[turns.length - 1] : undefined);
+        const next = turn ? turns[turns.indexOf(turn) + 1] : undefined;
+        if (turn && host.dataset.fgoTarget !== turn.target.playerId) {
+          host.dataset.fgoAnimation = turn.animation;
+          host.dataset.fgoDuration = String(turn.duration);
+          host.dataset.fgoTarget = turn.target.playerId;
         }
-        // 跳跃时让镜头临时容纳整套动作，落地后恢复地区内的大比例。
-        const jumping = actors.filter(item => item.role === 'attack' && item.servantId === 'servant-medusa');
-        if (jumping.length) {
-          const maxY = Math.max(MODEL_HEIGHT, ...jumping.map(item => item.actor.bounds(true).max.y));
-          const viewHeight = Math.max(VIEW_HEIGHT, maxY * 1.08);
-          camera.position.y = viewHeight / 2;
-          camera.position.z = -viewHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-          camera.updateMatrixWorld(true);
+        else if (!turn && host.dataset.fgoTarget) delete host.dataset.fgoTarget;
+        for (const item of actors) {
+          item.actor.root.position.x = item.homeX;
+          item.actor.root.position.y = item.homeY;
+          if (formation && item.role === 'damage') {
+            const from = formation.lanes.get(item) ?? item.laneX;
+            const to = next?.lanes.get(item) ?? from;
+            const blend = turn ? Math.max(0, Math.min(1, (playTime - turn.start - turn.returnAt) / RETURN_SECONDS)) : 0;
+            item.actor.root.position.x += from + (to - from) * blend - item.laneX;
+          }
+          if (turn && item === turn.attacker) {
+            const time = Math.max(0, playTime - turn.start);
+            const clip = item.loaded.data.skin.animations!.find(candidate => candidate.name === turn.animation)!;
+            const movement = fgoAttackMovement(time, turn.impactAt, turn.returnAt);
+            item.actor.root.position.x = item.homeX + turn.travel * movement;
+            if (time < clip.duration) pose(item, time, turn.animation);
+            else pose(item, playTime, 'wait', true);
+            // 按身体网格适配高跳；长武器不能阻止角色留在画面中。
+            const bounds = item.actor.bounds(true, true);
+            if (Number.isFinite(bounds.min.y) && Number.isFinite(bounds.max.y)) {
+              const overflow = Math.max(0, bounds.max.y - VIEW_HEIGHT * 0.95);
+              item.actor.root.position.y -= Math.min(overflow, Math.max(0, bounds.min.y));
+            }
+          } else if (turn && item === turn.target && playTime - turn.start >= turn.impactAt
+            && playTime - turn.start < turn.impactAt + item.duration) {
+            pose(item, playTime - turn.start - turn.impactAt);
+          } else pose(item, playTime, 'wait', true);
+        }
+        const targetPositions = targets.map(item => [item.playerId, item.actor.root.position.x] as const);
+        if (turn === turns[turns.length - 1]) host.dataset.fgoLastFormation = JSON.stringify(targetPositions);
+        if (!turn && elapsed >= duration && !host.dataset.fgoFadeFormation) host.dataset.fgoFadeFormation = JSON.stringify(targetPositions);
+        if (turn && turn !== lastImpact && playTime - turn.start >= turn.impactAt) {
+          lastImpact = turn;
+          const targetBounds = turn.target.actor.bounds(true, true);
+          if (!targetBounds.isEmpty()) {
+            const point = targetBounds.getCenter(new THREE.Vector3()).project(camera);
+            onImpact?.({ x: (point.x + 1) * 50, y: (1 - point.y) * 50 });
+          }
         }
         renderer.render(scene, camera);
-        if (elapsed >= duration) {
+        if (elapsed >= duration + FADE_OUT_SECONDS) {
           if (!complete) { complete = true; onComplete(); }
           return;
         }

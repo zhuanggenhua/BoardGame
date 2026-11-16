@@ -600,7 +600,14 @@ async function expectMageWarsDefaultBrowseInteractions(page: Page) {
     await firstCard.click();
     await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId('mage-wars-card-magnify-content')).toHaveAttribute('data-source-card-id', firstCardId ?? '');
-    await page.getByTestId('mage-wars-card-magnify-overlay-close').click();
+    const close = page.getByTestId('mage-wars-card-magnify-overlay-close');
+    await expect(close).toHaveCSS('opacity', '0');
+    await mkdir('test-results/magnify-game-check', { recursive: true });
+    await page.screenshot({ path: 'test-results/magnify-game-check/mage-open.png' });
+    await page.getByTestId('mage-wars-card-magnify-content').hover();
+    await expect(close).toHaveCSS('opacity', '1');
+    await page.screenshot({ path: 'test-results/magnify-game-check/mage-hover.png' });
+    await close.click();
     await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
 
     const beforeIds = await visibleDesktopSpellbookCardIds(page);
@@ -860,6 +867,7 @@ async function expectMageHudDesktopInspectHoverContract(page: Page, owner: 'self
 
     await inspectButton.click();
     await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId('mage-wars-card-magnify-content').hover();
     await page.getByTestId('mage-wars-card-magnify-overlay-close').click();
     await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
     await page.mouse.move(6, 6);

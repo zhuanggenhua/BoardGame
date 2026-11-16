@@ -1223,6 +1223,7 @@ export class GameTransportServer {
                 isAdminDebugCommand: (match, commandType) => match.engineConfig.systems.some(
                     (system) => system.adminDebugCommandTypes?.includes(commandType) === true,
                 ),
+                allowSeatDebugCommands: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
                 handleAdminDebugCommand: (matchID, adminUserId, commandType, payload) => (
                     this.handleAdminDebugCommand(matchID, adminUserId, commandType, payload)
                 ),

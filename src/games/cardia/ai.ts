@@ -148,6 +148,24 @@ const STRATEGY_PROFILES: Record<string, CardiaStrategyProfile> = {
 
 const CARDIA_AI_INTERACTION_ADAPTER_KINDS = ['simple-choice'];
 
+export function resolveCardiaDecisionPlayerId({
+    state,
+    fallbackPlayerId,
+}: {
+    state: MatchState<unknown>;
+    fallbackPlayerId: PlayerId | null;
+}): PlayerId | null {
+    const interaction = state.sys.interaction?.current;
+    if (interaction) return interaction.playerId;
+    const core = state.core as CardiaCore;
+    if (state.sys.phase === 'ability') return core.currentEncounter?.loserId ?? fallbackPlayerId;
+    if (state.sys.phase !== 'play') return fallbackPlayerId;
+    const forced = core.forcedPlayOrderNextEncounter;
+    if (forced && core.players[forced] && !core.players[forced].hasPlayed) return forced;
+    if (fallbackPlayerId && core.players[fallbackPlayerId] && !core.players[fallbackPlayerId].hasPlayed) return fallbackPlayerId;
+    return core.playerOrder.find(id => core.players[id] && !core.players[id].hasPlayed) ?? fallbackPlayerId;
+}
+
 /**
  * 构建合法动作
  */
@@ -892,6 +910,7 @@ const balancedLocalPolicy: LocalAiPolicy = createScoredLocalAiPolicy({
 export const cardiaAiRuntime: GameAiRuntime = {
     gameId: 'cardia',
     buildLegalActions: buildCardiaAiLegalActions,
+    resolveCurrentDecisionPlayerId: resolveCardiaDecisionPlayerId,
     defaultMinimumActionDelayMs: 1000,
     localPolicies: {
         baseline: baselineLocalPolicy,

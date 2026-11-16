@@ -101,6 +101,12 @@ test('在线房骑乘使用真实牌实例校验实付和第四张拒绝，费�
     await capture('地图拖动与复位');
 
     const first = attack(hand[0].id);
+    const seals = page.getByRole('button', { name: '使用令咒', exact: true });
+    await expect(seals).toBeEnabled();
+    const sealCard = seals.locator('.fd-self-seal-card').first();
+    await sealCard.hover();
+    await expect(sealCard).toHaveCSS('outline-style', 'solid');
+    await capture('令咒悬浮描边');
     await first.click({ button: 'right', position: {x: 12, y: 60} });
     const close = page.getByTestId('fate-inspection-close');
     await expect(close).toHaveCSS('opacity', '0');
@@ -145,7 +151,7 @@ test('在线房骑乘使用真实牌实例校验实付和第四张拒绝，费�
     expect((await own()).selectedAttackIds).toEqual([]);
     await page.mouse.move(12, 12);
     await capture('骑乘三张与本批费用');
-    await page.getByTestId('fate-riding-confirm').click();
+    await page.getByTestId('fate-domination-primary-action').click();
     await expect.poll(async () => (await own()).mana).toBe(beforeRide.core.players['0'].mana - expectedCost);
     const after = await own();
     expect(after.activeAttackIds).toEqual([hand[0].id, ...chosen.slice(0, 3)]);

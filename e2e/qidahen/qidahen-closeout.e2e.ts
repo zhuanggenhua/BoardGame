@@ -1154,7 +1154,7 @@ test.describe('七大恨新游戏收口', () => {
         await fourthTroop.click();
         await expect(fourthTroop).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(page.getByTestId('qidahen-battle-committed-count')).toHaveText('4 / 4');
-        await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(4);
+        await expect(page.locator('[data-pending-committed-selected="true"]')).toHaveCount(4);
         await expect(page.getByTestId('qidahen-battle-preparation')).toContainText('步兵骰子等级+1');
         await expect(page.getByTestId('qidahen-resolve-pending-action')).toBeEnabled();
         await saveScreenshot(page, BASIC_BATTLE);

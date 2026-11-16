@@ -117,22 +117,22 @@ it('骑乘由 Board 从技能入口接入内联手牌事务，并在待选时锁
 
  const first=createSimpleChoice('fate:riding-choice:4:0:sc_iskandar_1:0','0','坐骑召唤',[
   {id:'remote2',label:'远隔操作',value:'remote2'},
- ],{sourceId:'fate:riding-choice',multi:{min:0,max:3},targetType:'hand'});
- const pending=structuredClone(G);pending.sys.interaction.current={...first,resolutionFrameId:'riding-frame'};
+ ],{sourceId:'fate:riding-choice',fateContext:{skillId:ridingSkillId},multi:{min:0,max:3},targetType:'hand'});
+ const pending=structuredClone(G);pending.sys.interaction.current={...first,data:{...first.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'};
  view.rerender(<FateDominationBoard {...({...props,G:pending} as never)}/>);
- expect(screen.getByTestId('fate-domination-primary-action')).toBeDisabled();
+ expect(screen.getByTestId('fate-domination-primary-action')).toHaveAttribute('aria-label','确认坐骑召唤');
  expect(screen.getByTestId('shared-map').getAttribute('data-legal-locations')).toBe('');
  expect(screen.getByRole('button',{name:'选择坐骑召唤 浑身的一击'})).toHaveAttribute('aria-disabled','true');
- fireEvent.click(screen.getByTestId('fate-riding-cancel'));
+ fireEvent.click(screen.getByRole('button',{name:'取消骑乘'}));
  expect(dispatch).toHaveBeenLastCalledWith('SYS_INTERACTION_CANCEL',{interactionId:first.id});
 
  const second=createSimpleChoice('fate:riding-choice:4:0:sc_iskandar_1:0','0','坐骑召唤',[
   {id:'remote2',label:'远隔操作',value:'remote2'},
- ],{sourceId:'fate:riding-choice',multi:{min:0,max:3},targetType:'hand'});
- const renewed=structuredClone(G);renewed.sys.interaction.current={...second,resolutionFrameId:'riding-frame'};
+ ],{sourceId:'fate:riding-choice',fateContext:{skillId:ridingSkillId},multi:{min:0,max:3},targetType:'hand'});
+ const renewed=structuredClone(G);renewed.sys.interaction.current={...second,data:{...second.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'};
  view.rerender(<FateDominationBoard {...({...props,G:renewed} as never)}/>);
  fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 远隔操作'}));
- fireEvent.click(screen.getByTestId('fate-riding-confirm'));
+ fireEvent.click(screen.getByTestId('fate-domination-primary-action'));
  expect(dispatch).toHaveBeenLastCalledWith('SYS_INTERACTION_RESPOND',{interactionId:second.id,optionIds:['remote2']});
 });
 

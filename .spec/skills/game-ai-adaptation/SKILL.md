@@ -139,7 +139,7 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 2. **画闭环**：谁创建交互、AI legal actions 从哪里来、哪个命令真正 close / resolve / advance、无解时谁兜底。
 3. **可解性审计**：AI 是否能构造合法命令；不能时是否有 cancel / pass / skip；hidden 时 seat view 是否可见；兜底是否误伤 human。
 4. **按层修**：事件源 -> AI 决策 -> 系统锁 -> watchdog。
-5. **验证**：至少一条本层测试、一条相邻链路协作测试和一份 evidence 更新；若风险在页面消费、隐藏交互、在线 AI 或玩家视角，补代表性 E2E。
+5. **验证**：至少一条本层测试、一条相邻链路协作测试和一份 evidence 更新；若风险在页面消费、隐藏交互、在线 AI 或玩家视角，补代表性 E2E。真人 / AI 的跨模式覆盖和去重按 [E2E 验证标准](../../knowledge/standards/e2e-verification.md) 执行。
 
 ## 测试落点
 

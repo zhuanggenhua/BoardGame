@@ -13,6 +13,7 @@ import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
+import { useRuntimeViewport } from '../../../hooks/ui/useRuntimeViewport';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
@@ -67,6 +68,8 @@ const PlayerCardShell = ({
     locked,
     selected,
     footer,
+    suppressDuplicateSeat = false,
+    referencePadding,
     children,
 }: {
     testId: string;
@@ -82,6 +85,8 @@ const PlayerCardShell = ({
     locked?: boolean;
     selected?: boolean;
     footer?: React.ReactNode;
+    suppressDuplicateSeat?: boolean;
+    referencePadding?: number;
     children: React.ReactNode;
 }) => (
     <div
@@ -92,19 +97,22 @@ const PlayerCardShell = ({
         data-locked={locked ? 'true' : 'false'}
         data-selected={selected ? 'true' : 'false'}
         className={containerClassName}
+        style={referencePadding !== undefined ? { padding: referencePadding, borderRadius: 12 } : undefined}
     >
-        <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="mb-3 flex items-start justify-between gap-3" style={referencePadding !== undefined ? { marginBottom: 12, gap: 12 } : undefined}>
             <div className="min-w-0">
-                <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
+                <div className={`font-bold text-lg leading-tight ${titleClassName}`} style={referencePadding !== undefined ? { fontSize: 18 } : undefined}>
                     {displayName}
                 </div>
-                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400" style={referencePadding !== undefined ? { marginTop: 4, fontSize: 12 } : undefined}>
                     {relationLabel}
                 </div>
             </div>
-            <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
-                {seatLabel}
-            </div>
+            {(!suppressDuplicateSeat || displayName !== seatLabel) && (
+                <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`} style={referencePadding !== undefined ? { padding: '4px 8px', fontSize: 12 } : undefined}>
+                    {seatLabel}
+                </div>
+            )}
         </div>
         {children}
         {footer ? (
@@ -180,6 +188,19 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     canCancel = true,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
+    const viewport = useRuntimeViewport({ syncCssVars: false });
+    const interactionScale = Math.min(
+        (viewport.width || 1920) / 1920,
+        (viewport.height || 960) / 960,
+    );
+    const touchHitStyle = (scale: number): React.CSSProperties => ({
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        width: `${44 / scale}px`,
+        height: `${44 / scale}px`,
+        transform: 'translate(-50%, -50%)',
+    });
     const confirmActionLabel = t(confirmLabelKey, { defaultValue: confirmLabelKey });
     const cancelActionLabel = t(cancelLabelKey, { defaultValue: cancelLabelKey });
     const interactionType = interaction.type;
@@ -363,7 +384,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     }, [i18n, locale, t]);
 
     const normalizedCardPoolSearch = normalizeCardPoolSearchText(cardPoolSearch);
-    const shouldShowCardPoolSearch = cardSelectionCards.length > getCardPoolSingleRowCapacity();
+    const shouldShowCardPoolSearch = cardSelectionCards.length > (isDoctorStrangeInteraction ? 6 : getCardPoolSingleRowCapacity());
     const visibleCardSelectionCards = React.useMemo(() => {
         if (!shouldShowCardPoolSearch || normalizedCardPoolSearch.length === 0) {
             return cardSelectionCards;
@@ -392,38 +413,58 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     if (isCardSelection) {
         const cardPoolCardStyle: React.CSSProperties = {
             ...(isDoctorStrangeInteraction ? {} : { backgroundColor: '#0f172a', borderRadius: '0.25rem' }),
-            width: CARD_POOL_CARD_WIDTH,
+            width: isDoctorStrangeInteraction
+                ? '215px'
+                : CARD_POOL_CARD_WIDTH,
         };
 
         return (
             <div
                 data-testid="dt-card-pool-overlay"
                 data-card-pool-layout="center-stage"
-                data-card-pool-hand-protection="shared-stage-visible-hand"
                 data-card-pool-browse-mode="grid-scroll"
                 className="dt-card-pool fixed inset-0 pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlay }}
                 onClick={(e) => e.stopPropagation()}
             >
+                <div data-testid={isDoctorStrangeInteraction ? 'dt-doctor-reference-frame' : undefined}
+                    data-reference-scale={isDoctorStrangeInteraction ? interactionScale : undefined}
+                    style={isDoctorStrangeInteraction ? {
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: 1920,
+                    height: 960,
+                    transform: `translate(-50%, -50%) scale(${interactionScale})`,
+                    transformOrigin: 'center',
+                    pointerEvents: 'none',
+                } : { display: 'contents' }}>
                 <div
                     data-testid="dt-card-pool-panel"
                     className="dt-card-pool-panel pointer-events-auto absolute inset-x-0 top-[clamp(4.25rem,9vh,6.25rem)] px-4"
-                    style={{ top: CARD_POOL_PANEL_TOP }}
+                    style={{ top: isDoctorStrangeInteraction ? 40 : CARD_POOL_PANEL_TOP }}
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                 >
                     <div
                         data-testid="dt-card-pool-surface"
                         className="dt-card-pool-surface pointer-events-auto relative isolate mx-auto flex w-full max-w-[70rem] flex-col px-3 py-3"
-                        style={{ height: `min(calc(min(40vh, 28rem) + 11rem), calc(100dvh - ${CARD_POOL_PANEL_TOP} - 1rem))` }}
+                        style={isDoctorStrangeInteraction
+                            ? { height: 880, maxWidth: 1500, padding: 12 }
+                            : { height: `min(calc(min(40vh, 28rem) + 11rem), calc(100dvh - ${CARD_POOL_PANEL_TOP} - 1rem))` }}
                     >
                         <div
                             aria-hidden="true"
                             data-testid="dt-card-pool-backdrop"
-                            className="dt-card-pool-backdrop pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
+                            className={isDoctorStrangeInteraction
+                                ? 'dt-card-pool-backdrop pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(15,3,9,0.98)_0%,rgba(15,3,9,0.96)_65%,rgba(15,3,9,0.88)_100%)]'
+                                : 'dt-card-pool-backdrop pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]'}
                         />
+                        <div className={isDoctorStrangeInteraction && shouldShowCardPoolSearch ? 'grid shrink-0 items-center' : ''}
+                            style={isDoctorStrangeInteraction && shouldShowCardPoolSearch ? { gridTemplateColumns: '1fr auto 1fr', columnGap: 20 } : undefined}>
                         <h2
                             data-testid="dt-card-pool-title"
+                            style={isDoctorStrangeInteraction ? { fontSize: 30, marginBottom: 8, gridColumn: shouldShowCardPoolSearch ? 2 : undefined } : undefined}
                             className="dt-card-pool-title mb-2 shrink-0 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
                         >
                             {t(interaction.titleKey, { count: interaction.selectCount })}
@@ -431,12 +472,16 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         {shouldShowCardPoolSearch ? (
                             <div
                                 data-testid="dt-card-pool-search"
-                                className="dt-card-pool-search mx-auto mb-1 w-full max-w-[min(100%,30rem)] shrink-0"
+                                style={isDoctorStrangeInteraction ? { width: 320, maxWidth: 320, marginBottom: 4, gridColumn: 3, justifySelf: 'start' } : undefined}
+                                className={isDoctorStrangeInteraction
+                                    ? 'dt-card-pool-search mb-1 w-full max-w-[min(100%,20rem)] shrink-0'
+                                    : 'dt-card-pool-search mx-auto mb-1 w-full max-w-[min(100%,30rem)] shrink-0'}
                             >
                                 <div className="relative">
                                     <span
                                         data-testid="dt-card-pool-search-leading-icon"
                                         className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-red-100/70"
+                                        style={isDoctorStrangeInteraction ? { left: 12 } : undefined}
                                     >
                                         <Search className="h-4 w-4" strokeWidth={2.1} />
                                     </span>
@@ -455,6 +500,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         }}
                                         placeholder={t('interaction.cardPoolSearchPlaceholder')}
                                         data-testid="dt-card-pool-search-input"
+                                        style={isDoctorStrangeInteraction ? { height: 48, fontSize: 20, paddingLeft: 40, paddingRight: 40 } : undefined}
                                         className="h-9 w-full rounded-full border border-red-200/25 bg-[#1a0509]/72 pl-10 pr-10 text-sm font-bold text-amber-50 outline-none placeholder:text-red-100/38 focus:border-red-200/60 focus:ring-2 focus:ring-red-300/20"
                                     />
                                     {normalizedCardPoolSearch.length > 0 ? (
@@ -463,33 +509,44 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             onClick={() => setCardPoolSearch('')}
                                             data-testid="dt-card-pool-search-clear"
                                             className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-100/10 text-amber-50 transition-colors hover:bg-red-100/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
-                                            style={{ translate: 'none', transform: 'translateY(-50%)' }}
+                                            style={{ translate: 'none', transform: 'translateY(-50%)', ...(isDoctorStrangeInteraction ? { right: 6, width: 28, height: 28 } : {}) }}
                                             aria-label={t('interaction.cardPoolSearchClear')}
                                         >
                                             <X size={14} strokeWidth={2.2} />
                                         </button>
                                     ) : null}
                                 </div>
-                                <div
+                                {(!isDoctorStrangeInteraction || normalizedCardPoolSearch.length > 0) && <div
                                     data-testid="dt-card-pool-result-count"
                                     className="mt-1.5 text-center text-[11px] font-bold tracking-[0.08em] text-amber-100/68"
+                                    style={isDoctorStrangeInteraction ? { marginTop: 6, fontSize: 11 } : undefined}
                                 >
                                     {t('interaction.cardPoolFilterResultCount', {
                                         visible: visibleCardSelectionCards.length,
                                         total: cardSelectionCards.length,
                                     })}
-                                </div>
+                                </div>}
                             </div>
                         ) : null}
+                        </div>
                         <div
                             data-testid="dt-card-pool-selection"
                             data-card-pool-kind={cardSourceZone}
                             data-card-pool-visible-rows="two"
+                            style={isDoctorStrangeInteraction ? { padding: '18px 4px' } : undefined}
                             className="dt-card-pool-selection scrollbar-thin mx-auto min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
                         >
                             <div
                                 data-testid="dt-card-pool-track"
-                                className="dt-card-pool-track mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3"
+                                className={isDoctorStrangeInteraction
+                                    ? 'dt-card-pool-track mx-auto flex w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3'
+                                    : 'dt-card-pool-track mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3'}
+                                style={isDoctorStrangeInteraction ? {
+                                    minHeight: '100%',
+                                    alignContent: 'safe center',
+                                    gap: 18,
+                                    padding: '0 12px',
+                                } : undefined}
                             >
                                 {visibleCardSelectionCards.length === 0 ? (
                                     <div
@@ -513,6 +570,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             data-card-pool-mode="preview"
                                             data-card-preview-ready={previewRef ? 'true' : 'false'}
                                             data-selection-focus={isSelected ? 'selected' : 'available'}
+                                            style={isDoctorStrangeInteraction && isSelected ? { transform: 'translateY(-8px)' } : undefined}
                                             aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
                                             aria-pressed={isSelected}
                                             onClick={() => {
@@ -533,7 +591,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             } : undefined}
                                             className={`
                                                 group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
-                                                ${isSelected ? '-translate-y-2 z-10' : 'hover:-translate-y-1 hover:z-10'}
+                                                ${isSelected ? '-translate-y-2 z-10' : isDoctorStrangeInteraction ? 'hover:z-10' : 'hover:-translate-y-1 hover:z-10'}
                                             `}
                                         >
                                             <div
@@ -562,6 +620,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         </div>
                         <div
                             data-testid="dt-card-pool-actions"
+                            style={isDoctorStrangeInteraction ? { marginTop: 8, gap: 12 } : undefined}
                             className="dt-card-pool-actions mt-2 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3"
                         >
                             {canCancel && (
@@ -575,18 +634,24 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     {cancelActionLabel}
                                 </GameButton>
                             )}
+                            <div className="relative col-start-2 row-start-1 justify-self-center">
+                            {isDoctorStrangeInteraction && canConfirm && (
+                                <span aria-hidden="true" style={touchHitStyle(interactionScale)} onClick={onConfirm} />
+                            )}
                             <GameButton
                                 onClick={onConfirm}
                                 disabled={!canConfirm}
                                 variant="primary"
                                 size="sm"
-                                className="col-start-2 row-start-1"
                                 data-testid="dt-interaction-confirm"
+                                style={isDoctorStrangeInteraction ? { minWidth: 140, minHeight: 60, fontSize: 24, padding: '8px 12px', borderRadius: 8 } : undefined}
                             >
                                 {confirmActionLabel}
                             </GameButton>
+                            </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         );
@@ -607,6 +672,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             }
             width={compactSingleStatusHolder || compactSinglePlayerChoice ? 'sm' : compactWatoombStatusHolders ? 'lg' : 'xl'}
             density={compactSingleStatusHolder || compactSinglePlayerChoice || compactWatoombStatusHolders ? 'compact' : 'normal'}
+            contentScale={isDoctorStrangeInteraction ? interactionScale * 1.4 : undefined}
+            titleFontSize={isDoctorStrangeInteraction ? 24 : undefined}
             closeOnBackdrop={false} // Force interaction
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
@@ -621,22 +688,28 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                             {cancelActionLabel}
                         </GameButton>
                     )}
+                    <div className="relative">
+                    {isDoctorStrangeInteraction && canConfirm && (
+                        <span aria-hidden="true" style={touchHitStyle(interactionScale * 1.4)} onClick={onConfirm} />
+                    )}
                     <GameButton
                         onClick={onConfirm}
                         disabled={!canConfirm}
                         variant="primary"
                         className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
                         data-testid="dt-interaction-confirm"
+                        style={isDoctorStrangeInteraction ? { minWidth: 120, minHeight: 56, fontSize: 22, padding: '12px 24px', borderRadius: 12 } : undefined}
                     >
                         {confirmActionLabel}
                     </GameButton>
+                    </div>
                 </>
             }
         >
-            <div className="flex flex-col w-full p-2">
+            <div className="flex flex-col w-full p-2" style={isDoctorStrangeInteraction ? { padding: 8 } : undefined}>
                 {/* 玩家选择区域 */}
                 {(shouldRenderStatusOwners || isPlayerSelection) && (
-                    <div data-testid="dt-status-owners" className="flex flex-wrap gap-4 justify-center">
+                    <div data-testid="dt-status-owners" className="flex flex-wrap gap-4 justify-center" style={isDoctorStrangeInteraction ? { gap: 16 } : undefined}>
                         {targetPlayerIds.map(pid => {
                             const player = players[pid];
                             if (!player) return null;
@@ -661,6 +734,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         displayName={displayName}
                                         relationLabel={relationLabel}
                                         seatLabel={seatLabel}
+                                        referencePadding={isDoctorStrangeInteraction ? 16 : undefined}
                                         onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
                                         selected={isSelected}
                                         containerClassName={`
@@ -706,6 +780,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     displayName={displayName}
                                     relationLabel={relationLabel}
                                     seatLabel={seatLabel}
+                                    suppressDuplicateSeat={isDoctorStrangeInteraction}
+                                    referencePadding={isDoctorStrangeInteraction ? (compactSingleStatusHolder ? 12 : 16) : undefined}
                                     containerClassName={`
                                         ${compactSingleStatusHolder ? 'p-3' : 'p-4'} rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${hasStatus
@@ -722,6 +798,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}
                                             tooltipPlacementBoundarySelector={isDoctorStrangeInteraction ? (targetPlayerIds.length === 1 ? '[data-testid="dt-game-modal"]' : '[data-testid="dt-status-owners"]') : undefined}
                                             tooltipAvoidSelector={isDoctorStrangeInteraction && targetPlayerIds.length > 1 ? '#modal-root [data-testid^="dt-status-owner-"], #modal-root h2, #modal-root button' : undefined}
+                                            tooltipScale={isDoctorStrangeInteraction ? interactionScale * 1.4 : undefined}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="normal"
                                             className="justify-center"

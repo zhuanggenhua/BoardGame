@@ -465,13 +465,12 @@ test('诊断：在线 Summoner Wars AI 连续可见召唤动作之间应保留�
     await ensurePlayerIdInUrl(hostPage, '0');
     await hostPage.goto(`/play/summonerwars/match/${matchId!}?playerID=0`, { waitUntil: 'domcontentloaded' });
     const matchAccess = await resolveMatchAccess(hostPage, matchId!);
-
     const readyState = buildTimingState(await getMatchState(matchId!, hostPage), {
       currentPlayer: '0',
       phase: 'summon',
       turnNumber: 5,
     });
-    await injectMatchState(matchId!, readyState as never, hostPage);
+    await injectMatchState(matchId!, readyState as never, undefined, matchAccess);
     await waitForSummonerWarsUI(hostPage, 30000);
     await expect.poll(async () => {
       const core = await readCoreState(hostPage) as Record<string, unknown> | null | undefined;
@@ -567,6 +566,22 @@ test('诊断：在线 Summoner Wars AI 连续可见召唤动作之间应保留�
       secondSummonEventAt! - firstSummonEventAt!,
       `AI 连续可见召唤之间疑似没有保留 1 秒节奏延迟，诊断见 ${diagnosticPath}`,
     ).toBeGreaterThanOrEqual(AI_DELAY_FLOOR_MS);
+
+    // 仍在同一预置对局中，等待 AI 自行结束回合并由真人实际推进阶段。
+    await expect.poll(async () => {
+      const state = await getMatchState(matchId!, hostPage);
+      return (state.core as { currentPlayer?: string }).currentPlayer;
+    }, { timeout: 60000, message: 'AI 连续召唤后应完成回合并交还真人' }).toBe('0');
+    const beforeHuman = await getMatchState(matchId!, hostPage);
+    const beforePhase = (beforeHuman.core as { phase?: string }).phase;
+    const endPhase = hostPage.getByTestId('sw-end-phase');
+    await expect(endPhase).toBeEnabled({ timeout: 15000 });
+    await endPhase.click();
+    await expect.poll(async () => {
+      const state = await getMatchState(matchId!, hostPage);
+      const core = state.core as { phase?: string; currentPlayer?: string };
+      return core.currentPlayer !== '0' || core.phase !== beforePhase;
+    }, { timeout: 15000, message: '真人通过页面结束阶段应使对局继续推进' }).toBe(true);
   } finally {
     await hostContext.close();
   }

@@ -1,0 +1,26 @@
+.magnify-overlay-close[data-magnify-interactive] {
+  width: clamp(44px, 3vw, 72px);
+  height: clamp(44px, 3vw, 72px);
+}
+
+.magnify-overlay-close[data-magnify-interactive] > svg {
+  width: 46%;
+  height: 46%;
+}
+
+.magnify-overlay-close[data-magnify-interactive="true"] {
+  pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .magnify-overlay-close[data-magnify-interactive] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  [data-close-pointer-ready="true"]:hover > .magnify-overlay-close[data-magnify-interactive="true"],
+  .magnify-overlay-close[data-magnify-interactive="true"]:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

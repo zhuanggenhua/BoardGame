@@ -50,13 +50,19 @@
 .fd-self-piles { position:relative; display:flex; flex-direction:row; gap:8px; }
 .fd-self-piles button { display:flex; align-items:center; gap:8px; min-width:54px; min-height:40px; color:#ead9a7; background:#111a17e8; border-radius:6px; padding:6px; }
 .fd-self-seals { position:relative; width:118px; height:120px; background:transparent; }
+.fd-self-seals:not(:disabled) { cursor:pointer; }
+.fd-self-seals:not(:disabled) .fd-self-seal-card:hover,
+.fd-self-seals:focus-visible .fd-self-seal-card:first-child { outline:2px solid #e3ca7b; outline-offset:0; }
+.fd-self-seals:focus-visible { outline:none; }
 .fd-self-seals:disabled { cursor:default; }
 .fd-self-identity { display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%; text-align:left; background:transparent; border-left:3px solid #c7a74e; border-radius:0; padding:4px 0 4px 8px; text-shadow:0 2px 7px #000; }
 .fd-self-identity strong { display:block; font-size:14px; }
+.fd-self-copy { display:block; width:100%; min-width:0; max-width:100%; }
 .fd-self-character { position:relative; }
 .fd-master-abilities { position:absolute; left:calc(100% + 10px); bottom:0; display:flex; flex-direction:column; gap:7px; width:104px; }
 .fd-master-ability { position:relative; }
 .fd-master-ability > button { width:100%; min-height:44px; padding:7px 8px; border:1px solid #b7a16b; border-radius:3px; background:#16211ff2; color:#f0dcaa; font-size:14px; text-align:left; overflow-wrap:anywhere; }
+.fd-master-ability > button[aria-disabled="false"] { border:2px solid #ffe08a; background:#435037; color:#fff5d4; box-shadow:0 0 8px #e9bd5966; }
 .fd-master-ability > button[aria-disabled="true"] { color:#a6aaa0; border-color:#65716a; cursor:default; }
 .fd-master-ability > button:not([aria-disabled="true"]):hover { background:#364338; border-color:#f0d794; }
 .fd-master-ability > button:focus-visible { outline:2px solid #f0d794; outline-offset:2px; }

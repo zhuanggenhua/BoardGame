@@ -69,7 +69,7 @@ import {
 } from './gameHudModel';
 
 interface GameHUDProps {
-    mode: 'local' | 'online' | 'tutorial' | 'test';
+    mode: 'local' | 'online' | 'tutorial' | 'test' | 'external';
     matchId?: string;
     gameId?: string;
     localModeLabel?: string;
@@ -186,6 +186,7 @@ export const GameHUD = ({
     const isOnline = mode === 'online';
     const isLocal = mode === 'local';
     const isTutorial = mode === 'tutorial';
+    const isExternal = mode === 'external';
     const feedbackScreenshotContext = useMemo(() => ({
         gameId: _gameId,
         matchId,
@@ -642,7 +643,8 @@ export const GameHUD = ({
                     <button
                         onClick={() => {
                             if (isLoading) return;
-                            navigate('/');
+                            if (isExternal && onLeave) onLeave();
+                            else navigate('/');
                         }}
                         disabled={isLoading}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs"
@@ -650,7 +652,7 @@ export const GameHUD = ({
                         <LogOut size={16} />
                         <div className="min-w-0 flex-1 text-left flex flex-col items-start">
                             <span>{t('hud.actions.backToLobby')}</span>
-                            <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.backToLobbyHint')}</span>
+                            {!isExternal && <span className="text-[9px] opacity-60 font-normal">{t('hud.actions.backToLobbyHint')}</span>}
                         </div>
                     </button>
                 )}
@@ -1004,9 +1006,9 @@ export const GameHUD = ({
             <SeatEmoteOverlay events={seatEmoteEvents} resolveEmote={resolveHudEmote} />
 
             <FabMenu
-                className="platform-global-fab"
+                className={isExternal ? 'platform-global-fab external-game-fab' : 'platform-global-fab'}
                 isDark={false}
-                items={items}
+                items={isExternal ? items.filter(item => item.id === 'exit' || item.id === 'social') : items}
                 position={fabMenuPosition}
                 initialOffset={gameHudFabLayout?.resolveInitialOffset?.(viewportHeight)
                     ?? (isQidahenTutorialLandscape
@@ -1027,7 +1029,7 @@ export const GameHUD = ({
                 <FeedbackModal
                     onClose={() => setShowFeedback(false)}
                     runtimeContext={{
-                        mode: mode === 'test' ? 'local' : mode,
+                        mode: isExternal ? undefined : mode === 'test' ? 'local' : mode,
                         matchId,
                         playerId: myPlayerId,
                         gameId: _gameId,

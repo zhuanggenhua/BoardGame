@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-hammer-stop", "uiStateId": "thor-hammer-recall-or-stop", "viewport": "desktop", "reason": "飞掷一次后须展示合法的召回和停止选择。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

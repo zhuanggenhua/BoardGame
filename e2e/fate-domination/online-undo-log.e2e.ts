@@ -60,6 +60,9 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   await chooseFateIdentity(page,'servant','servant-rider');
   await page.getByTestId('fate-domination-primary-action').click();
   await expect.poll(async()=>(await read()).core.currentPlayerId).toBe('1');
+  await chooseFateIdentity(second,'master','m_rin');
+  await chooseFateIdentity(second,'servant','servant-archer');
+  await expect(second.getByTestId('fate-domination-primary-action')).toBeEnabled();
   await second.getByTestId('fate-domination-primary-action').click();
   await expect.poll(async()=>(await read()).core.currentPlayerId).toBe('2');
   expect(peer.sendCommand('ADVANCE_PHASE',{})).toBe(true);

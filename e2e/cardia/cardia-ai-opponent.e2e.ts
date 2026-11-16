@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import { getMatchState } from '../helpers/state-injection';
 import {
     setupCardiaTestScenario,
     readLiveState,
@@ -40,6 +41,12 @@ test.describe('Cardia AI 对手系统', () => {
 
             // 读取初始状态
             const initialState = await readLiveState(setup.player1Page);
+            const authority = await getMatchState(setup.matchId, setup.player1Page);
+            console.log('[cardia-ai-initial-authority]', JSON.stringify({
+                turn: authority.core.turnNumber, phase: authority.sys?.phase,
+                encounters: authority.core.encounterHistory?.length,
+                eventTypes: authority.sys?.eventStream?.entries?.map(entry => entry.event.type),
+            }));
             console.log(`初始阶段: ${initialState.core.phase}`);
             console.log(`当前玩家: ${initialState.core.currentPlayerId}`);
             console.log(`玩家顺序: ${JSON.stringify(initialState.core.playerOrder)}`);
@@ -60,10 +67,21 @@ test.describe('Cardia AI 对手系统', () => {
 
                 const currentState = await readLiveState(setup.player1Page);
                 const currentTurn = currentState.core.turnNumber;
+                console.log('[cardia-ai-progress]', JSON.stringify({
+                    turn: currentTurn,
+                    phase: currentState.core.phase,
+                    encounters: currentState.core.encounterHistory?.length,
+                    seats: ['0', '1'].map(id => ({
+                        hand: currentState.core.players[id]?.hand?.length,
+                        played: currentState.core.players[id]?.playedCards?.length,
+                        hasPlayed: currentState.core.players[id]?.hasPlayed,
+                        currentCard: !!currentState.core.players[id]?.currentCard,
+                    })),
+                }));
 
                 if (currentTurn > turnCount) {
                     turnCount = currentTurn;
-                    console.log(`✅ 回合 ${turnCount} 完成`);
+                    console.log(`观察到回合计数 ${turnCount}`);
                     console.log(`  阶段: ${currentState.core.phase}`);
                     console.log(`  当前玩家: ${currentState.core.currentPlayerId}`);
 
@@ -76,6 +94,8 @@ test.describe('Cardia AI 对手系统', () => {
                     }
                 }
 
+                if (currentTurn >= 5 && (currentState.core.encounterHistory?.length ?? 0) >= 5) break;
+
                 // 检查是否卡住
                 if (turnCount === 0 && (Date.now() - startTime) > 10000) {
                     console.error('❌ AI 未能开始游戏（10秒内无进展）');
@@ -84,8 +104,7 @@ test.describe('Cardia AI 对手系统', () => {
             }
 
             // 验证 AI 至少完成了几个回合
-            expect(turnCount).toBeGreaterThan(0);
-            console.log(`✅ AI 完成了 ${turnCount} 个回合`);
+            expect(turnCount).toBeGreaterThanOrEqual(5);
 
             // 读取最终状态
             const finalState = await readLiveState(setup.player1Page);
@@ -105,7 +124,9 @@ test.describe('Cardia AI 对手系统', () => {
 
             // 验证至少有一些卡牌被打出
             const totalPlayedCards = player1.playedCards.length + player2.playedCards.length;
-            expect(totalPlayedCards).toBeGreaterThan(0);
+            expect(player1.playedCards.length).toBeGreaterThanOrEqual(5);
+            expect(player2.playedCards.length).toBeGreaterThanOrEqual(5);
+            expect(finalState.core.encounterHistory.length).toBeGreaterThanOrEqual(5);
             console.log(`✅ 共打出 ${totalPlayedCards} 张卡牌`);
 
             // 如果游戏结束，验证胜利条件

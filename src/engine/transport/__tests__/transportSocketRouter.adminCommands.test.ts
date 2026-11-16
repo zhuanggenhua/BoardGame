@@ -12,6 +12,7 @@ function createRouterHarness(args: {
     socketInfo: { matchID: string; playerID: string | null; credentials?: string };
     match?: TestMatch;
     adminUserId?: string | null;
+    allowSeatDebugCommands?: boolean;
 }) {
     let onConnection: ((socket: IOSocket) => void) | undefined;
     const namespace = {
@@ -37,6 +38,7 @@ function createRouterHarness(args: {
         validateCommandAuth: vi.fn(async () => true),
         validateAdminDebugToken: vi.fn(async (token) => token === 'valid-admin-token' ? args.adminUserId ?? null : null),
         isAdminDebugCommand: (_match, commandType) => commandType.startsWith('SYS_CHEAT_'),
+        allowSeatDebugCommands: args.allowSeatDebugCommands,
         handleAdminDebugCommand,
         resolveOnlineAiSeatControllerType: () => 'human',
         handleSync: vi.fn(async () => undefined),
@@ -61,6 +63,17 @@ function createRouterHarness(args: {
 }
 
 describe('transport socket admin debug route', () => {
+    it('开发测试服务允许已认证玩家使用单条和批量调试命令', async () => {
+        const harness = createRouterHarness({
+            socketInfo: { matchID: 'match-1', playerID: '0', credentials: 'seat-token' },
+            match: { matchID: 'match-1', state: { core: {}, sys: {} } },
+            allowSeatDebugCommands: true,
+        });
+        await harness.invoke('command', 'match-1', 'SYS_CHEAT_SET_RESOURCE', { value: 3 }, 'seat-token');
+        await harness.invoke('batch', 'match-1', 'batch-1', [{ type: 'SYS_CHEAT_SET_TOKEN', payload: {} }], 'seat-token');
+        expect(harness.handleCommand).toHaveBeenCalledWith('match-1', '0', 'SYS_CHEAT_SET_RESOURCE', { value: 3 });
+        expect(harness.hooks.handleBatch).toHaveBeenCalledOnce();
+    });
     it('拒绝普通座位命令通道直接发送作弊调试命令', async () => {
         const harness = createRouterHarness({
             socketInfo: { matchID: 'match-1', playerID: '0', credentials: 'seat-token' },

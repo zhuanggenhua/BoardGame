@@ -110,7 +110,7 @@ it('辽北十支展开兵牌和人口可以同时留在真实地区', async () =
     for (const [i, token] of armies.entries()) {
         const x = token.x * w, y = token.y * h, half = token.size! / 2;
         for (const dx of [-half, half]) for (const dy of [-half, half]) expect(owners[Math.round(y + dy) * w + Math.round(x + dx)]).toBe(regionId);
-        for (const other of armies.slice(i + 1)) expect(Math.abs((token.x - other.x) * w) >= 34 * scale - 1e-9 || Math.abs((token.y - other.y) * h) >= 34 * scale - 1e-9).toBe(true);
+        for (const other of armies.slice(i + 1)) expect(Math.abs((token.x - other.x) * w) >= 26 * scale - 1e-9 || Math.abs((token.y - other.y) * h) >= 26 * scale - 1e-9).toBe(true);
         // 地图放大时牌和角标同步保持屏幕尺寸，检查四种旋转均不被邻牌覆盖。
         for (const [badgeX, badgeY] of [[x - half + 3 * scale, y - half + 3 * scale], [x + half - 15 * scale, y - half + 3 * scale],
             [x - half + 3 * scale, y + half - 15 * scale], [x + half - 15 * scale, y + half - 15 * scale]]) {
@@ -163,7 +163,7 @@ it('拥挤地区兵堆保留阵营与数量，展开后仍可逐枚选择原始�
     expect(expanded.tokens.every(token => token.size === 26)).toBe(true);
 });
 
-it('公开不同兵种和等级标为混编，隐藏对手兵种等级不泄露，展开保留每枚牌', () => {
+it('公开兵牌按兵种和等级分堆，隐藏对手兵种等级不泄露，展开保留每枚牌', () => {
     const troops = [
         { ...army('infantry-lv2-a'), troopKind: 'infantry' as const, rotationDeg: 0 },
         { ...army('infantry-lv2-b'), troopKind: 'infantry' as const, rotationDeg: 0 },
@@ -175,10 +175,10 @@ it('公开不同兵种和等级标为混编，隐藏对手兵种等级不泄露�
     const face = (token: QidahenMapToken) => token.faction === 'ming'
         ? JSON.stringify([token.troopKind, token.rotationDeg]) : null;
     const compact = compactCrowdedArmies(troops, new Set([regionId]), new Set(), face);
-    expect(compact.tokens.map(token => token.id)).toEqual(['infantry-lv2-a', 'hidden-infantry']);
-    expect(compact.stackSizes.get('infantry-lv2-a')).toBe(4);
+    expect(compact.tokens.map(token => token.id)).toEqual(['infantry-lv2-a', 'infantry-lv3', 'artillery-lv2', 'hidden-infantry']);
+    expect(compact.stackSizes.get('infantry-lv2-a')).toBe(2);
     expect(compact.stackSizes.get('hidden-infantry')).toBe(2);
-    expect([...compact.mixedStacks]).toEqual(['infantry-lv2-a']);
+    expect([...compact.mixedStacks]).toEqual([]);
     const changedHidden = troops.map(token => token.faction === 'jin' ? { ...token, troopKind: 'cavalry' as const, rotationDeg: 180 } : token);
     const hiddenAgain = compactCrowdedArmies(changedHidden, new Set([regionId]), new Set(), face);
     expect(hiddenAgain.tokens.map(token => token.id)).toEqual(compact.tokens.map(token => token.id));

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, Menu } from 'lucide-react';
 import { getExternalGame, getOwnedGame } from '../api/external-games';
 import { useAuth } from '../contexts/AuthContext';
 import { ExternalGameText } from '../components/external/ExternalGameText';
@@ -10,7 +9,7 @@ import { GameRulesDocumentLink } from '../components/external/GameRulesDocumentL
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
 import { resolveExternalEmbed } from '../shared/externalGames';
-import { FabMenu, type FabAction } from '../components/system/FabMenu';
+import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import './external-game-page.css';
 
 function hasControlCharacters(value: string) {
@@ -67,12 +66,6 @@ export default function ExternalGamePage() {
     if (game.isPending) return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
     if (game.isError || !item) return <main className="external-game-message"><p role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}</p><button onClick={() => void game.refetch()}>{t('platform.retry')}</button><button onClick={leave}>{t('platform.externalGamePage.back')}</button></main>;
     if (!preview && !canEmbed) return <main className="external-game-message" role="status">{t('platform.externalGamePage.openingDetails')}</main>;
-    const items: FabAction[] = [{
-        id: 'menu', icon: <Menu size={20} />, label: t('platform.externalGamePage.openGameMenu'),
-        content: <button type="button" onClick={leave} className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs">
-            <LogOut size={16} />{t('platform.externalGamePage.endAndReturn')}
-        </button>,
-    }];
     return <main className="external-page">
         {!playing && <div className="external-details">
             <button className="external-back" type="button" onClick={leave}>← {t('platform.externalGamePage.back')}</button>
@@ -98,7 +91,7 @@ export default function ExternalGamePage() {
         </div>}
         {playing && canEmbed && <div className="external-player">
             <iframe title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item.gameId, item.url)} referrerPolicy="no-referrer" />
-            <FabMenu className="platform-global-fab external-game-fab" items={items} isDark={false} zIndex={1100} storageKey="external_game_fab_position" />
+            <GameHUD mode="external" gameId={gameId} onLeave={leave} />
         </div>}
     </main>;
 }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core/ui/zIndex';
+import { RiftSlash } from '../../../components/common/animations/RiftSlash';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import { useEventStreamCursor } from '../../../engine/hooks/useEventStreamCursor';
 import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
@@ -17,8 +18,25 @@ const reportPreloadFailure = (label: string) => (error: unknown) => {
   if (!(error instanceof DOMException && error.name === 'AbortError')) console.warn(label, error);
 };
 
-function BattleMotion({ sequence, onComplete }: { sequence: Extract<FgoSequence, { kind: 'battle' }>; onComplete: () => void }) {
+function BattleMotion({ sequence, anchor, onComplete }: { sequence: Extract<FgoSequence, { kind: 'battle' }>; anchor: HTMLElement; onComplete: () => void }) {
   const host = useRef<HTMLDivElement>(null);
+  const layer = useRef<HTMLDivElement>(null);
+  const [impact, setImpact] = useState<{ x: number; y: number; id: number }>();
+  const showImpact = useCallback((point: { x: number; y: number }) => {
+    setImpact(previous => ({ ...point, id: (previous?.id ?? 0) + 1 }));
+  }, []);
+  React.useLayoutEffect(() => {
+    if (!layer.current) return;
+    const element = layer.current;
+    let frame = 0;
+    const follow = () => {
+      const bounds = anchor.getBoundingClientRect();
+      Object.assign(element.style, { left: `${bounds.left}px`, top: `${bounds.top}px`, width: `${bounds.width}px`, height: `${bounds.height}px` });
+      frame = requestAnimationFrame(follow);
+    };
+    follow();
+    return () => cancelAnimationFrame(frame);
+  }, [anchor]);
   useEffect(() => {
     if (!host.current) { onComplete(); return; }
     const actors = sequence.actors.flatMap(actor => {
@@ -26,15 +44,20 @@ function BattleMotion({ sequence, onComplete }: { sequence: Extract<FgoSequence,
       return loaded ? [{ ...actor, loaded }] : [];
     });
     try {
-      const runtime = createFgoBattleRuntime(host.current, actors, sequence.laneCount, onComplete);
+      const runtime = createFgoBattleRuntime(host.current, actors, sequence.laneCount, onComplete, showImpact);
       if (!runtime) { onComplete(); return; }
       return () => runtime.destroy();
     } catch (error) {
       console.warn('Fate 战斗演出无法播放', error);
       onComplete();
     }
-  }, [sequence, onComplete]);
-  return <div ref={host} className="fd-fgo-battle" data-testid="fate-fgo-battle" aria-hidden="true" />;
+  }, [sequence, onComplete, showImpact]);
+  return <div ref={layer} className="fd-fgo-battle" style={{ zIndex: UI_Z_INDEX.overlay }} data-testid="fate-fgo-battle" aria-hidden="true">
+    <div ref={host} className="fd-fgo-battle-canvas" />
+    {impact && <div key={impact.id} className="fd-fgo-impact" style={{ left: `${impact.x}%`, top: `${impact.y}%` }}>
+      <RiftSlash isActive color="rgba(255, 235, 190, 0.9)" duration={300} width={3} />
+    </div>}
+  </div>;
 }
 
 function NobleMotion({ onComplete }: { onComplete: () => void }) {
@@ -70,7 +93,9 @@ function NobleMotion({ onComplete }: { onComplete: () => void }) {
   }, [finish]);
   return <div className="fd-fgo-noble" style={{ zIndex: UI_Z_INDEX.cinematic }} data-testid="fate-fgo-noble">
     <div ref={host} className="fd-fgo-noble-canvas" aria-hidden="true" />
-    <button type="button" className="fd-fgo-noble-skip" onClick={finish}>{t('skipNobleAnimation')}</button>
+    <button type="button" className="fd-fgo-noble-skip" onClick={finish}>
+      <span>{t('skipNobleAnimation')}</span><span className="fd-fgo-noble-skip-arrows" aria-hidden="true">»</span>
+    </button>
   </div>;
 }
 
@@ -121,7 +146,7 @@ export function FateFgoEffects({ state, viewerId, battleAnchors }: {
   }, [active, battleAnchor, finish]);
   if (!active) return null;
   if (active.kind === 'battle') return battleAnchor ? createPortal(
-    <BattleMotion key={active.id} sequence={active} onComplete={finish} />, battleAnchor,
+    <BattleMotion key={`${active.id}-${active.actors.map(actor => actor.playerId).join('-')}`} sequence={active} anchor={battleAnchor} onComplete={finish} />, document.body,
   ) : null;
   return createPortal(<NobleMotion key={active.id} onComplete={finish} />, document.body);
 }

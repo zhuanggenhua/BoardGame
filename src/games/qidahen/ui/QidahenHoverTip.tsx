@@ -19,7 +19,7 @@ const TIP_SKIN = {
     titleColor: '#f6d5a8',
 } as const;
 
-export type QidahenHoverTipPlacement = 'left' | 'right' | 'above' | 'below';
+export type QidahenHoverTipPlacement = 'left' | 'right' | 'above' | 'below' | 'inside-bottom';
 
 interface QidahenHoverTipProps extends React.HTMLAttributes<HTMLDivElement> {
     open: boolean;
@@ -29,6 +29,7 @@ interface QidahenHoverTipProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: 'tooltip' | 'panel';
     width?: number;
     gap?: number;
+    avoidSelectors?: string[];
     onClick?: () => void;
     onPointerEnter?: () => void;
     onPointerLeave?: () => void;
@@ -45,6 +46,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
     variant = 'tooltip',
     width = TIP_WIDTH,
     gap = ANCHOR_GAP,
+    avoidSelectors,
     onClick,
     onPointerEnter,
     onPointerLeave,
@@ -69,30 +71,49 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
         const tooltipWidth = tooltipRect.width || width;
         const tooltipHeight = tooltipRect.height || 120;
         const { innerWidth, innerHeight } = window;
-        const vertical = placement === 'above' || placement === 'below';
+        const vertical = placement === 'above' || placement === 'below' || placement === 'inside-bottom';
         const fitsOnPreferredSide = placement === 'right'
             ? anchorRect.right + gap + tooltipWidth <= innerWidth - VIEWPORT_PADDING
             : anchorRect.left - gap - tooltipWidth >= VIEWPORT_PADDING;
         const side = fitsOnPreferredSide ? placement : placement === 'right' ? 'left' : 'right';
         const preferredLeft = vertical ? anchorRect.left + anchorRect.width / 2 - tooltipWidth / 2
             : side === 'right' ? anchorRect.right + gap : anchorRect.left - gap - tooltipWidth;
-        const left = clamp(
+        let left = clamp(
             preferredLeft,
             VIEWPORT_PADDING,
             Math.max(VIEWPORT_PADDING, innerWidth - tooltipWidth - VIEWPORT_PADDING),
         );
-        const rawTop = placement === 'above' ? anchorRect.top - tooltipHeight - gap
+        const rawTop = placement === 'inside-bottom' ? anchorRect.bottom - tooltipHeight
+            : placement === 'above' ? anchorRect.top - tooltipHeight - gap
             : placement === 'below' ? anchorRect.bottom + gap
             : anchorRect.top + anchorRect.height / 2 - tooltipHeight / 2;
-        const top = clamp(
+        let top = clamp(
             rawTop,
             VIEWPORT_PADDING,
             Math.max(VIEWPORT_PADDING, innerHeight - tooltipHeight - VIEWPORT_PADDING),
         );
+        if (avoidSelectors?.length) {
+            const blocked = [...document.querySelectorAll(avoidSelectors.join(','))].map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+            const xs = [left, anchorRect.left, anchorRect.right - tooltipWidth, anchorRect.left - tooltipWidth - gap, anchorRect.right + gap,
+                ...blocked.flatMap(rect => [rect.left - tooltipWidth - 2, rect.right + 2])];
+            const ys = [top, anchorRect.top, anchorRect.bottom - tooltipHeight, anchorRect.top - tooltipHeight - gap, anchorRect.bottom + gap,
+                ...blocked.flatMap(rect => [rect.top - tooltipHeight - 2, rect.bottom + 2])];
+            const distance = (point: {left: number; top: number}) => Math.hypot(
+                Math.max(anchorRect.left - point.left - tooltipWidth, point.left - anchorRect.right, 0),
+                Math.max(anchorRect.top - point.top - tooltipHeight, point.top - anchorRect.bottom, 0));
+            const candidates = xs.flatMap(x => ys.map(y => ({ left: x, top: y })))
+                .filter(point => point.left >= VIEWPORT_PADDING && point.top >= VIEWPORT_PADDING
+                    && point.left + tooltipWidth <= innerWidth - VIEWPORT_PADDING && point.top + tooltipHeight <= innerHeight - VIEWPORT_PADDING)
+                .sort((a, b) => distance(a) - distance(b));
+            const available = candidates.find(point => blocked.every(rect => point.left + tooltipWidth + 6 <= rect.left || point.left - 6 >= rect.right
+                || point.top + tooltipHeight + 6 <= rect.top || point.top - 6 >= rect.bottom));
+            if (!available) { node.style.visibility = 'hidden'; return; }
+            left = available.left; top = available.top;
+        }
         node.style.left = `${left}px`;
         node.style.top = `${top}px`;
         node.style.visibility = 'visible';
-    }, [open, anchor, placement, gap, width]);
+    }, [open, anchor, placement, gap, width, avoidSelectors]);
 
     useLayoutEffect(() => {
         updateLayout();
@@ -136,7 +157,7 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
         <div
             {...attributes}
             ref={tipRef}
-            className={`${variant === 'panel' ? 'pointer-events-auto' : onClick ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} fixed [--spacing:4px] ${variant === 'tooltip' ? 'border-[3px] px-3 py-2' : ''} text-[14px] font-black leading-6 tracking-normal`}
+            className={`${variant === 'panel' ? 'pointer-events-auto' : onClick ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} fixed [--spacing:4px] ${placement === 'inside-bottom' ? 'border px-1 text-[12px] leading-4' : variant === 'tooltip' ? 'border-[3px] px-3 py-2 text-[14px] leading-6' : 'text-[14px] leading-6'} font-black tracking-normal`}
             data-testid={testId}
             role={attributes.role ?? (variant === 'panel' ? 'group' : onClick ? 'button' : 'tooltip')}
             tabIndex={onClick ? 0 : undefined}

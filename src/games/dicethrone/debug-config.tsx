@@ -106,8 +106,15 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
 
     // ========== Token 作弊 ==========
     const [tokenPlayer, setTokenPlayer] = useState<string>('0');
-    const [tokenType, setTokenType] = useState<string>('lotus');
+    const [tokenType, setTokenType] = useState<string>('');
     const [tokenValue, setTokenValue] = useState<string>('1');
+
+    useEffect(() => {
+        const definitions = G?.core?.tokenDefinitions ?? [];
+        if (definitions.length && !definitions.some((definition) => definition.id === tokenType)) {
+            setTokenType(definitions[0].id);
+        }
+    }, [G?.core?.tokenDefinitions, tokenType]);
 
     // ========== 发牌作弊 ==========
     const [dealPlayer, setDealPlayer] = useState<string>('0');
@@ -482,7 +489,11 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                             onChange={(e) => setTokenType(e.target.value)}
                             className="flex-1 px-2 py-1.5 text-xs border border-purple-300 rounded bg-white text-gray-900"
                         >
-                            <option value="lotus">{t('debug.token.lotus')}</option>
+                            {(G.core.tokenDefinitions ?? []).map((definition) => (
+                                <option key={definition.id} value={definition.id}>
+                                    {t(definition.name, { defaultValue: definition.id })}
+                                </option>
+                            ))}
                         </select>
                         <input
                             type="number"

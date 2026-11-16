@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-guard-break", "uiStateId": "thor-guard-break-bonus-die", "viewport": "desktop", "reason": "破防效果骰须在原骰盘显示结果及确认入口。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

@@ -145,12 +145,13 @@ export class SourceActor {
     if (!mesh) throw new Error(`Original animation renderer unavailable: ${name}`);
     mesh.views.forEach(view => { view.visible = visible; });
   }
-  bounds(visibleTrianglesOnly = false) {
+  bounds(visibleTrianglesOnly = false, bodyOnly = false) {
     const bounds = new THREE.Box3();
     const collapsedBones = visibleTrianglesOnly
       ? this.skinMatrices.map(matrix => matrix.getMaxScaleOnAxis() <= 0.001001) : [];
     this.root.updateMatrixWorld(true);
     for (const mesh of this.meshes) {
+      if (bodyOnly && !mesh.name.startsWith('body_level_')) continue;
       if (!mesh.views[0].visible) continue;
       const local = new THREE.Box3();
       const positions = mesh.geometry.getAttribute('in_POSITION0');

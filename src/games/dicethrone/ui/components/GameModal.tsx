@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode } from 'react';
 import { ModalBase } from '../../../../components/common/overlays/ModalBase';
 
 interface GameModalProps {
@@ -16,6 +16,8 @@ interface GameModalProps {
     allowBackgroundInteraction?: boolean;
     /** 对象候选较少时随内容收紧，保留四周牌桌上下文。 */
     density?: 'normal' | 'compact';
+    contentScale?: number;
+    titleFontSize?: number;
 }
 
 export const GameModal = ({
@@ -29,6 +31,8 @@ export const GameModal = ({
     closeOnBackdrop = true,
     allowBackgroundInteraction = false,
     density = 'normal',
+    contentScale,
+    titleFontSize,
 }: GameModalProps) => {
     const compact = density === 'compact';
 
@@ -38,6 +42,7 @@ export const GameModal = ({
         lg: 'max-w-xl',
         xl: 'max-w-3xl'
     }[width];
+    const referenceWidth = { sm: 384, md: 448, lg: 576, xl: 768 }[width];
 
     return (
         <AnimatePresence>
@@ -53,6 +58,16 @@ export const GameModal = ({
                     <div
                         data-testid="dt-game-modal"
                         data-density={density}
+                        data-reference-scale={contentScale}
+                        style={contentScale ? {
+                            zoom: contentScale,
+                            maxHeight: `calc((var(--runtime-viewport-height, 100vh) - 1rem) / ${contentScale})`,
+                            '--mobile-board-shell-inline-unit': '19.2px',
+                            width: referenceWidth,
+                            maxWidth: referenceWidth,
+                            margin: '0 16px',
+                            borderRadius: 16,
+                        } as CSSProperties : undefined}
                         className={clsx(
                             "relative bg-slate-950 border-2 border-amber-500/40 pointer-events-auto",
                             "shadow-[0_0_50px_rgba(0,0,0,0.8)]",
@@ -68,27 +83,31 @@ export const GameModal = ({
                         {/* Header */}
                         {title && (
                             <div className={clsx("relative bg-black/20 border-b border-white/5 flex items-center justify-center shrink-0",
-                                compact ? "px-4 py-2" : "px-6 py-5 max-[1023px]:px-4 max-[1023px]:py-3")}>
+                                compact ? "px-4 py-2" : "px-6 py-5 max-[1023px]:px-4 max-[1023px]:py-3")}
+                                style={contentScale ? { padding: compact ? '8px 16px' : '20px 24px' } : undefined}>
                                 <h2 className={clsx("font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 drop-shadow-md text-center",
-                                    compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl max-[1023px]:text-lg")}>
+                                    compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl max-[1023px]:text-lg")}
+                                    style={titleFontSize ? { fontSize: titleFontSize } : undefined}>
                                     {title}
                                 </h2>
                                 {/* Decorative elements */}
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-amber-500/50 border border-amber-300" />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-amber-500/50 border border-amber-300" />
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-amber-500/50 border border-amber-300" style={contentScale ? { left: 16, width: 8, height: 8 } : undefined} />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-amber-500/50 border border-amber-300" style={contentScale ? { right: 16, width: 8, height: 8 } : undefined} />
                             </div>
                         )}
 
                         {/* Content — z-20 高于 Footer z-10，确保内部 tooltip 不被 Footer 遮挡 */}
                         <div className={clsx("min-h-0 overflow-y-auto text-slate-300 leading-relaxed text-center relative z-20 flex flex-col items-center",
-                            compact ? "p-3" : "p-6 sm:p-8 max-[1023px]:p-4 max-[1023px]:py-3")}>
+                            compact ? "p-3" : "p-6 sm:p-8 max-[1023px]:p-4 max-[1023px]:py-3")}
+                            style={contentScale ? { padding: compact ? 12 : 32 } : undefined}>
                             {children}
                         </div>
 
                         {/* Footer */}
                         {footer && (
                             <div className={clsx("flex justify-center relative z-10",
-                                compact ? "px-4 pb-4 pt-1 gap-3 shrink-0" : "p-6 pt-0 sm:pt-0 sm:pb-8 gap-4")}>
+                                compact ? "px-4 pb-4 pt-1 gap-3 shrink-0" : "p-6 pt-0 sm:pt-0 sm:pb-8 gap-4")}
+                                style={contentScale ? { padding: compact ? '4px 16px 16px' : '0 24px 32px', gap: compact ? 12 : 16 } : undefined}>
                                 {footer}
                             </div>
                         )}

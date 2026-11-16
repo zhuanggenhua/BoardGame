@@ -181,6 +181,17 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-menu-stub')).toHaveAttribute('data-fab-main', 'chat');
     });
 
+    it('外部游戏沿用游戏悬浮球，只显示可用操作并调用返回', () => {
+        const leave = vi.fn();
+        renderHud(<GameHUD mode="external" gameId="external-test" onLeave={leave} />);
+        expect(screen.getByTestId('fab-action-exit')).toBeInTheDocument();
+        expect(screen.queryByTestId('fab-action-feedback')).toBeNull();
+        expect(screen.queryByTestId('fab-action-chat')).toBeNull();
+        expect(screen.queryByTestId('fab-action-fullscreen')).toBeNull();
+        fireEvent.click(screen.getByTestId('fab-content-exit').querySelector('button')!);
+        expect(leave).toHaveBeenCalledOnce();
+    });
+
     it('联机正式进行阶段不再显示等待对手加入横幅', () => {
         renderHud(
             <GameHUD

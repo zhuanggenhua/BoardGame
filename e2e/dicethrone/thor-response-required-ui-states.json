@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-undaunted-response", "uiStateId": "thor-undaunted-card-response", "viewport": "desktop", "reason": "实际致命攻击须显示不屈的意志手牌响应入口。" },
+    { "chainId": "thor-impenetrable-response", "uiStateId": "thor-impenetrable-card-response", "viewport": "desktop", "reason": "实际攻击须显示无懈可击手牌响应入口。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

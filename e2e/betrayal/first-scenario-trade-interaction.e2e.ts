@@ -107,13 +107,6 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
         const omenBookImage = omenBook?.querySelector<HTMLImageElement>('[data-testid="betrayal-inventory-omen-book-front-atlas"]');
         const ropeText = rope?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const allInventoryText = document.querySelector('[data-testid="betrayal-inventory-section"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
-        const desktopActionButtons = Array.from(
-            document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-action-"]'),
-        ).filter((element) => {
-            const rect = element.getBoundingClientRect();
-            const style = window.getComputedStyle(element);
-            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0;
-        }).length;
 
         return {
             inventory: rectOf('betrayal-inventory-section'),
@@ -128,7 +121,6 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
             omenBookImageLoaded: Boolean(omenBookImage?.complete && omenBookImage.naturalWidth > 0 && omenBookImage.naturalHeight > 0),
             ropeText,
             allInventoryText,
-            desktopActionButtons,
         };
     });
 
@@ -146,7 +138,6 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
     expect(metrics.omenBookImageLoaded, '书本正式预兆牌面必须真实加载完成').toBe(true);
     expect(metrics.ropeText, '兔脚不应显示“正面缺失”回退文案').not.toContain('正面缺失');
     expect(metrics.allInventoryText, '交易持有区不应出现“缺正面”回退文案').not.toContain('缺正面');
-    expect(metrics.desktopActionButtons, '交易态不应渲染底部行动栏，避免形成黑底挡板').toBe(0);
 }
 
 async function assertTradeActionBarKeepsButtons(page: Page) {
@@ -295,7 +286,8 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
     expect(metrics.flowBanner!.width, '交易横幅必须保持轻量摘要宽度，不能横向铺满主舞台').toBeLessThanOrEqual(680);
     expect(metrics.itemStepInsideBanner, '顶部横幅不能渲染对象选择步骤').toBe(false);
     expect(metrics.targetStepInsideBanner, '顶部横幅不能渲染目标/确认步骤').toBe(false);
-    expect(metrics.actionCount, '交易态仍应保留一组原动作按钮').toBeGreaterThanOrEqual(5);
+    expect(metrics.actionCount, '交易态仍应保留交易与结束回合入口').toBeGreaterThanOrEqual(2);
+    await expect(page.getByTestId('betrayal-action-endTurn')).toBeVisible();
     for (const actionButton of metrics.actionButtonStyles) {
         expect(actionButton.backgroundColor, `${actionButton.id} 不能再有独立黑底按钮框`).toBe('rgba(0, 0, 0, 0)');
         expect(actionButton.backgroundImage, `${actionButton.id} 不能再有独立背景层`).toBe('none');
@@ -497,7 +489,7 @@ async function assertTradeConfirmAnchoredToFlow(page: Page) {
 }
 
 async function assertTradeSelectionClearedAfterSettlement(page: Page) {
-    await expect(page.getByTestId('betrayal-selected-inventory-card-name'), '交易结算后不能残留已选物品').toHaveCount(0);
+    await expect(page.getByTestId('betrayal-selected-inventory-card-name'), '交易结算后不能残留已选物品').toHaveText('未选卡牌');
     await expect(page.getByTestId('betrayal-inventory-rope'), '兔脚交易后必须从当前玩家持有区消失').toHaveCount(0);
     await expect(page.getByTestId('betrayal-trade-status'), '普通交易结算后本回合交易额度必须锁定').toContainText('本回合已交易');
     const flowBannerCount = await page.getByTestId('betrayal-trade-flow-banner').count();

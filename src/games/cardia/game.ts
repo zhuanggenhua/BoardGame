@@ -32,7 +32,7 @@ import './assets';
 import { registerCriticalImageResolver } from '../../core';
 import { cardiaCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
-import { cardiaAiRuntime } from './ai';
+import { cardiaAiRuntime, resolveCardiaDecisionPlayerId } from './ai';
 
 // 注册关键图片解析器
 registerCriticalImageResolver('cardia', cardiaCriticalImageResolver);
@@ -113,7 +113,14 @@ export const Cardia = createGameEngine<CardiaCore, CardiaCommand, CardiaEvent>({
 export { CARDIA_AUDIO_CONFIG as audioConfig };
 
 // 引擎配置（用于服务端注册）
-export const engineConfig = Cardia;
+export const engineConfig = {
+    ...Cardia,
+    onlineAiRecovery: {
+        disableFallbackAdvancePhase: true,
+        resolveCurrentPlayerId: resolveCardiaDecisionPlayerId,
+        buildActiveTurnRecoveryFingerprint: ({ state }: { state: { core: CardiaCore } }) => `encounter-${state.core.turnNumber}`,
+    },
+};
 
 // 暴露 cardRegistry 到 window 对象（用于 E2E 测试）
 if (typeof window !== 'undefined') {

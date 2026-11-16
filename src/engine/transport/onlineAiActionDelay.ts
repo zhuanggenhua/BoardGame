@@ -8,6 +8,7 @@ import {
     type LocalAiActionDelayPlan,
 } from '../ai/actionDelay';
 import { resolveLocalAiActionVisibility } from '../ai/actionVisibility';
+import { waitForOnlineAiTestBarrier } from './onlineAiTestBarrier';
 
 export type OnlineAiActionDelayResult = {
     delayPlan: LocalAiActionDelayPlan;
@@ -38,6 +39,7 @@ export async function waitForOnlineAiActionDelay(args: {
     delayContext?: OnlineAiActionDelayContext;
     emitTrace: OnlineAiActionDelayTraceEmitter;
 }): Promise<OnlineAiActionDelayResult> {
+    await waitForOnlineAiTestBarrier(args.matchId, args.playerId, args.action.commands.map(command => command.type));
     const runtime = getGameAiRuntime(args.gameId);
     const actionVisibility = resolveLocalAiActionVisibility(args.action, runtime);
     const lastVisibleActionAt = args.delayContext?.lastVisibleActionAt ?? null;

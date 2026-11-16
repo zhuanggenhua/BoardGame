@@ -22,7 +22,6 @@
 .external-player { position: fixed; z-index: 1000; inset: 0; background: #111; }
 .external-player:fullscreen { width: 100vw; height: 100vh; }
 .external-player iframe { width: 100%; height: 100%; border: 0; background: #fff; }
-.external-game-fab [data-fab-visual-id="menu"] { background: #d5ff00; }
 .external-game-message { min-height: 100dvh; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: center; }
 html:has(.external-page) .platform-global-fab:not(.external-game-fab),
 html:has(.external-page) [data-testid="fab-menu"]:not(.external-game-fab),

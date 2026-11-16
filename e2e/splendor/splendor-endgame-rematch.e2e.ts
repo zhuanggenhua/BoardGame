@@ -12,6 +12,7 @@ import { dirname } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { initContext } from '../helpers/common';
+import type { SplendorCore } from '../../src/games/splendor/domain/types';
 
 type GameOverPatch = {
     winners?: string[];
@@ -67,7 +68,7 @@ async function readGameover(page: Page) {
 }
 
 test.describe('Splendor 真实棋盘终局重赛', () => {
-    test('玩家获胜后真实棋盘里弹出终局遮罩，显示排名并可再来一局', async ({ browser }, testInfo) => {
+    test('预置终局重赛后真人取宝石且 AI 自主行动并交还真人', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext({ reducedMotion: 'reduce' });
@@ -112,6 +113,27 @@ test.describe('Splendor 真实棋盘终局重赛', () => {
             const rematchShot = getEvidenceScreenshotPath(testInfo, '璀璨宝石-再来一局后回到对局');
             await mkdir(dirname(rematchShot), { recursive: true });
             await page.screenshot({ path: rematchShot, fullPage: false });
+
+            // 重赛后继续通过页面行动，确认 AI 真正接手而不只是保留席位配置。
+            const readCore = async () => page.evaluate(() =>
+                (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()?.core as SplendorCore | undefined,
+            );
+            await expect.poll(async () => (await readCore())?.currentPlayer).toBe('0');
+            for (const color of ['white', 'blue', 'green']) {
+                await page.getByTestId(`splendor-bank-token-${color}`).click();
+            }
+            console.log('[splendor-rematch] 真人选择三种宝石');
+            await page.waitForFunction(() => {
+                const core = (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()?.core as SplendorCore | undefined;
+                const ai = core?.players['1'];
+                return core?.currentPlayer === '0'
+                    && ['white', 'blue', 'green'].every(color => core.players['0'].tokens[color as 'white' | 'blue' | 'green'] === 1)
+                    && !!ai && (Object.values(ai.tokens).some(count => count > 0) || ai.reservedCardIds.length > 0 || ai.purchasedCardIds.length > 0);
+            }, undefined, { timeout: 30000 });
+            console.log('[splendor-rematch] 状态确认真人取宝石、AI 行动并交回');
+            await expect(page.getByText(/轮到你行动|Your turn/i)).toBeVisible();
+            await expect(page.getByTestId('splendor-bank-token-red')).toBeEnabled();
+            console.log('[splendor-rematch] 玩家可继续操作');
         } finally {
             await context.close();
         }

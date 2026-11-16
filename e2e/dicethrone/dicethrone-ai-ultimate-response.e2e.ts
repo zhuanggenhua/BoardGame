@@ -87,6 +87,45 @@ async function expectSurpriseCardFaceVisible(page: Page): Promise<void> {
 }
 
 test.describe('DiceThrone AI 终极招式发动前响应', () => {
+    test('真人通过手牌响应 AI 自主确认的进攻骰', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await game.openTestGame('dicethrone', { playerID: '1', seat0: 'local-ai', seat1: 'human', seat0Delay: 1000 }, OPEN_TIMEOUT_MS);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: { resources: { CP: 10, HP: 50 } },
+            player1: { hand: ['card-surprise'], resources: { CP: 10, HP: 50 } },
+            currentPlayer: '0', phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'zhanshujia', '1': 'cursed_pirate' },
+                seatControllers: { '0': { type: 'local-ai', difficulty: 'expert', minimumActionDelayMs: 1000 }, '1': { type: 'human' } },
+                hostStarted: true, rollCount: 3, rollLimit: 3, rollDiceCount: 5, rollConfirmed: false,
+                dice: [0, 1, 2, 3, 4].map(id => ({ id, value: 6, isKept: false })),
+            },
+            sys: { phase: 'offensiveRoll', currentPlayerIndex: 0, interaction: { current: undefined, queue: [] }, responseWindow: { current: undefined } },
+        });
+        await expect.poll(async () => {
+            const state = await readDiceThroneHarnessState<DiceThroneMatchState>(page);
+            return { confirmed: state.core.rollConfirmed, responder: state.sys.responseWindow?.current?.responderQueue?.[0] ?? null };
+        }, { timeout: 30000, message: '等待 AI 自主确认掷骰并交给真人响应' }).toEqual({ confirmed: true, responder: '1' });
+        const card = page.locator('[data-testid="hand-area"] [data-card-id="card-surprise"]').first();
+        await expect(card).toHaveAttribute('data-can-drag', 'true');
+        const box = await card.boundingBox();
+        expect(box).not.toBeNull();
+        const x = box!.x + box!.width / 2, y = box!.y + box!.height * 0.78;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x, Math.max(24, y - 240), { steps: 12 });
+        await page.mouse.up();
+        await expect.poll(async () => (await readDiceThroneHarnessState<DiceThroneMatchState>(page)).sys.interaction?.current?.kind,
+            { timeout: 15000, message: '真人拖出惊不惊喜后应进入改骰交互' }).toBe('multistep-choice');
+        await changeFirstDieFromSixToFive(page);
+        await expect.poll(async () => {
+            const state = await readDiceThroneHarnessState<DiceThroneMatchState>(page);
+            return { discarded: state.core.players['1'].discard.some(card => card.id === 'card-surprise'),
+                modified: state.sys.eventStream?.entries.some(entry => entry.event.type === 'DIE_MODIFIED') ?? false };
+        }, { timeout: 15000 }).toEqual({ discarded: true, modified: true });
+    });
+
     test('真人响应提示更显眼且可跳过并关闭响应窗口', async ({ page, game }, testInfo) => {
         test.setTimeout(TEST_TIMEOUT_MS);
 
@@ -330,7 +369,7 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
         await game.screenshot('03-真人跳过响应后提示关闭', testInfo);
     });
 
-    test('AI 选中制胜高地后，真人应能用惊不惊喜改骰取消终极招式', async ({ page, game }, testInfo) => {
+    test('预置改骰后重新宣告：模拟选择制胜高地并用惊不惊喜取消', async ({ page, game }, testInfo) => {
         test.setTimeout(TEST_TIMEOUT_MS);
 
         await game.openTestGame('dicethrone', { playerID: '1', disableLocalAiAutomation: true }, OPEN_TIMEOUT_MS);
@@ -356,6 +395,7 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
                 rollLimit: 3,
                 rollDiceCount: 5,
                 rollConfirmed: true,
+                afterRollResponseWindowRequiresAttackDeclaration: true,
                 dice: [
                     { id: 0, value: 6, isKept: false },
                     { id: 1, value: 6, isKept: false },

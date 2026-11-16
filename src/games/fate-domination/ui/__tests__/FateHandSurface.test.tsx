@@ -139,38 +139,29 @@ it('普通技能继续在技能牌区选择，已激活技能在原位牌面发�
  expect(onPlaySkill).toHaveBeenCalledExactlyOnceWith('skill-a');
 });
 
-it('骑乘仍在本人原攻击手牌中选择并以内联确认/取消提交',()=>{
+it('骑乘在原手牌中选择和撤回，费用选择不直接提交',()=>{
  const core=preparedHandCore('riding-inline-hand');
- const player={...core.players['0'],mana:2,hand:[{id:'b1-instance',definitionId:'cardB1'},{id:'remote-instance',definitionId:'cardPreparation'},{id:'power4-instance',definitionId:'cardB3'}]};
- const confirm=vi.fn(),cancel=vi.fn(),select=vi.fn();
- const ridingChoice={interactionId:'riding-1',round:2,candidateIds:['b1-instance','remote-instance'],onConfirm:confirm,onCancel:cancel};
- const view=render(<FateHandSurface power={0} player={player} skills={[]} canSelect onSelect={select} onPlaySkill={vi.fn()} onInspect={vi.fn()} ridingChoice={ridingChoice}/>);
- const remote=screen.getByRole('button',{name:'选择坐骑召唤 远隔操作'});
- fireEvent.click(remote);
- expect(screen.getByTestId('fate-riding-controls').textContent).toContain('已选 1/3 · 实付 1/2 魔力');
- expect(select).not.toHaveBeenCalled();
- fireEvent.click(screen.getByTestId('fate-riding-confirm'));
- expect(confirm).toHaveBeenCalledWith(['remote-instance']);
- fireEvent.click(screen.getByTestId('fate-riding-cancel'));
- expect(cancel).toHaveBeenCalledOnce();
- expect(view.container.querySelectorAll('[data-card-id="remote-instance"]')).toHaveLength(1);
- expect(screen.queryByRole('dialog')).toBeNull();
+ const player={...core.players['0'],mana:2,hand:[{id:'remote-instance',definitionId:'cardPreparation'}]};
+ const onSelectionChange=vi.fn();
+ const ridingChoice={interactionId:'riding-1',round:2,candidateIds:['remote-instance'],onConfirm:vi.fn(),onCancel:vi.fn(),onSelectionChange};
+ render(<FateHandSurface power={0} player={player} skills={[]} canSelect onSelect={vi.fn()} onPlaySkill={vi.fn()} onInspect={vi.fn()} ridingChoice={ridingChoice}/>);
+ fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 远隔操作'}));
+ expect(onSelectionChange).toHaveBeenLastCalledWith(['remote-instance']);
+ expect(ridingChoice.onConfirm).not.toHaveBeenCalled();
+ expect(screen.queryByTestId('fate-riding-controls')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'取消骑乘选择 远隔操作'}));
+ expect(onSelectionChange).toHaveBeenLastCalledWith([]);
 });
 
-it('骑乘可确认零张，interaction 更新或关闭后清理临时多选',async()=>{
+it('骑乘交互更新时清理旧选择',async()=>{
  const core=preparedHandCore('riding-zero-choice');
  const player={...core.players['0'],mana:4,hand:[{id:'b1-instance',definitionId:'cardB1'}]};
  const first={interactionId:'riding-1',round:2,candidateIds:['b1-instance'],onConfirm:vi.fn(),onCancel:vi.fn()};
  const props={power:0,player,skills:[],canSelect:false,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
  const view=render(<FateHandSurface {...props} ridingChoice={first}/>);
- expect(screen.getByTestId('fate-riding-confirm')).toBeEnabled();
- fireEvent.click(screen.getByTestId('fate-riding-confirm'));
- expect(first.onConfirm).toHaveBeenCalledWith([]);
  fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 迫击'}));
  view.rerender(<FateHandSurface {...props} ridingChoice={{...first,interactionId:'riding-2',round:3}}/>);
- await waitFor(()=>expect(screen.getByRole('button',{name:'选择坐骑召唤 迫击'}).getAttribute('aria-pressed')).toBe('false'));
- view.rerender(<FateHandSurface {...props}/>);
- expect(screen.queryByTestId('fate-riding-controls')).toBeNull();
+ await waitFor(()=>expect(screen.getByRole('button',{name:'选择坐骑召唤 迫击'})).toHaveAttribute('aria-pressed','false'));
 });
 
 it('选牌焦点随实例从手牌移动到原位出牌区',()=>{
@@ -214,28 +205,22 @@ it('技能跨区后保留焦点，但不抢走已转移到外部操作的焦点'
  expect(document.activeElement).toBe(outside);
 });
 
-it('骑乘取消后同回合以相同交互标识重开时清空暂存牌',()=>{
+it('点击骑乘来源取消选择后重开，不保留旧选牌',()=>{
  const player=preparePlayer('riding-cancel-reopen-same-id','servant-rider');
- const card=player.hand.find(item=>(FATE_ATTACK_BY_ID[item.definitionId]?.manaCost??Infinity)<=player.mana);
- expect(card).toBeDefined();
- const onConfirm=vi.fn();
+ const skill=player.skills.find(item=>item.id.startsWith('sc_iskandar_1'))!;
+ const activePlayer={...player,activeSkills:[skill.id]};
+ const card=player.hand.find(item=>(FATE_ATTACK_BY_ID[item.definitionId]?.manaCost??Infinity)<=player.mana)!;
  const onCancel=vi.fn();
  function ControlledRiderChoice() {
   const [open,setOpen]=useState(true);
-  const ridingChoice=open?{interactionId:'fate:riding-choice:2:0:0:sc_iskandar_1',round:2,candidateIds:[card!.id],onConfirm,onCancel:()=>{onCancel();setOpen(false);}}:undefined;
-  return <><button type="button" onClick={()=>setOpen(true)}>重开骑乘选择</button><FateHandSurface power={0} player={player} skills={[]} canSelect={false} onSelect={vi.fn()} onPlaySkill={vi.fn()} onInspect={vi.fn()} ridingChoice={ridingChoice}/></>;
+  const ridingChoice=open?{interactionId:'same-id',round:2,candidateIds:[card.id],sourceSkillId:skill.id,onConfirm:vi.fn(),onCancel:()=>{onCancel();setOpen(false);}}:undefined;
+  return <><button type="button" onClick={()=>setOpen(true)}>重开骑乘选择</button><FateHandSurface power={0} player={activePlayer} skills={[{skill,assetPath:'riding',available:false}]} canSelect={false} onSelect={vi.fn()} onPlaySkill={vi.fn()} onInspect={vi.fn()} ridingChoice={ridingChoice}/></>;
  }
  render(<ControlledRiderChoice/>);
- const cardName=FATE_ATTACK_BY_ID[card!.definitionId].name;
- const candidate=screen.getByRole('button',{name:`选择坐骑召唤 ${cardName}`});
- fireEvent.click(candidate);
- expect(screen.getByRole('button',{name:`取消骑乘选择 ${cardName}`}).getAttribute('aria-pressed')).toBe('true');
- fireEvent.click(screen.getByTestId('fate-riding-cancel'));
+ const cardName=FATE_ATTACK_BY_ID[card.definitionId].name;
+ fireEvent.click(screen.getByRole('button',{name:`选择坐骑召唤 ${cardName}`}));
+ fireEvent.click(screen.getByRole('button',{name:'取消骑乘'}));
  expect(onCancel).toHaveBeenCalledOnce();
- expect(screen.queryByTestId('fate-riding-controls')).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'重开骑乘选择'}));
- expect(screen.getByRole('button',{name:`选择坐骑召唤 ${cardName}`}).getAttribute('aria-pressed')).toBe('false');
- expect(screen.getByTestId('fate-riding-confirm').textContent).toBe('确认打出（0）');
- fireEvent.click(screen.getByTestId('fate-riding-confirm'));
- expect(onConfirm).toHaveBeenCalledExactlyOnceWith([]);
+ expect(screen.getByRole('button',{name:`选择坐骑召唤 ${cardName}`})).toHaveAttribute('aria-pressed','false');
 });

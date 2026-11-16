@@ -130,7 +130,7 @@ async function snapshot(page:Page):Promise<Snapshot>{
             skillHandCardCenterHit:centerHits(document.querySelector('.fd-skill-cards [data-card-zone="skill"]')),
             phaseControlCenterHit:centerHits(document.querySelector('.fd-phase-control .fd-runtime-primary')),
             phaseControlCenterTarget:(()=>{const element=document.querySelector('.fd-phase-control .fd-runtime-primary');if(!element)return null;const r=element.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,400)??null;})(),
-            ridingControls:rect('[data-testid="fate-riding-controls"]'),
+            ridingControls:rect('[data-riding-choice="true"]'),
             powerFont:getComputedStyle(document.querySelector<HTMLElement>('.fd-play-power')!).fontSize,
             redundantHandHints:document.querySelectorAll('.fd-hand-scroll-hint,.fd-runtime-zone-label').length,
             summaryFont:document.querySelector<HTMLElement>('[data-testid="fate-play-summary"]')?getComputedStyle(document.querySelector<HTMLElement>('[data-testid="fate-play-summary"]')!).fontSize:null,
@@ -357,9 +357,9 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     expect((await readState(page)).core.players['0'].activeAttackIds).toContain(riderPartnerId);
     const beforeOpenRiding=await snapshot(page);
     await page.getByRole('button',{name:'发动 骑乘'}).click();
-    await expect(page.getByTestId('fate-riding-controls')).toBeVisible();
-    await expect(page.getByTestId('fate-riding-confirm')).toBeVisible();
-    await expect(page.getByTestId('fate-riding-cancel')).toBeVisible();
+    await expect(page.locator('[data-riding-choice="true"]')).toBeVisible();
+    await expect(page.getByTestId('fate-domination-primary-action')).toBeVisible();
+    await expect(page.getByRole('button',{name:'取消骑乘',exact:true})).toBeVisible();
     const ridingOpen=await snapshot(page);
     expect(ridingOpen.authoritative.interactionSourceId).toBe('fate:riding-choice');
     expect(ridingOpen.authoritative.phase).toBe('action');
@@ -371,8 +371,8 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
         assertion('confirm-and-cancel-controls-present',Boolean(ridingOpen.visible.ridingControls),true),
         assertion('riding-does-not-change-map-pose',ridingOpen.visible.mapTransform,beforeOpenRiding.visible.mapTransform),
     ]});
-    await page.getByTestId('fate-riding-cancel').click();
-    await expect(page.getByTestId('fate-riding-controls')).toHaveCount(0);
+    await page.getByRole('button',{name:'取消骑乘',exact:true}).click();
+    await expect(page.locator('[data-riding-choice="true"]')).toHaveCount(0);
     const afterRidingCancel=await snapshot(page);
     expect(afterRidingCancel.authoritative.interactionSourceId).toBeNull();
     expect(afterRidingCancel.authoritative.activeFrameId).toBeNull();
@@ -489,6 +489,15 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     const pressureBoxes=await pressureRow.locator('[data-card-id]').evaluateAll(cards=>cards.map(card=>{const box=card.getBoundingClientRect();return {left:box.left,right:box.right,bottom:box.bottom,width:box.width};}));
     measuredEvidence.pressureHand={cards:pressureBoxes,row:await pressureRow.evaluate(element=>({scrollWidth:element.scrollWidth,clientWidth:element.clientWidth,overflowX:getComputedStyle(element).overflowX}))};
     await capture('十张真实牌实例在手牌中重叠贴底','saturated-attack-hand','容量代表态：把本人真实牌库实例移入手牌，保持完整牌宽、重叠且卡面贴底，无横向滚动条。');
+    const filledLayout=await snapshot(page);
+    await patchState(page,{core:{players:{'0':{hand:[],selectedAttackIds:[],activeAttackIds:[],activeSkills:[],normalAttackPlayed:false}}}});
+    await expect(page.getByText('暂无攻击手牌',{exact:true})).toBeVisible();
+    const emptyLayout=await snapshot(page);
+    expect(Math.abs(emptyLayout.visible.playedArea.bottom-filledLayout.visible.playedArea.bottom),'空手牌不得使出牌区下移').toBeLessThanOrEqual(1);
+    expect(Math.abs(emptyLayout.visible.attackHand.height-filledLayout.visible.attackHand.height),'空手牌保留手牌区高度').toBeLessThanOrEqual(1);
+    const identityCopy=page.locator('.fd-self-copy');
+    expect(await identityCopy.evaluate(element=>element.scrollWidth-element.clientWidth),'玩家名称不得溢出自身信息区').toBeLessThanOrEqual(1);
+    await capture('空手牌保持出牌区位置','empty-hand-stable-anchor','布局代表态：同一视口比较有手牌和无手牌时，已出牌区保持位置。');
     steps.push({id:'saturated-attack-hand',action:'容量代表态：本人真实牌库中的十张实例进入手牌，核对重叠、贴底和无滚动条',before:beforePressure,after:await snapshot(page),assertions:[assertion('real-card-instance-count',pressureBoxes.length,pressureCards.length)]});
     await patchState(page,{core:{players:{'0':denseState.core.players['0']}}});
     await page.mouse.click(8,8);

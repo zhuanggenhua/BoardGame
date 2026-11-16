@@ -7,6 +7,7 @@ import { getRuntimeImageCandidateUrls } from '../../../core/AssetLoader';
 import type { FateDominationCore, LocationId } from '../domain/types';
 import './map-surface.css';
 import { fateTokenAsset } from './identityArtwork';
+import { projectFatePlayer } from './playerPresentation';
 import {legalFateDeploymentSlots,nextFateDeploymentSlot} from '../domain/deployment';
 import {useTranslation} from 'react-i18next';
 import { FATE_DEPLOYMENT_SLOTS as DEPLOYMENT_SLOTS, FATE_MAP_ROOMS as ROOMS, fatePawnPosition } from './fateMapGeometry';
@@ -160,8 +161,10 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
                         : <button type="button" className={`fd-runtime-location${deployment ? ' fd-runtime-deployment-slot' : ''}${canUseLocation(id,deployment?null:undefined)?'':' is-tutorial-unavailable'}`} data-tutorial-blocked={!canUseLocation(id,deployment?null:undefined)} data-fate-destination={id} data-fate-slot={deployment?'none':undefined} style={deployment ? {left:rect.x+705,top:rect.y+46,width:88,height:88} : { left: rect.x, top: rect.y, width: rect.w, height: rect.h }} data-tutorial-id={deployment ? `fate-deployment-${id}` : `fate-location-${id}`} data-testid={`fate-domination-location-${id}`} aria-label={`选择${core.battlefield[id].label}`} onClick={() => deployment ? onLocation(id,null) : onLocation(id)}/>) }
                     {core.battlefield[id].playerIds.map(playerId => {
                         const { x: pawnX, y: pawnY } = fatePawnPosition(core,id,playerId);
+                        const power = projectFatePlayer(core, playerId, viewerId ?? null).power;
+                        const onTerrain = (id === 'miyama' || id === 'shinto') && core.players[playerId].deploymentSlot !== null;
                         return <React.Fragment key={playerId}>
-                            <button type="button" data-fate-drag-source={playerId===movablePlayerId?playerId:undefined} data-tutorial-id={`fate-pawn-${playerId}`} className="fd-runtime-pawn" disabled={playerId !== movablePlayerId} aria-pressed={playerId === movablePlayerId && moving} onClick={onPawn} style={{ left: pawnX, top: pawnY }} aria-label={`玩家${Number(playerId) + 1}位于${core.battlefield[id].label}`}><OptimizedImage draggable={false} src={fateTokenAsset(core.players[playerId].masterId)} alt={`玩家${Number(playerId)+1}棋子`} /></button></React.Fragment>; })}
+                            <button type="button" data-fate-drag-source={playerId===movablePlayerId?playerId:undefined} data-tutorial-id={`fate-pawn-${playerId}`} className="fd-runtime-pawn" disabled={playerId !== movablePlayerId} aria-pressed={playerId === movablePlayerId && moving} onClick={onPawn} style={{ left: pawnX, top: pawnY }} aria-label={`玩家${Number(playerId) + 1}位于${core.battlefield[id].label}`}><OptimizedImage draggable={false} src={fateTokenAsset(core.players[playerId].masterId)} alt={`玩家${Number(playerId)+1}棋子`} />{(id === 'miyama' || id === 'shinto') && <span className={`fd-pawn-power ${onTerrain ? 'is-right' : 'is-left'}`} aria-label={`威力 ${power}`}>{power}</span>}</button></React.Fragment>; })}
                 </React.Fragment>;
         })}
             <span className="fd-event-deck-count fd-situation-deck-count" style={{left:285,top:324}}>{core.situationDeckCount}</span>

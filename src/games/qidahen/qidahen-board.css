@@ -598,6 +598,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .qidahen-battle-result-enter { animation: qidahen-battle-result-enter 300ms ease-out both; }
+[data-testid="qidahen-army-level-inspect"] {
+    border-color: #9cecff !important;
+    background: #16495a !important;
+    color: #effcff !important;
+}
 @media (prefers-reduced-motion: reduce) {
   .qidahen-battle-result-enter { animation: none; }
 }

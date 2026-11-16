@@ -140,7 +140,7 @@ async function readSeatSwapState(matchId: string, access: TestMatchAccess) {
     };
 }
 
-test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 playCards', async ({ browser }, testInfo) => {
+test('SmashUp 四人房真人和三个 AI 选派系后完成一轮交接', async ({ browser }, testInfo) => {
     test.setTimeout(240000);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -238,6 +238,31 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
             ai2Factions: 2,
             ai3Factions: 2,
         });
+
+        // 保留蛇形选派系的同一房间，继续验证真人结束回合后多席 AI 的实际出牌。
+        const startingState = await getMatchState(matchId, page);
+        const startingTurn = Number(startingState.core?.turnNumber ?? 0);
+        const aiActors = new Set<string>();
+        const finishTurn = page.getByTestId('su-end-turn-action-button');
+        await expect(finishTurn).toBeEnabled({ timeout: 15000 });
+        await finishTurn.click();
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, page);
+            for (const entry of state.sys?.eventStream?.entries ?? []) {
+                const event = entry.event as { type?: string; payload?: { playerId?: string } };
+                if ((event.type === 'su:minion_played' || event.type === 'su:action_played')
+                    && event.payload?.playerId && ['1', '2', '3'].includes(event.payload.playerId)) {
+                    aiActors.add(event.payload.playerId);
+                }
+            }
+            const current = state.core?.turnOrder?.[state.core?.currentPlayerIndex ?? -1];
+            return {
+                aiActors: [...aiActors].sort(),
+                returnedToHost: current === '0' && Number(state.core?.turnNumber ?? 0) >= startingTurn + 1,
+            };
+        }, { timeout: 90000, message: '真人结束回合后，三个 AI 应实际出牌并最终交还真人' })
+            .toEqual({ aiActors: ['1', '2', '3'], returnedToHost: true });
+        await expect(finishTurn).toBeEnabled({ timeout: 15000 });
 
         const finalShot = await saveEvidenceScreenshot(page, testInfo, 'smashup-auto-ai-faction-playcards');
         console.log(JSON.stringify({

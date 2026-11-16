@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { UI_Z_INDEX } from "../../../core";
+import "./magnify-overlay.css";
 
 export const MagnifyOverlay = ({
   isOpen,
@@ -12,7 +13,7 @@ export const MagnifyOverlay = ({
   overlayClassName = "",
   closeLabel,
   closeButtonClassName = "",
-  revealCloseAfterPointerMove = false,
+  revealCloseAfterPointerMove = true,
   overlayTestId,
   interactive = true,
   closeOnBackdrop = true,
@@ -71,8 +72,9 @@ export const MagnifyOverlay = ({
           {isOpen && (
             <button
               type="button"
+              data-magnify-interactive={interactive ? "true" : "false"}
               data-testid={overlayTestId ? `${overlayTestId}-close` : undefined}
-              className={`absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-black/55 text-white/90 shadow-lg backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${closeButtonClassName}`}
+              className={`magnify-overlay-close absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-black/55 text-white/90 shadow-lg backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${closeButtonClassName}`}
               onClick={onClose}
               aria-label={closeLabel ?? t("close")}
               title={closeLabel ?? t("close")}

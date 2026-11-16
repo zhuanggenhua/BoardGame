@@ -6,6 +6,7 @@ import { createMainRollContext } from '../../src/games/dicethrone/domain/rollCon
 import { getDieFaceByDefinition } from '../../src/games/dicethrone/domain/rules';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { finalizeThorEvidenceSourceIdentity, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 import type { DiceThroneCore } from '../../src/games/dicethrone/domain/types';
 
 test('索尔四人连锁闪电选择另一个敌人承受附属伤害', async ({ browser, baseURL }, info) => {
@@ -15,6 +16,10 @@ test('索尔四人连锁闪电选择另一个敌人承受附属伤害', async ({
     if (!match || match.players.length !== 4) { if (match) await cleanupDTMatch(match); throw new Error('未能建立四人房间'); }
     const pages = match.players.map(player => player.page);
     const current = async () => { const value = await getMatchState(match.matchId, match.hostPage) as any; return value.G ?? value; };
+    const evidence = await createThorBehaviorEvidence(match.hostPage, info, 'thor-chain-target', async () => {
+        const state = await current();
+        return { phase: state.sys.phase, defender: state.core.pendingAttack?.defenderId ?? null, teamHealth: state.core.teamHealth.B };
+    }, 'e2e/dicethrone/thor-chain-required-ui-states.json', '四人真实选角开局后预置合法攻击骰；目标选择和伤害由本次玩家操作产生。');
     try {
         for (const [index, hero] of ['thor','monk','treant','samurai'].entries()) await selectCharacter(pages[index], hero);
         await readyMultiplePlayersAndStartGame(match.hostPage, pages.slice(1));
@@ -45,8 +50,10 @@ test('索尔四人连锁闪电选择另一个敌人承受附属伤害', async ({
         await expect.poll(async () => (await current()).core.pendingBonusDiceSettlement?.dice.length).toBe(3);
         await match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]').click();
         await match.hostPage.getByTestId('die-button-0').click(); await match.hostPage.getByTestId('die-button-1').click();
-        await match.hostPage.getByTestId('dice-interaction-confirm-button').click();
-        await expect.poll(async () => (await current()).sys.interaction.current?.data?.options?.map((o: any) => o.value?.customId)).toContain('thor-chain-target');
+        await evidence.step('enter-chain-target', '确认所选效果骰并进入附属目标选择', async () => {
+            await match.hostPage.getByTestId('dice-interaction-confirm-button').click();
+            await expect.poll(async () => (await current()).sys.interaction.current?.data?.options?.map((o: any) => o.value?.customId)).toContain('thor-chain-target');
+        }, after => [{ name: '选择前敌队生命未减少', actual: after.authoritative.teamHealth, expected: 50 }]);
         state = await current();
         const other = defender === '1' ? '3' : '1';
         const option = state.sys.interaction.current.data.options.find((o: any) => o.value?.customId === 'thor-chain-target' && o.value?.targetPlayerId === other);
@@ -54,13 +61,19 @@ test('索尔四人连锁闪电选择另一个敌人承受附属伤害', async ({
         for (const page of pages.slice(1)) {
             await expect(page.getByTestId(`dt-player-target-${other}`)).toHaveCount(0);
         }
-        await shot(match.hostPage, info, '01-主攻击目标已确定后选择其他附属目标');
-        await match.hostPage.getByTestId(`dt-player-target-${other}`).click();
+        await evidence.capture('thor-chain-target-choose', 'enter-chain-target', '01-主攻击目标已确定后选择其他附属目标', 'interaction-mode');
         const confirm = match.hostPage.locator('#modal-root').getByRole('button', { name: '确认', exact: true }).last();
-        await expect(confirm).toBeEnabled();
-        await shot(match.hostPage, info, '02-选中附属目标后使用原确认');
-        await confirm.click();
-        await expect.poll(async () => { const s = await current(); return { defender: s.core.pendingAttack?.defenderId, hp: s.core.teamHealth.B, phase: s.sys.phase }; }).toEqual({ defender, hp: 48, phase: 'defensiveRoll' });
+        await evidence.step('select-chain-target', '点选另一名敌人作为附属目标', async () => {
+            await match.hostPage.getByTestId(`dt-player-target-${other}`).click();
+            await expect(confirm).toBeEnabled();
+        }, after => [{ name: '确认前敌队生命未减少', actual: after.authoritative.teamHealth, expected: 50 }]);
+        await evidence.capture('thor-chain-target-selected', 'select-chain-target', '02-选中附属目标后使用原确认', 'target-highlight');
+        await evidence.step('confirm-chain-target', '点击原确认并结算附属伤害', async () => {
+            await confirm.click();
+            await expect.poll(async () => { const s = await current(); return { defender: s.core.pendingAttack?.defenderId, hp: s.core.teamHealth.B, phase: s.sys.phase }; }).toEqual({ defender, hp: 48, phase: 'defensiveRoll' });
+            await expect(match.hostPage.locator(`[data-tutorial-id="opponent-health"][data-feedback-player-id="${other}"]`)).toHaveText('48');
+        }, after => [{ name: '敌队生命减少且主攻击进入防御', actual: { defender: after.authoritative.defender, hp: after.authoritative.teamHealth, phase: after.authoritative.phase }, expected: { defender, hp: 48, phase: 'defensiveRoll' } },
+            { name: '玩家画面显示附属目标生命', actual: (after.visible.health as Record<string, string>)[other], expected: '48' }]);
         await expect.poll(async () => {
             const entries = (await current()).sys.eventStream?.entries ?? [];
             return entries.some((entry: any) => entry.event?.type === 'DAMAGE_DEALT'
@@ -71,6 +84,7 @@ test('索尔四人连锁闪电选择另一个敌人承受附属伤害', async ({
         }).toBe(true);
         await waitForDamageNumbersToSettle(match.hostPage);
         await shot(match.hostPage, info, '03-附属伤害结算并保留主攻击');
+        await evidence.finish('另一个敌人受到附属伤害，主攻击目标保持并进入防御。');
         await finalizeThorEvidenceSourceIdentity(match.hostPage);
     } finally { await cleanupDTMatch(match); }
 });

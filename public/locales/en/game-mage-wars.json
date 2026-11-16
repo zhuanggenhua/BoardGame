@@ -472,11 +472,11 @@
     },
     "steps": {
       "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
-      "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; your goal is to deal enough damage to defeat the opposing mage.",
+      "selfHud": "Your mage panel shows life, damage, mana, channeling, action and quickcast markers. Apprentice mages start with Life 24, Mana 10 and Channeling 10. Starting channeling has already resolved, so you now have 20 mana.",
       "opponentHud": "The opponent panel shows the same readouts. Opponent prepared spells use card backs and a count, so card names stay hidden until revealed.",
       "stage": "The rules split a round into the Ready Stage and Action Stage. Ready includes Initiative, Reset, Channel, Upkeep, Planning, and Deployment; Action includes Initiative Quickcast, Creature Action, and Final Quickcast. The tutorial stops only when you need to decide.",
       "prepareChannelResult": "The ready stage is resolving.",
-      "channelResult": "The Beastmaster currently has Channeling 10; after channeling, the mana supply gains 10 mana.",
+      "channelResult": "Channeling already resolved at the start: the Beastmaster's initial 10 mana plus 10 channeling gives 20 mana now.",
       "prepareUpkeep": "Upkeep is resolving.",
       "preparePlanning": "Upkeep is resolving before planning begins.",
       "spellCardReading": "Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.",

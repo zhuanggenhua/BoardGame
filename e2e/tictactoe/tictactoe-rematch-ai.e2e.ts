@@ -78,7 +78,7 @@ const installMatchStorage = async (
     );
 };
 
-const injectFinishedGame = async (page: Page, matchId: string) => {
+const injectFinishedGame = async (page: Page, matchId: string, credentials: string) => {
     const state = await getMatchState(matchId, page);
     await injectMatchState(matchId, {
         ...state,
@@ -94,7 +94,7 @@ const injectFinishedGame = async (page: Page, matchId: string) => {
             currentPlayerIndex: 0,
             gameover: { winner: '0' },
         },
-    }, page);
+    }, undefined, { playerId: '0', credentials });
 };
 
 const waitForNewMatch = async (page: Page, oldMatchId: string) => {
@@ -109,7 +109,7 @@ const waitForNewMatch = async (page: Page, oldMatchId: string) => {
 };
 
 test.describe('井字棋 AI 重赛 E2E', () => {
-    test('人机房点一次再来一局后由 AI 自动同意并进入新房间', async ({ browser }, testInfo) => {
+    test('人机房重赛后真人落子并由 AI 自主回应', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
 
         const pageDiagnostics: string[] = [];
@@ -145,7 +145,7 @@ test.describe('井字棋 AI 重赛 E2E', () => {
             ].join('\n'));
         }
 
-        await injectFinishedGame(hostPage, match.matchId);
+        await injectFinishedGame(hostPage, match.matchId, match.hostCredentials);
 
         const playAgain = hostPage.getByRole('button', { name: '再来一局' });
         await expect(playAgain).toBeVisible({ timeout: 15000 });
@@ -174,6 +174,21 @@ test.describe('井字棋 AI 重赛 E2E', () => {
         };
         expect(nextMatchInfo.setupData?.enableAi).toBe(true);
         expect(nextMatchInfo.setupData?.seatControllers?.['1']?.type).toBe('local-ai');
+
+        // 重赛保留 AI 配置只是前提，还要验证新房间里的实际人机交接。
+        const firstCell = hostPage.locator('[data-tutorial-id="cell-0"]');
+        await firstCell.click();
+        await expect.poll(async () => {
+            const state = await getMatchState(nextMatchId!, hostPage);
+            const core = state.core as { cells: (string | null)[]; currentPlayer: string };
+            return {
+                human: core.cells[0],
+                aiMoves: core.cells.filter((cell) => cell === '1').length,
+                currentPlayer: core.currentPlayer,
+            };
+        }, { timeout: 20000 }).toEqual({ human: '0', aiMoves: 1, currentPlayer: '0' });
+        await expect(firstCell.locator('svg')).toBeVisible();
+        await expect(hostPage.locator('[data-tutorial-id^="cell-"] svg')).toHaveCount(2);
 
         await hostContext.close();
     });

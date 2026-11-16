@@ -527,6 +527,28 @@ describe('Test Routes Integration', () => {
         vi.clearAllMocks();
     });
 
+    describe('POST /test/ai-step-barrier', () => {
+        it('requires token and match credentials and is disabled in development', async () => {
+            const matchId = 'barrier-auth';
+            await storage.setMetadata(matchId, {
+                matchID: matchId, gameName: 'smashup',
+                players: { 0: { id: 0, name: 'Player 0', credentials: TEST_PLAYER_CREDENTIALS, isConnected: false } },
+                createdAt: Date.now(), updatedAt: Date.now(),
+            });
+            const body = JSON.stringify({ matchId, operation: 'status' });
+            const request = (headers: Record<string, string>) => fetch(`${baseURL}/test/ai-step-barrier`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body,
+            });
+            expect((await request({})).status).toBe(401);
+            expect((await request({ 'X-Test-Token': TEST_TOKEN, 'X-Test-Player-Id': '0', 'X-Test-Player-Credentials': 'wrong' })).status).toBe(403);
+            const authorized = { 'X-Test-Token': TEST_TOKEN, 'X-Test-Player-Id': '0', 'X-Test-Player-Credentials': TEST_PLAYER_CREDENTIALS };
+            expect((await request(authorized)).status).toBe(200);
+            process.env.NODE_ENV = 'development';
+            try { expect((await request(authorized)).status).toBe(403); }
+            finally { process.env.NODE_ENV = 'test'; }
+        });
+    });
+
     describe('POST /test/inject-state', () => {
         it('should inject valid state successfully', async () => {
             const matchId = 'match-1';

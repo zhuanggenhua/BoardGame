@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-direct-damage-response", "uiStateId": "thor-direct-damage-response-entry", "viewport": "desktop", "reason": "独立伤害进入响应后须显示原手牌和响应入口。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

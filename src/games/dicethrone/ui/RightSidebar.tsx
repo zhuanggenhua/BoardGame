@@ -55,6 +55,7 @@ export const RightSidebar = ({
     showDiceActions = true,
     isBonusDiceSettlement = false,
     canRerollBonusDice = false,
+    bonusRerollCostAmount,
     onRerollBonusDice,
     activeModifiers,
     attackModifierBonusDamage,
@@ -95,6 +96,7 @@ export const RightSidebar = ({
     showDiceActions?: boolean;
     isBonusDiceSettlement?: boolean;
     canRerollBonusDice?: boolean;
+    bonusRerollCostAmount?: number;
     onRerollBonusDice?: (dieIndex: number) => void;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
@@ -199,9 +201,12 @@ export const RightSidebar = ({
             label: t('dice.bonusRollOwner', { owner: ownerName }),
         };
     }, [dice, isBonusDiceSettlement, t]);
-    const interactionHint = diceInteraction?.hint.surface === 'dice-tray'
-        ? diceInteraction.hint
-        : undefined;
+    const interactionHint = diceInteraction?.kind === 'bonusSettlement'
+        && canRerollBonusDice && onRerollBonusDice && bonusRerollCostAmount === 0
+        ? { key: 'bonusDie.selectToRerollFree', surface: 'dice-tray' as const }
+        : diceInteraction?.kind !== 'bonusSettlement' && diceInteraction?.hint.surface === 'dice-tray'
+            ? diceInteraction.hint
+            : undefined;
     return (
         <div
             className="absolute top-0 flex flex-col items-center pointer-events-none"

@@ -3,6 +3,7 @@ import { test, expect, type GameTestContext } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { closeDebugPanelIfOpen, continueAttackShowcaseIfVisible, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
 import { expectDiceHintSurface, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
+import { createThorBehaviorEvidence } from '../helpers/thorBehaviorEvidence';
 import { THOR_CARDS } from '../../src/games/dicethrone/heroes/thor/cards';
 
 // 独立预期：原玩家板/提示板、slot18–33卡图与FAQ；逐对象表见当前Thor审计的独立规则预期表。
@@ -334,9 +335,12 @@ for (const upgraded of [false, true]) test(`索尔奥丁${upgraded ? '二级空�
     await attack(page, game, info, { dice: [1, 1, 4, 4, 4], slot: 'sky', upgrade: upgraded ? 'upgrade-thor-odinforce-2' : undefined, bonus: [4, 4, 6, 6, 6] });
     await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(5);
     await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
-    if (upgraded) await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择重投骰子（0/5）');
-    else await expect(page.getByTestId('dice-interaction-hint')).toHaveText('确认效果骰结果并继续结算');
-    await expectDiceHintSurface(page, 'dice-tray-left-center');
+    if (upgraded) {
+        await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择重投骰子（0/5）');
+        await expectDiceHintSurface(page, 'dice-tray-left-center');
+    } else {
+        await expect(page.getByTestId('dice-interaction-hint')).toHaveCount(0);
+    }
     await shot(page, info, '02-五颗效果骰与原确认保留结果');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
     await expect.poll(async () => { const s = await game.getState(); return { phase: s.sys.phase, electro: s.core.players['0'].tokens.electrokinesis, cp: s.core.players['0'].resources.cp, reroll: s.core.pendingBonusDiceSettlement ?? null }; }).toEqual({ phase: 'defensiveRoll', electro: 3, cp: upgraded ? 9 : 11, reroll: null });
@@ -376,20 +380,38 @@ for (const input of [
     { name: '终极四次', dice: [6, 6, 6, 6, 6], slot: 'ultimate', moves: 4, stopAfter: undefined },
 ]) test(`索尔${input.name}沿既有选择窗口逐次移动`, async ({ page, game }, info) => {
     test.setTimeout(150000);
+    const evidence = input.stopAfter === 1 ? await createThorBehaviorEvidence(page, info, 'thor-hammer-stop', async () => {
+        const state = await game.getState();
+        return { hp: state.core.players['1'].resources.hp, holder: state.core.players['1'].tokens.mjolnir ?? 0,
+            pendingAttack: Boolean(state.core.pendingAttack) };
+    }, 'e2e/dicethrone/thor-hammer-required-ui-states.json') : undefined;
     await attack(page, game, info, input);
     await expect(page.getByText('飞掷或召回姆乔尔尼尔', { exact: true })).toBeVisible();
     await shot(page, info, '02-可选移动窗口保留立即停止入口');
     if (input.moves === 0) await chooseCustom(page, game, 'thor-mjolnir-move', -1);
     for (let i = 0; i < input.moves; i++) {
         const destination = i % 2 === 0 ? 1 : 0;
-        await chooseCustom(page, game, 'thor-mjolnir-move', destination);
+        if (evidence && i === 0) {
+            await evidence.step('throw-hammer', '选择敌人并飞掷神锤一次', async () => {
+                await chooseCustom(page, game, 'thor-mjolnir-move', destination);
+                await expect.poll(async () => (await game.getState()).core.players['1'].resources.hp).toBe(49);
+            }, after => [{ name: '敌人持锤并受到一次伤害', actual: { hp: after.authoritative.hp, holder: after.authoritative.holder }, expected: { hp: 49, holder: 1 } }]);
+        } else await chooseCustom(page, game, 'thor-mjolnir-move', destination);
         await expect.poll(async () => (await game.getState()).core.players[String(destination)].tokens.mjolnir).toBe(1);
         if (i === 0) {
             await waitForDamageNumbersToSettle(page);
-            await shot(page, info, '03-一次飞掷独立扣一生命后可继续或停止');
+            if (evidence) await evidence.capture('thor-hammer-recall-or-stop', 'throw-hammer', '03-一次飞掷独立扣一生命后可继续或停止', 'interaction-mode');
+            else await shot(page, info, '03-一次飞掷独立扣一生命后可继续或停止');
         }
         if (input.stopAfter === i + 1) {
-            await chooseCustom(page, game, 'thor-mjolnir-move', -1);
+            if (evidence) {
+                await evidence.step('stop-hammer', '选择停止并返回原攻击响应', async () => {
+                    await chooseCustom(page, game, 'thor-mjolnir-move', -1);
+                    await expect(page.getByText('飞掷或召回姆乔尔尼尔', { exact: true })).toHaveCount(0);
+                    await expect(page.locator('[data-tutorial-id="opponent-health"][data-feedback-player-id="1"]')).toHaveText('49');
+                }, after => [{ name: '停止后神锤和主攻击保留', actual: { holder: after.authoritative.holder, attack: after.authoritative.pendingAttack }, expected: { holder: 1, attack: true } },
+                    { name: '停止后画面显示对手生命', actual: (after.visible.health as Record<string, string>)['1'], expected: '49' }]);
+            } else await chooseCustom(page, game, 'thor-mjolnir-move', -1);
             await expect(page.getByText('飞掷或召回姆乔尔尼尔', { exact: true })).toHaveCount(0);
             const stopped = await game.getState();
             expect(stopped.core.players['1'].resources.hp).toBe(49);
@@ -406,6 +428,7 @@ for (const input of [
     expect(s.core.players['1'].resources.hp).toBe(input.slot === 'ultimate' ? 34 : 50 - Math.ceil(completedMoves / 2));
     await waitForDamageNumbersToSettle(page);
     if (!input.stopAfter) await shot(page, info, '04-达到次数上限或停止后回原结算');
+    if (evidence) await evidence.finish('飞掷一次后选择停止，敌人持锤且原攻击保留。');
 });
 
 for (const upgraded of [false, true]) test(`索尔雷电之轮${upgraded ? '二级四骰' : '基础三骰'}沿原防御入口`, async ({ page, game }, info) => {

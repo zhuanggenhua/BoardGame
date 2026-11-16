@@ -13,9 +13,10 @@ export function fateFgoSequenceFor(entry: EventStreamEntry, core: FateDomination
   if (locationId === 'recon' || results.length < 2) return;
   const highest = Math.max(...results.map(result => result.power));
   if (!results.some(result => result.power < highest)) return;
-  // 站位来自地图棋子坐标，胜负只决定动作；隐藏身份也保留其公共位置。
+  // 演出中胜方在左、受击方在右；同侧保持地图上的相对顺序。
   const positions = results.map((result, order) => ({ result, order, position: fatePawnPosition(core, locationId, result.playerId) }))
-    .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y || a.order - b.order);
+    .sort((a, b) => Number(b.result.status === 'representative-win') - Number(a.result.status === 'representative-win')
+      || a.position.x - b.position.x || a.position.y - b.position.y || a.order - b.order);
   const actors = positions.flatMap(({ result }, lane) => {
     const player = core.players[result.playerId];
     if (!player?.isRevealed || !loadedFgoCharacter(player.servantId)) return [];

@@ -33,7 +33,7 @@ export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, draft
                 {pileInfo && <div className="fd-self-pile-info" role="status">{pileInfo}</div>}
             </div>
             <button type="button" data-tutorial-id="fate-self-seals" className="fd-self-seals" aria-label={t('ui.selfDock.useCommandSeal')} disabled={!sealEnabled} onClick={onSeal}>
-                {Array.from({length: view.player.commandSpells}, (_, index) => <CardPreview key={index} previewRef={fateCommandSealPreview(view.player.masterId)} alt={t('ui.selfDock.commandSealAlt')} style={{position:'absolute',top:(view.player.commandSpells - 1 - index) * 5,left:index * 18,width:78,zIndex:view.player.commandSpells-index}}/>)}
+                {Array.from({length: view.player.commandSpells}, (_, index) => <span key={index} className="fd-self-seal-card" style={{position:'absolute',top:(view.player.commandSpells - 1 - index) * 5,left:index * 18,width:78,zIndex:view.player.commandSpells-index}}><CardPreview previewRef={fateCommandSealPreview(view.player.masterId)} alt={t('ui.selfDock.commandSealAlt')} style={{width:'100%',display:'block'}}/></span>)}
             </button>
         </div>
         <div className="fd-self-character"><button type="button" className="fd-self-identity" aria-description={view.player.eliminated ? t('ui.selfDock.eliminatedSpectating') : undefined} aria-label={t('ui.selfDock.viewPlayerDetails', { name })} onClick={onDetail}>

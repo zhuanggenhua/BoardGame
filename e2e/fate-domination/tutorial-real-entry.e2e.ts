@@ -502,9 +502,9 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     await page.getByRole('button',{name:payload.effect==='mana'?/恢复魔力/:payload.effect==='battle'?/强化战斗/:/令咒移动/}).click();
     if(payload.effect==='move')await clickVisibleMapLocation(page,payload.targetLocationId);
     else{await capture('seal-'+payload.effect,'令咒选择效果后明确确认');await page.getByRole('button',{name:'确认使用',exact:true}).click();}
-   }else if(type==='SYS_INTERACTION_CANCEL')await page.getByTestId('fate-riding-cancel').click();
+   }else if(type==='SYS_INTERACTION_CANCEL')await page.getByRole('button',{name:'取消骑乘',exact:true}).click();
    else if(type==='SYS_INTERACTION_RESPOND'){
-    if(payload.optionIds){for(const id of payload.optionIds)await page.locator(quoted(id)).click();await capture('riding','骑乘候选卡面完整，轻描边区分选择与实付费用');await page.getByTestId('fate-riding-confirm').click();}
+    if(payload.optionIds){for(const id of payload.optionIds)await page.locator(quoted(id)).click();await capture('riding','骑乘候选卡面完整，描边区分选择，魔力显示预计消耗');await page.getByTestId('fate-domination-primary-action').click();}
     else{
      if(!lateRefreshed){await resume(page,step.id,before.core);lateRefreshed=true;}
      await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);

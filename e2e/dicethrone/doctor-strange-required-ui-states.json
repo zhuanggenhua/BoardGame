@@ -15,6 +15,7 @@
     { "chainId": "公开准备区浏览", "uiStateId": "doctor-strange-public-prepared-browse", "viewport": "desktop", "reason": "多张准备法术的槽位和翻页入口" },
     { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-candidates", "viewport": "desktop", "reason": "桌面多张法术候选与搜索操作" },
     { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-phone-candidates", "viewport": "mobile", "reason": "横屏多张法术候选与搜索操作" },
-    { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-phone-scrolled", "viewport": "mobile", "reason": "横屏浏览末张候选及操作区" }
+    { "chainId": "准备法术隐藏与恢复", "uiStateId": "doctor-prepared-visible", "viewport": "desktop", "reason": "法术覆盖槽及槽外显示按钮" },
+    { "chainId": "准备法术隐藏与恢复", "uiStateId": "doctor-prepared-hidden", "viewport": "desktop", "reason": "收起法术后被动与恢复入口可见" }
   ]
 }

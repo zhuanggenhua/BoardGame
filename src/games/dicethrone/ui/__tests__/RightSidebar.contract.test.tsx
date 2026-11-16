@@ -158,13 +158,24 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
         expect(screen.getByTestId('response-window-wiring')).toHaveTextContent('true');
     });
 
-    it('效果骰结算提示与选骰共用骰盘左侧，保留上方攻击修正槽', () => {
+    it('效果骰结算保留确认操作，不重复显示结算提示', () => {
         const diceInteraction = createBonusSettlementContract();
         render(<RightSidebar {...requiredProps} diceInteraction={diceInteraction} isBonusDiceSettlement />);
 
-        expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_bonus_settlement');
-        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-anchor', 'dice-tray');
-        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-placement', 'tray-left-center');
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+        expect(screen.getByTestId('dice-contract-actions')).toHaveAttribute('data-right-action', 'confirmSettlement');
+    });
+
+    it('可免费重投的效果骰提示点击骰子，机会用尽后不再提示', () => {
+        const diceInteraction = createBonusSettlementContract();
+        const props = { ...requiredProps, diceInteraction, isBonusDiceSettlement: true,
+            canRerollBonusDice: true, bonusRerollCostAmount: 0, onRerollBonusDice: vi.fn() };
+        const { rerender } = render(<RightSidebar {...props} />);
+        expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('bonusDie.selectToRerollFree');
+        rerender(<RightSidebar {...props} canRerollBonusDice={false} />);
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+        rerender(<RightSidebar {...props} bonusRerollCostAmount={1} />);
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
     });
 
     it('骰盘隐藏时不留下脱离候选对象的骰子提示', () => {

@@ -19,7 +19,7 @@ export const SplendorDomain: DomainCore<SplendorCore, SplendorCommand, SplendorE
 
     setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown, context?: DomainSetupContext): SplendorCore => {
         const mode = context?.mode ?? getGameMode();
-        const autoStarted = mode === 'local' || mode === 'tutorial';
+        const autoStarted = mode === 'local' || mode === 'tutorial' || mode === 'test';
         const configuredStartingPlayer = (setupData as SplendorSetupData | undefined)?.startingPlayerId;
         const startingPlayerId = (typeof configuredStartingPlayer === 'string' && playerIds.includes(configuredStartingPlayer as PlayerId))
             ? configuredStartingPlayer as PlayerId

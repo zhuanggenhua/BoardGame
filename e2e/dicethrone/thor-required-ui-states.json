@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-paid-throw-and-odin", "uiStateId": "thor-discard-cost", "viewport": "desktop", "reason": "弃牌飞掷必须展示原手牌选择和取消入口。" },
+    { "chainId": "thor-paid-throw-and-odin", "uiStateId": "thor-odin-reroll-empty", "viewport": "desktop", "reason": "奥丁效果骰应展示原骰盘、空选提示与确认入口。" },
+    { "chainId": "thor-paid-throw-and-odin", "uiStateId": "thor-odin-reroll-selected", "viewport": "desktop", "reason": "选中效果骰后展示骰子高亮、原重掷动作与确认。" },
+    { "chainId": "thor-worthy-fixed-die", "uiStateId": "thor-worthy-value-choice", "viewport": "desktop", "reason": "当之无愧必须展示规则指定的四或五候选。" },
+    { "chainId": "thor-worthy-fixed-die", "uiStateId": "thor-worthy-die-choice", "viewport": "desktop", "reason": "选择固定值后必须在原骰盘选择自己的骰子。" }
+  ],
+  "reviewFile": "visual-review.json"
+}

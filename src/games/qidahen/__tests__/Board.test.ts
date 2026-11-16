@@ -15,7 +15,7 @@ const REQUIRED_TEST_IDS = [
     'data-qidahen-region-outline="true"',
     'data-qidahen-map-token-outlined="true"',
     'MAP_TOKEN_IDLE_OUTLINE',
-    'resolvedBoxShadow ?? MAP_TOKEN_IDLE_OUTLINE',
+    'boxShadow: resolvedBoxShadow ?? (tokenScale < 1',
     'data-testid="qidahen-shared-printed-runtime-switcher"',
     'data-testid={`qidahen-shared-printed-runtime-option-${region.id}`}',
     'data-testid="qidahen-runtime-region-graph"',
@@ -342,7 +342,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('textOrientation:');
         expect(boardSource).toContain('const activatableMoveChoices = disabled ? [] : moveChoices;');
         expect(boardSource).toContain("activatableMoveChoices.map((choice) => WHEEL_SECTORS.findIndex(sector => sector.id === getQidahenWheelDestination(selectedId, choice.steps).id))");
-        expect(boardSource).toContain('className="pointer-events-none group absolute left-[136px] top-[8px] z-30 h-[438px] w-[438px]"');
+        expect(boardSource).toContain('className="pointer-events-none group absolute z-30"');
+        expect(boardSource).toContain('left: placement.left, top: placement.top, width: placement.size, height: placement.size');
         expect(boardSource).toContain('className={`pointer-events-auto outline-none transition-[fill,stroke]');
         expect(boardSource).toContain('data-testid="qidahen-wheel-current-marker"');
         expect(boardSource).toContain('data-wheel-current-position={selectedId}');
@@ -675,7 +676,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onControlledViewportChange={handleControlledViewportChange}');
         expect(boardSource).toContain('onPointerUp={handlePointerUp}');
         expect(boardSource).toContain('viewport={mapViewport}');
-        expect(boardSource).toContain('onViewportChange={setMapViewport}');
+        expect(boardSource).toContain('onViewportChange={updateManualMapViewport}');
+        expect(boardSource).toContain('setMapViewport(clampManualMapViewport(next));');
         expect(boardSource).toContain('const buildQidahenGuideDisplayPoints = (');
         expect(boardSource).toContain('const buildQidahenGuideArrowHeadPath = (');
         expect(boardSource).toContain('const getGuideArmyTokenPoint = (');
@@ -930,7 +932,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('bottom: dockBottomInset,');
         expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
         expect(boardSource).toContain("data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}");
-        expect(boardSource).toContain('const mapTargetSelectionActive = mapSelectionCandidateIds.length > 0;');
+        expect(boardSource).toContain('const mapTargetSelectionActive = mapSelectionCandidateIds.length > 0');
+        expect(boardSource).toContain('raidMapPreviewActive && displayCore.regionFocusState.currentTargetRegionId');
         expect(boardSource).toContain('mapTargetSelectionActive={mapTargetSelectionActive}');
         expect(boardSource).toContain('height: bottomDockHeight,');
         expect(boardSource).toContain('width: handDockWidth,');
@@ -1051,8 +1054,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("filter: 'brightness(1.12) saturate(1.12)'");
         expect(boardSource).toContain("filter: 'brightness(1.04) saturate(1.05)'");
         expect(boardSource).toContain('data-testid={`qidahen-pending-committed-highlight-${token.id}`}');
-        expect(boardSource).toContain('data-testid="qidahen-committed-troop-check"');
-        expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed);');
+        expect(boardSource).not.toContain('data-testid="qidahen-committed-troop-check"');
+        expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed) || Boolean(onExpandStack);');
         expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
         expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : inArmyGroup ? 16 : 14');
         expect(boardSource).toContain('className="pointer-events-auto absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
@@ -1250,11 +1253,12 @@ describe('Qidahen Board 结构门禁', () => {
         });
     }
 
-    it('已选标记与等级随兵牌反旋转保持可读，战斗仍用正式骰子表现', () => {
-        expect(boardSource).toContain('data-testid="qidahen-committed-troop-check"');
+    it('兵牌不重复显示选中勾和等级角标，战斗仍用正式骰子表现', () => {
+        expect(boardSource).not.toContain('data-testid="qidahen-committed-troop-check"');
+        expect(boardSource).toContain('!pendingCommittedSelectable && !pendingCommittedSelected');
         expect(boardSource).toContain('rotate(${-(token.rotationDeg ?? 0)}deg)');
         expect(boardSource).toContain('<QidahenBattleRollOverlay');
-        expect(boardSource).toContain('onComplete={battlePresentation.complete}');
+        expect(boardSource).toContain('onComplete={() => {');
     });
 
     for (const legacyChain of FORBIDDEN_HALF_FINISHED_CHAINS) {

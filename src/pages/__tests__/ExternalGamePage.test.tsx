@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({ getGame: vi.fn(), play: vi.fn(() => ({ seconds
 vi.mock('../../api/external-games', () => ({ getExternalGame: mocks.getGame, getOwnedGame: mocks.getGame }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ token: 'test-token', isLoading: false }) }));
 vi.mock('../../components/external/useExternalPlay', () => ({ useExternalPlay: mocks.play }));
+vi.mock('../../components/game/framework/widgets/GameHUD', () => ({ GameHUD: ({ mode }: { mode: string }) => <div data-testid="game-hud" data-mode={mode} /> }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, options?: { name?: string }) => key === 'platform.externalGamePage.iframeTitle' ? `${options?.name} 游戏` : key }) }));
 import ExternalGamePage from '../ExternalGamePage';
 
@@ -50,9 +51,7 @@ describe('外链页与计时生命周期', () => {
         </Routes></MemoryRouter></QueryClientProvider>);
         await screen.findByTitle('测试游戏 游戏');
         expect(screen.queryByRole('link', { name: /platform.externalGamePage.openOriginal/ })).toBeNull();
-        fireEvent.click(screen.getByRole('button', { name: 'platform.externalGamePage.openGameMenu' }));
-        expect(screen.getByRole('button', { name: 'platform.externalGamePage.endAndReturn' })).toBeTruthy();
-        expect(screen.queryByText('platform.externalGamePage.playTime')).toBeNull();
+        expect(screen.getByTestId('game-hud').getAttribute('data-mode')).toBe('external');
         expect(mocks.play).toHaveBeenLastCalledWith('external-test', 'test-token', true);
     });
     it('后台下架或详情重取失败时卸载 iframe 并结束计时', async () => {

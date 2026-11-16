@@ -9,16 +9,3 @@
     opacity: 1;
     pointer-events: auto;
 }
-
-@media (hover: hover) {
-    .mw-magnify-close {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .group\/modal[data-close-pointer-ready="true"]:hover > .mw-magnify-close,
-    .mw-magnify-close:focus-visible {
-        opacity: 1;
-        pointer-events: auto;
-    }
-}

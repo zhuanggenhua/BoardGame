@@ -19,6 +19,9 @@
 
 .fd-runtime-pawn { border: 0; background: transparent; box-shadow: none; width: 82px; height: 82px; }
 .fd-runtime-pawn > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 5px #0009); }
+.fd-pawn-power { position:absolute; top:50%; transform:translateY(-50%); min-width:38px; padding:3px 6px; border-radius:4px; background:#101717ed; color:#f5dc91; font:bold 25px/1.15 Arial,sans-serif; text-align:center; pointer-events:none; }
+.fd-pawn-power.is-right { left:100%; }
+.fd-pawn-power.is-left { right:100%; }
 .fd-runtime-missing-asset { font-size: 12px; padding: 4px; background: #321c14; color: #fff; }
 .fd-runtime-pawn:not(:disabled) { pointer-events:auto; cursor:pointer; }
 .fd-runtime-pawn[aria-pressed="true"] { outline:3px solid #ffe6a0; outline-offset:3px; }

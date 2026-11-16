@@ -1440,6 +1440,33 @@ async function expectAttackBarLegendVisualLoaded(page: Page) {
 }
 
 test.describe('Mage Wars tutorial', () => {
+    test('开局法力说明与阶段悬浮提示', async ({ context, page }) => {
+        test.setTimeout(120_000);
+        const diagnostics = await openMageWarsTutorial(context, page);
+        const reviewDir = 'test-results/evidence-screenshots/mage-wars/tutorial-review-20261116';
+        await waitForTutorialStep(page, 'intro', 60_000);
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'self-hud');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('开局聚魔已经结算');
+        await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
+        await screenshotTutorialStep(page, 'self-hud', `${reviewDir}/01-self-hud.png`);
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'opponent-hud');
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'stage');
+        await page.locator('[data-testid="mage-wars-phase-progress-item"][data-phase-id="planning"]').hover();
+        await expect(page.getByTestId('info-tooltip')).toContainText('从法术书秘密准备本回合要使用的法术');
+        await expect.poll(() => page.getByTestId('info-tooltip').evaluate((element) => Number(getComputedStyle(element).opacity))).toBeGreaterThan(0.99);
+        await screenshot(page, `${reviewDir}/02-phase-hover.png`);
+        await page.mouse.move(1, 1);
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'channel-result');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('已自动结算');
+        await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
+        await screenshotTutorialStep(page, 'channel-result', `${reviewDir}/03-channel-result.png`);
+        await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial-channel-review', diagnostics }]);
+    });
+
     test('单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、攻击条、公开弃牌、快速施法窗口、移动、墙体和守卫', async ({ context, page }) => {
         test.setTimeout(480_000);
         await rm(SCREENSHOT_DIR, { recursive: true, force: true });
@@ -1456,6 +1483,8 @@ test.describe('Mage Wars tutorial', () => {
         await expect(page.getByTestId('tutorial-overlay-content')).toContainText('生命');
         await expect(page.getByTestId('tutorial-overlay-content')).toContainText('法力');
         await expect(page.getByTestId('tutorial-overlay-content')).toContainText('聚魔');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('开局聚魔已经结算');
+        await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
         await screenshotTutorialStep(page, 'self-hud', SELF_HUD_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
@@ -1472,6 +1501,7 @@ test.describe('Mage Wars tutorial', () => {
 
         await waitForTutorialStep(page, 'channel-result');
         await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('已自动结算');
         await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
             .toHaveCount(0);
         await screenshotTutorialStep(page, 'channel-result', CHANNEL_RESULT_SCREENSHOT_PATH);

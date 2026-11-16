@@ -22,6 +22,7 @@ import { CardInspectButton as SharedCardInspectButton } from '../../components/c
 import { InfoTooltip } from '../../components/common/overlays/InfoTooltip';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import './ui/cardInspect.css';
+import './ui/phaseTooltip.css';
 import { BoardDamageStateOverlay } from '../../components/common/animations/BoardDamageStateOverlay';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
@@ -730,7 +731,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                                     aria-hidden="true"
                                 />
                                 <span className="min-w-0 truncate">{t(`phases.${phaseId}`)}</span>
-                                <InfoTooltip title={t(`phases.${phaseId}`)} content={[t(`phaseDescriptions.${phaseId}`)]} isVisible={shownPhase === phaseId} position="right" />
+                                <InfoTooltip title={t(`phases.${phaseId}`)} content={[t(`phaseDescriptions.${phaseId}`)]} isVisible={shownPhase === phaseId} position="right" className="mw-phase-tooltip" />
                             </li>
                         );
                     })}

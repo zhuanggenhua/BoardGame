@@ -1374,7 +1374,7 @@ test.describe('亡灵交互技能', () => {
       ).first();
       await expect(summonedUnit).toBeVisible({ timeout: 8000 });
       await expect(summonedUnit).toHaveAttribute('data-unit-name', /亡灵疫病体/i, { timeout: 8000 });
-      await expect(hostPage.getByTestId('sw-action-banner')).toContainText(/用最多3个单位进行攻击|Attack with up to 3 units/i, { timeout: 8000 });
+      await expect(hostPage.getByTestId('sw-action-banner')).toHaveAttribute('data-phase', 'attack', { timeout: 8000 });
 
       const latestCore = await readCoreStateViaServer(hostPage);
       const discardIds = (latestCore.players?.['0']?.discard ?? []).map((card: { id?: string }) => card?.id);

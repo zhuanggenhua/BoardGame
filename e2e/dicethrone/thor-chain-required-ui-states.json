@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    { "chainId": "thor-chain-dice", "uiStateId": "thor-chain-dice-choose", "viewport": "desktop", "reason": "连锁闪电须在原骰盘展示可选效果骰与提示。" },
+    { "chainId": "thor-chain-dice", "uiStateId": "thor-chain-dice-selected", "viewport": "desktop", "reason": "选择两颗后须显示原骰盘选中反馈与确认。" },
+    { "chainId": "thor-chain-target", "uiStateId": "thor-chain-target-choose", "viewport": "desktop", "reason": "多人连锁须在原玩家目标交互中展示可选敌人。" },
+    { "chainId": "thor-chain-target", "uiStateId": "thor-chain-target-selected", "viewport": "desktop", "reason": "选中敌人后须显示目标反馈与原确认入口。" }
+  ],
+  "reviewFile": "visual-review.json"
+}
