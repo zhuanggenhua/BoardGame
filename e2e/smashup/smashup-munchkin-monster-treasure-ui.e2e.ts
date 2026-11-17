@@ -7867,6 +7867,43 @@ const buildMunchkinWarriorsRuckusScene = (): SmashUpSceneConfig => buildMunchkin
 });
 
 test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
+    for (const touch of [false, true]) {
+        test(`天马${touch ? '触屏长按' : '桌面放大镜'}查看不触发击败`, async ({ page, game }, testInfo) => {
+            test.setTimeout(60000);
+            await page.setViewportSize(touch ? { width: 936, height: 432 } : { width: 1920, height: 1080 });
+            if (touch) await page.addInitScript(() => { (window as any).__BG_FORCE_COARSE_POINTER__ = true; });
+            await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+            const scene = buildMunchkinMonsterTreasureScene();
+            scene.extra.core.bases[0].monsters = [{ uid: 'inspect-pegasus', defId: 'munchkin_monster_pegasus' }];
+            await game.setupScene(scene);
+            const monster = page.getByTestId('su-base-monster-inspect-pegasus');
+            await expect(monster).toHaveAttribute('data-defeatable-monster', 'true');
+            if (touch) {
+                const button = monster.getByRole('button', { name: '击败天马' });
+                await button.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 1, clientX: 10, clientY: 10 });
+                await page.waitForTimeout(600);
+                await expect(page.getByTestId('su-card-magnify-overlay')).toBeVisible();
+                await button.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 1, clientX: 10, clientY: 10 });
+                await button.dispatchEvent('click');
+            } else {
+                await monster.hover();
+                await expect(page.getByTestId('su-base-monster-magnify-inspect-pegasus')).toBeVisible();
+                await game.screenshot('天马-PC-悬浮放大镜', testInfo);
+                await page.getByTestId('su-base-monster-magnify-inspect-pegasus').click();
+            }
+            const overlay = page.getByTestId('su-card-magnify-overlay');
+            await expect(overlay).toBeVisible();
+            await expect(page.getByTestId('su-card-magnify-content')).toHaveAttribute('data-card-def-id', 'munchkin_monster_pegasus');
+            await expect(monster).toHaveCount(1);
+            await expect(overlay.locator('.atlas-shimmer')).toHaveCount(0, { timeout: 15000 });
+            await game.screenshot(touch ? '天马-移动端-长按放大' : '天马-PC-放大', testInfo);
+            await overlay.click({ position: { x: 5, y: 5 } });
+            await expect(overlay).toHaveCount(0);
+            await expect(monster).toHaveCount(1);
+            await monster.getByRole('button', { name: '击败天马' }).click();
+            await expect(monster).toHaveCount(0);
+        });
+    }
     test('怪物行和公共小牌堆不抢原版布局', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 

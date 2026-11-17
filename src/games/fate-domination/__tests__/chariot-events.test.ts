@@ -1,0 +1,86 @@
+import { expect, it } from 'vitest';
+import type { RandomFn } from '../../../engine/types';
+import { createReplayAdapter } from '../../../engine/adapter';
+import { FATE_EVENTS } from '../data';
+import { FateDominationDomain } from '../domain';
+import { finishFateChariotDraw, prepareFateChariotDraw } from '../domain/chariotEvents';
+import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
+import { engineConfig } from '../game';
+import { FATE_SERVANTS } from '../data';
+import { applyPlayerViewToState } from '../../../engine/ai/playerView';
+import { validFateChariotResponse } from '../domain/chariotChoice';
+import { buildFateAiLegalActions } from '../ai';
+
+const random: RandomFn = { random: () => .5, d: () => 1, range: min => min, shuffle: cards => [...cards].reverse() };
+
+it('神威车轮弃置目标后从牌堆抽二选一，未选牌洗回且守恒', () => {
+    const state = createReplayAdapter(FateDominationDomain, 'chariot-draw').setup(['0', '1', '2']);
+    state.core.players['0'].locationId = 'miyama';
+    state.core.currentEvents = { miyama: [FATE_EVENTS[0]], shinto: [FATE_EVENTS[1]] };
+    state.core.eventDeck = [FATE_EVENTS[2], FATE_EVENTS[3], FATE_EVENTS[4]];
+    state.core.eventDiscard = [FATE_EVENTS[5]];
+    const before = structuredClone(state.core);
+    const draw = prepareFateChariotDraw(state.core, '0', FATE_EVENTS[0].id, random)!;
+    expect(draw.offered.map(card => card.id)).toEqual([FATE_EVENTS[2].id, FATE_EVENTS[3].id]);
+    const result = finishFateChariotDraw(draw, FATE_EVENTS[3].id, random)!;
+    expect(result.selected.id).toBe(FATE_EVENTS[3].id);
+    expect(result.deck.map(card => card.id)).toEqual([FATE_EVENTS[2].id, FATE_EVENTS[4].id]);
+    expect(result.discard.map(card => card.id)).toEqual([FATE_EVENTS[5].id, FATE_EVENTS[0].id]);
+    expect(state.core).toEqual(before);
+    expect(finishFateChariotDraw(draw, 'not-offered', random)).toBeUndefined();
+});
+
+it('神威车轮走正式交互，拒绝他人或旧输入并不泄露抽取的事件', () => {
+    const ids=['0','1','2'];const rng=createSeededRandom('chariot-transaction');
+    const state={core:FateDominationDomain.setup(ids,rng),sys:createInitialSystemState(ids,engineConfig.systems,'chariot-transaction')};
+    const rider=FATE_SERVANTS.find(servant=>servant.trueName==='伊斯坎达尔')!;
+    const actor=state.core.players['0'];state.core.phase='action';state.core.currentPlayerId='0';actor.locationId='miyama';actor.servantId=rider.id;
+    actor.skills=rider.skillCards!.map((skill,index)=>({...skill,id:`${skill.id}:${index}`}));
+    const skill=actor.skills.find(skill=>skill.id.startsWith('sc_iskandar_2:'))!;actor.activeSkills=[skill.id];actor.usedAbilityIds=[];actor.mana=8;
+    const target=state.core.currentEvents.miyama[0];
+    expect(buildFateAiLegalActions({playerId:'0',state}).some(item=>item.commands.some(command=>command.type==='PLAY_SKILL' && (command.payload as {targetCardId?:string}).targetCardId===target.id))).toBe(true);
+    const config={domain:FateDominationDomain,systems:engineConfig.systems};
+    const run=(input:typeof state,playerId:string,type:string,payload:object)=>executePipeline(config,input,{type,playerId,payload},rng,ids);
+    expect(run(state,'0','PLAY_SKILL',{skillId:skill.id,targetCardId:'invalid'}).success).toBe(false);
+    const started=run(state,'0','PLAY_SKILL',{skillId:skill.id,targetCardId:target.id});
+    expect(started.success,started.error).toBe(true);
+    expect(started.state.core.currentEvents.miyama.some(card=>card.id===target.id)).toBe(false);
+    expect(started.state.core.eventDiscard.some(card=>card.id===target.id)).toBe(true);
+    expect(started.state.sys.undo.snapshots).toEqual([]);
+    const interaction=started.state.sys.interaction.current!;
+    expect(interaction?.data.sourceId).toBe('fate:chariot-choice');
+    const options=(interaction.data as {options:Array<{id:string}>}).options;
+    expect(options).toHaveLength(2);
+    expect(buildFateAiLegalActions({playerId:'0',state:started.state}).filter(item=>item.commands[0].type==='SYS_INTERACTION_RESPOND')).toHaveLength(2);
+    const owner=applyPlayerViewToState(engineConfig,started.state,'0');
+    expect(buildFateAiLegalActions({playerId:'0',state:owner}).filter(item=>item.commands[0].type==='SYS_INTERACTION_RESPOND')).toHaveLength(2);
+    const other=applyPlayerViewToState(engineConfig,started.state,'1');
+    expect(other.sys.interaction.current).toBeUndefined();
+    expect(JSON.stringify(other)).not.toContain(options[0].id);
+    const spectator=applyPlayerViewToState(engineConfig,started.state,'__spectator__');
+    expect(JSON.stringify(spectator)).not.toContain(options[0].id);
+    expect(run(started.state,'1','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id}).success).toBe(false);
+    expect(validFateChariotResponse(started.state,{type:'SYS_INTERACTION_RESPOND',playerId:'0',payload:{interactionId:interaction.id,optionId:options[0].id}})).toBe(true);
+    const finished=run(started.state,'0','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id});
+    expect(finished.success,finished.error).toBe(true);
+    expect(finished.state.core.currentEvents.miyama.map(card=>card.id)).toContain(options[0].id);
+    expect(finished.state.core.eventDeck.map(card=>card.id)).toContain(options[1].id);
+    const beforeCards=[...state.core.eventDeck,...state.core.eventDiscard,...state.core.currentEvents.miyama,...state.core.currentEvents.shinto].map(card=>card.id).sort();
+    const afterCards=[...finished.state.core.eventDeck,...finished.state.core.eventDiscard,...finished.state.core.currentEvents.miyama,...finished.state.core.currentEvents.shinto].map(card=>card.id).sort();
+    expect(afterCards).toEqual(beforeCards);
+    expect(finished.state.core.battlefield.miyama.eventCards).toEqual(finished.state.core.currentEvents.miyama);
+    expect(finished.state.sys.interaction.current).toBeUndefined();
+    expect(run(finished.state,'0','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id}).success).toBe(false);
+});
+
+it('牌堆不足时先用尽再洗弃牌，包含刚弃置的事件', () => {
+    const state = createReplayAdapter(FateDominationDomain, 'chariot-recycle').setup(['0', '1', '2']);
+    state.core.players['0'].locationId = 'shinto';
+    state.core.currentEvents = { miyama: [], shinto: [FATE_EVENTS[0]] };
+    state.core.eventDeck = [FATE_EVENTS[1]];
+    state.core.eventDiscard = [];
+    const draw = prepareFateChariotDraw(state.core, '0', FATE_EVENTS[0].id, random)!;
+    expect(draw.offered.map(card => card.id)).toEqual([FATE_EVENTS[1].id, FATE_EVENTS[0].id]);
+    expect(draw.discard).toEqual([]);
+    expect(prepareFateChariotDraw(state.core, '0', 'not-present', random)).toBeUndefined();
+});

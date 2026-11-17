@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
 import { GameButton } from './components/GameButton';
-import { ChoiceModal } from './ChoiceModal';
 import type { Die, TurnPhase } from '../types';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice2D } from './Dice2D';
@@ -242,6 +241,10 @@ export const DiceTray = ({
 
             if (!isAnyMode && isModifyMode && diceInteraction?.controller) {
                 const alreadySelected = isSelected(dieId);
+                if (needsTargetValue && canInteract && canSelectMore) {
+                    diceInteraction.controller.step({ action: 'chooseTargetDie', dieId } as DiceModifyStep);
+                    return;
+                }
                 if (!needsTargetValue && (alreadySelected || canSelectMore)) {
                     diceInteraction.controller.step({ action: 'select', dieId, dieValue: selectedDie.value } as DiceModifyStep);
                 }
@@ -305,24 +308,8 @@ export const DiceTray = ({
             <div className={shadowClassName} />
 
             <div className={trayInnerClassName} style={trayInnerStyle}>
-                <ChoiceModal
-                    headingKey="interaction.modifyDie"
-                    choice={needsTargetValue && canInteract && fixedTargetValues ? {
-                        title: 'interaction.hint_choose_value',
-                        options: [
-                            ...fixedTargetValues.map(value => ({ id: String(value), label: String(value) })),
-                            { id: '__cancel__', label: 'common.cancel' },
-                        ],
-                    } : null}
-                    canResolve={canInteract}
-                    onResolve={id => {
-                        if (id === '__cancel__') diceInteraction?.controller?.cancel();
-                        else diceInteraction?.controller?.step({ action: 'chooseValue', value: Number(id) } as DiceModifyStep);
-                    }}
-                    locale={locale}
-                />
                 {dice.map((die) => {
-                    const selected = isSelected(die.id);
+                    const selected = isSelected(die.id) || (needsTargetValue && modifyResult?.selectedTargetDieId === die.id);
                     const selectedOccurrenceCount = allowRepeatedDieSelection
                         ? completedDieIds.filter((completedDieId) => completedDieId === die.id).length
                             + (selectResult?.selectedDiceIds.filter((selectedDieId) => selectedDieId === die.id).length ?? 0)
@@ -343,9 +330,9 @@ export const DiceTray = ({
                     const isReadOnlyDisplayDie = !isInteractionMode
                         && Boolean(die.displayOnly)
                         && !isBonusRerollMode;
-                    const canClickInteractionDie = isAnyMode || needsTargetValue
+                    const canClickInteractionDie = isAnyMode
                         ? false
-                        : !isInactiveDie && (
+                        : canInteract && !isInactiveDie && (
                             allowRepeatedDieSelection
                                 ? canSelectMore
                                 : (canSelectMore || selected)
@@ -365,6 +352,15 @@ export const DiceTray = ({
 
                     return (
                         <div key={die.id} className="relative flex items-center" style={rowStyle}>
+                            {needsTargetValue && selected && canInteract && canModifyThisDie && fixedTargetValues?.slice(0, Math.ceil(fixedTargetValues.length / 2)).map(value => (
+                                <button key={value} type="button" data-testid={`die-set-${die.id}-${value}`}
+                                    aria-label={`${t('interaction.selectDieToModify')} ${die.id + 1}: ${value}`}
+                                    className={`${adjustButtonClassName} bg-amber-600 hover:bg-amber-500 text-white shadow-lg`}
+                                    style={adjustButtonStyle}
+                                    onClick={() => diceInteraction?.controller?.step({ action: 'setAllowed', dieId: die.id, value } as DiceModifyStep)}>
+                                    {value}
+                                </button>
+                            ))}
                             {(showAdjustButtons || showAnyModeButtons) && (
                                 <button
                                     type="button"
@@ -399,7 +395,7 @@ export const DiceTray = ({
                                         ${!isInteractionMode && die.isKept ? 'opacity-80' : ''}
                                         ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
                                         ${clickable ? 'cursor-pointer hover:scale-110' : ''}
-                                        ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
+                                        ${selected ? (needsTargetValue ? 'scale-105' : 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105') : ''}
                                     `}
                                 >
                                     <div className="pointer-events-none">
@@ -419,13 +415,26 @@ export const DiceTray = ({
                                             </div>
                                         </div>
                                     )}
-                                    {selected && !showAdjustButtons && !showAnyModeButtons && (
+                                    {selected && needsTargetValue && (
+                                        <div aria-hidden="true" className="absolute inset-0 z-20 pointer-events-none rounded-xl ring-2 ring-inset ring-amber-400" />
+                                    )}
+                                    {selected && !needsTargetValue && !showAdjustButtons && !showAnyModeButtons && (
                                         <div className={selectedBadgeClassName} style={selectedBadgeStyle}>
                                             <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                         </div>
                                     )}
                                 </div>
                             </div>
+
+                            {needsTargetValue && selected && canInteract && canModifyThisDie && fixedTargetValues?.slice(Math.ceil(fixedTargetValues.length / 2)).map(value => (
+                                <button key={value} type="button" data-testid={`die-set-${die.id}-${value}`}
+                                    aria-label={`${t('interaction.selectDieToModify')} ${die.id + 1}: ${value}`}
+                                    className={`${adjustButtonClassName} bg-amber-600 hover:bg-amber-500 text-white shadow-lg`}
+                                    style={adjustButtonStyle}
+                                    onClick={() => diceInteraction?.controller?.step({ action: 'setAllowed', dieId: die.id, value } as DiceModifyStep)}>
+                                    {value}
+                                </button>
+                            ))}
 
                             {(showAdjustButtons || showAnyModeButtons) && (
                                 <button

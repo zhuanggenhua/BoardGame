@@ -470,11 +470,16 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      await expect(page.getByRole('dialog')).toHaveCount(0);
      const abilityButton=page.getByRole('button',{name:'发动'+master.name,exact:true});
      await abilityButton.hover();
-     await expect(page.getByTestId('info-tooltip')).toContainText('你能支付1魔力来抽2张牌。');
+     await expect(page.getByTestId('info-tooltip')).toContainText(master.name==='调查'?'查看一位玩家的手牌':'你能支付1魔力来抽2张牌。');
      await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible();
      await expect(page.getByTestId('tutorial-overlay-card')).toContainText(master.name);
      await capture('master-ability-tooltip','御主能力直接位于角色旁，右侧只读说明，不打开详情发动');
      await abilityButton.click();
+     if(payload.targetPlayerId!==undefined){
+      const targetId=String(payload.targetPlayerId);
+      if(targetId==='0')await page.locator('.fd-self-identity').click();
+      else await page.locator(`[data-tutorial-id="fate-player-${targetId}"] .fd-runtime-avatar`).click();
+     }
     }else await page.locator(quoted(payload.skillId)).click();
     if(payload.targetLocationId)await clickVisibleMapLocation(page,payload.targetLocationId);
    }else if(type==='MOVE_PLAYER'){
@@ -505,7 +510,15 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    }else if(type==='SYS_INTERACTION_CANCEL')await page.getByRole('button',{name:'取消骑乘',exact:true}).click();
    else if(type==='SYS_INTERACTION_RESPOND'){
     if(payload.optionIds){for(const id of payload.optionIds)await page.locator(quoted(id)).click();await capture('riding','骑乘候选卡面完整，描边区分选择，魔力显示预计消耗');await page.getByTestId('fate-domination-primary-action').click();}
-    else{
+    else if(before.sys.interaction.current?.data?.sourceId==='fate:investigation-choice'){
+     const choice=page.getByTestId('fate-investigation-choice');await expect(choice).toBeVisible();
+     if(payload.optionId==='fate:investigation-keep')await choice.getByRole('button',{name:'保留手牌'}).click();
+     else {
+      const index=before.sys.interaction.current.data.fateContext.offered.findIndex((card:{id:string})=>card.id===payload.optionId);
+      expect(index).toBeGreaterThanOrEqual(0);
+      await choice.locator('.fd-investigation-card > button:first-child').nth(index).click();
+     }
+    }else{
      if(!lateRefreshed){await resume(page,step.id,before.core);lateRefreshed=true;}
      await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
      const choice=page.getByRole('dialog',{name:'战后恢复令咒'});
@@ -602,10 +615,14 @@ test('教程中途从正式菜单退出，进入普通对局后教程状态与�
  const beforeExit=await snapshot(page);
  await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().click();await page.getByRole('button',{name:'离开',exact:true}).click();
  await page.getByTestId('fab-panel-exit').getByRole('button',{name:/返回大厅/}).click();await expect(page).toHaveURL(/\/$/);
- await page.goto(baseURL+'/play/fate-domination?players=3&playerID=0&seed=tutorial-exit-cleanup&disableLocalAiAutomation=true',{waitUntil:'domcontentloaded'});
+ await page.locator('[data-game-id="fate-domination"] .platform-game-open').first().click();
+ await page.getByTestId('game-details-open-create-room').first().click();
+ const room=page.getByTestId('create-room-modal').last();await room.getByRole('button',{name:'3人',exact:true}).click();
+ await room.getByRole('button',{name:/^加入 AI/}).click();await room.getByTestId('create-room-confirm-button').click();
+ await page.waitForURL(/\/play\/fate-domination\/match\/[^/?]+\?playerID=0/);
  await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible({timeout:30000});await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
  await chooseFateIdentity(page,'master','m_rin');await expect(page.getByTestId('fate-setup-master-m_rin')).toHaveAttribute('aria-pressed','true');
  const sourceIdentity=await captureEvidenceSourceIdentity(page,'fate-domination');
  await writeFile(path.join(run.stagingDir,'source-identity.json'),JSON.stringify(sourceIdentity,null,2));
- await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:sourceIdentity.sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后新局真实角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后正式新局选择角色',before:beforeExit,after:await snapshot(page),assertions:[{name:'new-match-draft-selected',actual:await page.getByTestId('fate-setup-master-m_rin').getAttribute('aria-pressed'),expected:'true'}]}],uiStates:[]},null,2));
+ await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:sourceIdentity.sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后在线房间角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后在线建房并选择角色',before:beforeExit,after:{url:page.url()},assertions:[{name:'new-match-draft-selected',actual:await page.getByTestId('fate-setup-master-m_rin').getAttribute('aria-pressed'),expected:'true'}]}],uiStates:[]},null,2));
 });

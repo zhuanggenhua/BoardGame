@@ -30,7 +30,7 @@ const captureContract = JSON.parse(captureContractBytes.toString('utf8')) as {
 const KEY_STATES = new Set(['frontier-goal', 'frontier-target', 'opening-move', 'recruit-action', 'recruit-source', 'recruit-payment', 'recruit-troops', 'farm-action', 'reclaim-action', 'reclaim-target',
     'recruit-confirm', 'midyear', 'hand-limit', 'upgrade-card', 'dispatch-source', 'dispatch-troops', 'dispatch-target', 'tactic-card', 'occupy', 'battle-finish',
     'diplomacy-target', 'diplomacy-finish', 'hire-action', 'hire-target', 'save-hand', 'new-year', 'maintain-shanhai', 'abandon-jinzhou', 'abandon-inner-wall', 'abandon-outer-wall', 'upkeep-datong', 'upkeep-yehe', 'upkeep-pyongyang', 'claim-year',
-    'new-order', 'year-character', 'training-kind', 'training-target', 'training-second-target', 'training-recruit-target', 'training-finish', 'finish']);
+    'new-order', 'year-character', 'training-action', 'training-kind', 'training-target', 'training-second-target', 'training-recruit-target', 'training-finish', 'finish']);
 const MOBILE_STATES = new Set(['frontier-goal', 'recruit-payment', 'reclaim-target', 'midyear', 'hand-limit', 'dispatch-troops', 'occupy', 'maintain-shanhai', 'year-character', 'finish', 'diplomacy-target', 'diplomacy-finish', 'hire-target', 'training-target', 'training-second-target', 'training-finish']);
 
 type Snapshot = {
@@ -745,6 +745,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
                     })).toBe(true);
                 }
+                if (id === 'training-kind' || id === 'training-finish') {
+                    await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
+                    await expect(page.getByTestId('tutorial-previous-button')).toBeVisible();
+                    await expect(page.getByTestId('qidahen-wheel-recruit-train-selection')).toBeVisible();
+                }
                 if (id === 'training-target') {
                     const snapshot = await read(page);
                     const pieceId = snapshot.tutorial.step.allowedTargets![0].slice('train:'.length);
@@ -1049,6 +1054,24 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         writeFileSync(resolve(dir, 'diplomacy-candidate-hover.json'), JSON.stringify(observed, null, 2));
                     }
                     if (practiceCaptureId === 'training-target' && viewport.name === 'desktop') {
+                        await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
+                        await expect(page.getByTestId('tutorial-previous-button')).toBeVisible();
+                        // 在真实教程存档的独立分支中回退，避免更改完整主线。
+                        await expect.poll(async () => {
+                            const status = await readQidahenTutorialProgressStatus(page);
+                            return status.savedCoreHash === status.liveCoreHash && status.savedCoreHash !== '';
+                        }, { timeout: 60_000 }).toBe(true);
+                        const previousContext = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, storageState: await page.context().storageState() });
+                        try {
+                            const previousPage = await previousContext.newPage();
+                            await previousPage.addInitScript(() => { (window as any).__E2E_TEST_MODE__ = true; });
+                            await previousPage.goto(page.url(), { waitUntil: 'domcontentloaded' });
+                            await previousPage.getByRole('button', { name: '从上次继续', exact: true }).click({ timeout: 90_000 });
+                            await expect(previousPage.getByTestId('tutorial-previous-button')).toBeVisible({ timeout: 90_000 });
+                            await previousPage.getByTestId('tutorial-previous-button').click();
+                            await expect.poll(async () => (await read(previousPage)).tutorial.step?.id).toBe('training-payment-confirm');
+                            await expect(previousPage.getByTestId('qidahen-wheel-recruit-train-payment-confirm')).toBeVisible();
+                        } finally { await previousContext.close(); }
                         const recovered = await verifyQidahenMapCandidateRecovery(page, () => capture('training-pan', '', step.id));
                         uiAssertions.set(step.id, [assertEqual(recovered ? 'real-pan-recovers-other-candidate-without-state-change' : 'no-onscreen-candidate-overlaps-visible-hand-cards', true, true)]);
                     }

@@ -18,6 +18,7 @@ import type {
     ListMatchesOpts,
 } from '../../engine/transport/storage';
 import { hasOccupiedPlayers, type PlayerSeat } from '../matchOccupancy';
+import { DUPLICATE_OWNER_DISCONNECT_GRACE_MS } from '../duplicateOwnerRooms';
 import logger from '../../../server/logger';
 
 // 房间文档接口
@@ -539,15 +540,16 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
      * 清理临时房间（ttlSeconds=0 且无在线玩家）
      * 主要用于服务重启时回收“未保存”房间
      */
-    async cleanupEphemeralMatches(graceMs = 5 * 60 * 1000): Promise<number> {
+    async cleanupEphemeralMatches(graceMs = DUPLICATE_OWNER_DISCONNECT_GRACE_MS, hasLivePlayer: (matchID: string) => boolean = () => false): Promise<number> {
         const Match = getMatchModel();
         const ephemeralMatches = await Match.find({
             $or: [{ ttlSeconds: 0 }, { ttlSeconds: null }, { ttlSeconds: { $exists: false } }],
         }).lean();
-        const toDelete: string[] = [];
+        let deleted = 0;
         const now = Date.now();
 
         for (const doc of ephemeralMatches) {
+            if (hasLivePlayer(doc.matchID)) continue;
             const metadata = doc.metadata as (MatchMetadata & { disconnectedSince?: number | null }) | null;
             const players = metadata?.players as Record<string, { isConnected?: boolean }> | undefined;
             const hasConnectedPlayer = players
@@ -582,8 +584,9 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                     }
                     if (changed) {
                         metadata.updatedAt = now;
+                        if (hasLivePlayer(doc.matchID)) continue;
                         await Match.updateOne({
-                            matchID: doc.matchID,
+                            matchID: doc.matchID, updatedAt: doc.updatedAt,
                         }, {
                             metadata,
                             updatedAt: resolveMetadataUpdatedAtDate(metadata),
@@ -596,8 +599,9 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                 if (metadata?.disconnectedSince) {
                     delete metadata.disconnectedSince;
                     metadata.updatedAt = now;
+                    if (hasLivePlayer(doc.matchID)) continue;
                     await Match.updateOne({
-                        matchID: doc.matchID,
+                        matchID: doc.matchID, updatedAt: doc.updatedAt,
                     }, {
                         metadata,
                         updatedAt: resolveMetadataUpdatedAtDate(metadata),
@@ -612,8 +616,9 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                 logger.info(`[Cleanup] 标记断线时间 matchID=${doc.matchID} reason=disconnected_since_missing connected=${connectedCount} occupied=${occupiedCount}`);
                 metadata.disconnectedSince = now;
                 metadata.updatedAt = now;
+                if (hasLivePlayer(doc.matchID)) continue;
                 await Match.updateOne({
-                    matchID: doc.matchID,
+                    matchID: doc.matchID, updatedAt: doc.updatedAt,
                 }, {
                     metadata,
                     updatedAt: resolveMetadataUpdatedAtDate(metadata),
@@ -622,19 +627,22 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             }
 
             if (now - disconnectedSince >= graceMs) {
-                toDelete.push(doc.matchID);
-                logger.info(`[Cleanup] 删除临时房间 matchID=${doc.matchID} reason=ephemeral_disconnected_timeout`);
+                if (hasLivePlayer(doc.matchID)) continue;
+                const result = await Match.deleteOne({ matchID: doc.matchID, updatedAt: doc.updatedAt, 'metadata.disconnectedSince': disconnectedSince });
+                if (result.deletedCount) {
+                    deleted += 1;
+                    logger.info(`[Cleanup] 删除临时房间 matchID=${doc.matchID} reason=ephemeral_disconnected_timeout`);
+                }
             } else {
                 logger.info(`[Cleanup] 等待断线宽限 matchID=${doc.matchID} remainingMs=${graceMs - (now - disconnectedSince)} connected=${connectedCount} occupied=${occupiedCount}`);
             }
         }
 
-        if (toDelete.length > 0) {
-            await Match.deleteMany({ matchID: { $in: toDelete } });
-            logger.info(`[MongoStorage] 清理临时房间: ${toDelete.length} 个`);
+        if (deleted > 0) {
+            logger.info(`[MongoStorage] 清理临时房间: ${deleted} 个`);
         }
 
-        return toDelete.length;
+        return deleted;
     }
 
     /**

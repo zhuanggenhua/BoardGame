@@ -220,11 +220,11 @@ test('索尔奥丁之力II可用原确认入口跳过额外重掷', async ({ pag
 
 test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',async({page,game},info)=>{
  test.setTimeout(120000);await clearEvidenceScreenshotsForTest(info);await page.setViewportSize({width:1920,height:1080});
- const evidence = await createThorBehaviorEvidence(page, info, 'thor-worthy-fixed-die', async () => {
+ const evidence = await createThorBehaviorEvidence(page, info, 'thor-worthy-die-first', async () => {
   const state = await game.getState();
   return { dice: state.core.currentRollContext?.dice.map((die: { value: number }) => die.value) ?? [],
    cp: state.core.players['0'].resources.cp, hand: state.core.players['0'].hand.map((item: { id: string }) => item.id) };
- });
+ }, 'e2e/dicethrone/thor-die-first-required-ui-states.json');
  await game.openTestGame('dicethrone',{playerID:'0',seat1:'human'},60000);await waitForTestHarness(page,20000);
  await game.setupScene({gameId:'dicethrone',randomQueue:[0.08,0.08,0.08,0.08,0.08],player0:{hand:['card-thor-worthy','card-thor-hammer-time'],resources:{cp:5,hp:50}},player1:{hand:[],resources:{cp:2,hp:50}},currentPlayer:'0',phase:'main1',extra:{selectedCharacters:{'0':'thor','1':'monk'},hostStarted:true,pendingAttack:null,pendingDamage:undefined,dice:[],rollCount:0,rollConfirmed:false}});
  await closeDebugPanelIfOpen(page);
@@ -251,26 +251,20 @@ test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',asy
  await shot(page,info,'02-改骰前自己的五颗骰子');
  await evidence.step('play-worthy', '从原手牌打出当之无愧', async () => {
   await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
-  await expect(page.getByTestId('dt-choice-options')).toBeVisible();
- }, after => [{ name: '出牌前五颗骰子保持原值', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
- await expect(page.getByTestId('dt-choice-options')).toBeVisible();
- await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择目标点数');
- await expectDiceHintSurface(page,'dice-tray-left-center');
- await expect(page.locator('[data-option-id="4"]')).toBeVisible();
- await expect(page.locator('[data-option-id="5"]')).toBeVisible();
- await expect(page.locator('[data-testid^="die-adjust-"]')).toHaveCount(0);
- await evidence.capture('thor-worthy-value-choice','play-worthy','03-当之无愧直接选择固定目标四或五','panel');
- await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,1,1,1]);
- await evidence.step('choose-four', '在既有选项中选择固定值四', async () => {
-  await page.locator('[data-option-id="4"]').click();
-  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为4的骰子');
- }, after => [{ name: '选定值尚未改动骰子', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
- await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为4的骰子');
- await expectDiceHintSurface(page,'dice-tray-left-center');
- await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','1');
- await evidence.capture('thor-worthy-die-choice','choose-four','04-选择四后沿原固定值流程点选骰子','interaction-mode');
- await evidence.step('choose-die', '点击原骰盘第一颗骰子', async () => {
+  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-clickable','true');
+  await expect(page.getByTestId('die-set-0-4')).toHaveCount(0);
+  await expect(page.getByTestId('dt-choice-options')).toHaveCount(0);
+ }, after => [{ name: '选择前五颗骰子保持原值', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
+ await evidence.capture('thor-worthy-choose-die','play-worthy','03-先选择要修改的骰子','interaction-mode');
+ await evidence.step('choose-die', '点击第一颗骰子', async () => {
   await page.getByTestId('die-button-0').click();
+  await expect(page.getByTestId('die-set-0-4')).toBeVisible();
+  await expect(page.getByTestId('die-set-0-5')).toBeVisible();
+  await expect(page.getByTestId('die-set-1-4')).toHaveCount(0);
+ }, after => [{ name: '选择骰子尚未改变点数', actual: after.authoritative.dice, expected: [1,1,1,1,1] }]);
+ await evidence.capture('thor-worthy-die-selected','choose-die','03-选中骰子后显示四或五','interaction-mode');
+ await evidence.step('choose-die-and-value', '在第一颗骰旁选择四', async () => {
+  await page.getByTestId('die-set-0-4').click();
   await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([4,1,1,1,1]);
   await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','4');
  }, after => [{ name: '仅所选骰改为四', actual: after.authoritative.dice, expected: [4,1,1,1,1] },
@@ -286,21 +280,13 @@ test('索尔当之无愧选择五后取消不提交改骰',async({page,game},inf
  await closeDebugPanelIfOpen(page);await page.locator('[data-tutorial-id="advance-phase-button"]').click();await page.locator('[data-tutorial-id="dice-roll-button"]').click();
  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,1,1,1]);
  await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
- await expect(page.getByTestId('dt-choice-options')).toBeVisible();
- await page.locator('[data-option-id="__cancel__"]').click();
+ await page.getByTestId('die-button-0').click();
+ await expect(page.getByTestId('die-set-0-5')).toBeVisible();
+ await page.getByRole('button',{name:'取消',exact:true}).click();
  await expect.poll(async()=>{const state=await game.getState();return {cp:state.core.players['0'].resources.cp,hand:state.core.players['0'].hand.map((card:{id:string})=>card.id),values:state.core.currentRollContext?.dice.map((die:{value:number})=>die.value)};}).toEqual({cp:5,hand:['card-thor-worthy'],values:[1,1,1,1,1]});
  await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
- await page.locator('[data-option-id="5"]').click();
- await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为5的骰子');
- await expectDiceHintSurface(page,'dice-tray-left-center');
- await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','1');await shot(page,info,'01-当之无愧取消前选择五但尚未改骰');
- const cancel=page.getByRole('button',{name:'取消',exact:true});await expect(cancel).toBeVisible();await cancel.click();
- await expect.poll(async()=>{const state=await game.getState();return {values:state.core.currentRollContext?.dice.map((die:{value:number})=>die.value),interaction:state.sys.interaction?.current?.kind??null,cp:state.core.players['0'].resources.cp,hand:state.core.players['0'].hand.map((card:{id:string})=>card.id),discard:state.core.players['0'].discard.map((card:{id:string})=>card.id)};}).toEqual({values:[1,1,1,1,1],interaction:null,cp:5,hand:['card-thor-worthy'],discard:[]});
- await shot(page,info,'02-取消改骰后骰面保持且卡牌资源退回');
- await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
- await page.locator('[data-option-id="5"]').click();
- await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为5的骰子');
  await page.getByTestId('die-button-1').click();
+ await page.getByTestId('die-set-1-5').click();
  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,5,1,1,1]);
  await shot(page,info,'03-重新出牌选择五后原固定流程完成改骰');
 });

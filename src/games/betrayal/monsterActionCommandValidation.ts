@@ -2,10 +2,11 @@ import type { ValidationResult } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCore } from './game';
 import type { BetrayalCommand } from './commandTypes';
-import { isStoneCherubMonster } from './hauntScenarioReadModel';
+import { findFeverishMonster, isStoneCherubMonster, shouldDeadPlayerControlFeverish } from './hauntScenarioReadModel';
 import {
     hasMummyTeleportMoveAvailable,
     resolveBetrayalMonsterMoveCost,
+    resolveBetrayalMonsterRemainingMovement,
     resolveBetrayalMonsterMovementGroups,
     resolveBetrayalMonsterMovementRollGroupPreview,
     resolveBetrayalMonsterMoveTargetRooms,
@@ -72,6 +73,20 @@ export function validateBetrayalMonsterActionCommand(
     core: BetrayalCore,
     command: BetrayalCommand,
 ): ValidationResult | null {
+    if (shouldDeadPlayerControlFeverish(core, command.playerId)
+        && command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP) {
+        const monster = findFeverishMonster(core, command.playerId);
+        if (!monster || command.payload.groupId !== `${monster.name}:${monster.speed}`) {
+            return { valid: false, error: '只能控制自己的狂热病患。' };
+        }
+    }
+    if (shouldDeadPlayerControlFeverish(core, command.playerId)
+        && (command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
+            || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+            || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO)
+        && command.payload.monsterId !== `feverish-${command.playerId}`) {
+        return { valid: false, error: '只能控制自己的狂热病患。' };
+    }
     switch (command.type) {
         case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE: {
             const monsterId = command.payload.monsterId;
@@ -129,7 +144,7 @@ export function validateBetrayalMonsterActionCommand(
             if (!monster) {
                 return { valid: false, error: '当前宅邸中找不到该怪物。' };
             }
-            const moveRemaining = core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monsterId] ?? 0;
+            const moveRemaining = resolveBetrayalMonsterRemainingMovement(core, monsterId);
             const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, monsterId);
             if (moveRemaining <= 0 && !canMummyTeleportNow) {
                 return { valid: false, error: '该怪物本回合没有剩余移动额度。' };

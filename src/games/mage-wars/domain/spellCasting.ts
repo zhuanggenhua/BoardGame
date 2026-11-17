@@ -73,7 +73,6 @@ export function resolveMageWarsMageSpellCastMode(
     spell: Pick<MageWarsConfigSpellCard, 'spellActionSpeed'>,
     options: { stunned?: boolean } = {},
 ): MageWarsSpellCastMode | undefined {
-    if (phase === 'deployment') return 'deployment';
     if (spell.spellActionSpeed === 'quick') {
         if (phase === 'creatureAction' && options.stunned) return 'action';
         return phase === 'initiativeQuickcast' || phase === 'finalQuickcast' || phase === 'creatureAction'

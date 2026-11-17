@@ -198,6 +198,7 @@ export type MageWarsDefenseChoiceValue =
         defenseProfileId: string;
         allowCounterstrikeOpportunity: boolean;
         removeGuardAfterMelee: boolean;
+        isCounterstrike?: boolean;
         counterstrikeSourceObjectId?: string;
         spellCardId?: number;
     }
@@ -210,6 +211,7 @@ export type MageWarsDefenseChoiceValue =
         incomingAttackProfileId: string;
         allowCounterstrikeOpportunity: boolean;
         removeGuardAfterMelee: boolean;
+        isCounterstrike?: boolean;
         counterstrikeSourceObjectId?: string;
         spellCardId?: number;
     };
@@ -400,6 +402,7 @@ function resolveAttackAfterDefenseChoice(
             allowDefenseOpportunity: false,
             allowCounterstrikeOpportunity: value.allowCounterstrikeOpportunity,
             removeGuardAfterMelee: value.removeGuardAfterMelee,
+            isCounterstrike: value.isCounterstrike,
             counterstrikeSourceObjectId: value.counterstrikeSourceObjectId,
             skipPreDefenseEffects: true,
         });
@@ -418,9 +421,28 @@ function resolveAttackAfterDefenseChoice(
         allowDefenseOpportunity: false,
         allowCounterstrikeOpportunity: value.allowCounterstrikeOpportunity,
         removeGuardAfterMelee: value.removeGuardAfterMelee,
+        isCounterstrike: value.isCounterstrike,
         counterstrikeSourceObjectId: value.counterstrikeSourceObjectId,
         skipPreDefenseEffects: true,
     });
+}
+
+function createCounterstrikeGuardRemovalAfterDefense(
+    state: MatchState<MageWarsCore>,
+    value: MageWarsDefenseChoiceValue,
+    commandType: string,
+    timestamp: number | undefined,
+): MageWarsEvent | undefined {
+    const guard = value.isCounterstrike && value.attackerObjectId
+        ? state.core.objects[value.attackerObjectId]
+        : undefined;
+    if (!guard?.guarding) return undefined;
+    return {
+        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE,
+        payload: { ownerId: guard.ownerId, targetObjectId: guard.id, sourceAbilityId: 'mw.guard.melee-attack' },
+        sourceCommandType: commandType,
+        timestamp: timestamp ?? 0,
+    };
 }
 
 function resolveMageWarsEnchantmentResponse(
@@ -1032,7 +1054,22 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                     }
                     if (event.payload.sourceId === MAGE_WARS_INTERACTION_SOURCE_IDS.COUNTERSTRIKE_CHOICE) {
                         if (!isCounterstrikeChoiceValue(event.payload.value)) continue;
-                        if (event.payload.value.action === 'pass') continue;
+                        if (event.payload.value.action === 'pass') {
+                            const defender = nextState.core.objects[event.payload.value.defenderObjectId];
+                            if (defender?.guarding) {
+                                events.push({
+                                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE,
+                                    payload: {
+                                        ownerId: defender.ownerId,
+                                        targetObjectId: defender.id,
+                                        sourceAbilityId: 'mw.guard.melee-attack',
+                                    },
+                                    sourceCommandType: ctx.command.type,
+                                    timestamp: event.timestamp,
+                                });
+                            }
+                            continue;
+                        }
 
                         events.push(...resolveMageWarsObjectAttackEvents({
                             state: nextState,
@@ -1281,6 +1318,10 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             )
                             : undefined;
                         if (consumedSource) events.push(consumedSource);
+                        const guardRemoval = createCounterstrikeGuardRemovalAfterDefense(
+                            nextState, event.payload.value, ctx.command.type, event.timestamp,
+                        );
+                        if (guardRemoval) events.push(guardRemoval);
                         continue;
                     }
 
@@ -1331,6 +1372,10 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             )
                             : undefined;
                         if (consumedSource) events.push(consumedSource);
+                        const guardRemoval = createCounterstrikeGuardRemovalAfterDefense(
+                            nextState, event.payload.value, ctx.command.type, event.timestamp,
+                        );
+                        if (guardRemoval) events.push(guardRemoval);
                     } else {
                         events.push(...resolveAttackAfterDefenseChoice(
                             nextState,

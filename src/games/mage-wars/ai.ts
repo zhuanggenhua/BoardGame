@@ -1,4 +1,5 @@
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
+import { canMageWarsAdvanceCreatureAction } from './domain/creatureAction';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
@@ -169,6 +170,7 @@ function canAdvancePhase(state: MageWarsState, playerId: PlayerId): boolean {
     const phase = state.sys.phase as MageWarsPhase;
     if (!SEQUENTIAL_PHASES.has(phase)) return false;
     if ((state.core.phaseReadyPlayerIds ?? []).includes(playerId)) return false;
+    if (phase === 'creatureAction' && !canMageWarsAdvanceCreatureAction(state.core, playerId)) return false;
     const phaseActorId = state.core.phaseActorId ?? state.core.currentPlayerId;
     return phaseActorId === playerId;
 }
@@ -720,6 +722,17 @@ function buildPhaseActions(state: MageWarsState, playerId: PlayerId): AiLegalAct
     if (state.sys.phase === 'creatureAction') {
         appendAttackActions(actions, state, playerId);
         appendMovementAndGuardActions(actions, state, playerId);
+        for (const objectId of [undefined, ...Object.values(state.core.objects)
+            .filter((object) => object.ownerId === playerId && object.kind === 'creature')
+            .map((object) => object.id)]) {
+            appendIfValid(actions, state, playerId, createAction({
+                kind: 'creature-no-action',
+                label: objectId ? `${state.core.objects[objectId].name} 不行动` : '法师不行动',
+                commandType: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION,
+                payload: objectId ? { objectId } : {},
+                keyParts: [objectId ?? 'mage'],
+            }));
+        }
     }
     appendIfValid(actions, state, playerId, createAction({
         kind: 'advance-phase',

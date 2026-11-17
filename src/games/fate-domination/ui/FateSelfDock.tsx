@@ -20,9 +20,10 @@ interface Props {
     canActivateAbility: (id: string) => boolean;
     onActivateAbility: (id: string) => void;
     onAbilityTipChange: (open: boolean) => void;
+    investigationTarget?: boolean;
 }
 /** Identity and physical objects remain the action owners in the lower-left play area. */
-export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, draftManaCost = 0, onDetail, onSeal, onPile,canActivateAbility,onActivateAbility,onAbilityTipChange}: Props) {
+export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, draftManaCost = 0, onDetail, onSeal, onPile,canActivateAbility,onActivateAbility,onAbilityTipChange,investigationTarget=false}: Props) {
     const { t } = useTranslation('game-fate-domination');
     const view = projectFatePlayer(core, playerId, playerId);
     return <aside data-tutorial-id="fate-self" className="fd-self-dock" aria-label={t('ui.selfDock.playerSeat')}>
@@ -36,7 +37,7 @@ export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, draft
                 {Array.from({length: view.player.commandSpells}, (_, index) => <span key={index} className="fd-self-seal-card" style={{position:'absolute',top:(view.player.commandSpells - 1 - index) * 5,left:index * 18,width:78,zIndex:view.player.commandSpells-index}}><CardPreview previewRef={fateCommandSealPreview(view.player.masterId)} alt={t('ui.selfDock.commandSealAlt')} style={{width:'100%',display:'block'}}/></span>)}
             </button>
         </div>
-        <div className="fd-self-character"><button type="button" className="fd-self-identity" aria-description={view.player.eliminated ? t('ui.selfDock.eliminatedSpectating') : undefined} aria-label={t('ui.selfDock.viewPlayerDetails', { name })} onClick={onDetail}>
+        <div className="fd-self-character"><button type="button" className={`fd-self-identity${investigationTarget?' is-investigation-target':''}`} aria-description={view.player.eliminated ? t('ui.selfDock.eliminatedSpectating') : undefined} aria-label={investigationTarget?t('ui.investigationChoice.target',{name}):t('ui.selfDock.viewPlayerDetails', { name })} onClick={onDetail}>
             <span data-fate-drag-source={playerId} data-tutorial-id="fate-self-avatar" className="fd-runtime-avatar"><OptimizedImage draggable={false} className="fd-runtime-master-avatar" src={fateTokenAsset(view.player.masterId)} alt={view.master?.name ?? ''}/><OptimizedImage draggable={false} className="fd-runtime-servant-avatar" src={view.servant?.assetPath ?? 'fate-domination/backs/servant'} alt={view.servant?.name ?? ''}/>{view.player.eliminated && <span className="fd-avatar-elimination" aria-hidden="true"/>}</span>
             <span className="fd-self-copy"><strong>{name}</strong><small>{view.master?.name} · {view.servant?.name ?? t('ui.selfDock.servant')}</small><span className="fd-self-stats">
                 <span data-testid="fate-self-mana" aria-live="polite">

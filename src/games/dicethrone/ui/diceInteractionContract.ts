@@ -341,7 +341,7 @@ export function getDiceInteractionHint(input: {
         case 'set': {
             const value = config.targetValue ?? modify?.targetValue;
             return done ? { key: 'interaction.hint_done' }
-                : value === undefined ? { key: 'interaction.hint_choose_value' }
+                : value === undefined ? { key: modify?.selectedTargetDieId === undefined ? 'interaction.selectDieToModify' : 'interaction.hint_choose_value' }
                 : { key: 'interaction.hint_set', params: { value } };
         }
         case 'copy': return count === 0 ? { key: 'interaction.hint_copy_step1' }
@@ -456,6 +456,7 @@ export function createDiceInteractionContract(input: {
         const modifications = isRecord(result) ? result.modifications : undefined;
         const modificationEntries = isRecord(modifications) ? Object.entries(modifications) : undefined;
         const targetValue = isRecord(result) ? result.targetValue : undefined;
+        const selectedTargetDieId = isRecord(result) ? result.selectedTargetDieId : undefined;
         const expectedSetValue = config.mode === 'set' ? (config.targetValue ?? targetValue) : undefined;
         if (
             !isRecord(result)
@@ -478,6 +479,9 @@ export function createDiceInteractionContract(input: {
                 || (config.allowedValues !== undefined && !config.allowedValues.includes(targetValue))
             ))
             || (config.mode !== 'set' && targetValue !== undefined)
+            || (selectedTargetDieId !== undefined && (config.mode !== 'set' || !config.allowedValues
+                || !isNonNegativeInteger(selectedTargetDieId)
+                || (allowedDieIds && !allowedDieIds.includes(selectedTargetDieId))))
             || (config.mode === 'set' && modificationEntries.some(([, value]) => value !== expectedSetValue))
             || (config.mode === 'copy' && (
                 modificationEntries.length > 2

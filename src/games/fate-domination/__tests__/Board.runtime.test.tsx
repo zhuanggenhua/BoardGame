@@ -7,6 +7,7 @@ import { FateDominationDomain } from '../domain';
 import { FateDominationBoard } from '../Board';
 import {fateTokenAsset} from '../data/identityArtwork';
 import {FATE_MASTERS,FATE_SERVANTS} from '../data';
+import {validate} from '../domain/commands';
 const preparedBoardState = (seed: string, playerIds = ['0', '1', '2']) => {
     const adapter = createReplayAdapter(FateDominationDomain, seed);
     let state = adapter.setup(playerIds);
@@ -46,7 +47,7 @@ vi.mock('../../../components/common/media/OptimizedImage', () => ({ OptimizedIma
         src: string;
         alt: string;
     }) => <img src={src} alt={alt}/> }));
-vi.mock('../ui/FateMapSurface', () => ({ FateMapSurface: ({ legalLocations, onPawn, onLocation }: { legalLocations: string[]; onPawn: () => void; onLocation:(id:string)=>void }) => <div data-testid="shared-map" data-legal-locations={legalLocations.join(',')}><button onClick={onPawn}>本人棋子</button>{legalLocations.map(id=><button key={id} onClick={()=>onLocation(id)}>地点{id}</button>)}</div> }));
+vi.mock('../ui/FateMapSurface', () => ({ FateMapSurface: ({ legalLocations, onPawn, onLocation, chariotTargetIds=[],onChariotTarget }: { legalLocations: string[]; onPawn: () => void; onLocation:(id:string)=>void;chariotTargetIds?:string[];onChariotTarget?:(id:string)=>void }) => <div data-testid="shared-map" data-legal-locations={legalLocations.join(',')}><button onClick={onPawn}>本人棋子</button>{legalLocations.map(id=><button key={id} onClick={()=>onLocation(id)}>地点{id}</button>)}{chariotTargetIds.map(id=><button key={id} onClick={()=>onChariotTarget?.(id)}>事件{id}</button>)}</div> }));
 vi.mock('../ui/FatePlayerDetail', () => ({ FatePlayerDetail: ({ playerId, onInspect, onClose }: any) => <div data-testid="detail" onKeyDown={event => {if(event.key==='Escape'){event.stopPropagation();onClose();}}}>{playerId}<button onClick={() => onInspect('fate-domination/skills/sc_saber_1','测试卡')}>检视测试卡</button></div> }));
 it('正式对局使用新手牌与地图表面，选中席位展开出牌，头像打开该玩家详情', () => {
     const G = preparedBoardState('runtime-board', ['0', '1', '2']);
@@ -141,6 +142,55 @@ it('部署目标包含魔术工房，不能误用仅战斗地点的列表', () =
  G.core.phase='outpost';
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
  expect(screen.getByTestId('shared-map').getAttribute('data-legal-locations')?.split(',')).toEqual(['workshop','miyama','shinto']);
+});
+it('神威车轮从已打出牌进入目标选择，点击所在地点事件直接提交',()=>{
+ const G=preparedBoardState('chariot-board',['0','1','2']);G.core.phase='action';G.core.currentPlayerId='0';
+ G.core.situation={...G.core.situation,id:'sit1'};
+ const rider=FATE_SERVANTS.find(servant=>servant.trueName==='伊斯坎达尔')!;
+ const actor=G.core.players['0'];actor.servantId=rider.id;actor.skills=rider.skillCards!.map((skill,index)=>({...skill,id:`${skill.id}:${index}`}));
+ const skill=actor.skills.find(item=>item.id.startsWith('sc_iskandar_2:'))!;
+ actor.activeSkills=[skill.id];actor.usedAbilityIds=[];actor.locationId='miyama';actor.mana=8;
+ const target=G.core.currentEvents.miyama[0];const dispatch=vi.fn();
+ expect(validate(G,{type:'PLAY_SKILL',playerId:'0',payload:{skillId:skill.id,targetCardId:target.id}})).toEqual({valid:true});
+ render(<FateDominationBoard {...({G,dispatch,playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+ fireEvent.click(screen.getByRole('button',{name:'发动 神威车轮'}));
+ expect(dispatch).not.toHaveBeenCalled();
+ expect(screen.getByTestId('fate-domination-primary-action')).toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:`事件${target.id}`}));
+ expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL',{skillId:skill.id,targetCardId:target.id});
+});
+it('调查先高亮可选玩家，点击头像才提交目标',()=>{
+ const G=preparedBoardState('investigation-board',['0','1','2']);G.core.phase='outpost';G.core.currentPlayerId='0';
+ const actor=G.core.players['0'],waver=FATE_MASTERS.find(master=>master.id==='m_waver')!;
+ actor.masterId=waver.id;actor.skills=waver.skills!.map((skill,index)=>({...skill,id:`${skill.id}:${index}`}));actor.usedAbilityIds=[];
+ const skill=actor.skills.find(item=>item.id.startsWith('s3:'))!;const dispatch=vi.fn();
+ render(<FateDominationBoard {...({G,dispatch,playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+ fireEvent.click(screen.getByRole('button',{name:'发动调查'}));
+ expect(dispatch).not.toHaveBeenCalled();
+ expect(screen.getByRole('button',{name:'调查 玩家 1'})).toHaveClass('is-investigation-target');
+ const target=screen.getByRole('button',{name:'调查 玩家 2'});expect(target).toHaveClass('is-investigation-target');
+ fireEvent.click(target);
+ expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL',{skillId:skill.id,targetPlayerId:'1'});
+});
+it('从事件目标切换到急行时关闭旧目标并展示移动地点',()=>{
+ const G=preparedBoardState('chariot-switch-move',['0','1','2']);G.core.phase='action';G.core.currentPlayerId='0';
+ G.core.situation={...G.core.situation,id:'sit1'};
+ const rider=FATE_SERVANTS.find(servant=>servant.trueName==='伊斯坎达尔')!;
+ const actor=G.core.players['0'];actor.servantId=rider.id;actor.skills=rider.skillCards!.map((skill,index)=>({...skill,id:`${skill.id}:${index}`}));
+ actor.activeSkills=[actor.skills.find(item=>item.id.startsWith('sc_iskandar_2:'))!.id];actor.usedAbilityIds=[];actor.locationId='miyama';actor.mana=8;
+ actor.hand.push({id:'chariot-switch-surveil',definitionId:'cardSurveil'});actor.activeAttackIds=['chariot-switch-surveil'];
+ G.core.battlefield.miyama.playerIds=['0'];
+ render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+ fireEvent.click(screen.getByRole('button',{name:'发动 神威车轮'}));
+ expect(screen.getByRole('button',{name:`事件${G.core.currentEvents.miyama[0].id}`})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'发动 急行'}));
+ expect(screen.queryByRole('button',{name:`事件${G.core.currentEvents.miyama[0].id}`})).not.toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'地点shinto'})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'发动 神威车轮'}));
+ expect(screen.getByRole('button',{name:`事件${G.core.currentEvents.miyama[0].id}`})).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'使用令咒'}));
+ expect(screen.queryByRole('button',{name:`事件${G.core.currentEvents.miyama[0].id}`})).not.toBeInTheDocument();
+ expect(screen.getByRole('dialog',{name:'使用令咒'})).toBeInTheDocument();
 });
 it('本人草稿暂存实付费用，撤回恢复读数，确认才交给游戏服', () => {
     const G=preparedBoardState('draft-mana-readout');

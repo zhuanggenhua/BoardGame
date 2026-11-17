@@ -9,6 +9,7 @@ export const MAGE_WARS_COMMANDS = {
     USE_ARENA_OBJECT_ABILITY: 'mw:use_arena_object_ability',
     MOVE_MAGE: 'mw:move_mage',
     MOVE_ARENA_OBJECT: 'mw:move_arena_object',
+    CREATURE_NO_ACTION: 'mw:creature_no_action',
     GUARD: 'mw:guard',
     DECLARE_ATTACK: 'mw:declare_attack',
     DECLARE_OBJECT_ATTACK: 'mw:declare_object_attack',
@@ -94,6 +95,10 @@ export interface MageWarsGuardCommand extends Command<typeof MAGE_WARS_COMMANDS.
     };
 }
 
+export interface MageWarsCreatureNoActionCommand extends Command<typeof MAGE_WARS_COMMANDS.CREATURE_NO_ACTION> {
+    payload: { objectId?: string };
+}
+
 export interface MageWarsDeclareAttackCommand extends Command<typeof MAGE_WARS_COMMANDS.DECLARE_ATTACK> {
     payload: {
         targetPlayerId: PlayerId;
@@ -133,6 +138,7 @@ export type MageWarsCommand =
     | MageWarsUseArenaObjectAbilityCommand
     | MageWarsMoveMageCommand
     | MageWarsMoveArenaObjectCommand
+    | MageWarsCreatureNoActionCommand
     | MageWarsGuardCommand
     | MageWarsDeclareAttackCommand
     | MageWarsDeclareObjectAttackCommand

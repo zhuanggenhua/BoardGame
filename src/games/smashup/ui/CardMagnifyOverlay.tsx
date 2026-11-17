@@ -12,6 +12,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, getBasePodVariantId, resolveCardName, resolveCardText } from '../data/cards';
 import { getSmashUpRendererPreviewRef } from './cardPreviewHelper';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 
 export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';
 const CARD_ASPECT_RATIO = 0.714;
@@ -32,7 +33,7 @@ function magnifyFrameStyle(isBase: boolean): React.CSSProperties {
 
 export interface CardMagnifyTarget {
     defId: string;
-    type: 'minion' | 'base' | 'action' | 'fusion' | 'titan';
+    type: 'minion' | 'base' | 'action' | 'fusion' | 'titan' | 'monster';
     overlayDefId?: string;
 }
 
@@ -69,18 +70,19 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
 
     if (!target) return null;
 
+    const monster = target.type === 'monster' ? getMunchkinSpecialCardDescriptor(target.defId) : undefined;
     const baseDef = target.type === 'base' ? getBaseDef(target.defId) : undefined;
     const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) ?? target.defId : target.defId;
     const def = target.type === 'base'
         ? (getBaseDef(resolvedBaseDefId) ?? baseDef)
         : getCardDef(target.defId);
-    if (!def) return null;
+    if (!def && !monster) return null;
 
     const previewDefId = target.type === 'base' ? resolvedBaseDefId : target.defId;
-    const resolvedName = resolveCardName(def, t) || previewDefId;
-    const resolvedText = resolveCardText(def, t);
-    const isBase = target.type === 'base';
-    const previewRef = getSmashUpRendererPreviewRef(previewDefId, {
+    const resolvedName = monster?.name ?? ((def ? resolveCardName(def, t) : '') || previewDefId);
+    const resolvedText = def ? resolveCardText(def, t) : '';
+    const isBase = target.type === 'base' || target.type === 'monster';
+    const previewRef = monster?.previewRef ?? getSmashUpRendererPreviewRef(previewDefId, {
         forceShowOverlay: true,
         overlayDefId: target.type === 'minion' ? target.overlayDefId : undefined,
     });

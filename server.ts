@@ -495,6 +495,12 @@ const gameTransport = new GameTransportServer({
             lobbyCoordinator.scheduleLobbySnapshot(game, `command:${commandType}:${matchID}`);
         }
     },
+    onPlayerConnectionChanged: (matchID, gameName) => {
+        const game = normalizeGameName(gameName);
+        if (game && isSupportedGame(game)) {
+            lobbyCoordinator.scheduleLobbySnapshot(game, `connection:${matchID}`);
+        }
+    },
 });
 
 const lobbyCoordinator = createLobbyCoordinator<SupportedGame>({
@@ -1627,7 +1633,7 @@ const runStartupCleanupInBackground = async () => {
         },
         {
             reason: 'cleanupEphemeralMatches:boot',
-            run: () => hybridStorage.cleanupEphemeralMatches(),
+            run: () => hybridStorage.cleanupEphemeralMatches(undefined, (matchID) => gameTransport.hasConnectedPlayer(matchID)),
             errorMessage: '[MongoStorage] 启动清理临时房间失败:',
         },
         {
@@ -1670,7 +1676,7 @@ async function startServer() {
         // 定时清理断线超时的临时房间 + 过期 TTL 房间
         setInterval(async () => {
             try {
-                const cleaned = await hybridStorage.cleanupEphemeralMatches();
+                const cleaned = await hybridStorage.cleanupEphemeralMatches(undefined, (matchID) => gameTransport.hasConnectedPlayer(matchID));
                 if (cleaned > 0) {
                     await unloadRuntimeMatchesMissingFromStorage('cleanupEphemeralMatches:timer');
                     for (const gameName of SUPPORTED_GAMES) {

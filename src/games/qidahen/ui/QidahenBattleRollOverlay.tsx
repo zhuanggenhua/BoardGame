@@ -196,10 +196,18 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceReg
                 const pieces = [...document.querySelectorAll('[data-qidahen-map-piece-id]')]
                     .filter(element => pieceIds.has(element.getAttribute('data-qidahen-map-piece-id') ?? ''));
                 const phasePieces = pieces.filter(element => kinds.has(element.getAttribute('data-qidahen-map-token-troop-kind') ?? ''));
+                const levelLabels = [...document.querySelectorAll('[data-testid^="qidahen-unit-level-"]')]
+                    .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
                 const targets = (phasePieces.length ? phasePieces : pieces)
                     .map(element => ({ rect: element.getBoundingClientRect(), pieceId: element.getAttribute('data-qidahen-map-piece-id')! }))
                     .filter(({ rect }) => rect.width > 0 && rect.height > 0)
-                    .map(({ rect, pieceId }) => ({ x: Math.max(rect.left, Math.min(rect.right, cx)), y: Math.max(rect.top, Math.min(rect.bottom, cy)), pieceId }))
+                    .flatMap(({ rect, pieceId }) => [
+                        { x: rect.left, y: (rect.top + rect.bottom) / 2, pieceId },
+                        { x: rect.right, y: (rect.top + rect.bottom) / 2, pieceId },
+                        { x: (rect.left + rect.right) / 2, y: rect.top, pieceId },
+                        { x: (rect.left + rect.right) / 2, y: rect.bottom, pieceId },
+                    ].filter(point => levelLabels.every(label => point.x < label.left - 7 || point.x > label.right + 7
+                        || point.y < label.top - 7 || point.y > label.bottom + 7)))
                     .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
                 const target = targets[0];
                 if (!target) return [];
@@ -210,7 +218,7 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceReg
                     .filter(element => element !== label && !label.contains(element) && !element.contains(label))
                     .filter(element => { const style = getComputedStyle(element); return style.visibility !== 'hidden' && style.display !== 'none'; })
                     .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
-                const points = routeArmyGroupConnector(start, target, obstacles);
+                const points = routeArmyGroupConnector(start, target, [...obstacles, ...levelLabels]);
                 return points ? [{ side: targetSide, pieceId: target.pieceId, points }] : [];
             });
             setLinks(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { test, expect, initHome, switchStyle, openGame, capture, record } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as const) {
@@ -49,6 +50,23 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
             // 回首页只能通过正式入口恢复已有房间，验证首页重连操作。
             await page.goto('/');
             await expect(page.getByTestId('home-active-match-banner')).toBeVisible();
+            if (mobile && style === 'modern') {
+                await page.locator('[data-game-id="tictactoe"] .platform-game-open').tap();
+                const runningDetails = page.getByTestId('game-details-modal-root');
+                await expect(runningDetails.getByTestId(`room-list-item-${matchID}`)).toBeVisible();
+                const template = created.request().postDataJSON();
+                const guestId = randomUUID();
+                const refreshRoom = await host.request.post(created.url(), { data: { ...template,
+                    playerName: '列表刷新访客', setupData: { ...template.setupData, guestId,
+                        ownerKey: template.setupData.ownerKey.replace(template.setupData.guestId, guestId), roomName: '实时更新房间' } } });
+                expect(refreshRoom.ok()).toBe(true);
+                const refreshed = await refreshRoom.json();
+                await expect(runningDetails.getByTestId(`room-list-item-${refreshed.matchID}`)).toBeVisible();
+                await runningDetails.getByTestId('game-details-close-button').tap();
+                await expect(runningDetails).toHaveCount(0);
+                await page.waitForTimeout(1200);
+                await expect(runningDetails).toHaveCount(0);
+            }
             await expect(homeFab).toBeVisible();
             await expect.poll(() => homeFab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(homeFabAnchor);
             if (mobile) {
@@ -82,3 +100,60 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
         } finally { await host.close(); await guest.close(); }
     });
 }
+
+for (const entry of ['网页', '安卓地址恢复', '游戏内暂时离开'] as const) test(`手机命运支配已有本人房间时详情可以关闭-${entry}`, async ({ browser }, info) => {
+    info.setTimeout(90_000);
+    const nativeAndroid = entry === '安卓地址恢复';
+    const context = await browser.newContext({ baseURL: info.project.use.baseURL,
+        viewport: { width: 360, height: 796 }, hasTouch: true, isMobile: true });
+    try {
+        if (nativeAndroid) await context.addInitScript(() => {
+            (window as typeof window & { __BG_E2E_NATIVE_ANDROID_RUNTIME__: boolean }).__BG_E2E_NATIVE_ANDROID_RUNTIME__ = true;
+        });
+        const page = await context.newPage();
+        await initHome(page);
+        await page.locator('[data-game-id="fate-domination"] .platform-game-open').tap();
+        await page.getByTestId('game-details-open-create-room').tap();
+        const createDialog = page.getByTestId('create-room-modal').last();
+        await createDialog.getByRole('button', { name: '3人', exact: true }).tap();
+        const response = page.waitForResponse(r => r.url().endsWith('/games/fate-domination/create') && r.request().method() === 'POST');
+        await createDialog.getByTestId('create-room-confirm-button').tap();
+        const created = await response;
+        expect(created.ok()).toBe(true);
+        const { matchID } = await created.json();
+        await page.waitForURL(/\/play\/fate-domination\/match\//);
+        if (entry === '游戏内暂时离开') {
+            await expect(page.getByTestId('fab-menu')).toBeVisible({ timeout: 45_000 });
+            await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().tap();
+            await page.getByRole('button', { name: '离开', exact: true }).tap();
+            await page.getByTestId('fab-panel-exit').getByRole('button', { name: /暂时离开/ }).tap();
+            await expect(page).toHaveURL(/\/$/);
+        } else {
+            await page.goto(nativeAndroid ? '/?game=fate-domination' : '/');
+        }
+        await expect(page.getByTestId('home-active-match-banner')).toBeVisible();
+        if (entry !== '安卓地址恢复') await page.locator('[data-game-id="fate-domination"] .platform-game-open').tap();
+        const details = page.getByTestId('game-details-modal-root');
+        await expect(details.getByTestId(`room-list-item-${matchID}`)).toBeVisible();
+        await expect(details.locator('[data-room-ownership]')).toBeVisible();
+        const ownedRoom = details.getByTestId(`room-list-item-${matchID}`);
+        await expect(ownedRoom.locator('[data-room-count]')).toHaveText(' (1/3)');
+        const countFits = await ownedRoom.locator('[data-room-count]').evaluate(node => {
+            const count = node.getBoundingClientRect();
+            const title = node.parentElement!.getBoundingClientRect();
+            return count.left >= title.left && count.right <= title.right + 1;
+        });
+        expect(countFits).toBe(true);
+        if (entry === '游戏内暂时离开') await capture(page, '手机-对局返回后的房间列表');
+        await details.getByTestId('game-details-close-button').tap();
+        await expect(details).toHaveCount(0);
+        await expect(page).not.toHaveURL(/[?&]game=/);
+        await page.waitForTimeout(1500);
+        await expect(details).toHaveCount(0);
+        if (entry === '游戏内暂时离开') await capture(page, '手机-关闭房间列表后');
+        await page.locator('[data-game-id="fate-domination"] .platform-game-open').tap();
+        await expect(details.getByTestId(`room-list-item-${matchID}`)).toBeVisible();
+        await details.getByTestId('game-details-close-button').tap();
+        await expect(details).toHaveCount(0);
+    } finally { await context.close(); }
+});

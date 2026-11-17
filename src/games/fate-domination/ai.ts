@@ -12,6 +12,9 @@ import { resolveFatePlayerAbility } from './domain/abilityRegistry';
 import { visibleFatePower } from './domain/playerView';
 import { isFateRidingChoice, validateFateRidingChoiceCommand } from './domain/ridingChoice';
 import { isFatePostBattleChoice, isValidFatePostBattleResponse } from './domain/postBattleChoice';
+import { isFateChariotChoice, validFateChariotResponse } from './domain/chariotChoice';
+import { fateChariotTargets } from './domain/chariotEvents';
+import { FATE_INVESTIGATION_KEEP, isFateInvestigationChoice, validFateInvestigationResponse } from './domain/investigationChoice';
 
 type State = MatchState<FateDominationCore>;
 const action = (type: string, payload: object, label: string, kind = type.toLowerCase()): AiLegalAction => ({
@@ -33,6 +36,12 @@ export function buildFateAiLegalActions({ playerId, state: raw }: { playerId: st
     const current = state.sys.interaction.current;
     if (current) {
         if (current.playerId !== playerId) return [];
+        if(isFateInvestigationChoice(current))return current.data.options.filter(option=>!option.disabled).map(option=>
+            action('SYS_INTERACTION_RESPOND',{interactionId:current.id,optionId:option.id},option.label,'investigation-choice')
+        ).filter(candidate=>validFateInvestigationResponse(state,{...candidate.commands[0],playerId} as Command));
+        if (isFateChariotChoice(current)) return current.data.options.filter(option=>!option.disabled).map(option=>
+            action('SYS_INTERACTION_RESPOND',{interactionId:current.id,optionId:option.id},`选择事件：${option.label}`,'chariot-choice')
+        ).filter(candidate=>validFateChariotResponse(state,{...candidate.commands[0],playerId} as Command));
         if (isFateRidingChoice(current)) {
             const ids = current.data.options.filter(option => !option.disabled).map(option => option.id);
             const choices = subsets(ids, 3).map(optionIds => action('SYS_INTERACTION_RESPOND', { interactionId: current.id, optionIds }, `骑乘打出${optionIds.length}张`, 'riding-confirm'));
@@ -74,6 +83,10 @@ export function buildFateAiLegalActions({ playerId, state: raw }: { playerId: st
         add('PLAY_SKILL', { skillId }, '发动能力');
         if (resolveFatePlayerAbility(core, playerId, skillId)?.effects.some(effect => effect.type === 'movement'))
             for (const targetLocationId of FATE_LOCATION_ORDER) add('PLAY_SKILL', { skillId, targetLocationId }, '发动移动能力');
+        if (resolveFatePlayerAbility(core, playerId, skillId)?.effects.some(effect => effect.type === 'replace-event'))
+            for (const targetCardId of fateChariotTargets(core,playerId)) add('PLAY_SKILL',{skillId,targetCardId},'替换事件牌');
+        if (resolveFatePlayerAbility(core, playerId, skillId)?.effects.some(effect => effect.type === 'investigate-hand'))
+            for (const targetPlayerId of core.playerIds) add('PLAY_SKILL',{skillId,targetPlayerId},'调查手牌');
     }
     return candidates;
 }
@@ -95,6 +108,22 @@ export function projectFateAiActionOutcome({ context, action: candidate }: { con
     const command = { ...candidate.commands[0], playerId: context.playerId } as FateDominationCommand;
     if (command.type.startsWith('SYS_')) return undefined;
     if (!FateDominationDomain.validate(state, command).valid) return { status: 'rejected' };
+    if(command.type==='PLAY_SKILL'){
+        const ability=resolveFatePlayerAbility(state.core,context.playerId,command.payload.skillId);
+        const draw=ability?.effects.find(effect=>effect.type==='draw-cards');
+        if(draw?.type==='draw-cards'){
+            const player=state.core.players[context.playerId];
+            const drawable=(player.publicView?.deckCount??player.deck.length)+player.discard.length;
+            const count=Math.min(draw.count,drawable),cost=ability?.activationCost??0;
+            return {status:'succeeded',utilityDelta:count*1.2-cost*.8,hasMeaningfulEffect:count>0,eventTypes:['FATE_CARDS_DRAWN']};
+        }
+    }
+    if(command.type==='PLAY_SKILL' && resolveFatePlayerAbility(state.core,context.playerId,command.payload.skillId)?.effects.some(effect=>effect.type==='investigate-hand')){
+        const target=command.payload.targetPlayerId ? state.core.players[command.payload.targetPlayerId] : undefined;
+        const count=target?.publicView?.handCount ?? (target ? target.hand.length-target.activeAttackIds.length : 0);
+        const useful=Boolean(target && target.id!==context.playerId && count>0);
+        return {status:'succeeded',utilityDelta:useful?1:0,hasOwnedFollowUp:true,hasMeaningfulEffect:useful,eventTypes:['FATE_INVESTIGATION_VIEWED']};
+    }
     const events = FateDominationDomain.execute(state, command, createSeededRandom('fate-ai-visible-preview'));
     const next = events.reduce((core, event) => FateDominationDomain.reduce(core, event), state.core);
     const utilityDelta = utility(next, context.playerId) - utility(state.core, context.playerId);
@@ -113,6 +142,12 @@ export function chooseFateAiAction(context: AiDecisionContext) {
             return payload.optionIds.reduce((sum, id) => { const card = resolveFateAttack(player, id)?.definition; return sum + (card ? card.basePower * 2 - (fateAttackManaCost(player, id) ?? 0) : 0); }, 0);
         }
         if (candidate.kind === 'post-battle-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'restore' ? 10 : 0;
+        if(candidate.kind==='investigation-choice'){
+            const choice=(context.visibleState as State).sys.interaction.current;
+            if(!isFateInvestigationChoice(choice))return -120;
+            const selected=(candidate.commands[0].payload as {optionId:string}).optionId;
+            return selected===FATE_INVESTIGATION_KEEP?0:choice.data.fateContext.targetPlayerId===context.playerId?-1:3;
+        }
         if (['advance_phase', 'pass_action', 'resolve_location'].includes(candidate.kind)) return 0;
         const outcome = projectFateAiActionOutcome({ context, action: candidate });
         if (!outcome) return -120;

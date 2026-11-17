@@ -418,6 +418,8 @@
       "actionCueMonsterMoveMode": "Now: tap a green room for {{monster}}; discovered rooms only, no exploring new rooms",
       "actionCueMonsterMoveSingle": "Now: move {{monster}} to {{room}}",
       "actionCueMonsterAttackChooseSource": "Now: tap the monster that will attack",
+      "controlledMonsterMustStart": "Resolve the stunned monster's turn start first.",
+      "waitForCurrentPlayer": "Wait for the current player to act.",
       "actionCueMonsterAttackMode": "Now: tap a hero for {{monster}} to attack",
       "actionCueMonsterAttackSingle": "Now: tap {{player}} as the hero {{monster}} attacks",
       "actionCueBloodFromStoneSetupPlacement": "Now: tap gold rooms, {{count}} left",

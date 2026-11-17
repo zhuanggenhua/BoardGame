@@ -22,11 +22,13 @@ import {
     cloneHelpingHandsRuntimeState,
     cloneMagicCameraRuntimeState,
 } from './hauntRuntimeSetupModel';
-import { isBetrayalPlayerControllingMonster } from './hauntScenarioReadModel';
+import { findFeverishMonster, isBetrayalPlayerControllingMonster, shouldDeadPlayerControlFeverish } from './hauntScenarioReadModel';
 import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
 import {
     createBloodFromStoneTurnStartVisibility,
     createInitialMonsterTurnRuntimeState,
+    cloneMonsterTurnRuntimeState,
+    resolveBetrayalMonsterMovementGroups,
     resolveBloodFromStoneMonsterTurnStatus,
     type BetrayalBloodFromStoneMonsterTurnRuntimeState,
 } from './monsterActionReadModel';
@@ -243,13 +245,44 @@ function advanceTurnEndState(
         ? input.monsterMovementRoll ?? null
         : null;
     const nextTurnStartSpeed = monsterMovementRoll?.speed ?? resolveTurnStartSpeed(nextCore, input.nextPlayerId);
-    const nextMovesRemaining = monsterMovementRoll?.moveAllowance ?? nextTurnStartSpeed;
-    const recentRoll = input.createRecentRoll(monsterMovementRoll);
+    const nextMovesRemaining = monsterMovementRoll?.moveAllowance
+        ?? (isBetrayalPlayerControllingMonster(nextCore, input.nextPlayerId) ? 0 : nextTurnStartSpeed);
+    const nextFeverish = findFeverishMonster(nextCore, input.nextPlayerId);
+    const continuingFeverishTurn = Boolean(nextFeverish
+        && shouldDeadPlayerControlFeverish(core, input.previousPlayerId)
+        && shouldDeadPlayerControlFeverish(nextCore, input.nextPlayerId)
+        && core.scenarioRuntime.monsterTurn.movementRollsByGroupId[`${nextFeverish.name}:${nextFeverish.speed}`]);
+    const recentRoll = input.createRecentRoll(continuingFeverishTurn ? null : monsterMovementRoll);
+    const monsterTurn = continuingFeverishTurn
+        ? cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn)
+        : createInitialMonsterTurnRuntimeState();
+    if (monsterMovementRoll) {
+        const groupId = `${monsterMovementRoll.monsterName}:${monsterMovementRoll.speed}`;
+        if (!continuingFeverishTurn) {
+            const group = resolveBetrayalMonsterMovementGroups(nextCore).find((candidate) => candidate.groupId === groupId);
+            const monsterIds = group?.monsterIds ?? [monsterMovementRoll.monsterId];
+            monsterTurn.movementRollsByGroupId[groupId] = {
+                groupId, monsterName: monsterMovementRoll.monsterName, monsterIds,
+                playerId: monsterMovementRoll.playerId, speed: monsterMovementRoll.speed,
+                diceCount: monsterMovementRoll.speed, dice: [...monsterMovementRoll.dice],
+                total: monsterMovementRoll.total, moveAllowance: monsterMovementRoll.moveAllowance,
+                rollOnceForGroup: true, minimumMoveAllowance: 1,
+            };
+            for (const monsterId of monsterIds) {
+                if (monsterId !== monsterMovementRoll.monsterId) monsterTurn.moveRemainingById[monsterId] = monsterMovementRoll.moveAllowance;
+            }
+        }
+    }
+    if (continuingFeverishTurn && nextFeverish) {
+        const previousMonster = core.monsters.find((monster) => monster.id === `feverish-${input.previousPlayerId}`);
+        if (previousMonster) monsterTurn.moveRemainingById[previousMonster.id] = 0;
+        delete monsterTurn.moveRemainingById[nextFeverish.id];
+    }
     const resetScenarioRuntime = {
         ...nextCore.scenarioRuntime,
         corpseLootedByPlayerIdsThisTurn: [],
         usedRoomEffectIdsThisTurn: [],
-        monsterTurn: createInitialMonsterTurnRuntimeState(),
+        monsterTurn,
         bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId: createBloodFromStoneTurnStartVisibility(nextCore),
         bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [],
         dust: nextCore.scenarioRuntime.dust

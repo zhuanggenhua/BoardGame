@@ -14,6 +14,8 @@ import {
 import {
     resolveBloodFromStoneNewLineOfSightDamageRoll,
     resolveBloodFromStoneTurnStartVisibleStoneCherubIds,
+    resolveBetrayalControlledMonsterId,
+    resolveBetrayalMonsterMoveCost,
 } from './monsterActionReadModel';
 import { resolveBetrayalMoveCost } from './movementReadModel';
 import {
@@ -87,6 +89,7 @@ export function resolveBetrayalExplorerMovedPayload(
             playerId: command.playerId,
             roomId: room.id,
             controlledToken: 'jack-spirit',
+            moveCost: resolveBetrayalMonsterMoveCost(core, resolveBetrayalControlledMonsterId(core)!),
             bloodFromStoneTurnStartVisibleStoneCherubIds,
             bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `杰克之灵游荡到了${room.name}`,
@@ -97,6 +100,7 @@ export function resolveBetrayalExplorerMovedPayload(
             playerId: command.playerId,
             roomId: room.id,
             controlledToken: 'feverish',
+            moveCost: resolveBetrayalMonsterMoveCost(core, resolveBetrayalControlledMonsterId(core)!),
             bloodFromStoneTurnStartVisibleStoneCherubIds,
             bloodFromStoneNewLineOfSightDamageRoll: bloodFromStoneNewLineOfSightDamageRoll ?? undefined,
             logText: `狂热病患移动到了${room.name}`,

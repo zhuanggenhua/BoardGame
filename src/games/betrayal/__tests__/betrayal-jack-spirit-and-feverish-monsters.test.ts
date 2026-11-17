@@ -91,6 +91,7 @@ it('叛徒死亡后轮到其回合时，应改为操控杰克之灵按相邻房�
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -245,7 +246,7 @@ it('上一名探索者结束回合时，会自然进入死叛徒的狂热病患�
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' });
         expect(core.monsters.find((monster) => monster.id === 'feverish-0')?.roomId).toBe('entrance-hall');
         expect(core.activeRoomId).toBe('entrance-hall');
-        expect(core.movesRemaining).toBe(1);
+        expect(core.movesRemaining).toBe(0);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         expect(core.currentPlayer).toBe('1');
@@ -321,6 +322,7 @@ it('狂热病患怪物攻击击倒最后一名非叛徒后触发灰尘叛徒胜�
         });
         expect(core.endgameResult).toBeNull();
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -360,6 +362,7 @@ it('当前运行持有牌全集在狂热病患怪物攻击击倒非叛徒后都�
                 100,
                 createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
             );
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
             core = applyBetrayalCommand(
                 core,
                 BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -426,6 +429,7 @@ it('狂热病患怪物攻击本会触发灰尘叛徒胜利时，兔脚成功会�
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -483,6 +487,7 @@ it('狂热病患怪物攻击本会触发灰尘叛徒胜利时，兔脚仍失败�
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

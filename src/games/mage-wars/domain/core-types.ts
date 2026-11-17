@@ -98,6 +98,7 @@ export interface MageWarsArenaObjectState {
         elusive?: boolean;
         freeMoveUsedThisAction?: boolean;
         movedThisAction?: boolean;
+        hinderedThisAction?: boolean;
         quickActionAfterMoveAvailable?: boolean;
         chargeDiceModifier?: number;
         meleeDiceModifier?: number;
@@ -155,6 +156,7 @@ export interface MageWarsArenaZone {
 export interface MageWarsWallPassageDamage {
     amount: number;
     damageTypes: string[];
+    kind?: 'level-based-attack';
 }
 
 export interface MageWarsWallState {
@@ -185,6 +187,12 @@ export interface MageWarsCore {
     phaseActorId?: PlayerId;
     /** 当前阶段已经完成阶段动作的玩家。准备阶段双方都完成后才进入下一阶段。 */
     phaseReadyPlayerIds?: PlayerId[];
+    /** 当前生物行动窗口的实际行动者；不含法师的额外快速施法。 */
+    activeCreatureAction?: {
+        playerId: PlayerId;
+        objectId?: string;
+        deferredStatusTokenCounts: Partial<Record<StatusTokenId, number>>;
+    };
     turnNumber: number;
     players: Record<PlayerId, MageWarsPlayerState>;
     objects: Record<string, MageWarsArenaObjectState>;

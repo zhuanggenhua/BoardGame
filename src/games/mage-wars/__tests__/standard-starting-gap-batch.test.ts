@@ -900,6 +900,8 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
         const attacked = runCommand({
             core: {
                 ...summoned.state.core,
+                // 攻击用例构造了生物重新就绪后的独立前态。
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [vampireId]: { ...vampire, actionReady: true },
@@ -1135,7 +1137,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
             attackOrTraitLine: '利爪：快速近战 2 骰',
         });
         const target = makeArenaObject('area-grant-target-1', '1', PLAYER_ZERO_START_ZONE, { life: 40 });
-        const base = setupState('deployment');
+        const base = setupState('initiativeQuickcast');
         const pierceState: MatchState<MageWarsCore> = {
             core: [animal, target].reduce(
                 (core, object) => withArenaObject(core, object),
@@ -1219,7 +1221,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
         ] as const;
 
         for (const entry of cases) {
-            const base = setupState('deployment');
+            const base = setupState('initiativeQuickcast');
             const cast = runCommand({
                 core: withPreparedPlayerMage(base.core, '0', entry.mageId, [entry.spellCardId]),
                 sys: base.sys,
@@ -1256,7 +1258,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
     });
 
     it('implements 2223 Mana Siphon as a zone placement that follows the selected mage', () => {
-        const base = setupState('deployment');
+        const base = setupState('initiativeQuickcast');
         const preparedCore = withPreparedPlayerMage(base.core, '0', MAGE_IDS.WIZARD_APPRENTICE, [2223]);
         const state: MatchState<MageWarsCore> = {
             core: withPlayerInZone(
@@ -1454,7 +1456,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
     });
 
     it('implements 2208 Poison Cloud with upkeep toxin damage and one movement action per turn', () => {
-        const base = setupState('deployment');
+        const base = setupState('initiativeQuickcast');
         const target = makeArenaObject('poison-cloud-target-1', '1', PLAYER_ZERO_START_ZONE, {
             typeLine: '生物 / 迅捷',
             life: 8,
@@ -1562,7 +1564,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
             damage: 3,
             armor: 0,
         });
-        const base = setupState('deployment');
+        const base = setupState('initiativeQuickcast');
         const state: MatchState<MageWarsCore> = {
             core: withArenaObject(
                 withPreparedPlayerMage(base.core, '0', MAGE_IDS.BEASTMASTER_APPRENTICE, [2303]),
@@ -1597,7 +1599,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
     });
 
     it('implements 2219 Binsara Hand as a once-per-round armor or healing ability', () => {
-        const base = setupState('deployment');
+        const base = setupState('initiativeQuickcast');
         const target = makeArenaObject('binsara-target-0', '0', PLAYER_ZERO_START_ZONE, {
             damage: 2,
             armor: 2,

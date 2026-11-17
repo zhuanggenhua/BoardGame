@@ -1,0 +1,9 @@
+.fd-investigation-choice { position:absolute; z-index:26; left:50%; top:12%; transform:translateX(-50%); color:#f7e8bd; }
+.fd-investigation-prompt { display:flex; align-items:center; gap:12px; padding:5px 8px; background:#101717ed; }
+.fd-investigation-prompt button { padding:4px 8px; border:1px solid #b8a778; background:#17211b; color:#f7e8bd; }
+.fd-investigation-cards { --fd-investigation-width:clamp(112px,10vw,160px); display:flex; width:min(75vw, calc(var(--fd-investigation-count) * (var(--fd-investigation-width) + 6px))); container-type:inline-size; }
+.fd-investigation-card { position:relative; flex:0 0 var(--fd-investigation-width); }
+.fd-investigation-card + .fd-investigation-card { margin-left:min(6px, calc((100cqw - var(--fd-investigation-count) * var(--fd-investigation-width)) / max(1, var(--fd-investigation-count) - 1))); }
+.fd-investigation-card:hover,.fd-investigation-card:focus-within { z-index:1; }
+.fd-investigation-card > button:first-child { width:100%; padding:0; border:0; background:transparent; cursor:pointer; outline:2px solid #e5cc86; outline-offset:1px; }
+.fd-investigation-card > button:first-child:hover,.fd-investigation-card > button:first-child:focus-visible { outline-color:#fff0b5; outline-offset:2px; }

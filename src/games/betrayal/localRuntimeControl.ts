@@ -1,5 +1,6 @@
 import type { LocalRuntimeControlResolver } from '../../engine/transport/followCurrentTurnPlayer';
 import type { BetrayalCore } from './game';
+import { resolvePendingAttackRollConfirmationPlayerId } from './attackRules';
 import {
     resolvePendingCardResolutionAcknowledgedPlayerIds,
     resolvePendingCardResolutionRequiredPlayerIds,
@@ -10,6 +11,8 @@ import {
 /** Local hot-seat acknowledgements use their human owner, without changing the turn actor. */
 export const resolveBetrayalLocalRuntimeControlledPlayerId: LocalRuntimeControlResolver = ({ state, fallbackPlayerId }) => {
     const core = state.core as BetrayalCore;
+    const attackRollPlayerId = resolvePendingAttackRollConfirmationPlayerId(core);
+    if (attackRollPlayerId) return attackRollPlayerId;
     if (core.pendingEventChoice || core.pendingEventRollStart) return fallbackPlayerId;
     const missingHuman = (required: readonly string[], acknowledged: readonly string[]) => required.find(playerId =>
         !acknowledged.includes(playerId)

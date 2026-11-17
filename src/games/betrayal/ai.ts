@@ -21,6 +21,7 @@ import {
     resolveUseEffect,
 } from './possessionEffects';
 import { resolvePendingEventRollResolutionRequiredPlayerIds } from './acknowledgementReadModel';
+import { resolvePendingAttackRollConfirmationPlayerId } from './attackRules';
 import { BETRAYAL_AI_MINIMUM_VISIBLE_STEP_DELAY_MS } from './visualTiming';
 
 interface BetrayalAiInventoryCard {
@@ -73,6 +74,7 @@ interface BetrayalAiHelpingHandsRuntime {
     monsterTurnControllerPlayerId: string | null;
     trollHandMoveRemainingById: Record<string, number>;
     trollHandAttackUsedIdsThisTurn: string[];
+    pendingAttackReward?: { attackerPlayerId: string; defenderPlayerId: string };
 }
 
 interface BetrayalAiMummyRuntime {
@@ -260,6 +262,7 @@ const ACTION_KINDS = {
     GIVE_GIRL_TO_MUMMY: 'give-girl-to-mummy',
     GIVE_OMEN_TO_MUMMY: 'give-omen-to-mummy',
     RESOLVE_MUMMY_ATTACK_REWARD: 'resolve-mummy-attack-reward',
+    RESOLVE_HELPING_HANDS_ATTACK_REWARD: 'resolve-helping-hands-attack-reward',
     RESOLVE_MONSTER_TURN_START: 'resolve-monster-turn-start',
     ROLL_MONSTER_MOVEMENT_GROUP: 'roll-monster-movement-group',
     MOVE_MONSTER_TO_ROOM: 'move-monster-to-room',
@@ -840,6 +843,30 @@ function buildMagicCameraHauntActions(
     }
 
     return actions;
+}
+
+function buildHelpingHandsAttackRewardActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.scenarioRuntime.helpingHands?.pendingAttackReward;
+    if (!pending || pending.attackerPlayerId !== playerId) return [];
+    const cards = findExplorer(state.core, pending.defenderPlayerId)?.inventory ?? [];
+    const candidates = [
+        { choice: 'damage' as const },
+        ...cards.filter(card => card.kind === 'item' || card.kind === 'omen')
+            .map(card => ({ choice: 'steal' as const, cardId: card.id })),
+    ];
+    return candidates.map(candidate => createValidatedAction({
+        validate, state, playerId,
+        type: BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+        payload: candidate,
+        kind: ACTION_KINDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+        label: candidate.choice === 'damage' ? '选择造成伤害' : '选择偷取持有物',
+        idParts: [candidate.choice, 'cardId' in candidate ? candidate.cardId : ''],
+        metadata: { ...candidate, strategicScore: candidate.choice === 'damage' ? 1300 : 1200, visibleStepDelayPolicy: 'visible' },
+    })).filter((action): action is AiLegalAction => Boolean(action));
 }
 
 function buildMummyAttackRewardActions(
@@ -1543,7 +1570,8 @@ function buildRabbitFootActions(
     const core = state.core;
     const recentRoll = core.recentRoll;
     const owner = findExplorer(core, playerId);
-    if (!recentRoll || recentRoll.playerId !== playerId || !owner || !shouldRerollRecentResult(recentRoll)) {
+    if (!recentRoll || recentRoll.playerId !== playerId || !owner
+        || (recentRoll.kind !== 'attackRoll' && !shouldRerollRecentResult(recentRoll))) {
         return [];
     }
 
@@ -1561,7 +1589,7 @@ function buildRabbitFootActions(
             cardId: card.id,
             dieIndex,
             previousPip: pip,
-            strategicScore: 1250 + (3 - pip) * 40,
+            strategicScore: shouldRerollRecentResult(recentRoll) ? 1250 + (3 - pip) * 40 : 0,
             visibleStepDelayPolicy: 'visible',
         },
     })))
@@ -2242,9 +2270,16 @@ function buildBetrayalAiLegalActions(
         return dustSicknessExchangeActions;
     }
 
+    const helpingHandsRewardActions = buildHelpingHandsAttackRewardActions(validate, state, args.playerId);
+    if (helpingHandsRewardActions.length > 0) {
+        return helpingHandsRewardActions;
+    }
+
     const rabbitFootActions = buildRabbitFootActions(validate, state, args.playerId);
     if (rabbitFootActions.length > 0) {
-        return rabbitFootActions;
+        return state.core.recentRoll?.kind === 'attackRoll'
+            ? [...rabbitFootActions, ...buildRecentRollAcknowledgementActions(validate, state, args.playerId)]
+            : rabbitFootActions;
     }
 
     const recentRollAcknowledgementActions = buildRecentRollAcknowledgementActions(validate, state, args.playerId);
@@ -2623,6 +2658,8 @@ export function createBetrayalAiRuntime(args: {
 }): GameAiRuntime {
     return {
         gameId: 'betrayal',
+        resolveCurrentDecisionPlayerId: ({ state, fallbackPlayerId }) =>
+            resolvePendingAttackRollConfirmationPlayerId(state.core as BetrayalCore) ?? fallbackPlayerId,
         buildLegalActions: (buildArgs) => buildBetrayalAiLegalActions(args.validate, buildArgs),
         defaultMinimumActionDelayMs: BETRAYAL_AI_MINIMUM_VISIBLE_STEP_DELAY_MS,
         localVisibleStepDelayConfig: {

@@ -208,6 +208,9 @@ import {
     resolveBloodFromStoneMonsterTurnStatus,
     resolveHelpingHandsMonsterTurnStatus,
     resolveMagicCameraPhantomAttackTargets,
+    resolveBetrayalControlledMonsterId,
+    resolveBetrayalMonsterMoveCost,
+    hasPendingControlledMonsterTurnStart,
     type BetrayalBloodFromStoneMonsterTurnRuntimeState,
     type BetrayalMonsterTurnRuntimeState,
 } from './monsterActionReadModel';
@@ -370,6 +373,7 @@ import {
     isDynamiteCardId,
     isDynamiteTargetRoom,
     isPendingDamageAllocationForAttackRoll,
+    resolvePendingAttackRollConfirmationPlayerId,
     resolveAttackWeaponEffect,
     resolveDynamiteInventoryCard,
 } from './attackRules';
@@ -722,6 +726,7 @@ export interface BetrayalRecentRollState {
         previousDamageToDefender: number;
         defenderRoll: number;
         defenderDefenseExtraDice?: number;
+        damageDeferred?: boolean;
         attackerTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
         defenderTraitsBeforeDamage?: BetrayalExplorerSummary['traits'];
         weaponCardId?: string;
@@ -738,6 +743,7 @@ export interface BetrayalRecentRollState {
         damageAmount: number;
         damageTraits?: BetrayalTraitKey[];
         traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+        traitTracksBeforeDamage?: BetrayalTraitTrackMap;
         scenarioRuntimeBeforeDefeat: BetrayalScenarioRuntimeStatus;
         monstersBeforeDefeat: BetrayalMonsterSummary[];
         releasedJackSpiritRoomId?: string;
@@ -917,6 +923,7 @@ export interface BetrayalPendingDamageAllocationState {
     forcedTraitSequence?: BetrayalTraitKey[];
     allowSkull: boolean;
     traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+    traitTracksBeforeDamage?: BetrayalTraitTrackMap;
     nextPlayerId?: string;
     nextDamageAllocations?: BetrayalPendingDamageAllocationState[];
     monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
@@ -1341,6 +1348,8 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                             ? [...core.recentRoll.deathPrevention.damageTraits]
                             : undefined,
                         traitsBeforeDamage: { ...core.recentRoll.deathPrevention.traitsBeforeDamage },
+                        traitTracksBeforeDamage: core.recentRoll.deathPrevention.traitTracksBeforeDamage
+                            ? cloneTraitTracks(core.recentRoll.deathPrevention.traitTracksBeforeDamage) : undefined,
                         scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.recentRoll.deathPrevention.scenarioRuntimeBeforeDefeat),
                         monstersBeforeDefeat: core.recentRoll.deathPrevention.monstersBeforeDefeat.map(cloneMonster),
                     }
@@ -2211,9 +2220,18 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     }
     const pendingHelpingHandsReward = resolveHelpingHandsPendingAttackReward(core);
     if (
+        (command.type === BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD
+            || command.type === BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD)
+        && resolvePendingAttackRollConfirmationPlayerId(core)
+    ) {
+        return { valid: false, error: '请先确认当前攻击骰结果。' };
+    }
+    if (
         pendingHelpingHandsReward
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+        && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
     ) {
         return { valid: false, error: '请先选择造成伤害或偷取物品/预兆。' };
     }
@@ -2314,7 +2332,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         !isPlayersTurn(core, command.playerId)
         && !(helpingHandsMonsterTurnStatus.active && isHelpingHandsMonsterCommand)
         && !(bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand)
-        && !(isStandardMonsterTurnCommand && canPlayerControlStandardMonsterTurn(core, command.playerId))
         && !isRecentRollAcknowledgementParticipant
     ) {
         return { valid: false, error: '还没有轮到该玩家。' };
@@ -2354,6 +2371,10 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     switch (command.type) {
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM:
             if (isDead) {
+                const controlledMonsterId = resolveBetrayalControlledMonsterId(core);
+                if (controlledMonsterId && core.movesRemaining < resolveBetrayalMonsterMoveCost(core, controlledMonsterId)) {
+                    return { valid: false, error: '怪物剩余移动不足以离开当前房间。' };
+                }
                 if (shouldDeadPlayerControlFeverish(core, actor.playerId)) {
                     if (core.movesRemaining <= 0) {
                         return { valid: false, error: '狂热病患本回合没有剩余移动点。' };
@@ -2430,7 +2451,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE:
             return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.END_TURN:
-            return { valid: true };
+            return hasPendingControlledMonsterTurnStart(core)
+                ? { valid: false, error: '请先处理被击晕怪物的回合开始步骤。' }
+                : { valid: true };
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
             return validateRecentRollAcknowledgement(core, command) ?? { valid: false, error: '当前没有待确认的投骰结果。' };
         }
@@ -4656,6 +4679,8 @@ export const engineConfig = {
     resolveLocalRuntimeControlledPlayerId: resolveBetrayalLocalRuntimeControlledPlayerId,
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['characterSelect'],
+        resolveCurrentPlayerId: ({ state, fallbackPlayerId }: { state: MatchState<unknown>; fallbackPlayerId: string | null }) =>
+            resolvePendingAttackRollConfirmationPlayerId(state.core as BetrayalCore) ?? fallbackPlayerId,
         resolveSeatLegalOnlyRecovery: resolveBetrayalSeatLegalOnlyRecovery,
         shouldSuppressActiveTurnCandidate: shouldSuppressBetrayalActiveTurnRecovery,
     },

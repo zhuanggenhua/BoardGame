@@ -4,13 +4,15 @@ import type { QidahenCore } from '../domain/types';
 import { UI_STYLE, UI_SURFACE } from './qidahenTheme';
 
 /** 此处仅承接模式、追加费用和完成；地区与部队候选由地图本体承接。 */
-export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose, recommendedChoiceId }: {
+export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose, recommendedChoiceId, onTutorialPrevious }: {
     core: QidahenCore;
     canChoose: (choiceId: string) => boolean;
     onChoose: (choiceId: string) => void;
     recommendedChoiceId?: string;
+    onTutorialPrevious?: () => void;
 }) {
     const { t } = useTranslation('game-qidahen');
+    const { t: tutorialText } = useTranslation('tutorial');
     const progress = core.wheelRecruitTrainProgress;
     if (!progress || progress.phase === 'payment') return null;
     const controls = getQidahenWheelRecruitTrainChoices(core).filter(choice => choice.kind !== 'recruit-target' && choice.kind !== 'training-target');
@@ -24,6 +26,9 @@ export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose, recomme
             : progress.phase === 'choose-training-target' || progress.phase === 'extra-training-target' ? 'board.wheelRecruitTrain.trainingTargetTitle'
                 : progress.source === 'khan-edict' ? 'board.wheelRecruitTrain.khanTitle' : 'board.wheelRecruitTrain.title')}</h2>
         <div className="text-[15px]" data-testid="qidahen-wheel-recruit-train-progress">{t('board.wheelRecruitTrain.progress', { completed: progress.actionsCompleted, extra: progress.extraTrainingsCompleted })}</div>
+        {onTutorialPrevious ? <button type="button" data-testid="tutorial-previous-button" onClick={onTutorialPrevious}
+            className="mt-2 min-h-11 rounded border border-[#9a7d4f] px-3 text-sm font-bold"
+            style={{ background: UI_STYLE.paperLight, color: UI_STYLE.ink }}>{tutorialText('overlay.previous')}</button> : null}
         {controls.length ? <div className="mt-3 grid grid-cols-2 gap-2">{controls.map(choice => <button key={choice.id} type="button"
             data-testid={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
             data-tutorial-id={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}

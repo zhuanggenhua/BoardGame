@@ -82,7 +82,7 @@ describe('HybridStorage 行为', () => {
     });
 
     it('游客临时房间断线超时后清理（走 Mongo 清理流程）', async () => {
-        const disconnectedSince = Date.now() - 6 * 60 * 1000;
+        const disconnectedSince = Date.now() - 21 * 60 * 1000;
         const setupData = buildSetupData();
         const baseMetadata = {
             ...buildMetadata(setupData),

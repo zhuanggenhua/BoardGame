@@ -17,6 +17,7 @@ import {
 } from './spellRules';
 import { MAGE_WARS_PHASE_ORDER } from './types';
 import { getCreatureObjectIdsForOwner, getOpponentId } from './utils';
+import { canMageWarsAdvanceCreatureAction, countMageWarsActiveCreatures } from './creatureAction';
 import { getStatusTokenAmount } from './statusTokens';
 import {
     getTemporaryChargeDiceModifier,
@@ -60,7 +61,7 @@ function resolveNextPlayer(core: MageWarsCore): { playerId: string; turnNumber: 
     const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % core.playerOrder.length;
     return {
         playerId: core.playerOrder[nextIndex] ?? core.currentPlayerId,
-        turnNumber: nextIndex === 0 ? core.turnNumber + 1 : core.turnNumber,
+        turnNumber: core.turnNumber + 1,
     };
 }
 
@@ -481,9 +482,11 @@ function createCreatureActionStatusRemovalAvailableEvents(
     sourceCommandType: string,
     timestamp: number,
 ): MageWarsEvent[] {
-    const player = core.players[core.currentPlayerId];
+    const action = core.activeCreatureAction;
+    const player = action && !action.objectId ? core.players[action.playerId] : undefined;
     const events: MageWarsEvent[] = [];
-    const playerStatusAmount = player ? getStatusTokenAmount(player, statusTokenId) : 0;
+    const deferredAmount = action?.deferredStatusTokenCounts[statusTokenId] ?? 0;
+    const playerStatusAmount = player ? Math.max(0, getStatusTokenAmount(player, statusTokenId) - deferredAmount) : 0;
     if (player && playerStatusAmount > 0) {
         events.push({
             type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
@@ -498,9 +501,9 @@ function createCreatureActionStatusRemovalAvailableEvents(
         });
     }
 
-    for (const objectId of getCreatureObjectIdsForOwner(core, core.currentPlayerId)) {
+    for (const objectId of action?.objectId ? [action.objectId] : []) {
         const object = core.objects[objectId];
-        const objectStatusAmount = object ? getStatusTokenAmount(object, statusTokenId) : 0;
+        const objectStatusAmount = object ? Math.max(0, getStatusTokenAmount(object, statusTokenId) - deferredAmount) : 0;
         if (!object || objectStatusAmount <= 0) continue;
         events.push({
             type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
@@ -525,9 +528,12 @@ function createCreatureActionCrippleEscapeAvailableEvents(
 ): MageWarsEvent[] {
     const events: MageWarsEvent[] = [];
 
-    for (const objectId of getCreatureObjectIdsForOwner(core, core.currentPlayerId)) {
+    for (const objectId of core.activeCreatureAction?.objectId ? [core.activeCreatureAction.objectId] : []) {
         const object = core.objects[objectId];
-        const crippleAmount = object ? getStatusTokenAmount(object, STATUS_TOKEN_IDS.CRIPPLE) : 0;
+        const crippleAmount = object ? Math.max(0,
+            getStatusTokenAmount(object, STATUS_TOKEN_IDS.CRIPPLE)
+            - (core.activeCreatureAction?.deferredStatusTokenCounts[STATUS_TOKEN_IDS.CRIPPLE] ?? 0),
+        ) : 0;
         if (!object || crippleAmount <= 0) continue;
 
         const effectDieResult = random.d(12);
@@ -555,7 +561,7 @@ function createArenaObjectTemporaryTraitsClearAvailableEvents(
     sourceCommandType: string,
     timestamp: number,
 ): MageWarsEvent[] {
-    return getCreatureObjectIdsForOwner(core, core.currentPlayerId)
+    return (core.activeCreatureAction?.objectId ? [core.activeCreatureAction.objectId] : [])
         .flatMap((objectId): MageWarsEvent[] => {
             const object = core.objects[objectId];
             if (!object) return [];
@@ -610,6 +616,10 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
             return { ok: false, error: 'notActivePhasePlayer' };
         }
 
+        if (phase === 'creatureAction' && !canMageWarsAdvanceCreatureAction(state.core, command.playerId)) {
+            return { ok: false, error: 'mustActivateCreature' };
+        }
+
         return { ok: true };
     },
 
@@ -650,6 +660,12 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
             const ready = resolveReadyPlayerIds(state.core, command.playerId);
             const timestamp = command.timestamp ?? 0;
             const actionEndEvents = [
+                ...(state.core.activeCreatureAction ? [{
+                    type: MAGE_WARS_EVENTS.CREATURE_ACTION_ENDED,
+                    payload: state.core.activeCreatureAction,
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as MageWarsEvent] : []),
                 ...createCreatureActionStatusRemovalAvailableEvents(
                     state.core,
                     STATUS_TOKEN_IDS.DAZE,
@@ -667,12 +683,26 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                 ...createCreatureActionCrippleEscapeAvailableEvents(state.core, command.type, timestamp, random),
                 ...createArenaObjectTemporaryTraitsClearAvailableEvents(state.core, command.type, timestamp),
             ];
-            if (!allPlayersReady(state.core, ready)) {
+            const opponentId = getOpponentId(state.core, command.playerId);
+            const currentAction = state.core.activeCreatureAction;
+            const activeActorStillReady = currentAction?.playerId === command.playerId
+                && (currentAction.objectId
+                    ? state.core.objects[currentAction.objectId]?.actionReady
+                    : state.core.players[currentAction.playerId]?.actionReady);
+            const ownRemaining = countMageWarsActiveCreatures(state.core, command.playerId)
+                - (activeActorStillReady ? 1 : 0);
+            const nextActorId = countMageWarsActiveCreatures(state.core, opponentId) > 0
+                ? opponentId
+                : ownRemaining > 0
+                    ? command.playerId
+                    : undefined;
+            if (nextActorId) {
                 return {
                     halt: true,
                     updatedState: updatePhaseControl(state, {
-                        phaseReadyPlayerIds: ready,
-                        phaseActorId: getOpponentId(state.core, command.playerId),
+                        phaseReadyPlayerIds: [],
+                        phaseActorId: nextActorId,
+                        activeCreatureAction: undefined,
                     }),
                     events: [
                         createPhaseWindowCompletedEvent(
@@ -681,7 +711,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                             ready,
                             command.type,
                             timestamp,
-                            getOpponentId(state.core, command.playerId),
+                            nextActorId,
                         ),
                         ...actionEndEvents,
                     ],
@@ -692,6 +722,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                 updatedState: updatePhaseControl(state, {
                     phaseReadyPlayerIds: [],
                     phaseActorId: state.core.currentPlayerId,
+                    activeCreatureAction: undefined,
                 }),
                 events: [
                     createPhaseWindowCompletedEvent(

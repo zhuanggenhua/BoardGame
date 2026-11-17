@@ -998,7 +998,16 @@ describe('splendor smoke', () => {
         const core = SplendorDomain.setup(['0', '1'], makeRandom());
         const pendingCore: SplendorCore = {
             ...core,
+            hostStarted: true,
             nobleIds: ['noble-1', 'noble-3'],
+            players: {
+                ...core.players,
+                '0': { ...core.players['0'], purchasedCardIds: [
+                    't1-white-1', 't1-white-2', 't1-white-3', 't1-white-4',
+                    't1-blue-1', 't1-blue-2', 't1-blue-3', 't1-blue-4',
+                    't1-green-1', 't1-green-2', 't1-green-3',
+                ] },
+            },
             pendingResolution: {
                 type: 'chooseNoble',
                 nobleIds: ['noble-1', 'noble-3'],
@@ -1012,10 +1021,15 @@ describe('splendor smoke', () => {
             timestamp: 1,
         };
 
+        expect(SplendorDomain.validate(stateOf(pendingCore), { ...command, playerId: '1' }))
+            .toMatchObject({ valid: false, error: 'notYourTurn' });
         const next = reduceAll(pendingCore, SplendorDomain.execute(stateOf(pendingCore), command, makeRandom()));
         expect(next.pendingResolution).toBeUndefined();
         expect(next.players['0'].nobleIds).toContain('noble-1');
+        expect(next.players['0'].nobleIds).toHaveLength(1);
         expect(next.nobleIds).not.toContain('noble-1');
+        expect(next.nobleIds).toContain('noble-3');
+        expect(next.currentPlayer).toBe('1');
         expect(next.players['0'].points).toBe(3);
     });
 
@@ -1048,6 +1062,28 @@ describe('splendor smoke', () => {
 
         expect(next.players['0'].nobleIds).toContain('noble-1');
         expect(next.endgame.triggered).toBe(true);
+    });
+
+    test('choosing one of three eligible nobles does not reopen the choice', () => {
+        const core = SplendorDomain.setup(['0', '1'], makeRandom());
+        const pendingCore: SplendorCore = {
+            ...core,
+            nobleIds: ['noble-1', 'noble-3', 'noble-4'],
+            pendingResolution: { type: 'chooseNoble', nobleIds: ['noble-1', 'noble-3', 'noble-4'] },
+            players: { ...core.players, '0': { ...core.players['0'], purchasedCardIds: [
+                't1-white-1', 't1-white-2', 't1-white-3', 't1-white-4',
+                't1-blue-1', 't1-blue-2', 't1-blue-3', 't1-blue-4',
+                't1-green-1', 't1-green-2', 't1-green-3',
+                't1-black-1', 't1-black-2', 't1-black-3',
+            ] } },
+        };
+        const next = reduceAll(pendingCore, SplendorDomain.execute(stateOf(pendingCore), {
+            type: 'CHOOSE_NOBLE', playerId: '0', payload: { nobleId: 'noble-1' }, timestamp: 1,
+        }, makeRandom()));
+        expect(next.pendingResolution).toBeUndefined();
+        expect(next.players['0'].nobleIds).toEqual(['noble-1']);
+        expect(next.nobleIds).toEqual(['noble-3', 'noble-4']);
+        expect(next.currentPlayer).toBe('1');
     });
 
     test('market refill does nothing when the deck is empty', () => {

@@ -6,6 +6,7 @@ import {
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
 import { MAGE_WARS_MAX_PREPARED_SPELLS } from './constants';
+import { requiresMageWarsStandardWallPassage } from './wallPassage';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
 import {
     areAdjacentZones,
@@ -102,6 +103,7 @@ import {
     resolveMageWarsSpellCost,
     resolveMageWarsSpellRawCostTotal,
     resolveMageWarsSpellTargetZoneId,
+    resolveMageWarsForcePushExtraManaCost,
     resolveMageWarsStealEnchantmentManaCost,
     resolveMageWarsStealEnchantmentNewTargetZoneId,
     resolveMageWarsEnchantmentRelocationManaCost,
@@ -114,6 +116,7 @@ import {
     type MageWarsSpellCastChoiceFamily,
     type MageWarsSpellCostResolution,
 } from './spellRules';
+import { hasTemporaryHinderedThisAction, hasTemporaryQuickActionAfterMove, hasTemporaryTeleportMovement } from './temporaryTraits';
 
 const QUICKCAST_PHASES: MageWarsPhase[] = ['initiativeQuickcast', 'finalQuickcast'];
 const CAST_PHASES: MageWarsPhase[] = ['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast'];
@@ -136,6 +139,7 @@ const MAGE_WARS_TARGET_DEPENDENT_MANA_FAMILIES = new Set<MageWarsSpellCastChoice
     'status-healing',
     'toxin-purification',
     'resurrection',
+    'force-push',
 ]);
 
 const MAGE_WARS_PUSH_ZONE_TARGET_FAMILIES = new Set<MageWarsSpellCastChoiceFamily>([
@@ -187,6 +191,44 @@ function validateActor(state: MatchState<MageWarsCore>, command: MageWarsCommand
     const phaseActorId = state.core.phaseActorId ?? state.core.currentPlayerId;
     if (!simultaneousPlanningCommand && phaseActorId !== command.playerId) {
         return { result: invalid('notCurrentPlayer') };
+    }
+    const active = state.sys.phase === 'creatureAction' ? state.core.activeCreatureAction : undefined;
+    if (active) {
+        let actingObjectId: string | undefined;
+        let consumesCreatureAction = true;
+        switch (command.type) {
+            case MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT:
+            case MAGE_WARS_COMMANDS.GUARD:
+                actingObjectId = command.payload.objectId;
+                break;
+            case MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK:
+                actingObjectId = command.payload.attackerObjectId;
+                break;
+            case MAGE_WARS_COMMANDS.MOVE_MAGE:
+            case MAGE_WARS_COMMANDS.DECLARE_ATTACK:
+            case MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK:
+            case MAGE_WARS_COMMANDS.USE_MAGE_ABILITY:
+                break;
+            case MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY:
+                if (state.core.objects[command.payload.objectId]?.kind === 'creature') {
+                    actingObjectId = command.payload.objectId;
+                } else {
+                    consumesCreatureAction = false;
+                }
+                break;
+            case MAGE_WARS_COMMANDS.CAST_SPELL: {
+                const spell = getMageWarsSpellCardFromConfig(command.payload.spellCardId);
+                if (command.payload.casterObjectId) actingObjectId = command.payload.casterObjectId;
+                else consumesCreatureAction = spell?.spellActionSpeed === 'standard';
+                break;
+            }
+            default:
+                consumesCreatureAction = false;
+        }
+        if (consumesCreatureAction
+            && (active.playerId !== command.playerId || active.objectId !== actingObjectId)) {
+            return { result: invalid('anotherCreatureActive') };
+        }
     }
     return { player };
 }
@@ -488,13 +530,15 @@ function validateMageWarsToxinPurificationSpellCast(ctx: MageWarsSpellCastValida
 }
 
 function validateMageWarsForcePushSpellCast(ctx: MageWarsSpellCastValidationContext): ValidationResult {
-    const { state, command, costResolution, rangePlayer } = ctx;
+    const { state, command, costResolution, rangePlayer, player, casterObject } = ctx;
 
-    if (command.payload.targetPlayerId || command.payload.targetZoneId) return invalid('invalidTargetMode');
-    if (!command.payload.targetObjectId) return invalid('missingTarget');
-    const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
-    if (!targetObject || targetObject.kind !== 'creature') return invalid('invalidTargetObject');
-    if (isMageWarsUnmovableArenaObject(targetObject)) return invalid('targetUnmovable');
+    if (command.payload.targetZoneId || (command.payload.targetPlayerId && command.payload.targetObjectId)) return invalid('invalidTargetMode');
+    if (!command.payload.targetObjectId && !command.payload.targetPlayerId) return invalid('missingTarget');
+    if (command.payload.targetObjectId) {
+        const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
+        if (!targetObject || targetObject.kind !== 'creature') return invalid('invalidTargetObject');
+        if (isMageWarsUnmovableArenaObject(targetObject)) return invalid('targetUnmovable');
+    }
     const targetZoneId = resolveMageWarsSpellTargetZoneId(state.core, command.payload);
     if (!targetZoneId) return invalid('invalidSpellTarget');
     if (!isMageWarsTargetInSpellRange(state.core, rangePlayer, costResolution.spell, targetZoneId)) {
@@ -504,6 +548,9 @@ function validateMageWarsForcePushSpellCast(ctx: MageWarsSpellCastValidationCont
     if (!areAdjacentZones(state.core, targetZoneId, command.payload.pushToZoneId)) {
         return invalid('pushTargetNotAdjacent');
     }
+    const total = costResolution.manaCost + resolveMageWarsForcePushExtraManaCost(state.core, targetZoneId, command.payload.pushToZoneId);
+    if (command.payload.manaCost !== total) return invalid('manaCostMismatch');
+    if (player.mana + (casterObject?.mana ?? 0) < total) return invalid('insufficientMana');
     return { valid: true };
 }
 
@@ -1444,6 +1491,7 @@ export function validateCommand(
             if (
                 costResolution.fixedCost
                 && spellCastChoiceFamily !== 'status-healing'
+                && spellCastChoiceFamily !== 'force-push'
                 && command.payload.manaCost !== costResolution.manaCost
             ) {
                 return invalid('manaCostMismatch');
@@ -1573,16 +1621,30 @@ export function validateCommand(
             if (object.ownerId !== player.id) return invalid('notYourObject');
             if (object.kind !== 'creature') return invalid('objectCannotAct');
             if (isMageWarsBanishedArenaObject(object)) return invalid('objectBanished');
-            if (!object.actionReady) return invalid('objectActionSpent');
+            if (!object.actionReady && !hasTemporaryQuickActionAfterMove(object)) return invalid('objectActionSpent');
+            if (hasTemporaryHinderedThisAction(object)) return invalid('movementActionLimitReached');
             if (hasMageWarsStunStatus(object)) return invalid('objectStunned');
             if (isMageWarsArenaObjectRestrained(object)) return invalid('objectCrippled');
-            if (isMageWarsLivingArenaObject(object)
-                && isMageWarsObjectMovementLimitReached(state.core, object)) {
+            if (isMageWarsObjectMovementLimitReached(state.core, object)) {
                 return invalid('movementActionLimitReached');
             }
             if (!isArenaZoneId(toZoneId) || !getArenaZone(state.core, toZoneId)) return invalid('invalidZone');
             if (!areAdjacentZones(state.core, object.zoneId, toZoneId)) return invalid('zoneNotAdjacent');
+            if (!hasTemporaryTeleportMovement(object)
+                && requiresMageWarsStandardWallPassage(state.core, object, toZoneId)
+                && !object.actionReady) return invalid('wallRequiresStandardAction');
             return { valid: true };
+        }
+
+        case MAGE_WARS_COMMANDS.CREATURE_NO_ACTION: {
+            if (phase !== 'creatureAction') return invalid('wrongPhase');
+            if (state.core.activeCreatureAction) return invalid('creatureActionAlreadyStarted');
+            if (!command.payload.objectId) return player.actionReady ? { valid: true } : invalid('actionSpent');
+            const object = getArenaObject(state.core, command.payload.objectId);
+            if (!object) return invalid('invalidSourceObject');
+            if (object.ownerId !== player.id) return invalid('notYourObject');
+            if (object.kind !== 'creature' || isMageWarsBanishedArenaObject(object)) return invalid('objectCannotAct');
+            return object.actionReady ? { valid: true } : invalid('objectActionSpent');
         }
 
         case MAGE_WARS_COMMANDS.GUARD: {
@@ -1593,7 +1655,7 @@ export function validateCommand(
                 if (object.ownerId !== player.id) return invalid('notYourObject');
                 if (object.kind !== 'creature') return invalid('objectCannotAct');
                 if (isMageWarsBanishedArenaObject(object)) return invalid('objectBanished');
-                if (!object.actionReady) return invalid('objectActionSpent');
+                if (!object.actionReady && !hasTemporaryQuickActionAfterMove(object)) return invalid('objectActionSpent');
                 if (hasMageWarsStunStatus(object)) return invalid('objectStunned');
                 return { valid: true };
             }

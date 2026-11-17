@@ -40,6 +40,7 @@ import {
     isMageWarsObjectAttackTargetAllowed,
     isMageWarsObjectAttackTargetInRange,
     isMageWarsQuickSpell,
+    isMageWarsForcePushSpell,
     isMageWarsStatusHealingSpell,
     isMageWarsToxinPurificationSpell,
     isMageWarsEnchantmentRelocationSpell,
@@ -86,8 +87,9 @@ import {
     resolveMageWarsSpellRedirectResponseCardId,
     resolveMageWarsBoundSpellSource,
 } from './spellRules';
-import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId } from './ids';
-import { getArenaObject, getMageWarsWallBetweenZones, getOpponentId, isSpellPrepared } from './utils';
+import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS } from './ids';
+import { getArenaObject, getOpponentId, isSpellPrepared } from './utils';
+import { createMageWarsWallPassageDamageAvailableEvents, requiresMageWarsStandardWallPassage } from './wallPassage';
 import { resolveMageWarsSpellCasterRef, resolveMageWarsSpellCastMode } from './spellCasting';
 import { getStatusTokenAmount } from './statusTokens';
 import {
@@ -213,37 +215,6 @@ function attackerProfileOrOverride(
 function resolveMageAbilityActionTrack(phase: MageWarsPhase): 'quickcast' | 'action' {
     if (phase === 'initiativeQuickcast' || phase === 'finalQuickcast') return 'quickcast';
     return 'action';
-}
-
-function createMageWarsWallPassageDamageAvailableEvents(
-    state: MatchState<MageWarsCore>,
-    sourceCommandType: string,
-    timestamp: number,
-    target: { objectId?: string; playerId?: PlayerId },
-    fromZoneId: ArenaZoneId,
-    toZoneId: ArenaZoneId,
-): MageWarsEvent[] {
-    const wall = getMageWarsWallBetweenZones(state.core, fromZoneId, toZoneId);
-    if (!wall?.passageDamage || wall.passageDamage.amount <= 0) return [];
-
-    const sourceAbilityId = `mw.wall.${wall.sourceSpellCardId}.passage`;
-    return [{
-        type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE,
-        payload: {
-            wallId: wall.id,
-            edgeId: wall.edgeId,
-            sourceSpellCardId: wall.sourceSpellCardId,
-            sourceAbilityId,
-            fromZoneId,
-            toZoneId,
-            amount: wall.passageDamage.amount,
-            damageTypes: [...wall.passageDamage.damageTypes],
-            ...(target.objectId ? { objectId: target.objectId } : {}),
-            ...(target.playerId ? { playerId: target.playerId } : {}),
-        },
-        sourceCommandType,
-        timestamp,
-    }];
 }
 
 interface MageWarsObjectAttackTarget {
@@ -469,7 +440,7 @@ function createArenaObjectAttackDefeatAvailableEvent(
 function createArenaObjectAttackGuardRemovalAvailableEvent(
     core: MageWarsCore,
     sourceCommandType: string,
-    target: MageWarsObjectAttackTarget,
+    target: Pick<MageWarsObjectAttackTarget, 'targetObjectId'>,
     rangeKind: 'melee' | 'ranged',
     timestamp: number,
 ): MageWarsEvent | undefined {
@@ -542,6 +513,7 @@ function createDefenseAvailableEvent(
     removeGuardAfterMelee: boolean,
     counterstrikeSourceObjectId: string | undefined,
     timestamp: number,
+    isCounterstrike: boolean,
     attackUnavoidable = isMageWarsObjectAttackUnavoidable(incomingAttackProfile),
 ): MageWarsEvent | undefined {
     if (attackUnavoidable) return undefined;
@@ -579,6 +551,7 @@ function createDefenseAvailableEvent(
             ...(actionCost ? { actionCost } : {}),
             allowCounterstrikeOpportunity,
             removeGuardAfterMelee,
+            ...(isCounterstrike ? { isCounterstrike: true } : {}),
             ...(counterstrikeSourceObjectId ? { counterstrikeSourceObjectId } : {}),
         },
         sourceCommandType,
@@ -690,6 +663,11 @@ export function resolveMageWarsObjectAttackEvents(
     if (!isMageWarsObjectAttackTargetInRange(state.core, attacker.zoneId, target.zoneId, attackProfile)) {
         return [];
     }
+    const counterstrikeGuardRemoval = isCounterstrike
+        ? createArenaObjectAttackGuardRemovalAvailableEvent(
+            state.core, sourceCommandType, { targetObjectId: attacker.id }, 'melee', timestamp,
+        )
+        : undefined;
     if (
         target.targetPlayerId
         && !isCounterstrike
@@ -979,7 +957,8 @@ export function resolveMageWarsObjectAttackEvents(
                     timestamp,
                 )] : []),
                 ...(counterstrikeEvent ? [counterstrikeEvent] : []),
-                ...(guardRemovedEvent ? [guardRemovedEvent] : []),
+                ...(!counterstrikeEvent && guardRemovedEvent ? [guardRemovedEvent] : []),
+                ...(counterstrikeGuardRemoval ? [counterstrikeGuardRemoval] : []),
                 ...(counterstrikeSourceObjectId
                     ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                         state.core,
@@ -1056,7 +1035,8 @@ export function resolveMageWarsObjectAttackEvents(
                 timestamp,
             )] : []),
             ...(counterstrikeEvent ? [counterstrikeEvent] : []),
-            ...(guardRemovedEvent ? [guardRemovedEvent] : []),
+            ...(!counterstrikeEvent && guardRemovedEvent ? [guardRemovedEvent] : []),
+            ...(counterstrikeGuardRemoval ? [counterstrikeGuardRemoval] : []),
             ...(counterstrikeSourceObjectId
                 ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                     state.core,
@@ -1080,6 +1060,7 @@ export function resolveMageWarsObjectAttackEvents(
             removeGuardAfterMelee,
             counterstrikeSourceObjectId,
             timestamp,
+            isCounterstrike,
             attackUnavoidable,
         )
         : undefined;
@@ -1257,6 +1238,7 @@ export function resolveMageWarsObjectAttackEvents(
                         targetObjectId: target.targetObjectId,
                         statusTokenId: statusEffect.statusTokenId,
                         amount: statusEffect.amount,
+                        ...(isCounterstrike ? { deferActionEndRemoval: true } : {}),
                         sourceAbilityId,
                         spellCardId: attacker.sourceSpellCardId,
                         effectDieResult,
@@ -1377,7 +1359,8 @@ export function resolveMageWarsObjectAttackEvents(
             timestamp,
         } satisfies MageWarsEvent] : []),
         ...(counterstrikeEvent ? [counterstrikeEvent] : []),
-        ...(guardRemovedEvent ? [guardRemovedEvent] : []),
+        ...(!counterstrikeEvent && guardRemovedEvent ? [guardRemovedEvent] : []),
+        ...(counterstrikeGuardRemoval ? [counterstrikeGuardRemoval] : []),
         ...(counterstrikeSourceObjectId
             ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                 state.core,
@@ -1703,6 +1686,7 @@ export function executeCommand(
                 isMageWarsStatusHealingSpell(costResolution.spell)
                 || isMageWarsToxinPurificationSpell(costResolution.spell)
                 || isMageWarsEnchantmentRelocationSpell(costResolution.spell)
+                || isMageWarsForcePushSpell(costResolution.spell)
             )
                 ? command.payload.manaCost
                 : costResolution.manaCost;
@@ -1991,7 +1975,7 @@ export function executeCommand(
             return [
                 moveEvent,
                 ...createMageWarsWallPassageDamageAvailableEvents(
-                    state,
+                    state.core,
                     command.type,
                     timestamp,
                     { playerId: player.id },
@@ -2017,6 +2001,8 @@ export function executeCommand(
             const object = getArenaObject(state.core, command.payload.objectId);
             if (!object) return [];
             const usesTeleportMovement = hasTemporaryTeleportMovement(object);
+            const usesStandardWallPassage = !usesTeleportMovement
+                && requiresMageWarsStandardWallPassage(state.core, object, command.payload.toZoneId);
             const usesSwiftFreeMove = canMageWarsArenaObjectUseSwiftFreeMove(
                 state.core,
                 object,
@@ -2028,7 +2014,9 @@ export function executeCommand(
                     objectId: object.id,
                     fromZoneId: object.zoneId,
                     toZoneId: command.payload.toZoneId,
-                    ...(usesSwiftFreeMove
+                    ...(usesStandardWallPassage
+                        ? { actionCost: 'standard' as const }
+                        : usesSwiftFreeMove
                         ? {
                             actionCost: 'none' as const,
                         }
@@ -2054,7 +2042,7 @@ export function executeCommand(
                 ...(usesTeleportMovement
                     ? []
                     : createMageWarsWallPassageDamageAvailableEvents(
-                        state,
+                        state.core,
                         command.type,
                         timestamp,
                         { objectId: object.id },
@@ -2063,6 +2051,14 @@ export function executeCommand(
                     )),
             ];
         }
+
+        case MAGE_WARS_COMMANDS.CREATURE_NO_ACTION:
+            return [{
+                type: MAGE_WARS_EVENTS.CREATURE_NO_ACTION,
+                payload: { playerId: command.playerId, ...(command.payload.objectId ? { objectId: command.payload.objectId } : {}) },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
 
         case MAGE_WARS_COMMANDS.GUARD:
             return [{

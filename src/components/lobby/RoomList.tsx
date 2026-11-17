@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { RoomPrimaryActions, type RoomPrimaryActionsProps } from './RoomPrimaryActions';
+import { RoomPlayerName } from './RoomPlayerName';
 import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel, type RoomItem } from './roomActions';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
@@ -77,23 +78,21 @@ export const RoomList = ({
                                     : "border-parchment-card-border/30 bg-parchment-card-bg hover:bg-parchment-base-bg/30"
                             )}
                         >
-                            <div>
+                            <div data-room-info>
                                 {(() => {
                                     const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
                                     const seatLabels = Array.from({ length: totalSeats }, (_, index) => {
                                         const seatPlayer = room.players.find(player => player.id === index);
-                                        return seatPlayer?.name || t('rooms.emptySlot');
+                                        return seatPlayer;
                                     });
                                     const baseTitle = room.roomName || t('rooms.matchTitle', { id: room.matchID.slice(0, 4) });
-                                    const titleWithCount = totalSeats > 0
-                                        ? `${baseTitle} (${room.playerCount}/${totalSeats})`
-                                        : baseTitle;
 
                                     return (
                                         <>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-parchment-base-text text-sm">
-                                                    {titleWithCount}
+                                                <span data-room-title className="font-bold text-parchment-base-text text-sm">
+                                                    <span data-room-name>{baseTitle}</span>
+                                                    {totalSeats > 0 && <span data-room-count>{` (${room.playerCount}/${totalSeats})`}</span>}
                                                 </span>
                                                 {room.isLocked && (
                                                     <svg className="w-3.5 h-3.5 text-parchment-light-text opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,13 +100,18 @@ export const RoomList = ({
                                                     </svg>
                                                 )}
                                                 {room.isMyRoom && (
-                                                    <span className="text-[8px] bg-parchment-card-border text-parchment-card-bg px-1.5 py-0.5 rounded uppercase font-bold">
+                                                    <span data-room-ownership className="text-[8px] bg-parchment-card-border text-parchment-card-bg px-1.5 py-0.5 rounded uppercase font-bold">
                                                         {t('rooms.mine')}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-[10px] text-parchment-light-text mt-0.5">
-                                                {seatLabels.join(t('rooms.seatSeparator'))}
+                                            <div className="text-xs text-parchment-light-text mt-0.5">
+                                                {seatLabels.map((player, index) => (
+                                                    <span key={index}>
+                                                        {index > 0 ? t('rooms.seatSeparator') : null}
+                                                        {player?.name ? <RoomPlayerName name={player.name} isConnected={player.isConnected} isAi={player.isAi} /> : t('rooms.emptySlot')}
+                                                    </span>
+                                                ))}
                                             </div>
                                             {room.publicSetupSummary?.enabledExpansions && room.publicSetupSummary.enabledExpansions.length > 0 && (
                                                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -151,7 +155,7 @@ export const RoomList = ({
                                 })()}
                             </div>
 
-                            <div className="flex gap-2">
+                            <div data-room-actions className="flex gap-2">
                                 {room.canReconnect && room.myPlayerID && room.myCredentials && (
                                     <button
                                         onClick={(e) => {

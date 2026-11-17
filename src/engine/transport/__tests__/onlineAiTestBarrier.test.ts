@@ -36,4 +36,17 @@ describe('在线 AI 测试同步点', () => {
         vi.stubEnv('NODE_ENV', 'production');
         expect(() => armOnlineAiTestBarrier('match', '1', 'DISCARD_CARD')).toThrow();
     });
+
+    it('同一对局不同席位独立暂停和释放，通配命令不影响其他席位', async () => {
+        vi.stubEnv('NODE_ENV', 'test');
+        armOnlineAiTestBarrier('match', '2', '*');
+        armOnlineAiTestBarrier('match', '5', '*');
+        const first = waitForOnlineAiTestBarrier('match', '2', ['DRAW_FROM_DECK']);
+        expect(getOnlineAiTestBarrier('match', '2')?.reached).toBe(true);
+        expect(getOnlineAiTestBarrier('match', '5')?.reached).toBe(false);
+        releaseOnlineAiTestBarrier('match', '2');
+        await first;
+        expect(getOnlineAiTestBarrier('match', '5')).toEqual({ reached: false });
+        releaseOnlineAiTestBarrier('match', '5');
+    });
 });

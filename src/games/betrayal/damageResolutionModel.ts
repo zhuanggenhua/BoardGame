@@ -3,6 +3,7 @@ import type {
     ValidationResult,
 } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
+import { resolvePendingAttackRollConfirmationPlayerId } from './attackRules';
 import { rollBetrayalDicePips } from './diceRules';
 import {
     cloneExplorerSummary,
@@ -29,6 +30,7 @@ import {
     applyGeneralDamage,
     applyTraitLoss,
     BETRAYAL_TRAIT_KEYS,
+    cloneTraitTracks,
     damageTraitsAreAssignable,
     moveExplorerTraitSteps,
     normalizeExplorerTraitTracks,
@@ -93,6 +95,7 @@ export interface BetrayalDamageAllocationResolvedPayload {
         damageKind: 'physical' | 'mental' | 'general';
         damageTraits: BetrayalTraitKey[];
         traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+        traitTracksBeforeDamage?: BetrayalExplorerSummary['traitTracks'];
         releasedJackSpiritRoomId?: string;
         nextPlayerId?: string;
         monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
@@ -126,6 +129,7 @@ export function clonePendingDamageAllocation(
         damageReplacement: pending.damageReplacement ? { ...pending.damageReplacement } : undefined,
         forcedTraitSequence: pending.forcedTraitSequence ? [...pending.forcedTraitSequence] : undefined,
         traitsBeforeDamage: { ...pending.traitsBeforeDamage },
+        traitTracksBeforeDamage: pending.traitTracksBeforeDamage ? cloneTraitTracks(pending.traitTracksBeforeDamage) : undefined,
         nextDamageAllocations: pending.nextDamageAllocations?.map(clonePendingDamageAllocation),
         monsterMovementRoll: pending.monsterMovementRoll
             ? cloneMonsterMovementRollResult(pending.monsterMovementRoll)
@@ -310,8 +314,9 @@ export function validateBetrayalDamageAllocationResolution(
         ? resolveAcknowledgeableRecentRoll(core)
         : null;
     if (
-        pendingEventRolledDamageAcknowledgement
-        && !isRecentRollFullyAcknowledged(core, pendingEventRolledDamageAcknowledgement)
+        (pendingEventRolledDamageAcknowledgement
+        && !isRecentRollFullyAcknowledged(core, pendingEventRolledDamageAcknowledgement))
+        || resolvePendingAttackRollConfirmationPlayerId(core)
     ) {
         if (
             command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
@@ -401,6 +406,7 @@ export function resolveBetrayalDamageAllocationResolvedPayload(
             damageKind: resolvedDamageKind,
             damageTraits: [...traits],
             traitsBeforeDamage: { ...pending.traitsBeforeDamage },
+            traitTracksBeforeDamage: pending.traitTracksBeforeDamage ? cloneTraitTracks(pending.traitTracksBeforeDamage) : undefined,
             releasedJackSpiritRoomId,
             nextPlayerId: pending.nextPlayerId,
             monsterMovementRoll: pending.monsterMovementRoll ?? null,
@@ -464,6 +470,8 @@ export function applyBetrayalDamageAllocationResolvedState(
                 damageAmount: payload.deathPrevention.damageAmount,
                 damageTraits: [...payload.deathPrevention.damageTraits],
                 traitsBeforeDamage: { ...payload.deathPrevention.traitsBeforeDamage },
+                traitTracksBeforeDamage: payload.deathPrevention.traitTracksBeforeDamage
+                    ? cloneTraitTracks(payload.deathPrevention.traitTracksBeforeDamage) : undefined,
                 scenarioRuntimeBeforeDefeat: deathPreventionSnapshot.scenarioRuntimeBeforeDefeat,
                 monstersBeforeDefeat: deathPreventionSnapshot.monstersBeforeDefeat,
                 releasedJackSpiritRoomId: payload.deathPrevention.releasedJackSpiritRoomId,
@@ -488,6 +496,7 @@ export function applyBetrayalDamageAllocationResolvedState(
         const nextQueuedTarget = findExplorerByPlayerId(core, nextQueuedDamageAllocation.playerId);
         if (nextQueuedTarget) {
             nextQueuedDamageAllocation.traitsBeforeDamage = { ...nextQueuedTarget.traits };
+            nextQueuedDamageAllocation.traitTracksBeforeDamage = cloneTraitTracks(nextQueuedTarget.traitTracks);
         }
     }
     core.pendingDamageAllocation = null;
@@ -556,6 +565,7 @@ export function createPendingDamageAllocation(params: {
             : undefined,
         allowSkull: Boolean(params.allowSkull),
         traitsBeforeDamage: { ...params.explorer.traits },
+        traitTracksBeforeDamage: cloneTraitTracks(params.explorer.traitTracks),
         nextPlayerId: params.nextPlayerId,
         nextDamageAllocations: params.nextDamageAllocations?.map(clonePendingDamageAllocation),
         monsterMovementRoll: params.monsterMovementRoll,

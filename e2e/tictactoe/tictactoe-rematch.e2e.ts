@@ -110,6 +110,17 @@ test.describe('井字棋重赛 E2E', () => {
         await expect(hostPage.getByRole('button', { name: '再来一局' })).toHaveCount(0);
         await expect(guestPage.getByRole('button', { name: '再来一局' })).toHaveCount(0);
 
+        // 重赛刷新后仍需保持回合权限，双方都能在同一新棋盘继续落子。
+        await clickCell(guestPage, 1);
+        await expect(guestPage.locator('[data-tutorial-id="cell-1"] svg')).toHaveCount(0);
+        await expect(hostPage.locator('[data-tutorial-id="cell-1"] svg')).toHaveCount(0);
+        await clickCell(hostPage, 0);
+        await waitForCellFilled(hostPage, 0);
+        await waitForCellFilled(guestPage, 0);
+        await clickCell(guestPage, 1);
+        await waitForCellFilled(guestPage, 1);
+        await waitForCellFilled(hostPage, 1);
+
         await hostContext.close();
         await guestContext.close();
     });

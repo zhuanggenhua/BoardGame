@@ -2200,6 +2200,7 @@ it('头骨在探索者将要死亡前投 3 骰，4-6 时不死亡并把所有属
         expect(core.recentRoll?.kind).toBe('attackRoll');
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -2254,6 +2255,7 @@ it('头骨死亡前投 3 骰为 0-3 时仍正常死亡', () => {
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -2308,6 +2310,7 @@ it('兔脚可以重掷头骨死亡保护的一颗骰子，并按新结果阻止�
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

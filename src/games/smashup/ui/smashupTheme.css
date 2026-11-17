@@ -346,6 +346,11 @@ body[data-system-display-theme="night"][data-game-id="smashup"] {
   background: var(--smashup-panel-content-bg);
 }
 
+/* 图集图片远大于单张卡牌；滚动区外的卡牌不应参与每帧绘制。 */
+.smashup-faction-detail-panel [data-card-atlas-frame] {
+  content-visibility: auto;
+}
+
 .smashup-faction-detail-tape {
   background: var(--smashup-panel-tape-bg);
 }

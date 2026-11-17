@@ -51,10 +51,11 @@ test('预置出牌阶段：真人出牌后 AI 自主回应并将行动交还真�
 test('预置出牌阶段：AI 落败后自主处理能力并交还真人', async ({ browser }) => {
     test.setTimeout(90000);
     const setup = await setupCardiaTestScenario(browser, {
-        player1: { hand: ['deck_i_card_15', 'deck_i_card_14'], deck: ['deck_i_card_13'] },
-        player2: { hand: ['deck_i_card_01'], deck: ['deck_i_card_02', 'deck_i_card_03'] },
+        player1: { hand: ['deck_i_card_15', 'deck_i_card_14'], deck: ['deck_i_card_13'], playedCards: [] },
+        player2: { hand: ['deck_i_card_01'], deck: ['deck_i_card_02', 'deck_i_card_03'], playedCards: [] },
         phase: 'play',
         aiSeats: ['1'],
+        resetCurrentCards: true,
     });
     const page = setup.player1Page;
     try {
@@ -67,10 +68,13 @@ test('预置出牌阶段：AI 落败后自主处理能力并交还真人', async
         await page.getByTestId(`card-${humanCard.uid}`).click();
         await expect.poll(async () => {
             const state = await readLiveState(page);
-            return state.core.encounterHistory.find(encounter =>
+            const encounter = state.core.encounterHistory.find(encounter =>
                 encounter.player1Card.uid === humanCard.uid || encounter.player2Card.uid === humanCard.uid,
-            )?.loserId;
-        }, { timeout: 30000 }).toBe('1');
+            );
+            return encounter ? { loser: encounter.loserId, human: encounter.player1Card.defId, ai: encounter.player2Card.defId } : null;
+        }, { timeout: 30000, message: '确认真人 15 对 AI 1 的遭遇及失败方' }).toEqual({
+            loser: '1', human: 'deck_i_card_15', ai: 'deck_i_card_01',
+        });
         await expect.poll(async () => {
             const state = await getMatchState(setup.matchId, page);
             return (state.sys?.eventStream?.entries ?? []).some(entry => {
@@ -128,6 +132,113 @@ test('真人出牌后 AI 伏击者选择派系并弃掉对应手牌', async ({ b
             expect(remaining.has(card.uid), `伏击者选择 ${selectedFaction} 后的 ${card.defId}`).toBe(card.faction !== selectedFaction);
         }
         await expect(page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first()).toBeVisible();
+    } finally {
+        await setup.cleanup();
+    }
+});
+
+for (const scenario of ['已有历史场牌', '首个遭遇仅两张场牌'] as const) {
+    test(`真人出牌后 AI 发明家连续选择两张不同牌并交还真人：${scenario}`, async ({ browser }) => {
+    test.setTimeout(90000);
+    const setup = await setupCardiaTestScenario(browser, {
+        player1: {
+            hand: ['deck_i_card_16', 'deck_i_card_14'],
+            deck: ['deck_i_card_13', 'deck_i_card_12'],
+            playedCards: scenario === '已有历史场牌' ? [{ defId: 'deck_i_card_10', signets: 0, encounterIndex: 0 }] : [],
+        },
+        player2: {
+            hand: ['deck_i_card_15'],
+            deck: ['deck_i_card_02', 'deck_i_card_03'],
+            playedCards: scenario === '已有历史场牌' ? [{ defId: 'deck_i_card_11', signets: 0, encounterIndex: 0 }] : [],
+        },
+        phase: 'play', aiSeats: ['1'], resetCurrentCards: true,
+    });
+    const page = setup.player1Page;
+    try {
+        await expect.poll(async () => (await readLiveState(page)).core.players['0'].hand.map(card => card.defId))
+            .toEqual(['deck_i_card_16', 'deck_i_card_14']);
+        const before = await readLiveState(page);
+        await page.getByTestId(`card-${before.core.players['0'].hand[0].uid}`).click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(setup.matchId, page);
+            const core = state.core as typeof before.core;
+            const selections = (state.sys?.eventStream?.entries ?? []).map(entry => entry.event as {
+                type?: string; payload?: { playerId?: string; sourceId?: string; interactionId?: string };
+            }).filter(event => event.type === 'SYS_INTERACTION_RESOLVED'
+                && event.payload?.playerId === '1' && event.payload.sourceId === 'ability_i_inventor');
+            return {
+                phase: core.phase,
+                turnAdvanced: core.turnNumber > before.core.turnNumber,
+                modifiers: core.modifierTokens.filter(token => token.source === 'ability_i_inventor')
+                    .map(token => ({ cardId: token.cardId, value: token.value })).sort((a, b) => a.value - b.value),
+                pending: core.inventorPending ?? null,
+                selections: new Set(selections.map(event => event.payload?.interactionId)).size,
+            };
+        }, { timeout: 30000, message: '等待 AI 完成发明家两次选择并进入下一遭遇' }).toMatchObject({
+            phase: 'play', turnAdvanced: true,
+            modifiers: [{ cardId: expect.any(String), value: -3 }, { cardId: expect.any(String), value: 3 }],
+            pending: null, selections: 2,
+        });
+        const after = await readLiveState(page);
+        const modifiers = after.core.modifierTokens.filter(token => token.source === 'ability_i_inventor');
+        expect(modifiers[0].cardId).not.toBe(modifiers[1].cardId);
+        const field = new Set(Object.values(after.core.players).flatMap(player => player.playedCards.map(card => card.uid)));
+        expect(modifiers.every(token => field.has(token.cardId))).toBe(true);
+        const nextCard = page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
+        await expect(nextCard).toBeVisible();
+        await nextCard.click();
+        await expect.poll(async () => (await readLiveState(page)).core.players['0'].playedCards.length,
+            { timeout: 15000, message: '真人应能在下一遭遇继续出牌' }).toBeGreaterThan(after.core.players['0'].playedCards.length);
+    } finally {
+        await setup.cleanup();
+    }
+    });
+}
+
+test('首个遭遇：真人发明家先选对手牌，再选自己的发明家', async ({ browser }) => {
+    test.setTimeout(90000);
+    const setup = await setupCardiaTestScenario(browser, {
+        player1: { hand: ['deck_i_card_15', 'deck_i_card_14'], deck: ['deck_i_card_13'] },
+        player2: { hand: ['deck_i_card_16'], deck: ['deck_i_card_02', 'deck_i_card_03'] },
+        phase: 'play', aiSeats: ['1'], resetCurrentCards: true,
+    });
+    const page = setup.player1Page;
+    try {
+        await expect.poll(async () => (await readLiveState(page)).core.players['0'].hand.map(card => card.defId))
+            .toEqual(['deck_i_card_15', 'deck_i_card_14']);
+        const before = await readLiveState(page);
+        const inventorUid = before.core.players['0'].hand[0].uid;
+        await page.getByTestId(`card-${inventorUid}`).click();
+        const activate = page.getByTestId('cardia-activate-ability-btn');
+        await expect(activate).toBeVisible({ timeout: 30000 });
+        const encounter = await readLiveState(page);
+        expect(encounter.core.players['0'].playedCards).toHaveLength(1);
+        expect(encounter.core.players['1'].playedCards).toHaveLength(1);
+        const opposingCard = encounter.core.players['1'].playedCards.find(card => card.defId === 'deck_i_card_16');
+        expect(opposingCard).toBeDefined();
+        await activate.click();
+        const modal = page.getByTestId('card-selection-modal');
+        await expect(modal).toBeVisible();
+        await modal.getByTestId(`card-${opposingCard!.uid}`).click();
+        await modal.getByRole('button', { name: /确认/ }).click();
+        const inventorCard = modal.getByTestId(`card-${inventorUid}`);
+        await expect(inventorCard).toBeVisible({ timeout: 15000 });
+        await expect(inventorCard.locator('..')).toBeEnabled();
+        await inventorCard.click();
+        await modal.getByRole('button', { name: /确认/ }).click();
+        await expect.poll(async () => {
+            const state = await getMatchState(setup.matchId, page);
+            const core = state.core as typeof before.core;
+            return core.modifierTokens.filter(token => token.source === 'ability_i_inventor')
+                .map(token => ({ cardId: token.cardId, value: token.value })).sort((a, b) => a.value - b.value);
+        }, { timeout: 15000 }).toEqual([
+            { cardId: inventorUid, value: -3 }, { cardId: opposingCard!.uid, value: 3 },
+        ]);
+        await expect.poll(async () => {
+            const state = await readLiveState(page);
+            return { phase: state.core.phase, pending: state.core.inventorPending ?? null };
+        }, { timeout: 15000 }).toEqual({ phase: 'play', pending: null });
     } finally {
         await setup.cleanup();
     }

@@ -18,7 +18,7 @@ export function resolveAnnualBranchTutorialStep(state: MatchState<QidahenCore>, 
         if (progress.phase === 'choose-action') {
             const preferredId = progress.actionsCompleted < 3 ? 'action:train' : progress.actionsCompleted < 4 ? 'action:recruit' : 'finish';
             const choice = choices.find(item => item.id === preferredId) ?? choices.find(item => item.id === 'action:recruit') ?? choices[0];
-            return { ...step, content: progress.actionsCompleted >= 4
+            return { ...step, hideOverlay: true, content: progress.actionsCompleted >= 4
                 ? `game-qidahen:tutorial.annual.steps.${choices.some(item => item.id === 'extra-training') ? 'training-practice-complete' : 'training-practice-finish'}`
                 : 'game-qidahen:tutorial.annual.steps.training-practice-action',
                 allowedTargets: choice ? [choice.id] : undefined, highlightTarget: 'qidahen-wheel-recruit-train-selection',
@@ -27,7 +27,7 @@ export function resolveAnnualBranchTutorialStep(state: MatchState<QidahenCore>, 
         const input = getQidahenRecruitTrainMapInput(core);
         if (progress.phase === 'choose-recruit-target') {
             const regionId = input.regionIds.includes('city-region-15-liaodong') ? 'city-region-15-liaodong' : input.regionIds[0];
-            return { ...step, content: 'game-qidahen:tutorial.annual.steps.training-practice-recruit',
+            return { ...step, hideOverlay: true, content: 'game-qidahen:tutorial.annual.steps.training-practice-recruit',
                 allowedTargets: regionId ? [`recruit:${regionId}`] : undefined,
                 highlightTarget: regionId ? `qidahen-map-region-focus-${regionId}` : 'qidahen-wheel-recruit-train-selection',
                 tooltipAnchorTarget: regionId ? 'qidahen-map-region-focus-name' : undefined };
@@ -38,7 +38,7 @@ export function resolveAnnualBranchTutorialStep(state: MatchState<QidahenCore>, 
         const tokenId = preferredToken && input.tokenIds.includes(preferredToken) ? preferredToken : input.tokenIds[0];
         const token = tokenId ? core.mapTokens.find(item => item.id === tokenId) : undefined;
         const choice = token?.regionId ? input.choiceFor(token.regionId, token.id) : undefined;
-        return { ...step, content: 'game-qidahen:tutorial.annual.steps.training-fallback', allowedTargets: choice ? [choice.id] : undefined,
+        return { ...step, hideOverlay: true, content: 'game-qidahen:tutorial.annual.steps.training-fallback', allowedTargets: choice ? [choice.id] : undefined,
             highlightTarget: token?.regionId ? `qidahen-map-region-focus-${token.regionId}` : 'qidahen-wheel-recruit-train-selection',
             tooltipAnchorTarget: token ? `qidahen-map-token-${token.id}` : undefined };
     }

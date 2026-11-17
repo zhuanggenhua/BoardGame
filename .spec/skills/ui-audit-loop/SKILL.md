@@ -25,7 +25,7 @@ description: "真实 UI 截图审计与强制返工循环。用于前端、游�
 - **动效验收通过后优先录屏展示**：如果本轮验收对象是召唤、攻击、投射物、伤害飘字、拖拽、翻页或其它连续动画，关键帧截图仍用于 AI 自检和证据定位；当用户明确要看实际效果且本轮清单已 `PASS` 后，最终用户展示优先使用短录屏 / GIF，而不是让用户从多张静态截图推断动作连贯性。录屏只证明它覆盖的那段动作，不能替代未录到阶段的验收。
 - **联系表不能替代逐图审计**：contact sheet、拼图、缩略图或低清总览只能用于索引和初筛；涉及目标选择、对象可读、遮挡、候选高亮、按钮归属或多步流程时，主助手直接检查对应原始截图。未改写且已有有效 PASS 的媒体沿用记录，不要求再打开原图。没有检查本轮变化媒体的原图，就不得输出 `PASS` 或把该图放入最终验收集。
 - **逐图账本是最终门禁**：最终媒体目录中的每一张图 / 每一段录屏都必须登记目标对象、动作前后、玩家可见结果、同屏保护槽位、遮挡 / 裁切 / 内部 ID 泄漏检查和 `PASS | REVISE | carried-forward`。任一条为 `REVISE`，整组只能保留为失败 / 诊断证据，禁止生成最终 `PASS` manifest、`finalPassBeforeOpen: true` 或 `VIEWER_URL`。账本全量不等于每轮重读全部原图。
-- **逐图账本必须可机器校验**：最终清单必须写入 `visualReview.mode=all-media`、`claimScope=interaction-ui`、真实的 `visualReview.reviewer` 和逐媒体报告文件；报告条目数、路径和状态必须与 `media/images` 一一对应。视觉报告只判 UI / 交互可见性，不承担数值或规则正确性，后者必须回到 Vitest / 领域测试。增量核图、必须重读范围、`carried-forward` 和固定悬浮层不得逼走主栏，以 [`e2e-verification`](../../knowledge/standards/e2e-verification.md) 为唯一主源。
+- **逐图账本必须可机器校验**：最终清单必须写入 `visualReview.mode=all-media`、`claimScope=interaction-ui`、真实的 `visualReview.reviewer` 和逐媒体报告文件；报告条目数、路径和状态必须与 `media/images` 一一对应。视觉报告只判 UI / 交互可见性，不承担数值或规则正确性，后者必须回到 Vitest / 领域测试。增量核图和 `carried-forward` 按 [`e2e-verification`](../../knowledge/standards/e2e-verification.md) 执行；悬浮层与游戏布局的关系按 [`ui-responsive-layout`](../../knowledge/standards/ui-responsive-layout.md#场景层与界面锚点) 执行。
 - **用户指出后只失效相关结论**：用户话语分类以 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 为准。用户明确否决整体体验、整体设计或覆盖完整性时，整项交付立即退回 `REVISE`，已通过的局部观察仅作诊断事实，不能恢复最终展示资格。仅当用户限定为某张图不合格或某条新增条件时，才只把被点名 / 被新条件覆盖的图面结论降为历史 / 诊断并重拍重审；陈述、观察和流程问题不触发整组失效。E2E 绿灯、DOM 存在、截图生成成功和 viewer 注册不得恢复已失效条目的旧 `PASS`。
 - **阻塞口径**：如果真实入口、截图生成、素材加载或图面审计被环境阻断，只能按阻塞汇报，说明现实后果、证据、为什么阻止继续、最小补救动作；不得宣称 UI 已完成。
 

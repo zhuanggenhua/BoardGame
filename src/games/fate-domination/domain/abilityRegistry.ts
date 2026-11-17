@@ -22,6 +22,8 @@ export type FateAbilityTrigger = 'preparation' | 'outpost' | 'action' | 'battle'
 export type FateAbilityEffect =
   | { type: 'draw-cards'; count: number }
   | { type: 'riding' }
+  | { type: 'replace-event' }
+  | { type: 'investigate-hand' }
   | { type: 'battle-win-reward'; victoryPoints: number }
   | {
       type: 'movement';
@@ -117,7 +119,9 @@ function buildDefinition(
 
 const knownDefinitions: Array<FateAbilityDefinition | undefined> = [
   buildDefinition('sc_iskandar_1', 'action', 'draw', [{ type: 'riding' }]),
+  buildDefinition('sc_iskandar_2', 'action', 'draw', [{ type: 'replace-event' }]),
   buildDefinition('m_waver_s2','outpost','draw',[{type:'draw-cards',count:2}]),
+  buildDefinition('m_waver_s3','outpost','draw',[{type:'investigate-hand'}]),
   buildDefinition('m_kirei_s2','action','movement',[{type:'movement',mode:'effect',ignoreEngagement:true,allowAnyDestination:true,excludedLocations:['workshop','miyama','shinto']}]),
   buildDefinition('m_kirei_s3','battle','power',[{type:'power-transform',selector:'total',target:'self',operation:'add',value:2}]),
   buildDefinition('cardPreparation:action','action','power',[{type:'power-transform',selector:'terrain',target:'self',operation:'multiply',value:2}]),

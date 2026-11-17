@@ -86,6 +86,8 @@ const persistTutorialSnapshot = (args: {
     core?: Record<string, unknown>;
     legacySeed?: boolean;
     includeManifestRevision?: boolean;
+    selectedBranch?: string;
+    storedSteps?: TutorialManifest['steps'];
 }) => {
     const {
         gameId,
@@ -99,6 +101,8 @@ const persistTutorialSnapshot = (args: {
         core = {},
         legacySeed = false,
         includeManifestRevision = !legacySeed,
+        selectedBranch,
+        storedSteps = manifest.steps,
     } = args;
     const seed = buildTutorialProgressSeed(
         gameId,
@@ -125,7 +129,8 @@ const persistTutorialSnapshot = (args: {
                         ? { manifestRevision: manifest.revision }
                         : undefined),
                     stepIndex,
-                    steps: manifest.steps,
+                    steps: storedSteps,
+                    selectedBranch,
                     step: stepId
                         ? { ...manifest.steps[stepIndex], id: stepId }
                         : null,
@@ -651,6 +656,39 @@ describe('useMatchRoomTutorialLifecycle', () => {
             manifest,
             numPlayers: 2,
         })).toBeNull();
+    });
+
+    it('按已选分支的实际步骤索引恢复教程，并拒绝错误的分支节点', () => {
+        const manifest: TutorialManifest = {
+            ...makeManifest('branch-tutorial', ['intro', 'other-branch', 'chosen-branch', 'after-branch']),
+            revision: 3,
+        };
+        manifest.steps[1].branch = 'other';
+        manifest.steps[2].branch = 'chosen';
+        const storedSteps = manifest.steps.filter(step => !step.branch || step.branch === 'chosen');
+        const args = { gameId: 'qidahen', tutorialId: manifest.id, manifest, stepIndex: 2,
+            selectedBranch: 'chosen', storedSteps, stepId: 'after-branch' };
+        persistTutorialSnapshot(args);
+        expect(readRestorableTutorialProgress({ gameId: 'qidahen', tutorialId: manifest.id, manifest, numPlayers: 2 }))
+            .toMatchObject({ stepIndex: 2, stepId: 'after-branch', totalSteps: 3 });
+        persistTutorialSnapshot({ ...args, stepId: 'chosen-branch' });
+        expect(readRestorableTutorialProgress({ gameId: 'qidahen', tutorialId: manifest.id, manifest, numPlayers: 2 })).toBeNull();
+    });
+
+    it('动态重排课程按存档中的实际步骤恢复，而不是原始步骤索引', () => {
+        const manifest: TutorialManifest = {
+            ...makeManifest('replanned-tutorial', ['intro', 'original', 'finish']),
+            revision: 2,
+            replanAfterCommand: () => undefined,
+        };
+        const storedSteps = [manifest.steps[0], { id: 'chosen-route', content: 'chosen', position: 'center' as const }, manifest.steps[2]];
+        const args = { gameId: 'fate-domination', tutorialId: manifest.id, manifest, stepIndex: 1,
+            storedSteps, stepId: 'chosen-route' };
+        persistTutorialSnapshot(args);
+        expect(readRestorableTutorialProgress({ gameId: args.gameId, tutorialId: manifest.id, manifest, numPlayers: 2 }))
+            .toMatchObject({ stepIndex: 1, stepId: 'chosen-route', totalSteps: 3 });
+        persistTutorialSnapshot({ ...args, stepId: 'original' });
+        expect(readRestorableTutorialProgress({ gameId: args.gameId, tutorialId: manifest.id, manifest, numPlayers: 2 })).toBeNull();
     });
 
     it('manifest revision 变化后不会把旧教程快照识别为可恢复进度', () => {

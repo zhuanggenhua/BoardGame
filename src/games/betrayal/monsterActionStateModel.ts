@@ -22,6 +22,7 @@ import {
     cloneMonsterMovementRollGroupResult,
     cloneMonsterTurnRuntimeState,
     createInitialMonsterTurnRuntimeState,
+    resolveBetrayalControlledMonsterId,
 } from './monsterActionReadModel';
 import {
     applyBetrayalMonsterDamageOutcome,
@@ -155,16 +156,18 @@ export function applyBetrayalMonsterMovedState(
         core.scenarioRuntime.jackSpiritRoomId = event.payload.toRoomId;
         core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
     }
-    if (event.payload.teleportMove) {
-        monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
-            ...monsterTurn.movedMonsterIdsThisTurn,
-            event.payload.monsterId,
-        ]));
+    monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
+        ...monsterTurn.movedMonsterIdsThisTurn,
+        event.payload.monsterId,
+    ]));
+    if (event.payload.monsterId === resolveBetrayalControlledMonsterId(core)) {
+        core.movesRemaining = event.payload.moveRemaining;
+    } else {
+        monsterTurn.moveRemainingById = {
+            ...monsterTurn.moveRemainingById,
+            [event.payload.monsterId]: event.payload.moveRemaining,
+        };
     }
-    monsterTurn.moveRemainingById = {
-        ...monsterTurn.moveRemainingById,
-        [event.payload.monsterId]: event.payload.moveRemaining,
-    };
     core.scenarioRuntime.monsterTurn = monsterTurn;
     const mummyGirlPickedUp = collectMummyGirlByMummyIfPresent(
         core,

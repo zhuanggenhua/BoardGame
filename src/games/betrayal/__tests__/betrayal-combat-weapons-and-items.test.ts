@@ -76,6 +76,7 @@ it('英雄攻击叛徒时应按对攻差值造成 physical damage，平手无伤
             playerId: '2',
         });
         expect(bonusCore.scenarioRuntime.jackSpiritReleased).toBe(false);
+        bonusCore = applyBetrayalCommand(bonusCore, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, bonusCore.recentRoll!.playerId, {});
         bonusCore = applyBetrayalCommand(
             bonusCore,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -114,6 +115,7 @@ it('致死普通攻击先等待受伤方分配伤害，确认后才释放杰克�
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('2');
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(false);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -190,6 +192,7 @@ it('兔脚可以重掷刚刚攻击投骰的一颗骰子，并按新结果回算�
         expect(core.recentRoll?.latestLabel).toContain('造成');
         expect(core.usedCardIdsThisTurn).toContain('rope');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -305,6 +308,7 @@ it('砍刀只能作为攻击武器显式使用，攻击结果 +1 且本回合不
         });
         expect(core.otherExplorers.find((explorer) => explorer.playerId === '2')?.traits).toEqual(traitorBeforeAttack.traits);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -438,6 +442,7 @@ it('匕首只能作为攻击武器显式使用，会失去 1 点速度并额外�
             allowedTraits: ['might', 'speed'],
         });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -523,6 +528,7 @@ it('指环只能作为攻击武器显式使用，双方改用神志对攻并造�
         expect(physicalTraitTotal(core, '2')).toBe(traitorPhysicalBefore);
         expect(mentalTraitTotal(core, '2')).toBe(traitorMentalBefore);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         const attackerCannotEndBeforeDamage = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),

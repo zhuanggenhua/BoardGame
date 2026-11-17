@@ -26,7 +26,7 @@ import {
 } from '../data/configPackage';
 import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId, type MageWarsWallEdgeId, type StatusTokenId } from './ids';
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState, MageWarsWallPassageDamage } from './types';
-import { getArenaZone, resolveMageWarsWallEdgeZones, resolveTargetZoneForObjectOrPlayer } from './utils';
+import { getArenaZone, getMageWarsWallBetweenZones, resolveMageWarsWallEdgeZones, resolveTargetZoneForObjectOrPlayer } from './utils';
 import { getStatusTokenAmount, hasStatusToken } from './statusTokens';
 import {
     getTemporaryArmorModifier,
@@ -34,7 +34,7 @@ import {
     getTemporaryMeleeDiceModifier,
     getTemporaryNextMeleePierceModifier,
     hasTemporaryElusive,
-    hasTemporaryNextMeleeUnavoidable,
+    hasTemporaryHinderedThisAction,
     hasTemporaryMovedThisAction,
     hasTemporaryQuickActionAfterMove,
     hasTemporarySwift,
@@ -94,7 +94,7 @@ const MAGE_WARS_DAMAGE_TYPES: readonly MageWarsDamageType[] = [
 const IMPLEMENTED_WALL_SPELL_CARD_IDS = new Set([2500, 25700]);
 const WALL_PASSAGE_DAMAGE_BY_SPELL_CARD_ID: Record<number, MageWarsWallPassageDamage> = {
     2500: { amount: 3, damageTypes: ['火焰'] },
-    25700: { amount: 3, damageTypes: ['穿越墙体'] },
+    25700: { amount: 2, damageTypes: ['穿越墙体'], kind: 'level-based-attack' },
 };
 const MAGE_WARS_MAGEBANE_CURSE_SPELL_CARD_ID = 1804;
 const MAGE_WARS_MAGEBANE_CURSE_DIRECT_DAMAGE = 1;
@@ -491,7 +491,7 @@ export function isMageWarsImplementedWallSpell(spell: MageWarsConfigSpellCard): 
 
 export function resolveMageWarsWallPassageDamage(spell: MageWarsConfigSpellCard): MageWarsWallPassageDamage | undefined {
     const damage = WALL_PASSAGE_DAMAGE_BY_SPELL_CARD_ID[spell.spellCardId];
-    return damage ? { amount: damage.amount, damageTypes: [...damage.damageTypes] } : undefined;
+    return damage ? { ...damage, damageTypes: [...damage.damageTypes] } : undefined;
 }
 
 export function isMageWarsWallEdgeTargetInRange(
@@ -674,6 +674,14 @@ export function isMageWarsForcePushSpell(spell: MageWarsConfigSpellCard): boolea
 
 export function isMageWarsImplementedForcePushSpell(spell: MageWarsConfigSpellCard): boolean {
     return isMageWarsForcePushSpell(spell) && spell.requiresCodeSupport === false;
+}
+
+export function resolveMageWarsForcePushExtraManaCost(
+    core: MageWarsCore,
+    fromZoneId: ArenaZoneId,
+    toZoneId: ArenaZoneId,
+): number {
+    return getMageWarsWallBetweenZones(core, fromZoneId, toZoneId)?.passageDamage ? 3 : 0;
 }
 
 export function isMageWarsTemporaryTraitSpell(spell: MageWarsConfigSpellCard): boolean {
@@ -2036,6 +2044,12 @@ export function isMageWarsObjectMovementLimitReached(
         && (object.movementActionsUsedThisTurn ?? 0) >= maxActions;
 }
 
+export function canMageWarsObjectContinueMovement(core: MageWarsCore, object: MageWarsArenaObjectState): boolean {
+    return (object.actionReady || hasTemporaryQuickActionAfterMove(object))
+        && !hasTemporaryHinderedThisAction(object)
+        && !isMageWarsObjectMovementLimitReached(core, object);
+}
+
 export function isMageWarsCorporealCreatureArenaObject(object: MageWarsArenaObjectState): boolean {
     if (object.kind !== 'creature') return false;
     const rulesText = [object.typeLine, object.attackOrTraitLine, object.rulesText].filter(Boolean).join('；');
@@ -2600,7 +2614,15 @@ export function isMageWarsArenaObjectHinderedInZone(
     zoneId: ArenaZoneId,
 ): boolean {
     if (isMageWarsElusiveArenaObject(object, core)) return false;
-    return Object.values(core.objects).some((enemy) => (
+    const hinderedByMage = !isMageWarsFlyingArenaObject(object, core)
+        && Object.values(core.players).some((player) => (
+            player.id !== object.ownerId
+            && player.mageZoneId === zoneId
+            && player.damage < player.life
+            && !hasMageWarsStunStatus(player)
+            && !isMageWarsArenaObjectRestrained(player)
+        ));
+    return hinderedByMage || Object.values(core.objects).some((enemy) => (
         enemy.zoneId === zoneId && canMageWarsArenaObjectHinderMovement(core, object, enemy)
     ));
 }

@@ -1,12 +1,21 @@
 import type { BetrayalCore } from './game';
 import { getExplorersInTurnOrder } from './explorerReadModel';
-import { isBetrayalPlayerControllingMonster } from './hauntScenarioReadModel';
+import { isBetrayalPlayerControllingMonster, shouldDeadPlayerControlFeverish } from './hauntScenarioReadModel';
 
 export function rotateToNextLivingPlayer(core: BetrayalCore, currentPlayerId: string): string {
-    const turnEligibleExplorers = getExplorersInTurnOrder(core).filter((explorer) => (
+    const explorers = getExplorersInTurnOrder(core);
+    const eligibleExplorers = explorers.filter((explorer) => (
         !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
         || isBetrayalPlayerControllingMonster(core, explorer.playerId)
     ));
+    const revealerId = core.scenarioRuntime.hauntRevealerPlayerId;
+    const feverish = eligibleExplorers.filter((explorer) => shouldDeadPlayerControlFeverish(core, explorer.playerId));
+    const turnEligibleExplorers = feverish.length > 0 && revealerId && explorers.some((explorer) => explorer.playerId === revealerId)
+        ? explorers.flatMap((explorer) => [
+            ...eligibleExplorers.filter((candidate) => candidate.playerId === explorer.playerId && !shouldDeadPlayerControlFeverish(core, candidate.playerId)),
+            ...(explorer.playerId === revealerId ? feverish : []),
+        ])
+        : eligibleExplorers;
     if (turnEligibleExplorers.length === 0) {
         return currentPlayerId;
     }

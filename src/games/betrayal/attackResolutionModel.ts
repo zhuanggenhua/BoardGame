@@ -229,33 +229,6 @@ export function resolveBetrayalHauntAttackCommandEvents(
                 const canChooseSteal = attackTrait === 'might'
                     && damageToDefender > 0
                     && resolveHelpingHandsStealableCards(core, defender.playerId).length > 0;
-                const defenderDeathPrevention = !canChooseSteal && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    ? rollDeathPrevention(random, defender)
-                    : null;
-                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const defenderDefeated = !canChooseSteal
-                    && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    && !defenderDeathPrevention?.prevented;
-                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = defenderDeathPrevention
-                    ? {
-                        ...defenderDeathPrevention,
-                        damageAmount: damageToDefender,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: defenderTraitsBeforeDamage,
-                    }
-                    : attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
                 const helpingHandsAttackRewardChoice = canChooseSteal
                     ? {
                         id: `${attacker.playerId}-${defender.playerId}-helping-hands-reward-${timestamp}`,
@@ -274,16 +247,9 @@ export function resolveBetrayalHauntAttackCommandEvents(
                     attackerPlayerId: attacker.playerId,
                     target: 'hero',
                     defenderPlayerId: defender.playerId,
-                    defeatedPlayerId: defenderDefeated
-                        ? defender.playerId
-                        : attackerDefeated
-                            ? attacker.playerId
-                            : undefined,
                     outcome: attackerRoll === defenderRoll
                         ? 'no-damage'
-                        : defenderDefeated || attackerDefeated
-                            ? 'hero-defeated'
-                            : 'wound',
+                        : 'wound',
                     attackerRoll,
                     defenderRoll,
                     damageToAttacker: damageToAttacker || undefined,
@@ -309,19 +275,14 @@ export function resolveBetrayalHauntAttackCommandEvents(
                         attackerTraitsBeforeDamage,
                         defenderTraitsBeforeDamage,
                     },
-                    deathPrevention,
                     helpingHandsAttackRewardChoice,
                     logText: canChooseSteal
                         ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}用力量攻击赢过${defender.displayName}，可选择造成 ${damageToDefender} 点伤害或偷取 1 张物品/预兆`
                         : attackerRoll === defenderRoll
                             ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，双方都没有受伤`
-                            : defenderDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
-                                : attackerDefeated
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被${defender.displayName}击倒${deathPreventionLog}`
-                                    : damageToDefender > 0
-                                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                        : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
+                            : damageToDefender > 0
+                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}`
+                                : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}`,
                 },
                     timestamp,
                 }];

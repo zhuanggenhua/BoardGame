@@ -19,6 +19,42 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars wall mechanics', () => {
+    it.each([
+        { spellCardId: 2811, rolls: 0, damage: 0, canGuard: true, die: 3 },
+        { spellCardId: 2819, rolls: 1, damage: 1, canGuard: false, die: 3 },
+        { spellCardId: 2814, rolls: 2, damage: 2, canGuard: false, die: 3 },
+        { spellCardId: 2819, rolls: 1, damage: 4, canGuard: false, die: 6 },
+    ])('resolves thorns passage by level and applies armor: $spellCardId / $die', ({ spellCardId, rolls, damage, canGuard, die }) => {
+        const base = setupState('creatureAction');
+        const edgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
+        const mover = makeArenaObject('thorns-crossing-creature', '0', ARENA_ZONE_IDS.A3, {
+            sourceSpellCardId: spellCardId, life: 30, armor: 1,
+        });
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: {
+                ...withArenaObject(base.core, mover), phaseReadyPlayerIds: [],
+                walls: { [edgeId]: {
+                    id: 'thorns-test', ownerId: '1', sourceSpellCardId: 25700,
+                    sourceObjectId: 'thorns-card', name: '荆棘之墙', edgeId,
+                    zoneIds: [ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3], blocksLineOfSight: true,
+                    passageDamage: { amount: 2, damageTypes: ['穿越墙体'], kind: 'level-based-attack' },
+                } },
+            },
+        };
+        const moved = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT, playerId: '0',
+            payload: { objectId: mover.id, toZoneId: ARENA_ZONE_IDS.B3 },
+        }, { ...fixedRandom, d: () => die });
+        expect(moved.success).toBe(true);
+        expect(moved.events.filter((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED)).toHaveLength(rolls);
+        expect(moved.state.core.objects[mover.id].damage).toBe(damage);
+        const guarded = runCommand(moved.state, {
+            type: MAGE_WARS_COMMANDS.GUARD, playerId: '0', payload: { objectId: mover.id },
+        });
+        expect(guarded.success).toBe(canGuard);
+    });
+
     it('casts a standard starting wall onto an adjacent zone boundary and rejects invalid boundaries', () => {
         const wallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
         const nonAdjacentWallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.C3);

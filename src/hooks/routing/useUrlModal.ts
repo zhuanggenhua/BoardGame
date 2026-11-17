@@ -8,6 +8,8 @@ const createUrlModalId = (paramKey: string) => `url-modal_${paramKey}_${Date.now
 interface UseUrlModalOptions {
     /** URL 参数名，例如 'game' 对应 ?game=xxx */
     paramKey: string;
+    /** 调用方准备异步弹窗内容期间暂缓打开。 */
+    enabled?: boolean;
     /** 外部要求对当前参数值执行一次强制重开时使用 */
     reopenNonce?: number;
     /** 根据参数值生成弹窗配置，返回 null 表示该值无效不打开弹窗 */
@@ -30,7 +32,7 @@ interface UseUrlModalOptions {
  * 3. 路由切换 → 弹窗由 ModalStackRoot 自动清理，不触发 URL 清理
  * 4. 刷新后重建 → 检测栈状态，确保弹窗正确打开
  */
-export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlModalOptions) {
+export function useUrlModal({ paramKey, enabled = true, reopenNonce, getModalConfig }: UseUrlModalOptions) {
     const [searchParams, setSearchParams] = useSearchParams();
     const { openModal, closeModal, stack } = useModalStack();
 
@@ -100,6 +102,7 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
 
     // 同步 URL ↔ Modal
     useEffect(() => {
+        if (!enabled) return;
         // 无参数值：关闭已存在的弹窗
         if (!paramValue) {
             if (modalIdRef.current) {
@@ -154,6 +157,7 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
         setManagedModalId(openedModalId);
     }, [
         closeManagedModal,
+        enabled,
         getModalConfig,
         handleModalClose,
         isModalInStack,
@@ -165,6 +169,10 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
     ]);
 
     useEffect(() => {
+        if (!enabled) {
+            lastReopenNonceRef.current = reopenNonce;
+            return;
+        }
         if (!paramValue) {
             lastReopenNonceRef.current = reopenNonce;
             return;
@@ -202,6 +210,7 @@ export function useUrlModal({ paramKey, reopenNonce, getModalConfig }: UseUrlMod
         setManagedModalId(openedModalId);
     }, [
         closeManagedModal,
+        enabled,
         getModalConfig,
         handleModalClose,
         openModal,

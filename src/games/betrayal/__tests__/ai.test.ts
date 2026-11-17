@@ -10,7 +10,7 @@ import type {
     MatchState,
     RandomFn,
 } from '../../../engine/types';
-import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
+import { resolveForceEndTurnForStalledAi, resolveOnlineAiCurrentPlayerId } from '../../../engine/transport/onlineAiRecovery';
 import { resolveLocalAiActionWithRecovery } from '../../../engine/transport/localAiResolution';
 import { BETRAYAL_AI_ACTION_KINDS } from '../ai';
 import {
@@ -32,6 +32,7 @@ import {
     BETRAYAL_FIXED_RANDOM,
     createBetrayalScriptedRandom,
     createDustHauntCore as createDustAiCore,
+    createDustFeverishAttackReadyCore,
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
@@ -48,6 +49,7 @@ import {
     createTradeReadyCore,
 } from '../testing/firstScenarioTestUtils';
 import { createBetrayalMonsterFromDefinition } from '../domain/monsterDefinitions';
+import { createHelpingHandsExplorerAttackCore, setHighCapacityPhysicalDamageTracks } from './helpers/firstScenarioRuntimeHarness';
 
 function stateOf(core: BetrayalCore, seed = 'betrayal-ai-test'): MatchState<BetrayalCore> {
     const adapter = createReplayAdapter(BetrayalDomain, seed);
@@ -73,6 +75,94 @@ function buildContext(state: MatchState<BetrayalCore>, playerId: string) {
 function buildActions(state: MatchState<BetrayalCore>, playerId: string) {
     return betrayalAiRuntime.buildLegalActions({ playerId, state });
 }
+
+test('攻击骰确认和受伤分配依次交给各自的决策者', () => {
+    const attacked = applyBetrayalCommand(createDustFeverishAttackReadyCore(),
+        BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, '0', { monsterId: 'feverish-0', targetPlayerId: '1' },
+        100, createBetrayalScriptedRandom(2, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+    const state = stateOf(attacked);
+    const current = (s: MatchState<BetrayalCore>) => betrayalAiRuntime.resolveCurrentDecisionPlayerId?.({ state: s, fallbackPlayerId: s.core.activePlayerId });
+    expect(current(state)).toBe('0');
+    expect(resolveOnlineAiCurrentPlayerId(state, { engineConfig })).toBe('0');
+    expect(buildActions(state, '0').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)).toBe(true);
+    expect(buildActions(state, '1').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION)).toBe(false);
+
+    const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+    const after = stateOf(confirmed);
+    expect(current(after)).toBe('1');
+    expect(resolveOnlineAiCurrentPlayerId(after, { engineConfig })).toBe('1');
+    expect(buildActions(after, '1').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION)).toBe(true);
+    expect(buildActions(after, '0').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)).toBe(false);
+});
+
+test('人机攻击交接只由当前决策者所属座位行动', async () => {
+    const attacked = applyBetrayalCommand(createDustFeverishAttackReadyCore(),
+        BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, '0', { monsterId: 'feverish-0', targetPlayerId: '1' },
+        100, createBetrayalScriptedRandom(2, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+    const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+    const ai = { type: 'local-ai' as const, minimumActionDelayMs: 0 };
+    const human = { type: 'human' as const };
+    const next = (core: BetrayalCore, attackerIsAi: boolean) => resolveNextLocalAiAction({
+        engineConfig, state: stateOf(core), matchId: 'attack-handoff',
+        seatControllers: { '0': attackerIsAi ? ai : human, '1': attackerIsAi ? human : ai, '2': human },
+    });
+    expect((await next(attacked, true))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL);
+    expect(await next(confirmed, true)).toBeNull();
+    expect(await next(attacked, false)).toBeNull();
+    expect((await next(confirmed, false))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION);
+});
+
+test('大宅饿了 AI 确认攻击骰后枚举伤害和偷牌并能交给受伤者', async () => {
+    const attacked = applyBetrayalCommand(createHelpingHandsExplorerAttackCore(), BETRAYAL_COMMANDS.HAUNT_ATTACK,
+        '0', { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(3, 3, 1, 1));
+    expect(buildActions(stateOf(attacked), '0').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)).toBe(true);
+    const next = (core: BetrayalCore) => resolveNextLocalAiAction({
+        engineConfig, state: stateOf(core), matchId: 'helping-hands-handoff',
+        seatControllers: { '0': { type: 'local-ai', minimumActionDelayMs: 0 }, '1': { type: 'human' }, '2': { type: 'human' } },
+    });
+    expect((await next(attacked))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL);
+    const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+    const actions = buildActions(stateOf(confirmed), '0');
+    const rewards = actions.filter(action => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD);
+    expect(rewards.map(action => action.commands[0].payload.choice)).toEqual(expect.arrayContaining(['damage', 'steal']));
+    expect((await next(confirmed))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD);
+    const chosen = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD, '0', { choice: 'damage' });
+    expect(chosen.pendingDamageAllocation?.playerId).toBe('1');
+    expect(buildActions(stateOf(chosen), '1').some(action => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION)).toBe(true);
+    expect(await next(chosen)).toBeNull();
+    const noCards = stateOf(confirmed).core;
+    noCards.otherExplorers.find(explorer => explorer.playerId === '1')!.inventory = [];
+    const remainingRewards = buildActions(stateOf(noCards), '0').filter(action => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD);
+    expect(remainingRewards.map(action => action.commands[0].payload.choice)).toEqual(['damage']);
+    expect((await next(noCards))?.action.commands[0].payload).toMatchObject({ choice: 'damage' });
+});
+
+test('大宅饿了真实攻击骰的人机 AI 重掷与确认遵循结果', async () => {
+    const attack = (dice: number[]) => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setHighCapacityPhysicalDamageTracks(ready, '0', 2);
+        ready.currentExplorer.inventory.push({ id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('rope');
+        return applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(...dice));
+    };
+    const next = (core: BetrayalCore) => resolveNextLocalAiAction({
+        engineConfig, state: stateOf(core), matchId: 'helping-hands-reroll',
+        seatControllers: { '0': { type: 'local-ai', minimumActionDelayMs: 0 }, '1': { type: 'human' }, '2': { type: 'human' } },
+    });
+    const won = attack([3, 3, 1, 1]);
+    expect((await next(won))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL);
+    const lost = attack([1, 1, 2, 2]);
+    expect((await next(lost))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT);
+    const rerolled = applyBetrayalCommand(lost, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+        { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(3));
+    expect({ phase: rerolled.phase, current: rerolled.currentPlayer, active: rerolled.activePlayerId, roll: rerolled.recentRoll?.latestLabel,
+        pending: rerolled.pendingDamageAllocation, endgame: rerolled.endgameResult }).toMatchObject({ phase: 'haunt', current: '0', roll: '平手无伤害', endgame: null });
+    expect((await next(rerolled))?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL);
+    const confirmed = applyBetrayalCommand(rerolled, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+    expect(confirmed.recentRoll).toBeNull();
+});
 
 function activateTestExplorer(core: BetrayalCore, playerId: string): void {
     const explorers = [core.currentExplorer, ...core.otherExplorers].map((explorer) => ({
@@ -1498,7 +1588,8 @@ describe('小黑屋本地 AI', () => {
         const failedState = stateOf(failedCore, 'betrayal-ai-rabbit-foot-failed');
         const failedActions = buildActions(failedState, '0');
 
-        expect(failedActions.every((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT)).toBe(true);
+        expect(failedActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT)).toBe(true);
+        expect(failedActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)).toBe(true);
         expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(failedState, '0'))?.actionId)
             .toBe('use-rabbit-foot:rope:1');
 
@@ -1516,9 +1607,12 @@ describe('小黑屋本地 AI', () => {
                 defenderRoll: 4,
             },
         };
-        expect(buildActions(stateOf(successfulCore, 'betrayal-ai-rabbit-foot-success'), '0')
-            .some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT))
-            .toBe(false);
+        const successfulState = stateOf(successfulCore, 'betrayal-ai-rabbit-foot-success');
+        const successfulActions = buildActions(successfulState, '0');
+        expect(successfulActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT)).toBe(true);
+        expect(successfulActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(successfulState, '0'))?.actionId)
+            .toBe(successfulActions.find(action => action.kind === BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL)?.actionId);
     });
 
     test('AI 会优先使用当前可用的神秘电梯房间效果', async () => {

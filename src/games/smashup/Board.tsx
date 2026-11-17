@@ -79,6 +79,7 @@ import { SMASHUP_AUDIO_CONFIG } from './audio.config';
 import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { CardSpotlightQueue, MobileBattlefieldViewport, TutorialSelectionGate, useCardSpotlightQueue, useMatchPlayerViewModel, type SpotlightItem } from '../../components/game/framework';
+import type { BuildMatchPlayerViewModelOptions } from '../../components/game/framework/useMatchPlayerViewModel';
 import { LoadingScreen } from '../../components/system/LoadingScreen';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { SmashUpDebugConfig } from './debug-config';
@@ -302,7 +303,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const coreTitans = core?.titans ?? EMPTY_TITANS;
     const playerID = rawPlayerID;
     const isSpectator = isMultiplayer && playerID === null;
-    const playerView = useMatchPlayerViewModel({
+    const playerViewOptions = useMemo<BuildMatchPlayerViewModelOptions<SmashUpCore>>(() => ({
         core,
         playerID,
         matchData,
@@ -310,7 +311,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         resolvePreferredOrder: ({ core: smashCore }) => smashCore ? getSmashUpSeatOrder(smashCore) : undefined,
         resolveFallbackOrder: ({ core: smashCore }) => smashCore?.turnOrder,
         resolveTurnPlayerId: ({ core: smashCore }) => smashCore ? getCurrentPlayerId(smashCore) : undefined,
-    });
+    }), [core, playerID, matchData]);
+    const playerView = useMatchPlayerViewModel(playerViewOptions);
     const currentPid = playerView.turnPlayerId ?? '0';
     const isMyTurn = playerID === currentPid;
     let turnPlayerLabel = t('ui.opp');
@@ -1582,7 +1584,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 }
             }
             setDiscardStripSelectedUid(null);
-            setMultiSelectedOptionIds(new Set());
+            setMultiSelectedOptionIds((current) => current.size === 0 ? current : new Set());
         });
         return () => {
             cancelled = true;
@@ -2463,7 +2465,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             setSelectedDeckExtraCardUid(null);
-            setDiscardSelection(new Set());
+            setDiscardSelection((current) => current.size === 0 ? current : new Set());
             setMeFirstPendingCard(null);
             setIsSubmitting(false);
             setIsNonEssentialUiHidden(false);
@@ -5196,6 +5198,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
                                     onViewAction={handleViewAction}
                                     onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
+                                    onViewMonster={(defId) => setViewingCard({ defId, type: 'monster' })}
                                     onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
                                     usableMinionTalentUids={usableMinionTalentUids}
                                     usableSpecialMinionUids={usableSpecialMinionUids}

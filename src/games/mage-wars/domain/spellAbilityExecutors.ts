@@ -22,7 +22,6 @@ import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, M
 import { getStatusTokenAmount } from './statusTokens';
 import {
     canMageWarsStatusTokenAffectArenaObject,
-    isMageWarsElementalStaffSpell,
     isMageWarsSpellBindingStaffSpell,
     isMageWarsAreaTargetSpell,
     isMageWarsChainLightningTargetObject,
@@ -74,6 +73,7 @@ import {
     type MageWarsSpellCastChoiceFamily,
 } from './spellRules';
 import { getArenaObject, getArenaZone, removeArenaObject, resolveMageWarsWallEdgeZones } from './utils';
+import { createMageWarsWallPassageDamageAvailableEvents } from './wallPassage';
 
 export interface MageWarsSpellAbilityContext extends AbilityContext {
     state: MatchState<MageWarsCore>;
@@ -1086,11 +1086,14 @@ function executeToxinPurificationSpell(ctx: MageWarsSpellAbilityContext): Abilit
 
 function executeForcePushSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
     const targetObjectId = ctx.command.payload.targetObjectId;
+    const targetPlayerId = ctx.command.payload.targetPlayerId;
     const pushToZoneId = ctx.command.payload.pushToZoneId;
-    if (!targetObjectId || !pushToZoneId) return { events: [] };
+    if (!pushToZoneId) return { events: [] };
 
-    const targetObject = getArenaObject(ctx.state.core, targetObjectId);
-    if (!targetObject || targetObject.kind !== 'creature') return { events: [] };
+    const targetObject = targetObjectId ? getArenaObject(ctx.state.core, targetObjectId) : undefined;
+    const targetPlayer = targetPlayerId ? ctx.state.core.players[targetPlayerId] : undefined;
+    const fromZoneId = targetObject?.zoneId ?? targetPlayer?.mageZoneId;
+    if (!fromZoneId || (targetObject && targetObject.kind !== 'creature')) return { events: [] };
 
     return {
         events: [{
@@ -1099,13 +1102,17 @@ function executeForcePushSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<
                 playerId: ctx.ownerId,
                 spellCardId: ctx.spell.spellCardId,
                 sourceAbilityId: ctx.sourceId,
-                targetObjectId: targetObject.id,
-                fromZoneId: targetObject.zoneId,
+                ...(targetObject ? { targetObjectId: targetObject.id } : { targetPlayerId: targetPlayer!.id }),
+                fromZoneId,
                 toZoneId: pushToZoneId,
             },
             sourceCommandType: ctx.command.type,
             timestamp: ctx.timestamp,
-        }],
+        }, ...createMageWarsWallPassageDamageAvailableEvents(
+            ctx.state.core, ctx.command.type, ctx.timestamp,
+            targetObject ? { objectId: targetObject.id } : { playerId: targetPlayer!.id },
+            fromZoneId, pushToZoneId,
+        )],
     };
 }
 

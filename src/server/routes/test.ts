@@ -141,11 +141,11 @@ export function createTestRoutes(
             try { armOnlineAiTestBarrier(matchId, playerId, commandType); }
             catch (error) { ctx.status = 409; ctx.body = { error: (error as Error).message }; return; }
         } else if (operation === 'release') {
-            releaseOnlineAiTestBarrier(matchId);
+            releaseOnlineAiTestBarrier(matchId, playerId);
         } else if (operation !== 'status') {
             ctx.status = 400; ctx.body = { error: 'Invalid barrier operation' }; return;
         }
-        ctx.body = { barrier: getOnlineAiTestBarrier(matchId) };
+        ctx.body = { barrier: getOnlineAiTestBarrier(matchId, playerId) };
     });
 
     /**

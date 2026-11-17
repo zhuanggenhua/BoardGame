@@ -9,7 +9,10 @@ import {
     updatePlayer,
 } from './utils';
 import {
+    isMageWarsArenaObjectHinderedInZone,
     isMageWarsLivingArenaObject,
+    isMageWarsSlowArenaObject,
+    isMageWarsSwiftArenaObject,
     isMageWarsQuickSpellCounterResponseCardId,
     resolveMageWarsObjectEffectiveLife,
     resolveMageWarsZoneMaxMovementActionsPerTurn,
@@ -21,6 +24,8 @@ import {
     clearPostMoveAttackTraits,
     clearTemporaryTraits,
     hasExpiredRoundScopedTemporaryTraits,
+    hasTemporaryQuickActionAfterMove,
+    hasTemporarySwift,
 } from './temporaryTraits';
 import { recordObjectAbilityUseInRound } from './objectAbilityUsage';
 import { applyStatusTokenPlacement, applyStatusTokenRemoval } from './statusTokens';
@@ -257,6 +262,24 @@ function clearExpiredRoundScopedTemporaryTraits(
 
 export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsCore {
     switch (event.type) {
+        case MAGE_WARS_EVENTS.CREATURE_ACTION_STARTED: {
+            const activated = event.payload.objectId
+                ? updateArenaObject(core, event.payload.objectId, (object) => ({ ...object, guarding: false }))
+                : updatePlayer(core, event.payload.playerId, (player) => ({ ...player, guarding: false }));
+            return { ...activated, activeCreatureAction: event.payload };
+        }
+        case MAGE_WARS_EVENTS.CREATURE_ACTION_ENDED:
+            return event.payload.objectId
+                ? updateArenaObject(core, event.payload.objectId, (object) => ({ ...object, actionReady: false }))
+                : updatePlayer(core, event.payload.playerId, (player) => ({ ...player, actionReady: false }));
+        case MAGE_WARS_EVENTS.CREATURE_NO_ACTION:
+            return event.payload.objectId
+                ? updateArenaObject(core, event.payload.objectId, (object) => ({
+                    ...object, actionReady: false, guarding: false,
+                }))
+                : updatePlayer(core, event.payload.playerId, (player) => ({
+                    ...player, actionReady: false, guarding: false,
+                }));
         case MAGE_WARS_EVENTS.SPELLS_PLANNED:
             return markPhaseReady(updatePlayer(core, event.payload.playerId, (player) => ({
                 ...player,
@@ -659,6 +682,11 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED: {
             const movingObject = core.objects[event.payload.objectId];
+            const isTeleportMove = event.payload.movementMode === 'teleport';
+            const isHindered = movingObject && !isTeleportMove && (
+                isMageWarsArenaObjectHinderedInZone(core, movingObject, event.payload.fromZoneId)
+                || isMageWarsArenaObjectHinderedInZone(core, movingObject, event.payload.toZoneId)
+            );
             const movementLimits = movingObject && isMageWarsLivingArenaObject(movingObject)
                 ? [
                     resolveMageWarsZoneMaxMovementActionsPerTurn(core, event.payload.fromZoneId),
@@ -671,17 +699,26 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 event.payload.fromZoneId,
                 event.payload.toZoneId,
             );
-            const isTeleportMove = event.payload.movementMode === 'teleport';
             return updateArenaObject(moved, event.payload.objectId, (object) => {
+                const usedQuickMove = !object.actionReady && hasTemporaryQuickActionAfterMove(object);
+                const slow = isMageWarsSlowArenaObject(core, object)
+                    && !hasTemporarySwift(object)
+                    && !isMageWarsSwiftArenaObject(object, core);
                 const movementTraitsApplied = applyMovementTemporaryTraits({
                     ...object,
                     actionReady: event.payload.actionCost === 'none' ? object.actionReady : false,
                     guarding: false,
+                    ...(isHindered ? {
+                        temporaryTraits: { ...object.temporaryTraits, hinderedThisAction: true },
+                    } : {}),
                 }, {
                     actionCost: event.payload.actionCost,
                     isTeleportMove,
                 });
-                return applyMovementTurnFacts(movementTraitsApplied, movementLimits, !isTeleportMove);
+                const resultingTraits = usedQuickMove || slow || event.payload.actionCost === 'standard'
+                    ? clearPostMoveAttackTraits(movementTraitsApplied)
+                    : movementTraitsApplied;
+                return applyMovementTurnFacts(resultingTraits, movementLimits, !isTeleportMove);
             });
         }
 
@@ -698,10 +735,17 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                     event.payload.fromZoneId,
                     event.payload.toZoneId,
                 );
-                return updatePlayer(moved, event.payload.targetPlayerId, (player) => ({
+                const movedPlayer = updatePlayer(moved, event.payload.targetPlayerId, (player) => ({
                     ...player,
                     mageZoneId: event.payload.toZoneId,
                 }));
+                return Object.values(movedPlayer.objects)
+                    .filter((object) => object.anchoredToPlayerId === event.payload.targetPlayerId)
+                    .reduce((nextCore, object) => (
+                        object.zoneId === event.payload.toZoneId
+                            ? nextCore
+                            : moveArenaObject(nextCore, object.id, object.zoneId, event.payload.toZoneId)
+                    ), movedPlayer);
             }
             if (event.payload.targetObjectId) {
                 return moveArenaObject(
@@ -793,7 +837,7 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
 
         case MAGE_WARS_EVENTS.GUARD_GAINED:
             if (event.payload.targetObjectId) {
-                return updateArenaObject(core, event.payload.targetObjectId, (object) => ({
+                return updateArenaObject(core, event.payload.targetObjectId, (object) => clearPostMoveAttackTraits({
                     ...object,
                     actionReady: false,
                     guarding: true,
@@ -951,31 +995,64 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 damage: Math.max(0, player.damage - event.payload.actualHealing),
             }));
 
-        case MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED:
+        case MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED: {
+            let next = core;
             if (event.payload.targetPlayerId) {
-                return updatePlayer(core, event.payload.targetPlayerId, (player) => (
+                next = updatePlayer(core, event.payload.targetPlayerId, (player) => (
                     applyStatusTokenPlacement(player, event.payload.statusTokenId, event.payload.amount)
                 ));
-            }
-            if (event.payload.targetObjectId) {
-                return updateArenaObject(core, event.payload.targetObjectId, (object) => (
+            } else if (event.payload.targetObjectId) {
+                next = updateArenaObject(core, event.payload.targetObjectId, (object) => (
                     applyStatusTokenPlacement(object, event.payload.statusTokenId, event.payload.amount)
                 ));
             }
-            return core;
+            const action = next.activeCreatureAction;
+            const appliesToActor = action && (action.objectId
+                ? event.payload.targetObjectId === action.objectId
+                : event.payload.targetPlayerId === action.playerId);
+            if (!event.payload.deferActionEndRemoval || !action || !appliesToActor) return next;
+            const statusTokenId = event.payload.statusTokenId;
+            return {
+                ...next,
+                activeCreatureAction: {
+                    ...action,
+                    deferredStatusTokenCounts: {
+                        ...action.deferredStatusTokenCounts,
+                        [statusTokenId]: (action.deferredStatusTokenCounts[statusTokenId] ?? 0) + event.payload.amount,
+                    },
+                },
+            };
+        }
 
-        case MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED:
+        case MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED: {
+            let next = core;
             if (event.payload.targetPlayerId) {
-                return updatePlayer(core, event.payload.targetPlayerId, (player) => (
+                next = updatePlayer(core, event.payload.targetPlayerId, (player) => (
                     applyStatusTokenRemoval(player, event.payload.statusTokenId, event.payload.amount)
                 ));
-            }
-            if (event.payload.targetObjectId) {
-                return updateArenaObject(core, event.payload.targetObjectId, (object) => (
+            } else if (event.payload.targetObjectId) {
+                next = updateArenaObject(core, event.payload.targetObjectId, (object) => (
                     applyStatusTokenRemoval(object, event.payload.statusTokenId, event.payload.amount)
                 ));
             }
-            return core;
+            const action = next.activeCreatureAction;
+            const appliesToActor = action && (action.objectId
+                ? event.payload.targetObjectId === action.objectId
+                : event.payload.targetPlayerId === action.playerId);
+            if (!action || !appliesToActor) return next;
+            const statusTokenId = event.payload.statusTokenId;
+            const holder = action.objectId ? next.objects[action.objectId] : next.players[action.playerId];
+            const remaining = holder?.statusTokens[statusTokenId] ?? 0;
+            const deferred = action.deferredStatusTokenCounts[statusTokenId] ?? 0;
+            if (deferred <= remaining) return next;
+            return {
+                ...next,
+                activeCreatureAction: {
+                    ...action,
+                    deferredStatusTokenCounts: { ...action.deferredStatusTokenCounts, [statusTokenId]: remaining },
+                },
+            };
+        }
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED: {
             const defeated = core.objects[event.payload.objectId];

@@ -454,10 +454,51 @@ describe('mage-wars spell action cards', () => {
             payload: {
                 spellCardId: forcePushSpellId,
                 manaCost: 3,
-                targetPlayerId: '1',
+                targetPlayerId: 'missing-player',
                 pushToZoneId: ARENA_ZONE_IDS.A3,
             },
-        })).toBe('invalidTargetMode');
+        })).toBe('invalidTargetPlayer');
+    });
+
+    it('pushes a mage through an attack wall only when the additional cost is paid', () => {
+        const base = setupState('initiativeQuickcast');
+        const inZone = withPlayerInZone(base.core, '1', ARENA_ZONE_IDS.A2);
+        const state = {
+            ...base,
+            core: {
+                ...inZone,
+                phaseReadyPlayerIds: [],
+                phaseActorId: '0',
+                players: { ...inZone.players, '0': { ...inZone.players['0'], mana: 20, preparedSpellCardIds: [3425], preparedSpellSlots: 1 } },
+                walls: {
+                    'a1-a2': {
+                        id: 'push-test-wall', ownerId: '0', sourceSpellCardId: 25700,
+                        sourceObjectId: 'push-test-wall-card', name: '荆棘之墙', edgeId: 'a1-a2' as const,
+                        zoneIds: [ARENA_ZONE_IDS.A1, ARENA_ZONE_IDS.A2] as [typeof ARENA_ZONE_IDS.A1, typeof ARENA_ZONE_IDS.A2],
+                        blocksLineOfSight: true, passageDamage: { amount: 2, damageTypes: ['穿越墙体'], kind: 'level-based-attack' as const },
+                    },
+                },
+            },
+        };
+        const command = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL, playerId: '0',
+            payload: { spellCardId: 3425, manaCost: 3, targetPlayerId: '1', pushToZoneId: ARENA_ZONE_IDS.A1 },
+        } as const;
+        const equipment = makeArenaObject('push-mage-equipment', '1', ARENA_ZONE_IDS.A2, {
+            kind: 'equipment', anchoredToPlayerId: '1',
+        });
+        const stateWithEquipment = { ...state, core: withArenaObject(state.core, equipment) };
+        expect(validateCommand(stateWithEquipment, command)).toBe('manaCostMismatch');
+        const pushed = runCommand(stateWithEquipment, { ...command, payload: { ...command.payload, manaCost: 6 } });
+        expect(pushed.success).toBe(true);
+        expect(pushed.state.core.players['0'].mana).toBe(14);
+        expect(pushed.state.core.players['1'].mageZoneId).toBe(ARENA_ZONE_IDS.A1);
+        expect(pushed.state.core.objects[equipment.id].zoneId).toBe(ARENA_ZONE_IDS.A1);
+        expect(pushed.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE);
+        const wallRolls = pushed.events.filter((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED);
+        expect(wallRolls).toHaveLength(5);
+        expect(wallRolls.every((event) => event.payload.diceResults.length === 2)).toBe(true);
+        expect(pushed.state.core.players['1'].damage).toBe(10);
     });
 
     it('casts Teleport as a quick incantation that moves a target creature to the chosen zone', () => {

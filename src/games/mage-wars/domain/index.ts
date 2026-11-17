@@ -10,6 +10,8 @@ import {
     getPresetMageSetupFromConfig,
 } from '../data/configPackage';
 import { executeCommand } from './execute';
+import { resolveMageWarsCreatureActionActor } from './creatureAction';
+import { MAGE_WARS_EVENTS } from './events';
 import { reduceEvent } from './reducer';
 import { validateCommand } from './validate';
 import type { MageWarsCore, MageWarsCommand, MageWarsEvent, MageWarsPlayerState } from './types';
@@ -126,7 +128,17 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
     },
 
     validate: validateCommand,
-    execute: executeCommand,
+    execute: (state, command, random) => {
+        const events = executeCommand(state, command, random);
+        if (state.sys.phase !== 'creatureAction' || state.core.activeCreatureAction) return events;
+        const actor = resolveMageWarsCreatureActionActor(state.core, command, events);
+        return actor ? [{
+            type: MAGE_WARS_EVENTS.CREATURE_ACTION_STARTED,
+            payload: { ...actor, deferredStatusTokenCounts: {} },
+            sourceCommandType: command.type,
+            timestamp: command.timestamp ?? 0,
+        }, ...events] : events;
+    },
     reduce: reduceEvent,
     discoverTimingOpportunities: discoverMageWarsTimingOpportunities,
     playerView: createMageWarsPlayerView,

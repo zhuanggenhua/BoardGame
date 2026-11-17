@@ -40,6 +40,7 @@ import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
+import { RoomPlayerName } from '../lobby/RoomPlayerName';
 import {
     mergeRoomConfigWithSetupResult,
     resolveCreateRoomSetupGateState,
@@ -160,7 +161,7 @@ function getRoomTitle(matchID: string, t: HomeV2Translate, roomName?: string) {
 
 function getRoomSeatLine(
     match: {
-        players: Array<{ name?: string }>;
+        players: Array<{ name?: string; isConnected?: boolean; isAi?: boolean }>;
         totalSeats?: number;
     },
     t: HomeV2Translate,
@@ -168,16 +169,13 @@ function getRoomSeatLine(
     const totalSeats = Math.max(match.totalSeats ?? 0, match.players.length);
     const playerCount = match.players.filter((player) => Boolean(player.name)).length;
     const names = match.players
-        .map((player) => player.name?.trim())
-        .filter(Boolean)
-        .slice(0, 3);
+        .filter((player) => Boolean(player.name?.trim()));
 
-    const namesText = names.length > 0 ? names.join(' / ') : t('lobby:homeV2.waitingPlayers');
     const seatsText = totalSeats > 0
         ? `${playerCount}/${totalSeats} ${t('common:game_details.people')}`
         : `${playerCount} ${t('common:game_details.people')}`;
 
-    return `${seatsText} · ${namesText}`;
+    return <>{seatsText} · {names.length > 0 ? names.map((player, index) => <React.Fragment key={index}>{index > 0 ? ' / ' : null}<RoomPlayerName name={player.name!.trim()} isConnected={player.isConnected} isAi={player.isAi} /></React.Fragment>) : t('lobby:homeV2.waitingPlayers')}</>;
 }
 
 function RoomLedgerSkeleton() {
@@ -2052,10 +2050,8 @@ export const Right = ({ game }: RightProps) => {
                                                                 <div className={`${isCompactLandscape ? 'text-[10px]' : 'text-[clamp(16px,1.12vw,18px)]'} truncate font-bold leading-[1.12] text-[#3f2718]`}>
                                                                     {getRoomTitle(room.matchID, t, room.roomName)}
                                                                 </div>
-                                                                <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
-                                                                    {isCompactLandscape && roomSetupSummary
-                                                                        ? `${getRoomSeatLine(room, t)} · ${roomSetupSummary}`
-                                                                        : getRoomSeatLine(room, t)}
+                                                                <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} break-words leading-[1.2] text-[#5e3d27]`}>
+                                                                    {getRoomSeatLine(room, t)}{isCompactLandscape && roomSetupSummary ? ` · ${roomSetupSummary}` : null}
                                                                 </div>
                                                                 {!isCompactLandscape && roomExpansionSummary ? (
                                                                     <div

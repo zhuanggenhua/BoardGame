@@ -4,7 +4,7 @@ import type { MatchState } from '../../../engine/types';
 import { MAGE_WARS_COMMANDS } from '../domain';
 import { getFormalArenaZonesFromConfig } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
-import { ARENA_ZONE_IDS } from '../domain/ids';
+import { ARENA_ZONE_IDS, STATUS_TOKEN_IDS } from '../domain/ids';
 import type { MageWarsCore } from '../domain/types';
 import {
     actionLogKinds,
@@ -184,7 +184,7 @@ describe('mage-wars setup and phase flow', () => {
         expect(nextTurn.state.sys.phase).toBe('planning');
         expect(nextTurn.state.core.currentPlayerId).toBe('1');
         expect(nextTurn.state.core.phaseActorId).toBe('1');
-        expect(nextTurn.state.core.turnNumber).toBe(1);
+        expect(nextTurn.state.core.turnNumber).toBe(2);
         expect(nextTurn.state.core.players['0']).toMatchObject({
             actionReady: true,
             quickcastReady: true,
@@ -227,6 +227,207 @@ describe('mage-wars setup and phase flow', () => {
             MAGE_WARS_EVENTS.TURN_ADVANCED,
             MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
         ]));
+    });
+
+    it('rejects Rouse the Beast on a creature summoned in the previous round after initiative changes', () => {
+        const base = setupState('finalQuickcast');
+        const wolf = makeArenaObject('previous-round-wolf', '0', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId: 2819,
+            name: '丛林灰狼',
+            summonedTurnNumber: base.core.turnNumber,
+            actionReady: false,
+        });
+        let state = { ...base, core: withArenaObject(base.core, wolf) };
+        const advance = (playerId: string) => {
+            const result = runCommand(state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId, payload: {} });
+            expect(result.success).toBe(true);
+            state = result.state;
+        };
+        advance('0');
+        expect(state.sys.phase).toBe('planning');
+        for (const command of [planCommand([3403], '0'), planCommand([], '1')]) {
+            const result = runCommand(state, command);
+            expect(result.success).toBe(true);
+            state = result.state;
+        }
+        advance('1');
+        advance('0');
+        expect(state.sys.phase).toBe('initiativeQuickcast');
+        advance('1');
+        const manaBefore = state.core.players['0'].mana;
+        const result = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 3403, manaCost: 2, targetObjectId: wolf.id },
+        });
+        expect(result.success).toBe(false);
+        expect(validateCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 3403, manaCost: 2, targetObjectId: wolf.id },
+        })).toBe('targetNotSummonedThisTurn');
+        expect(result.state.core.players['0'].mana).toBe(manaBefore);
+    });
+
+    it('allows a mage to cast a quick spell in quickcast but not during spawn-point deployment', () => {
+        let state = setupState('planning');
+        for (const command of [planCommand([25700], '0'), planCommand([], '1')]) {
+            const result = runCommand(state, command);
+            expect(result.success).toBe(true);
+            state = result.state;
+        }
+        expect(state.sys.phase).toBe('deployment');
+        const cast = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 25700, manaCost: 5, targetWallEdgeId: 'a3-b3' },
+        } as const;
+        const mana = state.core.players['0'].mana;
+        const denied = runCommand(state, cast);
+        expect(denied.success).toBe(false);
+        expect(denied.error).toBe('wrongPhase');
+        expect(denied.state.core.players['0'].mana).toBe(mana);
+        expect(denied.state.core.walls['a3-b3']).toBeUndefined();
+        for (const playerId of ['0', '1']) {
+            const result = runCommand(state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId, payload: {} });
+            expect(result.success).toBe(true);
+            state = result.state;
+        }
+        expect(state.sys.phase).toBe('initiativeQuickcast');
+        const allowed = runCommand(state, cast);
+        expect(allowed.success).toBe(true);
+        expect(allowed.state.core.players['0'].mana).toBe(mana - 5);
+        expect(allowed.state.core.walls['a3-b3']?.sourceSpellCardId).toBe(25700);
+    });
+
+    it('keeps alternating creature actions until both mages and their creatures have acted', () => {
+        const base = setupState('creatureAction');
+        const creature0 = makeArenaObject('round-creature-0', '0', PLAYER_ZERO_START_ZONE);
+        const creature1 = makeArenaObject('round-creature-1', '1', PLAYER_ONE_START_ZONE);
+        let state: MatchState<MageWarsCore> = {
+            ...base,
+            core: withArenaObject(withArenaObject({
+                ...base.core,
+                phaseReadyPlayerIds: [],
+                phaseActorId: '0',
+            }, creature0), creature1),
+        };
+        const guardAndFinish = (playerId: string, objectId?: string) => {
+            const guarded = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.GUARD,
+                playerId,
+                payload: objectId ? { objectId } : {},
+            });
+            expect(guarded.success).toBe(true);
+            const finished = runCommand(guarded.state, {
+                type: FLOW_COMMANDS.ADVANCE_PHASE,
+                playerId,
+                payload: {},
+            });
+            expect(finished.success).toBe(true);
+            state = finished.state;
+        };
+        guardAndFinish('0', creature0.id);
+        expect(state.core.phaseActorId).toBe('1');
+        guardAndFinish('1', creature1.id);
+        expect(state.sys.phase).toBe('creatureAction');
+        expect(state.core.phaseActorId).toBe('0');
+        expect(state.core.players['0'].actionReady).toBe(true);
+        expect(state.core.players['1'].actionReady).toBe(true);
+        guardAndFinish('0');
+        guardAndFinish('1');
+        expect(state.sys.phase).toBe('finalQuickcast');
+    });
+
+    it('does not allow skipping a creature action when both players have the same number of active creatures', () => {
+        const base = setupState('creatureAction');
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: { ...base.core, phaseReadyPlayerIds: [], phaseActorId: '0' },
+        };
+        const skipped = runCommand(state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+        expect(skipped.success).toBe(false);
+        expect(skipped.state.core.phaseActorId).toBe('0');
+        expect(skipped.state.core.players['0'].actionReady).toBe(true);
+    });
+
+    it('lets a player with fewer active creatures pass, and lets a selected creature take no action', () => {
+        const base = setupState('creatureAction');
+        const opponentCreature = makeArenaObject('extra-enemy', '1', PLAYER_ONE_START_ZONE);
+        const state = {
+            ...base,
+            core: withArenaObject({ ...base.core, phaseReadyPlayerIds: [], phaseActorId: '0' }, opponentCreature),
+        };
+        const passed = runCommand(state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} });
+        expect(passed.success).toBe(true);
+        expect(passed.state.core.phaseActorId).toBe('1');
+        expect(passed.state.core.players['0'].actionReady).toBe(true);
+        const noAction = runCommand(passed.state, {
+            type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION,
+            playerId: '1',
+            payload: { objectId: opponentCreature.id },
+        });
+        expect(noAction.success).toBe(true);
+        expect(noAction.state.core.objects[opponentCreature.id].actionReady).toBe(false);
+        const ended = runCommand(noAction.state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '1', payload: {} });
+        expect(ended.success).toBe(true);
+        expect(ended.state.sys.phase).toBe('creatureAction');
+        expect(ended.state.core.phaseActorId).toBe('0');
+    });
+
+    it('clears stun only from the creature whose action ended', () => {
+        const base = setupState('creatureAction');
+        const first = makeArenaObject('stunned-first', '0', PLAYER_ZERO_START_ZONE, {
+            statusTokens: { [STATUS_TOKEN_IDS.STUN]: 1 },
+        });
+        const second = makeArenaObject('stunned-second', '0', PLAYER_ZERO_START_ZONE, {
+            statusTokens: { [STATUS_TOKEN_IDS.STUN]: 1 },
+        });
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: withArenaObject(withArenaObject({
+                ...base.core, phaseReadyPlayerIds: [], phaseActorId: '0',
+            }, first), second),
+        };
+        const inactive = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION,
+            playerId: '0',
+            payload: { objectId: first.id },
+        });
+        expect(inactive.success).toBe(true);
+        const ended = runCommand(inactive.state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} });
+        expect(ended.success).toBe(true);
+        expect(ended.state.core.objects[first.id].statusTokens?.[STATUS_TOKEN_IDS.STUN] ?? 0).toBe(0);
+        expect(ended.state.core.objects[second.id].statusTokens?.[STATUS_TOKEN_IDS.STUN]).toBe(1);
+    });
+
+    it('does not let a different creature act before the current creature action ends', () => {
+        const base = setupState('creatureAction');
+        const first = makeArenaObject('active-first', '0', PLAYER_ZERO_START_ZONE);
+        const second = makeArenaObject('active-second', '0', PLAYER_ZERO_START_ZONE);
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: withArenaObject(withArenaObject({
+                ...base.core, phaseReadyPlayerIds: [], phaseActorId: '0',
+            }, first), second),
+        };
+        const moved = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: first.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        expect(moved.success).toBe(true);
+        const denied = runCommand(moved.state, {
+            type: MAGE_WARS_COMMANDS.GUARD,
+            playerId: '0',
+            payload: { objectId: second.id },
+        });
+        expect(denied.success).toBe(false);
+        expect(denied.state.core.objects[second.id].actionReady).toBe(true);
     });
 
     it('emits a visible phase-window completion event when a player passes deployment or quickcast', () => {
@@ -296,11 +497,11 @@ describe('mage-wars setup and phase flow', () => {
     it('emits a visible phase-window completion event when the first creature-action player ends their window', () => {
         const base = setupState('creatureAction');
         const state: MatchState<MageWarsCore> = {
-            core: {
+            core: withArenaObject({
                 ...base.core,
                 phaseReadyPlayerIds: [],
                 phaseActorId: '0',
-            },
+            }, makeArenaObject('extra-opponent-creature', '1', PLAYER_ONE_START_ZONE)),
             sys: base.sys,
         };
 
@@ -334,6 +535,11 @@ describe('mage-wars setup and phase flow', () => {
                 currentPlayerId: '1',
                 phaseReadyPlayerIds: ['1'],
                 phaseActorId: '0',
+                players: {
+                    ...base.core.players,
+                    '0': { ...base.core.players['0'], actionReady: false },
+                    '1': { ...base.core.players['1'], actionReady: false },
+                },
             },
             sys: base.sys,
         };

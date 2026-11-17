@@ -893,6 +893,7 @@ it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代�
             'mummy-girl-token',
         ]);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, traitorId, {
             choice: 'steal',
             cardId: 'holy-symbol',
@@ -927,6 +928,7 @@ it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代�
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
         );
+        girlCore = applyBetrayalCommand(girlCore, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, girlTraitorId, {});
         girlCore = applyBetrayalCommand(girlCore, BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, girlTraitorId, {
             choice: 'steal',
             cardId: 'mummy-girl-token',
@@ -1056,6 +1058,7 @@ it('木乃伊攻击奖励偷取目标失效时拒绝偷取，但仍可选择造�
 
         setTestExplorerInventory(core, heroId, []);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, traitorId, {
@@ -1097,6 +1100,7 @@ it('木乃伊选择造成伤害后必须先扣速度，最后一名英雄死亡�
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, traitorId, {
             choice: 'damage',
         });

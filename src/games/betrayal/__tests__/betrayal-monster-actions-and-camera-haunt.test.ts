@@ -43,6 +43,15 @@ import {
 } from '../monsterActionReadModel';
 
 describe('Betrayal first scenario runtime - monster actions and camera haunt', () => {
+it('非当前回合的叛徒不能提前操作普通怪物', () => {
+        const core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '0');
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START, '1', { monsterId }),
+        ).valid).toBe(false);
+    });
 it('大宅饿了力量攻击获胜后生成伤害或偷牌选择且不立即扣血', () => {
         let core = createHelpingHandsExplorerAttackCore();
         const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
@@ -75,6 +84,194 @@ it('大宅饿了力量攻击获胜后生成伤害或偷牌选择且不立即扣�
         expect(blockedEndTurn.error).toContain('请先选择造成伤害或偷取物品/预兆');
     });
 
+it('大宅饿了攻击获胜后可重掷，奖励按新结果更新或取消', () => {
+        const attack = (defenseDice: number[]) => {
+            const ready = createHelpingHandsExplorerAttackCore();
+            ready.currentExplorer.inventory.push({ id: 'rope', name: '兔脚', kind: 'item' });
+            ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+            ready.turnStartInventoryCardIds.push('rope');
+            return applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+                { target: 'hero', targetPlayerId: '1' }, 100,
+                createBetrayalScriptedRandom(3, 3, ...defenseDice));
+        };
+        const winning = attack([1, 1]);
+        const reduced = applyBetrayalCommand(winning, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(resolveHelpingHandsPendingAttackReward(reduced)?.damageToDefender).toBe(2);
+        const tied = applyBetrayalCommand(attack([2, 2]), BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(resolveHelpingHandsPendingAttackReward(tied)).toBeNull();
+        expect(tied.pendingDamageAllocation).toBeNull();
+    });
+
+it('旧对局已选援手伤害但尚未确认攻击骰时可以继续确认并分配', () => {
+        const attacked = applyBetrayalCommand(createHelpingHandsExplorerAttackCore(), BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0', { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(3, 3, 1, 1));
+        const roll = attacked.recentRoll;
+        const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        const legacy = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+            '0', { choice: 'damage' });
+        legacy.recentRoll = roll;
+        expect(BetrayalDomain.validate({ core: legacy, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1', { traits: ['might', 'might', 'speed', 'speed'] })).valid).toBe(false);
+        const resumed = applyBetrayalCommand(legacy, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        expect(applyBetrayalCommand(resumed, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1',
+            { traits: ['might', 'might', 'speed', 'speed'] }).pendingDamageAllocation).toBeNull();
+    });
+
+it('大宅饿了重掷转为致死反伤时先分配并执行头骨死亡保护', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setTestTraitTrack(ready, '0', 'speed', [1], 0, 0);
+        ready.currentExplorer.inventory.push(
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'skull', name: '头骨', kind: 'omen' },
+        );
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('rope', 'skull');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(3, 3, 2, 3));
+        const rerolled = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(rerolled.pendingDamageAllocation).toMatchObject({ playerId: '0', amount: 1 });
+        expect(rerolled.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+        const confirmed = applyBetrayalCommand(rerolled, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        const resolved = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0',
+            { traits: ['speed'] }, 102, createBetrayalScriptedRandom(3, 3, 1));
+        expect(resolved.recentRoll).toMatchObject({ kind: 'deathPrevention', latestLabel: '阻止死亡' });
+        expect(resolved.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+    });
+
+it('大宅饿了首次攻击失败会先保留攻击者重掷和分配反伤的机会', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        ready.currentExplorer.inventory.push({ id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('rope');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(1, 1, 2, 2));
+        expect(attacked.pendingDamageAllocation).toMatchObject({ playerId: '0', amount: 2 });
+        expect(attacked.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+        expect(BetrayalDomain.validate({ core: attacked, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 0 })).valid).toBe(true);
+        const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        const resolved = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0',
+            { traits: ['might', 'might'] });
+        expect(resolved.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+    });
+
+it('大宅饿了攻击无可偷牌目标时，重掷为平手不会残留重复数值轨伤害', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        const defender = findTestExplorer(ready, '1');
+        defender.inventory = [];
+        setTestTraitTrack(ready, '1', 'might', [1, 2, 2, 2], 2, 2);
+        ready.currentExplorer.inventory.push({ id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('rope');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(2, 1, 1, 1));
+        expect(attacked.pendingDamageAllocation).toMatchObject({ playerId: '1', amount: 1 });
+        expect(findTestExplorer(attacked, '1').traitTracks.might.position).toBe(2);
+        const rerolled = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(rerolled.pendingDamageAllocation).toBeNull();
+        expect(findTestExplorer(rerolled, '1').traitTracks.might.position).toBe(2);
+    });
+
+it('旧对局已落伤害但攻击骰未确认时仍可重掷回算', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        findTestExplorer(ready, '1').inventory = [];
+        setTestTraitTrack(ready, '1', 'might', [1, 2, 3, 4], 2, 2);
+        ready.currentExplorer.inventory.push({ id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('rope');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1' }, 100, createBetrayalScriptedRandom(2, 1, 1, 1, 1));
+        const roll = attacked.recentRoll;
+        const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        const legacy = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1', { traits: ['might'] });
+        legacy.recentRoll = roll ? { ...roll, attack: roll.attack ? { ...roll.attack, damageDeferred: undefined } : undefined } : null;
+        expect(findTestExplorer(legacy, '1').traitTracks.might.position).toBe(1);
+        const rerolled = applyBetrayalCommand(legacy, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(findTestExplorer(rerolled, '1').traitTracks.might.position).toBe(2);
+    });
+
+it('旧对局的待选奖励表明伤害未落下，匕首重掷保留速度代价', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setTestTraitTrack(ready, '0', 'speed', [1, 2, 3, 4, 5], 3, 3);
+        ready.currentExplorer.inventory.push({ id: 'dagger', name: '匕首', kind: 'omen' }, { id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('dagger', 'rope');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'dagger' }, 100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1));
+        expect(resolveHelpingHandsPendingAttackReward(attacked)).not.toBeNull();
+        attacked.recentRoll!.attack!.damageDeferred = undefined;
+        const rerolled = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(rerolled.currentExplorer.traitTracks.speed.position).toBe(2);
+        expect(resolveHelpingHandsPendingAttackReward(rerolled)?.damageToDefender).toBe(6);
+    });
+
+it('大宅饿了匕首攻击的速度代价在攻击骰重掷后仍保留', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setHighCapacityPhysicalDamageTracks(ready, '0', 2);
+        setTestTraitTrack(ready, '0', 'speed', [1, 2, 3, 3, 5], 3, 3);
+        ready.currentExplorer.inventory.push({ id: 'dagger', name: '匕首', kind: 'omen' }, { id: 'rope', name: '兔脚', kind: 'item' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('dagger', 'rope');
+        const initialPosition = ready.currentExplorer.traitTracks.speed.position;
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'dagger' }, 100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 3, 3));
+        expect(attacked.currentExplorer.traitTracks.speed.position).toBe(initialPosition - 1);
+        const rerolled = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(3));
+        expect(rerolled.currentExplorer.traitTracks.speed.position).toBe(initialPosition - 1);
+    });
+
+it.each([
+    { label: '平手', dice: [2, 1, 1, 1, 2, 1], armor: false },
+    { label: '反伤完全减免', dice: [1, 1, 1, 1, 2, 1], armor: true },
+])('大宅饿了匕首$label后重掷不恢复已支付的速度', ({ dice, armor }) => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setHighCapacityPhysicalDamageTracks(ready, '0', 2);
+        setTestTraitTrack(ready, '0', 'speed', [1, 2, 3, 4, 5], 3, 3);
+        ready.currentExplorer.inventory.push({ id: 'dagger', name: '匕首', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' }, ...(armor ? [{ id: 'armor', name: '盔甲', kind: 'item' as const }] : []));
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('dagger', 'rope', ...(armor ? ['armor'] : []));
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'dagger' }, 100, createBetrayalScriptedRandom(...dice));
+        expect(attacked.pendingDamageAllocation).toBeNull();
+        expect(attacked.currentExplorer.traitTracks.speed.position).toBe(2);
+        const rerolled = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 1 }, 101, createBetrayalScriptedRandom(3));
+        expect(rerolled.currentExplorer.traitTracks.speed.position).toBe(2);
+    });
+
+it('匕首反伤触发头骨后重掷仍保留武器代价和指定伤害属性', () => {
+        const ready = createHelpingHandsExplorerAttackCore();
+        setHighCapacityPhysicalDamageTracks(ready, '0', 2);
+        setTestTraitTrack(ready, '0', 'speed', [1, 2, 3], 1, 1);
+        ready.currentExplorer.inventory.push({ id: 'dagger', name: '匕首', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' }, { id: 'skull', name: '头骨', kind: 'omen' });
+        ready.currentExplorerInventory = [...ready.currentExplorer.inventory];
+        ready.turnStartInventoryCardIds.push('dagger', 'rope', 'skull');
+        const attacked = applyBetrayalCommand(ready, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'dagger' }, 100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 3, 1));
+        expect(attacked.pendingDamageAllocation).toMatchObject({ playerId: '0', amount: 2 });
+        const confirmed = applyBetrayalCommand(attacked, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        const damaged = applyBetrayalCommand(confirmed, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0',
+            { traits: ['might', 'speed'] }, 101, createBetrayalScriptedRandom(1, 1, 2));
+        expect(damaged.recentRoll?.deathPrevention?.traitsBeforeDamage.speed).toBe(1);
+        const rerolled = applyBetrayalCommand(damaged, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0',
+            { cardId: 'rope', dieIndex: 0 }, 102, createBetrayalScriptedRandom(1));
+        const actor = findTestExplorer(rerolled, '0');
+        expect(actor.traitTracks.speed.position).toBe(-1);
+        expect(actor.traitTracks.might.position).toBe(13);
+    });
+
 it('大宅饿了选择偷取物品或预兆后不造成伤害', () => {
         let core = createHelpingHandsExplorerAttackCore();
         const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
@@ -87,6 +284,7 @@ it('大宅饿了选择偷取物品或预兆后不造成伤害', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
@@ -115,6 +313,11 @@ it('大宅饿了选择造成伤害后由防守者分配才扣属性', () => {
         );
         expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
 
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD, '0', { choice: 'damage' }),
+        ).valid).toBe(false);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
@@ -183,6 +386,10 @@ it('大宅饿了非力量攻击获胜不能偷物品或预兆', () => {
 
         expect(resolveHelpingHandsPendingAttackReward(core)).toBeNull();
         expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+        expect(traitTrackPositionTotal(core, '1', ['knowledge', 'sanity'])).toBe(defenderMentalBefore);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1',
+            { traits: ['knowledge', 'knowledge', 'sanity', 'sanity'] });
         expect(traitTrackPositionTotal(core, '1', ['knowledge', 'sanity'])).toBe(defenderMentalBefore - 4);
         expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'first-aid-kit')).toBe(true);
         expect(core.usedCardIdsThisTurn).toContain('ring');
@@ -1091,14 +1298,11 @@ it('杰克之灵通过通用怪物移动命令移动时会同步专用房间状�
             .find((group) => group.monsterIds.includes('jack-spirit'));
         expect(movementGroup).toBeDefined();
 
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
-            '2',
-            { groupId: movementGroup!.groupId },
-            100,
-            createBetrayalScriptedRandom(3, 3, 3),
-        );
+        const movementBefore = core.movesRemaining;
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP, '2', { groupId: movementGroup!.groupId }),
+        ).valid).toBe(false);
 
         const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, 'jack-spirit')
             .find((room) => room.id === 'upper-landing');
@@ -1115,7 +1319,7 @@ it('杰克之灵通过通用怪物移动命令移动时会同步专用房间状�
         expect(core.scenarioRuntime.jackSpiritRoomId).toBe('upper-landing');
         expect(core.scenarioRuntime.jackSpiritHasMovedSinceRelease).toBe(true);
         expect(core.activeRoomId).toBe('upper-landing');
-        expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById['jack-spirit']).toBeGreaterThanOrEqual(0);
+        expect(core.movesRemaining).toBeLessThan(movementBefore);
     });
 
 it('怪物移动分组读模型不会给击晕或已杀死怪物分配移动骰组', () => {
@@ -1393,6 +1597,7 @@ it('普通怪物正式攻击会进入攻击骰盘、待分配伤害并关闭该�
             reason: '该怪物本回合已经攻击过。',
         });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

@@ -32,8 +32,8 @@ export class TransportStateSynchronizer {
         return stripStateForTraining(viewState);
     }
 
-    buildAuthoritativeState(match: Pick<TransportStateProjectionMatch, 'state'>): unknown {
-        return this.stripForTransport(match.state, { stripEventStream: true });
+    buildPlayerState(match: Pick<TransportStateProjectionMatch, 'engineConfig' | 'state'>, playerID: string): unknown {
+        return this.stripForTransport(this.applyPlayerView(match,playerID), { stripEventStream: true });
     }
 
     clearAllBaselines(match: Pick<TransportStateProjectionMatch, 'lastBroadcastedViews'>): void {
@@ -51,10 +51,11 @@ export class TransportStateSynchronizer {
     }): void {
         const viewState = this.stripForTransport(this.applyPlayerView(args.match, args.playerID));
         const matchPlayers = buildTransportMatchPlayers(args.match);
-        args.socket.emit('state:sync', args.match.matchID, viewState, matchPlayers, {
+        const randomMeta = args.match.engineConfig.randomSeedVisibility === 'server-only' ? null : {
             seed: args.match.randomSeed,
             cursor: args.match.getRandomCursor(),
-        }, {
+        };
+        args.socket.emit('state:sync', args.match.matchID, viewState, matchPlayers, randomMeta, {
             stateID: args.match.stateID,
         });
 

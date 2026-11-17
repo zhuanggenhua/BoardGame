@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    {
+      "chainId": "thor-worthy-direct",
+      "uiStateId": "thor-worthy-direct-options",
+      "viewport": "desktop",
+      "reason": "固定值候选直接显示在合法骰子旁，无弹窗。"
+    }
+  ],
+  "reviewFile": "visual-review.json"
+}

@@ -11,6 +11,7 @@ import {
 } from './coreStateModel';
 import {
     applyAttackDamage,
+    applyStrangeAmuletPhysicalDamageBonus,
     createPendingDamageAllocation,
     createRecentRollRerollMentalDamageAllocation,
     setExplorerTraitsToDeathsDoor,
@@ -33,7 +34,8 @@ import {
     cloneUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
 import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
-import { isDustHaunt } from './hauntScenarioReadModel';
+import { isDustHaunt, isHelpingHandsHaunt } from './hauntScenarioReadModel';
+import { resolveHelpingHandsStealableCards } from './hauntAttackRewardReadModel';
 import { cloneHauntTraitorResolution } from './hauntTraitorResolutionModel';
 import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
 import {
@@ -48,6 +50,7 @@ import { resolveRecentRollTotal } from './recentRollPresentation';
 import { applyBetrayalMysticElevatorRecentRollRerollState } from './roomEnterEffectModel';
 import {
     applyGeneralDamage,
+    cloneTraitTracks,
     setExplorerTraitsFromValues,
 } from './traitTrackModel';
 import type {
@@ -84,12 +87,19 @@ function applyDeathPreventionRerollOutcome(
     }
     core.scenarioRuntime = cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat);
     core.monsters = deathPrevention.monstersBeforeDefeat.map(cloneMonster);
-    resetExplorerTraits(explorer, deathPrevention.traitsBeforeDamage);
-    if (deathPrevention.damageKind === 'general') {
-        if (!deathPrevention.damageTraits?.length) {
-            throw new Error('General death-prevention damage is missing its assigned traits');
+    if (deathPrevention.traitTracksBeforeDamage) {
+        explorer.traitTracks = cloneTraitTracks(deathPrevention.traitTracksBeforeDamage);
+        explorer.traits = { ...deathPrevention.traitsBeforeDamage };
+    } else {
+        resetExplorerTraits(explorer, deathPrevention.traitsBeforeDamage);
+    }
+    if (deathPrevention.damageTraits?.length) {
+        const applied = applyGeneralDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageTraits, { allowSkull: true });
+        if (deathPrevention.damageKind === 'physical' && applied > 0) {
+            applyStrangeAmuletPhysicalDamageBonus(explorer);
         }
-        applyGeneralDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageTraits, { allowSkull: true });
+    } else if (deathPrevention.damageKind === 'general') {
+        throw new Error('General death-prevention damage is missing its assigned traits');
     } else {
         applyAttackDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageKind);
     }
@@ -119,6 +129,8 @@ function applyDeathPreventionRerollOutcome(
         ...deathPrevention,
         damageTraits: deathPrevention.damageTraits ? [...deathPrevention.damageTraits] : undefined,
         traitsBeforeDamage: { ...deathPrevention.traitsBeforeDamage },
+        traitTracksBeforeDamage: deathPrevention.traitTracksBeforeDamage
+            ? cloneTraitTracks(deathPrevention.traitTracksBeforeDamage) : undefined,
         scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat),
         monstersBeforeDefeat: deathPrevention.monstersBeforeDefeat.map(cloneMonster),
     };
@@ -350,16 +362,55 @@ function applyAttackRecentRollRerollState(
     if (!attacker) {
         return core;
     }
-    resetExplorerTraits(attacker, attack.attackerTraitsBeforeDamage);
-    if (defender && attack.defenderTraitsBeforeDamage) {
+    const helpingHandsHeroAttack = isHelpingHandsHaunt(core) && attack.target === 'hero';
+    // 旧奖励窗口已保证伤害尚未落下；其余旧对局缺少结算方式标记。
+    const oldHelpingHandsReward = core.scenarioRuntime.helpingHands?.pendingAttackReward;
+    const helpingHandsDamageDeferred = helpingHandsHeroAttack && (
+        attack.damageDeferred === true || Boolean(oldHelpingHandsReward
+            && oldHelpingHandsReward.attackerPlayerId === recentRoll.playerId
+            && oldHelpingHandsReward.defenderPlayerId === attack.defenderPlayerId)
+    );
+    if (!helpingHandsDamageDeferred) {
+        resetExplorerTraits(attacker, attack.attackerTraitsBeforeDamage);
+    }
+    if (!helpingHandsDamageDeferred && defender && attack.defenderTraitsBeforeDamage) {
         resetExplorerTraits(defender, attack.defenderTraitsBeforeDamage);
     }
     const rerollOutcome = resolveAttackRerollOutcome(nextTotal, attack);
+    const helpingHandsReward = core.scenarioRuntime.helpingHands?.pendingAttackReward;
+    const rerollsHelpingHandsReward = Boolean(helpingHandsHeroAttack && defender
+        && (attack.weaponAttackTrait ?? 'might') === 'might'
+        && resolveHelpingHandsStealableCards(core, defender.playerId).length > 0);
+    if (rerollsHelpingHandsReward && defender && core.scenarioRuntime.helpingHands) {
+        core.scenarioRuntime.helpingHands.pendingAttackReward = rerollOutcome.damageToDefender
+            ? {
+                id: helpingHandsReward?.id ?? `${attacker.playerId}-${defender.playerId}-helping-hands-reward-${event.timestamp}`,
+                attackerPlayerId: attacker.playerId,
+                defenderPlayerId: defender.playerId,
+                damageToDefender: rerollOutcome.damageToDefender,
+                damageKind: attack.damageKind,
+                attackerRoll: nextTotal,
+                defenderRoll: attack.defenderRoll,
+                defenderTraitsBeforeDamage: { ...attack.defenderTraitsBeforeDamage! },
+            }
+            : undefined;
+    }
     let pendingAttackDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
     if (rerollOutcome.damageToAttacker) {
-        applyAttackDamage(attacker, rerollOutcome.damageToAttacker, attack.damageKind);
+        if (helpingHandsHeroAttack) {
+            pendingAttackDamageAllocation = createPendingDamageAllocation({
+                id: `haunt-attack-reroll-damage-${attacker.playerId}-${event.timestamp}`,
+                explorer: attacker,
+                sourceTitle: '攻击',
+                damageKind: attack.damageKind,
+                amount: rerollOutcome.damageToAttacker,
+                allowSkull: true,
+            });
+        } else {
+            applyAttackDamage(attacker, rerollOutcome.damageToAttacker, attack.damageKind);
+        }
     }
-    if (defender && rerollOutcome.damageToDefender) {
+    if (defender && rerollOutcome.damageToDefender && !rerollsHelpingHandsReward) {
         if (canDeferOrdinaryAttackDamageToDefender(core, attack.target)) {
             pendingAttackDamageAllocation = createPendingDamageAllocation({
                 id: `haunt-attack-reroll-damage-${defender.playerId}-${event.timestamp}`,
@@ -375,6 +426,9 @@ function applyAttackRecentRollRerollState(
         }
     }
     nextRoll.latestLabel = rerollOutcome.latestLabel;
+    if (rerollsHelpingHandsReward && rerollOutcome.damageToDefender) {
+        nextRoll.latestLabel = `可偷牌或造成 ${rerollOutcome.damageToDefender} 点伤害`;
+    }
     nextRoll.attack = {
         ...attack,
         previousDamageToAttacker: rerollOutcome.damageToAttacker ?? 0,

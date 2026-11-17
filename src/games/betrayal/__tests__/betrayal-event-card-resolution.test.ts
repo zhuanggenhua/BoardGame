@@ -1424,6 +1424,7 @@ it('怪异的镜子作祟检定成功会进入 7 号作祟代表揭示态', () =
 it('镜中怪物普通攻击按神志结算精神伤害', () => {
         let core = triggerUponReflectionHaunt();
         const revealerPlayerId = core.scenarioRuntime.uponReflection!.revealerPlayerId;
+        activateTestExplorer(core, revealerPlayerId);
         const mirrorBeing = core.monsters.find((monster) => monster.definitionId === 'upon-reflection-mirror-being');
         expect(mirrorBeing).toBeDefined();
         const targetHeroId = '1';
@@ -1467,6 +1468,7 @@ it('镜中怪物普通攻击按神志结算精神伤害', () => {
         });
         expect(traitTrackPositionTotal(core, targetHeroId, ['might', 'speed'])).toBe(heroPhysicalPositionBefore);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, revealerPlayerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -1510,6 +1512,7 @@ it('镜中怪物移动目标只允许朝最近探索者缩短距离', () => {
 it('镜中怪物最近距离平手时允许作祟揭秘者选择任一等距路径', () => {
         let core = triggerUponReflectionHaunt();
         const revealerPlayerId = core.scenarioRuntime.uponReflection!.revealerPlayerId;
+        activateTestExplorer(core, revealerPlayerId);
         const mirrorBeing = core.monsters.find((monster) => monster.definitionId === 'upon-reflection-mirror-being');
         expect(mirrorBeing).toBeDefined();
         discoverTestRoom(core, 'ground-east', '东侧测试房间');
@@ -1634,12 +1637,12 @@ it('作祟揭秘者镜中提示会把所选事件牌放一边且不结算事件'
         activateTestExplorer(core, '0');
         const hintedEvent: BetrayalCore['eventOrder'][number] = {
             name: '阴影扑面',
-            text: '阴影扑向你。失去 1 点力量。',
+            description: '阴影扑向你。失去 1 点力量。',
             effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
         };
         const remainingEvent: BetrayalCore['eventOrder'][number] = {
             name: '远处低语',
-            text: '远处有人低语。进行 1 次神志检定。',
+            description: '远处有人低语。进行 1 次神志检定。',
         };
         core.eventOrder = [hintedEvent, remainingEvent];
         core.deckCounts.event = core.eventOrder.length;

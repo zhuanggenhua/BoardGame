@@ -117,7 +117,7 @@ export async function aiStepBarrier(
     matchId: string,
     operation: 'arm' | 'status' | 'release',
     access: TestMatchAccess,
-    target?: { playerId: string; commandType: string },
+    target?: { playerId: string; commandType?: string },
 ): Promise<{ reached: boolean } | null> {
     const base = await resolveTestApiBase();
     const response = await fetch(`${base}/test/ai-step-barrier`, {

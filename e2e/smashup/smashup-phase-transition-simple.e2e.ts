@@ -224,7 +224,8 @@ async function installSmashUpAiChoiceRejectPatch(
             return;
         }
 
-        const transportModule = await import('/src/engine/transport/client.ts');
+        const transportUrl = '/src/engine/transport/client.ts';
+        const transportModule = await import(/* @vite-ignore */ transportUrl);
         const proto = transportModule.GameTransportClient?.prototype as {
             sendBatch?: (
                 this: unknown,
@@ -447,7 +448,8 @@ async function installSmashUpAiResponsePassPatch(
             return;
         }
 
-        const transportModule = await import('/src/engine/transport/client.ts');
+        const transportUrl = '/src/engine/transport/client.ts';
+        const transportModule = await import(/* @vite-ignore */ transportUrl);
         const proto = transportModule.GameTransportClient?.prototype as {
             sendBatch?: (
                 this: unknown,
@@ -2953,107 +2955,45 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
-            const responseWindow = state.sys?.responseWindow?.current ?? null;
             return {
-                windowType: responseWindow?.windowType ?? null,
-                currentResponder: responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null,
+                phase: state.sys?.phase ?? null,
+                sourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                playerId: state.sys?.interaction?.current?.playerId ?? null,
             };
         }, {
             timeout: 10000,
             message: '等待真实推进到计分阶段后打开 meFirst 响应窗口',
-        }).toEqual({
-            windowType: 'meFirst',
-            currentResponder: '0',
-        });
+        }).toEqual({ phase: 'scoreBases', sourceId: 'smashup_reaction_choose', playerId: '0' });
 
         await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-response-window-playable-host-first');
 
-        await respondCurrentInteraction(hostPage, { optionId: 'pass' });
+        await expect(hostPage.getByTestId('su-reaction-pass-button')).toBeVisible();
+        await hostPage.getByTestId('su-reaction-pass-button').click();
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
-            const responseWindow = state.sys?.responseWindow?.current ?? null;
-            const currentResponder = responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null;
-            const aiHand = state.core?.players?.['1']?.hand as Array<{ defId?: string }> | undefined;
-            const aiDiscard = state.core?.players?.['1']?.discard as Array<{ defId?: string }> | undefined;
-            const aiHandDefIds = aiHand?.map((card) => card.defId).filter(Boolean) ?? [];
-            const aiDiscardDefIds = aiDiscard?.map((card) => card.defId).filter(Boolean) ?? [];
-            const interactionSourceId = state.sys?.interaction?.current?.data?.sourceId ?? null;
-            const interactionPlayerId = state.sys?.interaction?.current?.playerId ?? null;
-            return currentResponder === '1'
-                || interactionPlayerId === '1'
-                || interactionSourceId === 'giant_ant_under_pressure_choose_source'
-                || interactionSourceId === 'giant_ant_under_pressure_choose_target'
-                || interactionSourceId === 'giant_ant_under_pressure_choose_amount'
-                || aiDiscardDefIds.includes('giant_ant_under_pressure')
-                || !aiHandDefIds.includes('giant_ant_under_pressure');
-        }, {
-            timeout: 8000,
-            message: '等待房主 pass 后 AI 接手响应窗口并开始推进',
-        }).toBe(true);
-
-        await expect.poll(async () => {
-            const state = await getMatchState(matchId, hostPage);
-            const responseWindow = state.sys?.responseWindow?.current ?? null;
-            const currentResponder = responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null;
-            const hostHand = state.core?.players?.['0']?.hand as Array<{ defId?: string }> | undefined;
-            const aiHand = state.core?.players?.['1']?.hand as Array<{ defId?: string }> | undefined;
-            const aiDiscard = state.core?.players?.['1']?.discard as Array<{ defId?: string }> | undefined;
-            const primaryBaseMinions = state.core?.bases?.[0]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
-            const secondaryBaseMinions = state.core?.bases?.[1]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
-            const hostHandDefIds = hostHand?.map((card) => card.defId).filter(Boolean) ?? [];
-            const aiHandDefIds = aiHand?.map((card) => card.defId).filter(Boolean) ?? [];
-            const aiDiscardDefIds = aiDiscard?.map((card) => card.defId).filter(Boolean) ?? [];
-            const sourceCounters = primaryBaseMinions?.find((minion) => minion.uid === 'ai-under-pressure-source')?.powerCounters ?? null;
-            const targetCounters = secondaryBaseMinions?.find((minion) => minion.uid === 'ai-under-pressure-target')?.powerCounters ?? null;
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: any) => entry.event);
+            const target = state.core?.bases?.flatMap((base: any) => base.minions ?? [])
+                .find((minion: any) => minion.uid === 'ai-under-pressure-target');
             return {
-                currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
-                responseWindowId: responseWindow?.id ?? null,
-                currentResponder,
-                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
-                interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
-                hostHandDefIds,
-                aiHandDefIds,
-                aiDiscardDefIds,
-                sourceCounters,
-                targetCounters,
+                aiTargetChosen: events.some((event: any) => event.type === 'SYS_INTERACTION_RESOLVED'
+                    && event.payload?.playerId === '1'
+                    && event.payload?.sourceId === 'giant_ant_under_pressure_choose_target'
+                    && event.payload?.value?.minionUid === 'ai-under-pressure-target'),
+                counterRemoved: events.some((event: any) => event.type === 'su:power_counter_removed'
+                    && event.payload?.minionUid === 'ai-under-pressure-source'
+                    && event.payload?.reason === 'giant_ant_under_pressure'),
+                targetCounters: target?.powerCounters ?? null,
+                phase: state.sys?.phase ?? null,
+                interaction: state.sys?.interaction?.current ?? null,
+                window: state.sys?.responseWindow?.current ?? null,
             };
         }, {
-            timeout: 12000,
-            message: '等待在线 AI 在响应窗口打出承受压力并完成后续选择',
-        }).toMatchObject({
-            currentPlayerIndex: 0,
-            responseWindowId: expect.stringContaining('smashup_reaction_window_'),
-            currentResponder: '0',
-            interactionSourceId: 'smashup_reaction_choose',
-            interactionPlayerId: '0',
-            hostHandDefIds: ['giant_ant_under_pressure'],
-            aiHandDefIds: [],
-            aiDiscardDefIds: ['giant_ant_under_pressure'],
-            sourceCounters: 0,
-            targetCounters: 1,
-        });
-
-        await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-response-window-playable-after-ai-response');
-        await respondCurrentInteraction(hostPage, { optionId: 'pass' });
-
-        await expect.poll(async () => {
-            const state = await getMatchState(matchId, hostPage);
-            const responseWindow = state.sys?.responseWindow?.current ?? null;
-            return {
-                responseWindowId: responseWindow?.id ?? null,
-                currentResponder: responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null,
-                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
-                interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
-            };
-        }, {
-            timeout: 8000,
-            message: '等待房主在 AI 响应后 pass 一次，统一反应窗口最终收口',
+            timeout: 20000,
+            message: '等待 AI 完成响应选择、转移指示物并结束计分',
         }).toEqual({
-            responseWindowId: null,
-            currentResponder: null,
-            interactionSourceId: null,
-            interactionPlayerId: null,
+            aiTargetChosen: true, counterRemoved: true, targetCounters: 1,
+            phase: 'playCards', interaction: null, window: null,
         });
 
         await expect(hostPage.getByTestId('me-first-overlay')).toHaveCount(0);

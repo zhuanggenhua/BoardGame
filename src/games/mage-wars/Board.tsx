@@ -66,6 +66,7 @@ import {
     getMageWarsSpellCardFromConfig,
 } from './data/configPackage';
 import { areAdjacentZones } from './domain/utils';
+import { canMageWarsAdvanceCreatureAction } from './domain/creatureAction';
 import { mageWarsObjectAbilityRegistry } from './domain/abilityCatalog';
 import {
     buildMageWarsObjectAbilityActivationOpportunity,
@@ -97,13 +98,16 @@ import {
     type MageWarsMeleeAttackVisual,
 } from './ui/useGameEvents';
 import {
+    canMageWarsObjectContinueMovement,
     canMageWarsObjectUsePostMoveQuickAction,
     getMageWarsObjectAttackProfiles,
+    hasMageWarsStunStatus,
     isMageWarsWallSpell,
     isMageWarsArenaObjectRestrained,
     resolveMageWarsSpellCastChoiceFamily,
     resolveMageWarsObjectEffectiveLife,
 } from './domain/spellRules';
+import { hasTemporaryQuickActionAfterMove } from './domain/temporaryTraits';
 import {
     MAGE_WARS_ARENA_WORLD_HEIGHT,
     MAGE_WARS_ARENA_WORLD_WIDTH,
@@ -2739,7 +2743,8 @@ function ArenaStage({
 }) {
     const { t } = useTranslation('game-mage-wars');
     const creatureActionActive = isCreatureActionPhase(phase) && canAct;
-    const canUseMageAction = creatureActionActive && activePlayer?.actionReady === true;
+    const canUseMageAction = creatureActionActive && activePlayer?.actionReady === true
+        && !hasMageWarsStunStatus(activePlayer);
     const selectedSpell = selectedSpellCardId == null
         ? undefined
         : getMageWarsSpellCardFromConfig(selectedSpellCardId);
@@ -2787,6 +2792,9 @@ function ArenaStage({
         phase,
         objectAbilitySourceIds,
         targetingBusy,
+        activeCreatureObjectId: core.activeCreatureAction
+            ? core.activeCreatureAction.objectId ?? null
+            : undefined,
     };
     const selectedObjectAttackProfile = selectedObject
         ? getMageWarsObjectAttackProfiles(selectedObject).find((profile) => (
@@ -2801,7 +2809,7 @@ function ArenaStage({
     const selectedObjectCanMove = Boolean(
         selectedObject
         && canMageWarsObjectStartAction(selectedObject, activePlayer?.id)
-        && selectedObject.actionReady
+        && canMageWarsObjectContinueMovement(core, selectedObject)
         && !isMageWarsArenaObjectRestrained(selectedObject),
     );
     const selectedObjectCanAttack = Boolean(
@@ -3241,7 +3249,9 @@ function ArenaStage({
                         !hasPendingAbilityTarget
                         && !selectedSpell
                         && occupant.id === activePlayer?.id
-                        && ((creatureActionActive && canUseMageAction) || occupantCanUseRestoreAbility),
+                        && ((creatureActionActive && occupant.actionReady
+                            && (!core.activeCreatureAction || !core.activeCreatureAction.objectId))
+                            || occupantCanUseRestoreAbility),
                     );
                     const isMeleeAttacker = meleeAttack?.sourceObjectId === occupant.id;
                     const laneStyle = getZoneLaneItemStyle(laneIndex, true);
@@ -3989,10 +3999,24 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
         return !!targetId && tutorialStep.allowedTargets.includes(targetId);
     }, [isTutorialActive, tutorialStep]);
+    const selectedNoActionObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
+    const selectedNoActionMage = selectedMageId ? core.players[selectedMageId] : undefined;
+    const canTakeNoAction = isPlayerId(playerID)
+        && phase === 'creatureAction'
+        && phaseActorId === playerID
+        && !core.activeCreatureAction
+        && !selectedSpellCardId
+        && !pendingObjectAbility
+        && !pendingMageAbility
+        && isCommandAllowed(MAGE_WARS_COMMANDS.CREATURE_NO_ACTION)
+        && Boolean((selectedNoActionObject?.ownerId === playerID
+            && selectedNoActionObject.kind === 'creature' && selectedNoActionObject.actionReady)
+            || (selectedNoActionMage?.id === playerID && selectedNoActionMage.actionReady));
     const canAdvance = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
         && (SIMULTANEOUS_PREPARATION_PHASES.has(phase) || playerID === phaseActorId)
-        && isCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE);
+        && (canTakeNoAction || (isCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE)
+            && (phase !== 'creatureAction' || canMageWarsAdvanceCreatureAction(core, playerID))));
     const canAct = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
             && (phase === 'planning' || playerID === phaseActorId);
@@ -4043,6 +4067,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         canSubmitPlanningSpells: canSubmitSelectedPlanningSpells,
         planSpellCount: selectedPlanningSpellCardIds.length,
         planSpellTotal: MAGE_WARS_MAX_PREPARED_SPELLS,
+        canTakeNoAction,
     });
     const handleTurnMainAction = () => {
         if (!turnMainAction || turnMainAction.disabled) {
@@ -4051,6 +4076,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
         if (turnMainAction.mode === 'plan-spells') {
             planSelectedSpells();
+            return;
+        }
+        if (turnMainAction.mode === 'creature-no-action') {
+            dispatch(MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, selectedNoActionObject
+                ? { objectId: selectedNoActionObject.id }
+                : {});
+            setSelectedObjectId(null);
+            setSelectedMageId(null);
             return;
         }
         dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
@@ -4315,7 +4348,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         && !pendingMageAbility
         && !G.sys.interaction?.current
         && (
-            (selectedObject?.ownerId === activePlayer?.id && selectedObject.actionReady)
+            (selectedObject?.ownerId === activePlayer?.id
+                && (selectedObject.actionReady || hasTemporaryQuickActionAfterMove(selectedObject)))
             || (selectedMage?.id === activePlayer?.id && selectedMage.actionReady)
         ),
     );
@@ -4643,7 +4677,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 !canAct
                 || !isCommandAllowed(MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT)
                 || !isCreatureActionPhase(phase)
-                || !selectedObject.actionReady
+                || !canMageWarsObjectContinueMovement(core, selectedObject)
                 || isMageWarsArenaObjectRestrained(selectedObject)
                 || !areAdjacentZones(core, selectedObject.zoneId, zoneId)
             ) {
@@ -4940,7 +4974,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
         const selectedObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
-        if (selectedObject?.ownerId === activePlayer?.id && selectedObject.actionReady) {
+        if (selectedObject?.ownerId === activePlayer?.id
+            && (selectedObject.actionReady || hasTemporaryQuickActionAfterMove(selectedObject))) {
             dispatch(MAGE_WARS_COMMANDS.GUARD, { objectId: selectedObject.id });
             setSelectedObjectId(null);
             setPendingObjectAbility(null);
@@ -5530,13 +5565,13 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onClose={() => setMagnifiedPreview(null)}
                 overlayTestId="mage-wars-card-magnify-overlay"
                 closeLabel={t('actions.close')}
-                containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] overflow-visible rounded-none"
+                containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-7rem)] overflow-visible rounded-none"
                 closeButtonClassName="mw-magnify-close"
                 revealCloseAfterPointerMove
             >
                 {magnifiedPreview ? (
                     <div
-                        className="flex max-h-[calc(100vh-3rem)] max-w-[calc(100vw-3rem)] items-start overflow-visible"
+                        className="flex max-h-[calc(100vh-3rem)] max-w-[calc(100vw-7rem)] items-start overflow-visible"
                         data-testid="mage-wars-card-magnify-content"
                         data-source-card-id={magnifiedPreview.sourceCardId}
                         data-mage-id={magnifiedPreview.mageId}

@@ -29,6 +29,91 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars guard and defense window', () => {
+    it('keeps stun gained from a counterstrike until the attacker next acts', () => {
+        const base = setupState('creatureAction');
+        const attacker = makeArenaObject('counter-stunned-attacker', '0', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+            armor: 0,
+            attackOrTraitLine: '利爪：快速近战 2 骰；飞行',
+        });
+        const defender = makeArenaObject('counter-stunning-guard', '1', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId: 2817,
+            name: '闪电天使瓦尔莎拉',
+            life: 30,
+            armor: 0,
+            guarding: true,
+            combatProfilesSource: 'config',
+            attackOrTraitLine: '闪电剑刃：快速近战闪电 4 骰；飞行',
+        });
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: withArenaObject(withArenaObject({ ...base.core, phaseReadyPlayerIds: [] }, attacker), defender),
+        };
+        const roll: RandomFn = { ...fixedRandom, d: (sides) => sides === 12 ? 9 : 3 };
+        const attacked = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: { attackerObjectId: attacker.id, attackProfileId: 'attack-0', targetObjectId: defender.id },
+        }, roll);
+        expect(attacked.success).toBe(true);
+        const interaction = getSimpleChoicePrompt(attacked.state, 'mw.counterstrike.choice');
+        const countered = runCommand(attacked.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: { interactionId: interaction.id, optionId: 'counterstrike' },
+        } as Command, roll);
+        expect(countered.success).toBe(true);
+        expect(countered.state.core.objects[attacker.id].statusTokens[STATUS_TOKEN_IDS.STUN]).toBe(1);
+        const ended = runCommand(countered.state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {},
+        }, roll);
+        expect(ended.success).toBe(true);
+        expect(ended.state.core.objects[attacker.id].statusTokens[STATUS_TOKEN_IDS.STUN]).toBe(1);
+    });
+
+    it.each([
+        { optionId: 'pass', roll: 9 },
+        { optionId: 'defend-defense-0', roll: 9 },
+        { optionId: 'defend-defense-0', roll: 1 },
+    ])('removes guard only after a counterstrike defense resolves: $optionId / $roll', ({ optionId, roll }) => {
+        const base = setupState('creatureAction');
+        const attacker = makeArenaObject('counter-defense-attacker', '0', PLAYER_ZERO_START_ZONE, {
+            life: 20,
+            attackOrTraitLine: '利爪：快速近战 2 骰；防御图标 `8+ / 1x`',
+        });
+        const defender = makeArenaObject('counter-defense-guard', '1', PLAYER_ZERO_START_ZONE, {
+            life: 20,
+            guarding: true,
+            attackOrTraitLine: '短剑：快速近战 2 骰',
+        });
+        const state: MatchState<MageWarsCore> = {
+            ...base,
+            core: withArenaObject(withArenaObject({ ...base.core, phaseReadyPlayerIds: [] }, attacker), defender),
+        };
+        const attacked = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: { attackerObjectId: attacker.id, attackProfileId: 'attack-0', targetObjectId: defender.id },
+        });
+        expect(attacked.success).toBe(true);
+        const counterChoice = getSimpleChoicePrompt(attacked.state, 'mw.counterstrike.choice');
+        const countered = runCommand(attacked.state, {
+            type: INTERACTION_COMMANDS.RESPOND, playerId: '1',
+            payload: { interactionId: counterChoice.id, optionId: 'counterstrike' },
+        } as Command);
+        expect(countered.success).toBe(true);
+        expect(countered.state.core.objects[defender.id].guarding).toBe(true);
+        const defenseChoice = getSimpleChoicePrompt(countered.state, 'mw.defense.choice');
+        const random: RandomFn = { ...fixedRandom, d: (sides) => sides === 12 ? roll : 3 };
+        const resolved = runCommand(countered.state, {
+            type: INTERACTION_COMMANDS.RESPOND, playerId: '0',
+            payload: { interactionId: defenseChoice.id, optionId },
+        } as Command, random);
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.objects[defender.id].guarding).toBe(false);
+        expect(resolved.events.some((event) => event.type === MAGE_WARS_EVENTS.GUARD_REMOVED)).toBe(true);
+    });
+
     it('lets ready arena creatures guard without consuming the mage action track', () => {
         const baseState = setupState('creatureAction');
         const object = makeArenaObject('cat-0', '0', PLAYER_ZERO_START_ZONE);
@@ -261,7 +346,7 @@ describe('mage-wars guard and defense window', () => {
         })).toBeUndefined();
     });
 
-    it('removes guard from a guarding arena object after it is targeted by a melee attack', () => {
+    it('keeps guard while the defender decides whether to counterstrike', () => {
         const baseState = setupState('creatureAction');
         const attacker = makeArenaObject('cat-0', '0', PLAYER_ZERO_START_ZONE);
         const enemyGuard = makeArenaObject('guard-1', '1', PLAYER_ZERO_START_ZONE, {
@@ -283,7 +368,7 @@ describe('mage-wars guard and defense window', () => {
         });
         const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
 
-        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE);
         expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.GUARD_REMOVED);
 
         const attacked = runCommand(state, {
@@ -297,17 +382,20 @@ describe('mage-wars guard and defense window', () => {
         });
 
         expect(attacked.success).toBe(true);
-        expect(attacked.state.core.objects[enemyGuard.id].guarding).toBe(false);
-        expect(attacked.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.GUARD_REMOVED,
-                payload: expect.objectContaining({
-                    targetObjectId: enemyGuard.id,
-                    sourceAbilityId: 'mw.guard.melee-attack',
-                }),
-            }),
-        ]));
-        expect(actionLogKinds(attacked.state)).toContain(MAGE_WARS_EVENTS.GUARD_REMOVED);
+        expect(attacked.state.core.objects[enemyGuard.id].guarding).toBe(true);
+        expect(attacked.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.GUARD_REMOVED);
+        const interaction = getSimpleChoicePrompt(attacked.state, 'mw.counterstrike.choice');
+        const passed = runCommand(attacked.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: { interactionId: interaction.id, optionId: 'pass' },
+        } as Command);
+        expect(passed.success).toBe(true);
+        expect(passed.state.core.objects[enemyGuard.id].guarding).toBe(false);
+        expect(passed.events).toEqual(expect.arrayContaining([expect.objectContaining({
+            type: MAGE_WARS_EVENTS.GUARD_REMOVED,
+            payload: expect.objectContaining({ targetObjectId: enemyGuard.id }),
+        })]));
     });
 
     it('offers a voluntary counterstrike opportunity when a guarding creature is targeted by a melee attack', () => {
@@ -347,8 +435,7 @@ describe('mage-wars guard and defense window', () => {
                 }),
             }),
         ]));
-        expect(eventTypes.indexOf(MAGE_WARS_EVENTS.COUNTERSTRIKE_AVAILABLE))
-            .toBeLessThan(eventTypes.indexOf(MAGE_WARS_EVENTS.GUARD_REMOVED));
+        expect(eventTypes).not.toContain(MAGE_WARS_EVENTS.GUARD_REMOVED);
         expect(attacked.events.filter((event) => (
             event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
             && event.payload.attackerObjectId === enemyGuard.id
@@ -511,6 +598,9 @@ describe('mage-wars guard and defense window', () => {
             }),
         ]));
         expect(counterstruck.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.COUNTERSTRIKE_AVAILABLE);
+        expect(counterstruck.state.core.objects[enemyGuard.id].guarding).toBe(false);
+        expect(counterstruck.events.findIndex((event) => event.type === MAGE_WARS_EVENTS.GUARD_REMOVED))
+            .toBeGreaterThan(counterstruck.events.findIndex((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED));
         expect(counterstruck.state.core.objects[enemyGuard.id].actionReady).toBe(true);
         expect(counterstruck.state.core.objects[attacker.id].damage).toBe(4);
     });
@@ -823,7 +913,7 @@ describe('mage-wars guard and defense window', () => {
         }, missRandom);
 
         expect(attacked.success).toBe(true);
-        expect(attacked.state.core.objects[enemyGuard.id].guarding).toBe(false);
+        expect(attacked.state.core.objects[enemyGuard.id].guarding).toBe(true);
         expect(attacked.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ATTACK_MISSED,
@@ -831,15 +921,18 @@ describe('mage-wars guard and defense window', () => {
                     targetObjectId: enemyGuard.id,
                 }),
             }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.GUARD_REMOVED,
-                payload: expect.objectContaining({
-                    targetObjectId: enemyGuard.id,
-                    sourceAbilityId: 'mw.guard.melee-attack',
-                }),
-            }),
         ]));
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.COUNTERSTRIKE_AVAILABLE);
+        const passed = runCommand(attacked.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: { interactionId: getPromptInteractionId(attacked.state, 'mw.counterstrike.choice'), optionId: 'pass' },
+        } as Command);
+        expect(passed.success).toBe(true);
+        expect(passed.state.core.objects[enemyGuard.id].guarding).toBe(false);
+        expect(passed.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.GUARD_REMOVED, payload: expect.objectContaining({ targetObjectId: enemyGuard.id }) }),
+        ]));
     });
 
     it('makes dazed arena creature attacks miss before damage is rolled', () => {
@@ -1321,7 +1414,19 @@ describe('mage-wars guard and defense window', () => {
             },
         })).toBe('defenseSpent');
 
-        const spentDefenseAttack = runCommand(defended.state, {
+        const firstActionFinished = runCommand(defended.state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {},
+        });
+        expect(firstActionFinished.success).toBe(true);
+        const opponentAction = runCommand(firstActionFinished.state, {
+            type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, playerId: '1', payload: { objectId: defender.id },
+        });
+        expect(opponentAction.success).toBe(true);
+        const opponentFinished = runCommand(opponentAction.state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '1', payload: {},
+        });
+        expect(opponentFinished.success).toBe(true);
+        const spentDefenseAttack = runCommand(opponentFinished.state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '0',
             payload: {
@@ -1337,8 +1442,9 @@ describe('mage-wars guard and defense window', () => {
 
         const finalQuickcastState: MatchState<MageWarsCore> = {
             core: {
-                ...defended.state.core,
+                ...spentDefenseAttack.state.core,
                 currentPlayerId: '0',
+                activeCreatureAction: undefined,
             },
             sys: { ...baseState.sys, phase: 'finalQuickcast' },
         };

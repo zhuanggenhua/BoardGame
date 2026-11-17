@@ -17,9 +17,12 @@ import type { BetrayalEvent } from './events';
 import {
     isHelpingHandsHaunt,
     isMagicCameraHaunt,
+    findFeverishMonster,
+    shouldDeadPlayerControlFeverish,
     resolveHelpingHandsControllerPlayerId,
 } from './hauntScenarioReadModel';
 import { resolveMoveTargetRooms } from './movementReadModel';
+import { resolveMonsterStatusKind } from './monsterReadModel';
 import { resolveBetrayalControlledMonsterMovementRoll } from './monsterActionReadModel';
 import { createBetrayalHelpingHandsMonsterTurnStartedEvent } from './monsterActionResolutionModel';
 import {
@@ -90,7 +93,17 @@ export function resolveBetrayalEndTurnCommandEvents(
                 })();
             const nextExplorer = findExplorerByPlayerId(core, nextPlayerId) ?? core.currentExplorer;
             const previewCore = replaceExplorers(core, getExplorersInTurnOrder(core), nextExplorer.playerId);
-            const monsterMovementRoll = extraTurnAfterCurrentTurn
+            const nextFeverish = findFeverishMonster(previewCore, nextPlayerId);
+            const sharedRoll = !extraTurnAfterCurrentTurn && shouldDeadPlayerControlFeverish(core, core.currentPlayer)
+                && shouldDeadPlayerControlFeverish(previewCore, nextPlayerId) && nextFeverish
+                && resolveMonsterStatusKind(previewCore, nextFeverish.id) === 'active'
+                ? core.scenarioRuntime.monsterTurn.movementRollsByGroupId[`${nextFeverish.name}:${nextFeverish.speed}`]
+                : undefined;
+            const monsterMovementRoll = sharedRoll && nextFeverish
+                ? { monsterId: nextFeverish.id, monsterName: sharedRoll.monsterName, playerId: nextPlayerId,
+                    speed: sharedRoll.speed, dice: [...sharedRoll.dice], total: sharedRoll.total,
+                    moveAllowance: core.scenarioRuntime.monsterTurn.moveRemainingById[nextFeverish.id] ?? sharedRoll.moveAllowance }
+                : extraTurnAfterCurrentTurn
                 ? null
                 : canReviveTraitorFromJackSpiritAtMonsterTurnStart(previewCore, nextPlayerId)
                 ? null
@@ -102,7 +115,9 @@ export function resolveBetrayalEndTurnCommandEvents(
                 ? `轮到${nextExplorer.displayName}，可前往${formatRoomTargetList(targets)}`
                 : `轮到${nextExplorer.displayName}`;
             const turnLogText = monsterMovementRoll
-                ? `${baseLogText}；${monsterMovementRoll.monsterName}速度 ${monsterMovementRoll.speed} 投出 ${monsterMovementRoll.total}，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
+                ? sharedRoll
+                    ? `${baseLogText}；${monsterMovementRoll.monsterName}沿用本次怪物回合的移动骰，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
+                    : `${baseLogText}；${monsterMovementRoll.monsterName}速度 ${monsterMovementRoll.speed} 投出 ${monsterMovementRoll.total}，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
                 : baseLogText;
             const shouldDeferAdvanceUntilRollAcknowledged = Boolean(
                 roomEndTurnEffect?.kind === 'speedCheckFallToBasement'

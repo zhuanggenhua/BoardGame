@@ -31,6 +31,20 @@ export function applyBetrayalExplorerMovedState(
     } else {
         core.currentExplorer.roomId = event.payload.roomId;
     }
+    const controlledMonsterId = event.payload.controlledToken === 'jack-spirit'
+        ? 'jack-spirit'
+        : event.payload.controlledToken === 'feverish'
+            ? `feverish-${event.payload.playerId}`
+            : null;
+    if (controlledMonsterId) {
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            movedMonsterIdsThisTurn: Array.from(new Set([
+                ...core.scenarioRuntime.monsterTurn.movedMonsterIdsThisTurn,
+                controlledMonsterId,
+            ])),
+        };
+    }
     if (event.payload.consumeMove !== false) {
         core.movesRemaining = Math.max(0, core.movesRemaining - (event.payload.moveCost ?? 1));
     }

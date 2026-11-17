@@ -7,6 +7,11 @@ import { GameHUD } from '../GameHUD';
 const toastMocks = vi.hoisted(() => ({
     warning: vi.fn(),
 }));
+const feedbackScreenshotMocks = vi.hoisted(() => ({ start: vi.fn(() => vi.fn()) }));
+
+vi.mock('../../../../../lib/feedback/feedbackScreenshot', () => ({
+    startFeedbackScreenshotCache: feedbackScreenshotMocks.start,
+}));
 
 vi.mock('../../../../../contexts/UndoContext', () => ({
     useUndo: () => ({ canUndo: false, undo: vi.fn() }),
@@ -168,6 +173,12 @@ describe('GameHUD', () => {
             {node}
         </MemoryRouter>,
     );
+
+    it('进入对局不会启动后台定时截图', () => {
+        feedbackScreenshotMocks.start.mockClear();
+        renderHud(<GameHUD mode="local" gameId="smashup" myPlayerId="0" />);
+        expect(feedbackScreenshotMocks.start).not.toHaveBeenCalled();
+    });
 
     it('本地对局主悬浮球与在线一致，退出和设置保留在菜单中', () => {
         renderHud(<GameHUD mode="local" gameId="tictactoe" myPlayerId="0" />);

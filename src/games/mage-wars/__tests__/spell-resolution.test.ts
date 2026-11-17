@@ -171,28 +171,7 @@ describe('mage-wars spell resolution', () => {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
-        })).toBeUndefined();
-
-        const deploymentQuickcast = runCommand({
-            core: targetCore,
-            sys: { ...planned.state.sys, phase: 'deployment' },
-        }, {
-            type: MAGE_WARS_COMMANDS.CAST_SPELL,
-            playerId: '0',
-            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
-        });
-        expect(deploymentQuickcast.success).toBe(true);
-        expect(deploymentQuickcast.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED)).toMatchObject({
-            payload: {
-                spellCardId: quickSpellId,
-                castMode: 'deployment',
-            },
-        });
-        expect(deploymentQuickcast.state.core.players['0']).toMatchObject({
-            mana: planned.state.core.players['0'].mana - 4,
-            actionReady: true,
-            quickcastReady: true,
-        });
+        })).toBe('wrongPhase');
 
         expect(validateCommand({
             core: {

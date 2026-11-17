@@ -193,7 +193,7 @@ describe('mage-wars ability catalog', () => {
             makeMageWarsAbilityState({
                 mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
                 mana: 18,
-                phase: 'deployment',
+                phase: 'initiativeQuickcast',
             }),
             '0',
             spellCardId,

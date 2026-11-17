@@ -17,7 +17,7 @@ const restartComparable = (core: QidahenCore) => ({ ...core, actionLog: core.act
 const route = '/play/qidahen/tutorial/basic-opening';
 const read = (page: Page) => page.evaluate(() => {
     const state = (window as any).__BG_TEST_HARNESS__.state.get();
-    return { core: state.core, step: state.sys.tutorial.step?.id, revision: state.sys.tutorial.manifestRevision };
+    return { core: state.core, step: state.sys.tutorial.step?.id, content: state.sys.tutorial.step?.content, revision: state.sys.tutorial.manifestRevision };
 });
 
 test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退出清理', async ({ page }) => {
@@ -39,17 +39,19 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     const initial = await read(page);
     await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('frontier-target');
     await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('opening-move');
-    await page.getByTestId('qidahen-wheel-move-target-move-1-free').click(); await waitStep('farm-action');
+    await page.getByTestId('qidahen-wheel-move-target-move-1-free').click(); await waitStep('opening-farm-cycle');
     const beforeReload = await read(page);
-    await expect.poll(() => storedStep(page)).toBe('farm-action');
+    expect(beforeReload.content).toContain('farm-menu-initial');
+    await expect.poll(() => storedStep(page)).toBe('opening-farm-cycle');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('button', { name: '从上次继续', exact: true })).toBeVisible({ timeout: 90_000 });
-    await page.getByRole('button', { name: '从上次继续', exact: true }).click(); await waitStep('farm-action');
+    await page.getByRole('button', { name: '从上次继续', exact: true }).click(); await waitStep('opening-farm-cycle');
+    expect((await read(page)).content).toBe(beforeReload.content);
     expect((await read(page)).core).toEqual(beforeReload.core);
     records.push({ id: 'reload-continue', before: beforeReload, after: await read(page), assertions: [{ name: 'same-authoritative-match', actual: true, expected: true }] });
     await clickVisibleButton(page, 'tutorial-previous-button'); await waitStep('opening-move');
     expect((await read(page)).core.actionWheelPosition).toBe(initial.core.actionWheelPosition);
-    await page.getByTestId('qidahen-wheel-move-target-move-1-free').click(); await waitStep('farm-action');
+    await page.getByTestId('qidahen-wheel-move-target-move-1-free').click(); await waitStep('opening-farm-cycle');
     expect((await read(page)).core).toEqual(beforeReload.core);
     records.push({ id: 'previous-and-redo', after: await read(page), assertions: [{ name: 'no-duplicate-move-or-payment', actual: true, expected: true }] });
     await page.reload({ waitUntil: 'domcontentloaded' });

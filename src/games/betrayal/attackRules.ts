@@ -23,6 +23,7 @@ import {
   resolveDynamiteTargetRooms,
 } from "./roomMapModel";
 import { rollTrait } from "./traitRollModel";
+import { resolveAcknowledgeableRecentRoll, resolveRecentRollRequiredPlayerIds, resolveRecentRollAcknowledgedPlayerIds } from "./acknowledgementReadModel";
 
 type BetrayalAttackTarget = NonNullable<BetrayalRecentRollState["attack"]>["target"];
 type BetrayalAttackRollState = NonNullable<BetrayalRecentRollState["attack"]>;
@@ -360,23 +361,46 @@ export function canDeferOrdinaryAttackDamageToDefender(
   target: BetrayalAttackTarget,
 ): boolean {
   return !isMagicCameraHaunt(core)
-    && !isHelpingHandsHaunt(core)
-    && (target === "traitor" || target === "hero");
+    && (target === "traitor" || target === "hero")
+    && (!isHelpingHandsHaunt(core) || target === "hero");
 }
 
 export function isPendingDamageAllocationForAttackRoll(core: BetrayalCore): boolean {
   const pending = core.pendingDamageAllocation;
-  const attack = core.recentRoll?.kind === "attackRoll" ? core.recentRoll.attack : null;
+  const roll = core.recentRoll?.kind === "attackRoll" ? core.recentRoll : null;
+  const attack = roll?.attack;
   return Boolean(
     pending
     && attack
-    && attack.defenderPlayerId
     && pending.sourceTitle === "攻击"
-    && pending.playerId === attack.defenderPlayerId
     && pending.damageKind === attack.damageKind
-    && pending.originalAmount === attack.previousDamageToDefender
-    && canDeferOrdinaryAttackDamageToDefender(core, attack.target),
+    && (
+      pending.playerId === attack.defenderPlayerId
+        && pending.originalAmount === attack.previousDamageToDefender
+        && canDeferOrdinaryAttackDamageToDefender(core, attack.target)
+      || pending.playerId === roll?.playerId
+        && pending.originalAmount === attack.previousDamageToAttacker
+        && isHelpingHandsHaunt(core)
+    ),
   );
+}
+
+export function resolvePendingAttackRollConfirmationPlayerId(core: BetrayalCore): string | null {
+  const roll = core.recentRoll;
+  const helpingReward = core.scenarioRuntime.helpingHands?.pendingAttackReward;
+  const mummyReward = core.scenarioRuntime.mummy?.pendingAttackReward;
+  const pendingRewardDamageForRoll = roll?.kind === "attackRoll"
+    && (core.pendingDamageAllocation?.sourceTitle === "援手攻击" || core.pendingDamageAllocation?.sourceTitle === "木乃伊攻击")
+    && core.pendingDamageAllocation.playerId === roll.attack?.defenderPlayerId;
+  const pendingRewardForRoll = roll?.kind === "attackRoll" && (
+    helpingReward?.attackerPlayerId === roll.playerId && helpingReward.defenderPlayerId === roll.attack?.defenderPlayerId
+    || mummyReward?.controllerPlayerId === roll.playerId && mummyReward.defenderPlayerId === roll.attack?.defenderPlayerId
+  );
+  if (!isPendingDamageAllocationForAttackRoll(core) && !pendingRewardForRoll && !pendingRewardDamageForRoll) return null;
+  const acknowledgeable = resolveAcknowledgeableRecentRoll(core);
+  if (!acknowledgeable) return null;
+  const acknowledged = resolveRecentRollAcknowledgedPlayerIds(acknowledgeable);
+  return resolveRecentRollRequiredPlayerIds(core, acknowledgeable).find((id) => !acknowledged.includes(id)) ?? null;
 }
 
 export function resolveAttackRerollOutcome(

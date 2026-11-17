@@ -1540,8 +1540,9 @@ export function createHelpingHandsHauntCore(
 
 export function createDustFeverishControlReadyCore(
   feverishPlayerId = "0",
+  playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
-  let core = createDustHauntCore();
+  let core = createDustHauntCore(playerIds);
   const feverishRoomId = "hallway";
   core = focusCoreOnExplorer(core, feverishPlayerId);
   core.currentExplorer = {
@@ -1596,8 +1597,10 @@ export function createDustFeverishControlReadyCore(
   return focusCoreOnExplorer(core, feverishPlayerId);
 }
 
-export function createDustFeverishNaturalMonsterTurnBeforeRollCore(): BetrayalCore {
-  let core = createDustFeverishControlReadyCore("0");
+export function createDustFeverishNaturalMonsterTurnBeforeRollCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  let core = createDustFeverishControlReadyCore("0", playerIds);
   if (!core.scenarioRuntime.dust) {
     throw new Error("山屋灰尘夹具缺少 dust 运行态");
   }
@@ -1713,6 +1716,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "0", {});
   core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
@@ -1830,6 +1834,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     100,
     hauntProgressRandom,
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "0", {});
   core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
@@ -2275,6 +2280,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "2", {});
   core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
@@ -2288,6 +2294,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "2", {});
   core = resolvePendingDamageAllocation(core);
 
   return core;
@@ -2342,6 +2349,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "2", {});
   core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
@@ -2426,6 +2434,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "0", {});
   core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(
@@ -2480,6 +2489,7 @@ export function createJackSpiritNaturalMonsterTurnBeforeRollCore(): BetrayalCore
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, "0", {});
   core = resolvePendingDamageAllocation(core);
   return applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 }

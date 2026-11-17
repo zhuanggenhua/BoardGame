@@ -17,6 +17,7 @@ import { getQidahenWheelRecruitTrainChoices } from '../../src/games/qidahen/doma
 import type { QidahenCore } from '../../src/games/qidahen/domain/types';
 import { getQidahenRuntimeRegionAnchorTargetPoint, QIDAHEN_RUNTIME_REGION_BY_ID } from '../../src/games/qidahen/ui/mapGraph';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../src/games/qidahen/ui/mapRegions';
+import { payRaidCards as paySelectedAction } from './raidTestHelpers';
 
 type PlayerPage = {
     context: BrowserContext;
@@ -291,41 +292,6 @@ async function performWheelStep(page: Page, moveId: 'move-1-free' | 'move-2-one-
     if (markerAfter === before.marker) {
         await target.click({ timeout: 15000 });
     }
-}
-
-async function paySelectedAction(page: Page, count: number): Promise<void> {
-    const handCards = page.locator('button[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-magnify-"])');
-    const usedIds = new Set<string>();
-    for (let index = 0; index < count; index += 1) {
-        await expect(handCards.first()).toBeVisible({ timeout: 15000 });
-        let selected = false;
-        for (let cardIndex = 0; cardIndex < await handCards.count(); cardIndex += 1) {
-            const card = handCards.nth(cardIndex);
-            const id = await card.getAttribute('data-testid');
-            if (!id || usedIds.has(id) || !(await card.isEnabled())) continue;
-            const point = await card.evaluate(element => {
-            const rect = element.getBoundingClientRect();
-            for (const yRatio of [0.08, 0.15, 0.25, 0.35]) {
-                for (const xRatio of [0.5, 0.25, 0.75]) {
-                    const x = rect.left + rect.width * xRatio, y = rect.top + rect.height * yRatio;
-                    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
-                    const hit = document.elementFromPoint(x, y);
-                    if (hit && (hit === element || element.contains(hit))) return { x: rect.width * xRatio, y: rect.height * yRatio };
-                }
-            }
-            return null;
-            });
-            if (!point) continue;
-            await card.click({ position: point, timeout: 15000 });
-            usedIds.add(id);
-            selected = true;
-            break;
-        }
-        expect(selected, '至少一张支付手牌的露出部分应能接收真实鼠标点击').toBe(true);
-    }
-    const confirmButton = page.getByTestId('qidahen-action-payment-confirm');
-    await expect(confirmButton).toBeEnabled({ timeout: 15000 });
-    await confirmButton.click();
 }
 
 async function selectVisibleRaidRegion(page: Page, field: 'lockedSourceRegionId' | 'currentTargetRegionId'): Promise<string> {

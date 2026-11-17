@@ -15,7 +15,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         const rebuilt = rebuildClientDiceMultistepInteraction(interaction)!;
         expect(rebuilt.data.maxSteps).toBe(1);
         const meta = getDiceInteractionMeta(interaction)!;
-        expect(getDiceInteractionHint({ meta, interaction, result: initial, rootPlayerId: '0' }).key).toBe('interaction.hint_choose_value');
+        expect(getDiceInteractionHint({ meta, interaction, result: initial, rootPlayerId: '0' }).key).toBe('interaction.selectDieToModify');
         const before = diceModifyReducer(initial, { action: 'select', dieId: 0, dieValue: 1 }, config, 1);
         expect(diceModifyToCommands(before)).toEqual([]);
         const chosen = diceModifyReducer(initial, { action: 'chooseValue', value }, config, 1);
@@ -39,11 +39,16 @@ describe('固定结果与批量重掷的共享操作合同', () => {
             rootPlayerId: '0',
         });
 
-        expect(contract?.hint).toMatchObject({ key: 'interaction.hint_choose_value', surface: 'dice-tray' });
+        expect(contract?.hint).toMatchObject({ key: 'interaction.selectDieToModify', surface: 'dice-tray' });
     });
     it('非候选值不能进入固定结果选择', () => {
         const initial = { modifications: {}, modCount: 0, totalAdjustment: 0 };
         expect(diceModifyReducer(initial, { action: 'chooseValue', value: 6 }, config, 1)).toEqual(initial);
+        expect(diceModifyReducer(initial, { action: 'setAllowed', dieId: 0, value: 6 }, config, 1)).toEqual(initial);
+        const target = diceModifyReducer(initial, { action: 'chooseTargetDie', dieId: 0 }, config, 1);
+        expect(diceModifyReducer(target, { action: 'setAllowed', dieId: 1, value: 4 }, config, 1)).toEqual(target);
+        const direct = diceModifyReducer(target, { action: 'setAllowed', dieId: 0, value: 4 }, config, 1);
+        expect(diceModifyToCommands(direct)).toEqual([{ type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 4 } }]);
     });
     it.each([{ selectedIds: [] }, { selectedIds: [0, 2] }])('组重掷选择$selectedIds从同一多步交互状态派生必需提示', ({ selectedIds }) => {
         const groupRerollInteraction: InteractionDescriptor = {

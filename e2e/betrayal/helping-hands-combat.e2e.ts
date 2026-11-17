@@ -186,10 +186,11 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
     );
     const rollPanel = page.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
-    await expect(rollPanel).toContainText("攻击投骰");
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
-    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 5 });
+    await expect(rollPanel).toContainText("攻击投骰");
+    // 攻击回顾专用骰盘的布局合同为 190px；其余骰距与边界检查仍沿用共享门禁。
+    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 5, minCanvasClientHeight: 190 });
     const rollBackdrop = page.getByTestId("betrayal-roll-review-backdrop");
     await expect(rollBackdrop).toHaveAttribute(
       "data-backdrop-dismiss",
@@ -550,4 +551,49 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
       { label: "betrayal-helping-hands-monster-turn", diagnostics },
     ]);
   });
+});
+
+test('大宅饿了 AI 确认攻击并选伤害后交给真人分配', async ({ page, context }) => {
+  test.setTimeout(120000);
+  await initBetrayalContext(context);
+  const diagnostics = attachPageDiagnostics(page, 'betrayal-helping-hands-ai-reward');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await warmBetrayalFrontend(context);
+  await page.goto('/play/betrayal?players=3&playerID=1&seat0=local-ai&seat1=human&seat2=human', { waitUntil: 'domcontentloaded' });
+  await waitForBetrayalPageReady(page);
+  const core = createHelpingHandsPendingRewardRuntimeCore();
+  const reward = core.scenarioRuntime.helpingHands!.pendingAttackReward!;
+  reward.damageToDefender = 1;
+  reward.attackerRoll = 1;
+  reward.defenderRoll = 0;
+  core.recentRoll!.dice = [1, 0, 0, 0, 0];
+  core.recentRoll!.latestLabel = '可偷牌或造成 1 点伤害';
+  core.seatControllers = { '0': { type: 'local-ai', minimumActionDelayMs: 0 }, '1': { type: 'human' }, '2': { type: 'human' } };
+  await injectCore(page, core);
+  const panel = page.getByTestId('betrayal-damage-allocation-panel');
+  await expect(panel).toBeVisible({ timeout: 60000 });
+  await expect.poll(() => readHelpingHandsState(page)).toMatchObject({ pendingReward: false,
+    pendingDamageAllocation: { playerId: '1', sourceTitle: '援手攻击', amount: 1 } });
+  const before = await page.evaluate(() => {
+    const state = (window as unknown as { __BG_TEST_HARNESS__: { state: { get(): { core: BetrayalCore } } } }).__BG_TEST_HARNESS__.state.get().core;
+    return [state.currentExplorer, ...state.otherExplorers].find(explorer => explorer.playerId === '1')!.traitTracks.might.position;
+  });
+  await panel.getByTestId('betrayal-damage-allocation-trait-might-increase').click();
+  const confirm = panel.getByTestId('betrayal-damage-allocation-confirm');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+  try {
+    await expect.poll(async () => page.evaluate(() => {
+      const state = (window as unknown as { __BG_TEST_HARNESS__: { state: { get(): { core: BetrayalCore } } } }).__BG_TEST_HARNESS__.state.get().core;
+      return {
+        source: state.pendingDamageAllocation?.sourceTitle ?? null,
+        position: [state.currentExplorer, ...state.otherExplorers].find(explorer => explorer.playerId === '1')?.traitTracks.might.position,
+      };
+    })).toEqual({ source: expect.not.stringMatching(/^援手攻击$/), position: before - 1 });
+  } catch (error) {
+    console.log('AI 奖励伤害确认诊断', JSON.stringify({ state: await readHelpingHandsState(page),
+      panel: await panel.innerText().catch(() => ''), diagnostics }));
+    throw error;
+  }
+  assertNoFatalFrontendErrors([{ label: 'betrayal-helping-hands-ai-reward', diagnostics }]);
 });

@@ -44,6 +44,20 @@ const DOCTOR_STRANGE_E2E_SOURCE_REVISION = createHash('sha256')
     .digest('hex');
 const CRIMSON_BANDS_SPELL_ID = 'spell-crimson-bands-of-cyttorak';
 
+async function closeMagnifiedBoard(page: Page) {
+    const close = page.getByTestId('board-magnify-overlay-close');
+    const bounds = await close.boundingBox();
+    expect(bounds).not.toBeNull();
+    await page.mouse.move(bounds!.x - 10, bounds!.y + bounds!.height / 2);
+    await page.mouse.move(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
+    await close.click();
+}
+
+async function waitForStableInteractionConfirm(page: Page) {
+    await expect(page.getByTestId('dt-interaction-confirm')).toBeEnabled();
+    await page.waitForTimeout(500); // 等待按钮从禁用态过渡到稳定的启用态。
+}
+
 async function assertCurrentEvidenceSourceIdentity(page: Page) {
     const identity = await captureEvidenceSourceIdentity(page, 'dicethrone');
 
@@ -923,12 +937,7 @@ async function runAwarenessPrepareFlow(
         uiStateId: `doctor-strange-${viewportName}-discard-reader`, behaviorStepId: 'discard-card-existing-reader',
         description: '弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。', role: 'main-flow', viewport: viewportName,
         transition: '悬停候选并点击原放大镜。' });
-    const readerClose = page.getByTestId('board-magnify-overlay-close');
-    const readerCloseBounds = await readerClose.boundingBox();
-    expect(readerCloseBounds).not.toBeNull();
-    await page.mouse.move(readerCloseBounds!.x - 10, readerCloseBounds!.y + readerCloseBounds!.height / 2);
-    await page.mouse.move(readerCloseBounds!.x + readerCloseBounds!.width / 2, readerCloseBounds!.y + readerCloseBounds!.height / 2);
-    await readerClose.click();
+    await closeMagnifiedBoard(page);
     await expect(page.getByTestId('board-magnify-overlay')).toHaveCount(0);
     await expect(spellOption).toHaveAttribute('data-selected', 'false');
     await spellOption.click();
@@ -1008,6 +1017,7 @@ async function runAwarenessPrepareFlow(
         role: 'main-flow', viewport: viewportName, transition: '点击法术卡并选择受影响的对手。',
     });
     await targetChoice.click();
+    await waitForStableInteractionConfirm(page);
     const selectedTargetScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, `${screenshotPrefix}-目标玩家已选待确认`,
         'internal-setup-select-target-player', '从现有玩家卡片交互选中对手但暂不提交',
@@ -1142,6 +1152,7 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
         { count: 1, removalSpellVisible: true },
     );
     await spellOption.click();
+    await waitForStableInteractionConfirm(page);
     const cardSelectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '瓦图姆之风-法术卡已选待确认',
         'remove-status-prepare-card-selected', '选中弃牌区的瓦图姆之风并等待确认',
@@ -1911,11 +1922,12 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
         snapshot => (snapshot.visible.selectedChoiceIds as string[]).length,
         0,
     );
-    await page.getByTestId('board-magnify-overlay-close').click();
+    await closeMagnifiedBoard(page);
     await expect(cardReader).toHaveCount(0);
     await expect(drawnCardChoices.first()).toHaveAttribute('data-selected', 'false');
     await drawnCardChoices.first().click();
     await assertCardCandidatesDistinctFromBoard(page);
+    await waitForStableInteractionConfirm(page);
     const selectedDrawnCardScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '本次抽牌已选待确认-桌面',
         'income-return-drawn-card-selected', '选中本次抽到的卡牌但暂不提交返还对象',
@@ -2060,7 +2072,7 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         'ultimate-magnify-board-to-read', '使用原玩家板放大入口阅读技能', '原玩家板放大画面可见',
         snapshot => Boolean(snapshot.visible.magnifyVisible), true,
     );
-    await page.getByTestId('board-magnify-overlay-close').click();
+    await closeMagnifiedBoard(page);
     await handToggle.click();
     await expect(handToggle).toHaveAttribute('aria-pressed', handVisibilityBefore!);
     const advance = page.locator('[data-tutorial-id="advance-phase-button"]');
@@ -2127,6 +2139,7 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
     );
     await expect(page.getByTestId('dt-interaction-clear')).toHaveCount(0);
     await prepareTarget.click();
+    await waitForStableInteractionConfirm(page);
     const targetPlayerSelectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼目标玩家已选-桌面',
         'ultimate-prepare-target-selected', '选中法瑞拉之牙的对手目标并等待确认',
@@ -2489,6 +2502,7 @@ test('桌面牌桌真实打出法术并将深红系带施加到对手', async ({
         1,
     );
     await targetChoice.click();
+    await waitForStableInteractionConfirm(page);
     const targetSelectedScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '深红系带对手已选待确认-桌面',
         'crimson-bands-opponent-selected', '选中深红系带目标玩家但暂不提交',
@@ -2677,6 +2691,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
         await expect(page.getByText(/选择你的英雄|Choose your hero|Select Your Hero/i)).not.toBeVisible({ timeout: 20000 });
         await expect(page.getByText(/回合|Turn/i)).toBeVisible({ timeout: 20000 });
         await expect(page.locator('[data-testid="player-board-surface"][data-character-id="doctor_strange"]')).toBeVisible({ timeout: 20000 });
+        await page.waitForTimeout(3500); // 等待开局发牌与翻面演出完成后采集稳定牌桌。
         const hostBoardScreenshot = await captureTracedState(
             page, undefined, evidenceRun, trace, '房主视角进入双人牌桌',
             'host-sees-doctor-strange-board', '房主开始对局并查看自己的奇异博士玩家板',
@@ -2762,6 +2777,7 @@ test('代表态真实手牌入口覆盖四人玩家选择与公开准备区检�
     await dismissCardSpotlights(page);
     const zone = page.locator('[data-prepared-spell-zone="public"]');
     await expect(zone.locator('[data-prepared-spell-card]')).toHaveCount(3);
+    await page.waitForTimeout(3500); // 等待代表态手牌翻面完成，保留稳定的整屏上下文。
     const zoneScreenshot = await captureTracedState(page, game, evidenceRun, trace, '公开准备区三张法术-桌面',
         'public-prepared-browse', '回到正式牌桌查看三张公开准备法术', '三张准备法术都存在',
         snapshot => (snapshot.visible.preparedSpellIds as string[]).length, 3);
@@ -2794,7 +2810,7 @@ test('代表态真实手牌入口覆盖四人玩家选择与公开准备区检�
         media.push({ path: image, chainId: '公开准备区浏览', chainStep: label, stage: '中态',
             uiStateId: `doctor-strange-${id}`, behaviorStepId: id, description: `${label}实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。`,
             role: 'main-flow', viewport: viewport.width > 1000 ? 'desktop' : 'mobile', transition: `${label}在公开准备区实际横滚后点击法术本体。` });
-        await page.getByTestId('board-magnify-overlay-close').click();
+        await closeMagnifiedBoard(page);
         await expect(page.getByTestId('board-magnify-overlay')).toHaveCount(0);
     }
     await expect(zone.locator('[data-prepared-spell-card]')).toHaveCount(3);
@@ -2809,6 +2825,7 @@ test('代表态真实手牌入口覆盖四人玩家选择与公开准备区检�
         description: '授予即视感可以选择本人、队友或对手，四个玩家候选同屏显示。', role: 'main-flow', viewport: 'desktop', transition: '从真实手牌打出时间回溯。' });
     const ally = page.getByTestId('dt-player-target-2');
     await ally.click();
+    await waitForStableInteractionConfirm(page);
     const selected = await captureTracedState(page, game, evidenceRun, trace, '所有玩家队友已选-桌面',
         'all-player-selected', '选中队友但尚未确认', '队友选中且其它候选保留',
         snapshot => (snapshot.visible.selectedChoiceIds as string[]).includes('dt-player-target-2'), true);

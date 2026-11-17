@@ -71,6 +71,9 @@ export const MAGE_WARS_EVENTS = {
     STATUS_TOKEN_REMOVED: 'MW_STATUS_TOKEN_REMOVED',
     ARENA_OBJECT_DEFEATED: 'MW_ARENA_OBJECT_DEFEATED',
     MAGE_MOVED: 'MW_MAGE_MOVED',
+    CREATURE_ACTION_STARTED: 'MW_CREATURE_ACTION_STARTED',
+    CREATURE_ACTION_ENDED: 'MW_CREATURE_ACTION_ENDED',
+    CREATURE_NO_ACTION: 'MW_CREATURE_NO_ACTION',
     ARENA_OBJECT_MOVED: 'MW_ARENA_OBJECT_MOVED',
     GUARD_GAINED: 'MW_GUARD_GAINED',
     GUARD_REMOVED: 'MW_GUARD_REMOVED',
@@ -109,6 +112,22 @@ export interface MageWarsFoundationReadyEvent extends GameEvent<typeof MAGE_WARS
     payload: {
         scope: 'foundation';
     };
+}
+
+export interface MageWarsCreatureActionStartedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.CREATURE_ACTION_STARTED> {
+    payload: {
+        playerId: PlayerId;
+        objectId?: string;
+        deferredStatusTokenCounts: Partial<Record<StatusTokenId, number>>;
+    };
+}
+
+export interface MageWarsCreatureNoActionEvent extends GameEvent<typeof MAGE_WARS_EVENTS.CREATURE_NO_ACTION> {
+    payload: { playerId: PlayerId; objectId?: string };
+}
+
+export interface MageWarsCreatureActionEndedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.CREATURE_ACTION_ENDED> {
+    payload: { playerId: PlayerId; objectId?: string };
 }
 
 export interface MageWarsSpellsPlannedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELLS_PLANNED> {
@@ -297,6 +316,7 @@ export interface MageWarsArenaObjectAttackStatusEffectAvailableEvent extends Gam
         sourceAbilityId: string;
         spellCardId: number;
         effectDieResult: number;
+        deferActionEndRemoval?: boolean;
     };
 }
 
@@ -730,6 +750,7 @@ export interface MageWarsStatusTokenPlacedEvent extends GameEvent<typeof MAGE_WA
         sourceAbilityId?: string;
         spellCardId?: number;
         effectDieResult?: number;
+        deferActionEndRemoval?: boolean;
     };
 }
 
@@ -784,7 +805,7 @@ export interface MageWarsArenaObjectMovedEvent extends GameEvent<typeof MAGE_WAR
         objectId: string;
         fromZoneId: ArenaZoneId;
         toZoneId: ArenaZoneId;
-        actionCost?: 'normal' | 'none';
+        actionCost?: 'normal' | 'none' | 'standard';
         movementMode?: 'normal' | 'teleport';
         sourceAbilityId?: string;
     };
@@ -866,6 +887,7 @@ export interface MageWarsDefenseAvailableEvent extends GameEvent<typeof MAGE_WAR
         actionCost?: 'normal' | 'none';
         allowCounterstrikeOpportunity: boolean;
         removeGuardAfterMelee: boolean;
+        isCounterstrike?: boolean;
         counterstrikeSourceObjectId?: string;
         spellCardId?: number;
     };
@@ -1174,6 +1196,9 @@ export interface MageWarsActionReadinessResetEvent extends GameEvent<typeof MAGE
 
 export type MageWarsEvent =
     | MageWarsFoundationReadyEvent
+    | MageWarsCreatureActionStartedEvent
+    | MageWarsCreatureActionEndedEvent
+    | MageWarsCreatureNoActionEvent
     | MageWarsSpellsPlannedEvent
     | MageWarsObjectSpellPlannedEvent
     | MageWarsObjectManaChanneledEvent

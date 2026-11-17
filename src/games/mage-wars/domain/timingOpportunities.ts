@@ -14,6 +14,8 @@ import type {
     TimingOpportunityDiscoveryResult,
 } from '../../../engine/TimingOpportunity';
 import type { GameEvent, MatchState } from '../../../engine/types';
+import { getMageWarsSpellCardFromConfig } from '../data/configPackage';
+import { rollMageWarsAttackDice, summarizeMageWarsAttackDice } from './attackDice';
 import {
     MAGE_WARS_INTERACTION_SOURCE_IDS,
     type MageWarsCounterstrikeChoiceValue,
@@ -92,6 +94,7 @@ import {
     resolveMageWarsDamageTypeImmunity,
     resolveMageWarsMagebaneCurseDamageSource,
     resolveMageWarsObjectEffectiveLife,
+    resolveMageWarsObjectEffectiveArmor,
     getMageWarsZoneDistance,
     isMageWarsTargetSpellRedirectResponseCardId,
     isMageWarsTargetSpellTeleportResponseCardId,
@@ -783,6 +786,9 @@ function createAttackStatusEffectOpportunity(
                     targetObjectId: event.payload.targetObjectId,
                     statusTokenId: event.payload.statusTokenId,
                     amount: event.payload.amount,
+                    ...('deferActionEndRemoval' in event.payload && event.payload.deferActionEndRemoval
+                        ? { deferActionEndRemoval: true }
+                        : {}),
                     sourceAbilityId: event.payload.sourceAbilityId,
                     spellCardId: event.payload.spellCardId,
                     effectDieResult: event.payload.effectDieResult,
@@ -1636,17 +1642,71 @@ function createWallPassageDamageOpportunity(
         sourceCommandType: event.sourceCommandType,
         timestamp: event.timestamp,
     };
-    const damageEvents = createDamageCalculation({
-        state: args.state,
-        source: { playerId: wall.ownerId, abilityId: event.payload.sourceAbilityId },
-        target: { playerId: targetId },
-        baseDamage: event.payload.amount,
-        autoCollectTokens: false,
-        autoCollectStatus: false,
-        autoCollectBonusDamage: false,
-        damageScope: 'direct',
-        timestamp: event.timestamp ?? 0,
-    }).toEvents() as MageWarsEvent[];
+    let damageEvents: MageWarsEvent[];
+    if (wall.passageDamage.kind === 'level-based-attack') {
+        if (!args.random) throw new Error('Mage Wars wall passage attack requires the pipeline random source');
+        const level = targetPlayer ? 6 : getMageWarsSpellCardFromConfig(targetObject!.sourceSpellCardId)?.level;
+        if (level === undefined) throw new Error(`Mage Wars wall passage target ${targetId} has no configured level`);
+        damageEvents = [];
+        let damage = targetPlayer?.damage ?? targetObject!.damage;
+        const life = targetPlayer?.life ?? resolveMageWarsObjectEffectiveLife(args.state.core, targetObject!);
+        for (let index = 0; index < Math.max(0, level - 1) && damage < life; index += 1) {
+            const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(args.random, wall.passageDamage.amount));
+            damageEvents.push({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+                payload: {
+                    playerId: wall.ownerId, spellCardId: wall.sourceSpellCardId,
+                    sourceAbilityId: event.payload.sourceAbilityId,
+                    ...(targetPlayer ? { targetPlayerId: targetPlayer.id } : { targetObjectId: targetObject!.id }),
+                    targetZoneId: event.payload.toZoneId,
+                    diceResults: roll.values, diceCritical: roll.critical, baseDamage: roll.total,
+                },
+                sourceCommandType: event.sourceCommandType,
+                timestamp: event.timestamp,
+            });
+            const calculation = createDamageCalculation({
+                state: args.state,
+                source: { playerId: wall.ownerId, abilityId: event.payload.sourceAbilityId },
+                target: { playerId: targetId }, baseDamage: roll.total,
+                autoCollectTokens: false, autoCollectStatus: false, autoCollectBonusDamage: false,
+                damageScope: 'attack',
+                additionalModifiers: [
+                    ...createMageWarsObjectArmorDamageModifiers({
+                        targetObjectId: targetObject?.id,
+                        armor: targetObject ? resolveMageWarsObjectEffectiveArmor(args.state.core, targetObject) : undefined,
+                    }, { normalDamage: roll.normal }),
+                    ...createMageWarsMageEquipmentArmorDamageModifiers(args.state.core, { targetPlayerId: targetPlayer?.id }, { normalDamage: roll.normal }),
+                ],
+                timestamp: event.timestamp ?? 0,
+            }).toEvents() as MageWarsEvent[];
+            damageEvents.push(...calculation);
+            damage += calculation.reduce((total, item) => item.type === 'DAMAGE_DEALT'
+                ? total + (item.payload.actualDamage ?? item.payload.amount) : total, 0);
+        }
+        if (damage >= life) {
+            damageEvents.push(targetPlayer ? {
+                type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
+                payload: { defeatedPlayerId: targetPlayer.id, winnerId: getOpponentId(args.state.core, targetPlayer.id) },
+                sourceCommandType: event.sourceCommandType, timestamp: event.timestamp,
+            } : {
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: { objectId: targetObject!.id, ownerId: targetObject!.ownerId, sourceAbilityId: event.payload.sourceAbilityId, spellCardId: wall.sourceSpellCardId },
+                sourceCommandType: event.sourceCommandType, timestamp: event.timestamp,
+            });
+        }
+    } else {
+        damageEvents = createDamageCalculation({
+            state: args.state,
+            source: { playerId: wall.ownerId, abilityId: event.payload.sourceAbilityId },
+            target: { playerId: targetId },
+            baseDamage: event.payload.amount,
+            autoCollectTokens: false,
+            autoCollectStatus: false,
+            autoCollectBonusDamage: false,
+            damageScope: 'direct',
+            timestamp: event.timestamp ?? 0,
+        }).toEvents() as MageWarsEvent[];
+    }
 
     return {
         id: [
@@ -2009,6 +2069,7 @@ function createDefenseOpportunity(
         incomingAttackProfileId: event.payload.incomingAttackProfileId,
         allowCounterstrikeOpportunity: event.payload.allowCounterstrikeOpportunity,
         removeGuardAfterMelee: event.payload.removeGuardAfterMelee,
+        ...(event.payload.isCounterstrike ? { isCounterstrike: true } : {}),
         ...(event.payload.counterstrikeSourceObjectId
             ? { counterstrikeSourceObjectId: event.payload.counterstrikeSourceObjectId }
             : {}),

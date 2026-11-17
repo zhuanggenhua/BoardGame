@@ -106,12 +106,18 @@ const dismissHauntRevealCueIfVisible = async (page: Page) => {
         await closeButton.click();
         await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
     }
+    const reader = page.getByTestId('betrayal-scenario-reader-dialog');
+    if (await reader.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await reader.getByTestId('betrayal-scenario-reader-close').click({ timeout: 5000 });
+        await expect(reader).toBeHidden();
+    }
 };
 
 const dismissRecentRollPanelIfVisible = async (page: Page) => {
     const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
     if (await rollPanel.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await page.getByRole('button', { name: /返回牌桌/ }).click();
+        await waitForPhysicalDiceSettled(rollPanel);
+        await page.getByTestId('betrayal-roll-continue').click({ timeout: 15000 });
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
     }
 };
@@ -168,7 +174,6 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
         });
         await dismissHauntRevealCueIfVisible(page);
         await dismissRecentRollPanelIfVisible(page);
-        await page.getByTestId('betrayal-action-move').click();
         await expect(page.getByTestId(`betrayal-room-${FEVERISH_MOVE_TARGET_ROOM_ID}`)).toBeEnabled();
         await saveScreenshot(page, NATURAL_MOVE_TARGET_SCREENSHOT);
 
@@ -178,7 +183,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
             currentPlayer: '0',
             activeRoomId: FEVERISH_MOVE_TARGET_ROOM_ID,
             feverishRoomId: FEVERISH_MOVE_TARGET_ROOM_ID,
-            movesRemaining: 1,
+            movesRemaining: 0,
         });
 
         await page.getByTestId('betrayal-action-endTurn').click();
@@ -192,7 +197,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-the-dust-feverish-natural-turn', diagnostics }]);
     });
 
-    test('狂热病患从怪物动作槽进入攻击态后，可点地图英雄 token 结算攻击', async ({ page, context }) => {
+    test('预置狂热病患攻击后切换英雄视角，分配伤害并收口', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-the-dust-feverish-attack');
@@ -223,7 +228,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
 
         await monsterAttackAction.click();
         await expect(monsterAttackAction).toContainText('取消攻击');
-        await expect(page.getByTestId('betrayal-action-cue')).toContainText('狂热病患');
+        await expect(page.getByTestId('betrayal-action-cue')).toContainText('先点发动攻击的怪物');
         await expect(feverishToken).toHaveAttribute('data-direct-target', 'true');
         await feverishToken.click();
         await expect(heroTargetToken).toHaveAttribute('data-direct-target', 'true');
@@ -231,7 +236,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
         await saveScreenshot(page, ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [
-            0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
+            0.5, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01, 0.01,
         ]);
         await heroTargetToken.click();
@@ -239,14 +244,38 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('狂热病患');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
+        await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('狂热病患攻击');
         await expect(attackRollPanel).toContainText('攻击投骰');
-        await waitForPhysicalDiceSettled(attackRollPanel);
         await saveScreenshot(page, ATTACK_DICE_SCREENSHOT);
         await expect.poll(() => readFeverishState(page)).toMatchObject({
             attackedMonsterIdsThisTurn: expect.arrayContaining([FEVERISH_ID]),
             pendingDamagePlayerId: HERO_TARGET_PLAYER_ID,
         });
+        await dismissRecentRollPanelIfVisible(page);
+
+        const attackCore = await readHarnessCore(page);
+        expect(attackCore.pendingDamageAllocation).toMatchObject({ playerId: HERO_TARGET_PLAYER_ID, amount: 1, damageKind: 'physical' });
+        const heroBefore = [attackCore.currentExplorer, ...attackCore.otherExplorers]
+            .find((explorer) => explorer.playerId === HERO_TARGET_PLAYER_ID)!;
+        const beforePosition = heroBefore.traitTracks.might.position;
+        await page.goto('/play/betrayal?players=3&playerID=1&seat0=human&seat1=human&seat2=human&seed=the-dust-feverish-attack', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+        await injectCore(page, attackCore);
+        await dismissHauntRevealCueIfVisible(page);
+        await dismissRecentRollPanelIfVisible(page);
+        const allocation = page.getByTestId('betrayal-damage-allocation-panel');
+        await expect(allocation).toBeVisible();
+        await allocation.getByTestId('betrayal-damage-allocation-trait-might-increase').click();
+        await expect(allocation.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
+        await allocation.getByTestId('betrayal-damage-allocation-confirm').click();
+        await expect(allocation).toHaveCount(0);
+        await expect.poll(async () => {
+            const resolved = await readHarnessCore(page);
+            const hero = [resolved.currentExplorer, ...resolved.otherExplorers]
+                .find((explorer) => explorer.playerId === HERO_TARGET_PLAYER_ID);
+            return { pending: resolved.pendingDamageAllocation, position: hero?.traitTracks.might.position };
+        }).toEqual({ pending: null, position: beforePosition - 1 });
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-the-dust-feverish-attack', diagnostics }]);
     });

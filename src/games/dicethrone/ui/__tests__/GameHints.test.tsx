@@ -153,7 +153,7 @@ describe('GameHints', () => {
         render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
 
         expect(diceInteraction?.hint.surface).toBe('dice-tray');
-        expect(diceInteraction?.hint.key).toBe('interaction.hint_choose_value');
+        expect(diceInteraction?.hint.key).toBe('interaction.selectDieToModify');
         expect(screen.queryByTestId('dice-interaction-hint-anchor')).not.toBeInTheDocument();
     });
 

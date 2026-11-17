@@ -106,14 +106,12 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             await setup.player1Page.waitForTimeout(1000);
             
             // 6. 等待派系选择弹窗出现
-            const modal = setup.player1Page.locator('.fixed.inset-0.z-50');
+            const modal = setup.player1Page.getByTestId('faction-selection-modal');
             await modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ 派系选择弹窗已显示');
             
             // 7. 选择 Swamp 派系（P2 手牌中没有 Swamp 派系的牌）
-            // 注意：弹窗中的派系按钮顺序可能是：Swamp, Academy, Guild, Dynasty
-            const factionButtons = modal.locator('button');
-            const swampButton = factionButtons.first(); // 假设第一个是 Swamp
+            const swampButton = modal.getByTestId('faction-option-swamp');
             await swampButton.click();
             await setup.player1Page.waitForTimeout(500);
             console.log('✅ 已选择 Swamp 派系');
@@ -247,13 +245,11 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             await setup.player1Page.waitForTimeout(1000);
             
             // 6. P1 选择 Guild 派系（P2 手牌中有 Guild 派系的牌）
-            const modal = setup.player1Page.locator('.fixed.inset-0.z-50');
+            const modal = setup.player1Page.getByTestId('faction-selection-modal');
             await modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ 派系选择弹窗已显示');
             
-            // 选择 Guild 派系（假设第三个按钮是 Guild）
-            const factionButtons = modal.locator('button');
-            const guildButton = factionButtons.nth(2); // Swamp(0), Academy(1), Guild(2), Dynasty(3)
+            const guildButton = modal.getByTestId('faction-option-guild');
             await guildButton.click();
             await setup.player1Page.waitForTimeout(500);
             console.log('✅ P1 已选择 Guild 派系');
@@ -265,7 +261,7 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             console.log('\n=== 阶段3：P2 选择弃牌 ===');
             
             // 8. P2 应该看到选择弹窗
-            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-50');
+            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-\\[300\\]');
             await p2Modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ P2 看到选择弹窗');
             
@@ -392,12 +388,11 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             await setup.player1Page.waitForTimeout(1000);
             
             // 6. P1 选择 Guild 派系
-            const modal = setup.player1Page.locator('.fixed.inset-0.z-50');
+            const modal = setup.player1Page.getByTestId('faction-selection-modal');
             await modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ 派系选择弹窗已显示');
             
-            const factionButtons = modal.locator('button');
-            const guildButton = factionButtons.nth(2); // Guild 派系
+            const guildButton = modal.getByTestId('faction-option-guild');
             await guildButton.click();
             await setup.player1Page.waitForTimeout(500);
             console.log('✅ P1 已选择 Guild 派系');
@@ -409,7 +404,7 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             console.log('\n=== 阶段3：P2 选择不弃牌 ===');
             
             // 8. P2 应该看到选择弹窗
-            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-50');
+            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-\\[300\\]');
             await p2Modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ P2 看到选择弹窗');
             
@@ -564,12 +559,11 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             await setup.player1Page.waitForTimeout(1000);
             
             // 6. P1 选择 Guild 派系
-            const modal = setup.player1Page.locator('.fixed.inset-0.z-50');
+            const modal = setup.player1Page.getByTestId('faction-selection-modal');
             await modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ 派系选择弹窗已显示');
             
-            const factionButtons = modal.locator('button');
-            const guildButton = factionButtons.nth(2); // Guild 派系
+            const guildButton = modal.getByTestId('faction-option-guild');
             await guildButton.click();
             await setup.player1Page.waitForTimeout(500);
             console.log('✅ P1 已选择 Guild 派系');
@@ -600,7 +594,7 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             console.log('\n=== 阶段3：P2 选择弃牌并选择具体哪张 ===');
             
             // 8. P2 应该看到选择弹窗
-            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-50');
+            const p2Modal = setup.player2Page.locator('.fixed.inset-0.z-\\[300\\]');
             await p2Modal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ P2 看到选择弹窗');
             
@@ -612,7 +606,7 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             console.log('✅ P2 选择弃牌');
             
             // 10. P2 应该看到卡牌选择界面（因为有3张 Guild 派系手牌：card_11, card_03, card_07）
-            const cardSelectionModal = setup.player2Page.locator('.fixed.inset-0.z-50');
+            const cardSelectionModal = setup.player2Page.getByTestId('card-selection-modal');
             await cardSelectionModal.waitFor({ state: 'visible', timeout: 5000 });
             console.log('✅ P2 看到卡牌选择界面');
             
@@ -623,6 +617,8 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             // ✅ 修复：使用 readLiveState 读取完整的 MatchState（包括 sys）
             const stateWithInteraction = await readLiveState(setup.player2Page);
             const interaction = (stateWithInteraction as any).sys?.interaction?.current;
+            expect(interaction?.playerId).toBe('1');
+            expect(interaction?.data?.interactionType).toBe('card-selection');
             console.log('当前交互数据:', {
                 hasInteraction: !!interaction,
                 interactionId: interaction?.id,
@@ -633,44 +629,13 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
                 title: interaction?.data?.title,
             });
             
-            // 如果没有交互数据，说明可能是单张卡自动弃掉了
-            if (!interaction) {
-                console.log('⚠️  没有交互数据，可能是单张卡自动弃掉了');
-                // 直接验证结果
-                const stateAfter = await readCoreState(setup.player1Page);
-                const playersAfter = stateAfter.players as Record<string, PlayerState>;
-                console.log('弃牌后状态:', {
-                    p2HandSize: playersAfter['1'].hand.length,
-                    p2DiscardSize: playersAfter['1'].discard.length,
-                });
-                
-                // 核心验证：P2 手牌减少1张
-                expect(playersAfter['1'].hand.length).toBe(initialP2HandSize - 1);
-                console.log('✅ P2 手牌减少1张');
-                
-                // 核心验证：P2 弃牌堆增加1张
-                expect(playersAfter['1'].discard.length).toBe(initialP2DiscardSize + 1);
-                console.log('✅ P2 弃牌堆增加1张');
-                
-                console.log('✅ 所有断言通过（自动弃牌）');
-                return;  // 提前结束测试
-            }
-            
-            // 11. P2 选择第一张 Guild 派系的牌（钟表匠 card_11）
-            // 在模态框内查找卡牌按钮
-            const modalCardButtons = cardSelectionModal.locator('button[data-testid^="card-"]');
-            const modalCardCount = await modalCardButtons.count();
-            console.log(`模态框内找到 ${modalCardCount} 张卡牌`);
-            
-            if (modalCardCount === 0) {
-                console.error('❌ 模态框内没有找到卡牌按钮');
-                await setup.player2Page.screenshot({ path: 'debug-no-cards-in-modal.png' });
-                throw new Error('模态框内没有卡牌');
-            }
-            
-            const firstCard = modalCardButtons.first();
-            await firstCard.waitFor({ state: 'visible', timeout: 5000 });
-            await firstCard.click();
+            // 刷新后由原决策者继续选择指定手牌。
+            const chosenUid = (p2Player.hand[0] as { uid: string }).uid;
+            await setup.player2Page.reload({ waitUntil: 'domcontentloaded' });
+            await expect(cardSelectionModal).toBeVisible({ timeout: 15000 });
+            const chosenCard = cardSelectionModal.getByTestId(`card-${chosenUid}`);
+            await expect(chosenCard).toBeVisible();
+            await chosenCard.click();
             await setup.player2Page.waitForTimeout(500);
             console.log('✅ P2 选择了第一张 Guild 派系的牌（钟表匠）');
             
@@ -709,6 +674,7 @@ test.describe('Cardia 一号牌组 - 宫廷卫士（新API）', () => {
             console.log('✅ P2 弃牌堆增加1张');
             
             // 核心验证：P1 的牌没有获得+7修正（因为 P2 弃牌了）
+            expect(playersAfter['1'].discard).toEqual(expect.arrayContaining([expect.objectContaining({ uid: chosenUid })]));
             type ModifierToken = { cardId: string; value: number; source: string };
             const modifierTokens = stateAfter.modifierTokens as ModifierToken[];
             const p1Card = playersAfter['0'].playedCards[0];

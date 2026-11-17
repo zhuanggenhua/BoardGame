@@ -8,6 +8,7 @@ import {
 } from '../contexts/tutorialSessionScope';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
+import { getEffectiveTutorialSteps } from '../engine/tutorialStepPlan';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
 import {
     clearLocalMatchSnapshot,
@@ -96,7 +97,7 @@ export const isRestorableTutorialProgressSnapshot = (args: {
         return false;
     }
 
-    const step = manifest.steps[tutorial.stepIndex];
+    const step = getEffectiveTutorialSteps(manifest, tutorial)[tutorial.stepIndex];
     if (!step) {
         return false;
     }
@@ -134,14 +135,15 @@ export const readRestorableTutorialProgress = (args: {
         return null;
     }
     const tutorial = snapshot.state.sys.tutorial;
-    const step = manifest.steps[tutorial.stepIndex];
+    const steps = getEffectiveTutorialSteps(manifest, tutorial);
+    const step = steps[tutorial.stepIndex];
 
     return {
         seed,
         snapshot,
         stepIndex: tutorial.stepIndex,
         stepId: step.id,
-        totalSteps: manifest.steps.length,
+        totalSteps: steps.length,
         savedAt: snapshot.savedAt,
     };
 };

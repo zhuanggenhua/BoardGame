@@ -46,6 +46,7 @@ it('死叛徒回合攻击英雄时应按 Jack’s Spirit 的房间和数值行�
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -100,6 +101,8 @@ it('死叛徒回合攻击英雄时应按 Jack’s Spirit 的房间和数值行�
         });
         expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(heroPhysicalPositionBefore);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
+
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -127,6 +130,7 @@ it('英雄持有 Knowledge of Jack 时，被 Jack’s Spirit 攻击也应获得 
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, withoutBonus.recentRoll!.playerId, {});
         withoutBonus = applyBetrayalCommand(
             withoutBonus,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -151,6 +155,7 @@ it('英雄持有 Knowledge of Jack 时，被 Jack’s Spirit 攻击也应获得 
             damageKind: 'physical',
             playerId: '0',
         });
+        withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, withoutBonus.recentRoll!.playerId, {});
         withoutBonus = applyBetrayalCommand(
             withoutBonus,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -172,6 +177,7 @@ it('英雄持有 Knowledge of Jack 时，被 Jack’s Spirit 攻击也应获得 
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, withBonus.recentRoll!.playerId, {});
         withBonus = applyBetrayalCommand(
             withBonus,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -197,6 +203,7 @@ it('英雄持有 Knowledge of Jack 时，被 Jack’s Spirit 攻击也应获得 
             damageKind: 'physical',
             playerId: '0',
         });
+        withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, withBonus.recentRoll!.playerId, {});
         withBonus = applyBetrayalCommand(
             withBonus,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -225,6 +232,7 @@ it('Jack’s Spirit 回到尸体房间后，应在怪物回合开始时复活叛
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

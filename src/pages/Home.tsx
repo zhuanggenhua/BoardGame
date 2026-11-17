@@ -352,8 +352,20 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         return module;
     }, []);
 
+    const [initialGameDetailsReady, setInitialGameDetailsReady] = useState(false);
+    const initialGameDetailsId = searchParams.get('game');
+    useEffect(() => {
+        if (homeStyle !== 'modern' || !initialGameDetailsId || isExternalGameId(initialGameDetailsId)) return;
+        let active = true;
+        void ensureGameDetailsModalLoaded().catch((error) => {
+            console.warn('[Home] 加载游戏详情失败', error);
+        }).finally(() => { if (active) setInitialGameDetailsReady(true); });
+        return () => { active = false; };
+    }, [ensureGameDetailsModalLoaded, homeStyle, initialGameDetailsId]);
+
     const gameUrlModal = useUrlModal({
         paramKey: 'game',
+        enabled: homeStyle !== 'modern' || !initialGameDetailsId || isExternalGameId(initialGameDetailsId) || initialGameDetailsReady,
         reopenNonce: gameModalReopenNonce,
         getModalConfig: useCallback((gameId: string) => {
             const game = getGameById(gameId);

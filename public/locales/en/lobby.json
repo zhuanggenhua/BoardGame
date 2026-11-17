@@ -267,6 +267,7 @@
     "return": "Return to match (#{{id}})"
   },
   "rooms": {
+    "playerStatus": { "online": "Online", "offline": "Offline", "ai": "AI player", "unknown": "Status unknown" },
     "title": "Game Rooms",
     "loading": "Loading rooms...",
     "empty": "No active rooms",

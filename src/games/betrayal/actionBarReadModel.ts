@@ -47,6 +47,10 @@ export type BetrayalBoardActionItemsInput = {
   helpingHandsTrollHandMoveEntryCount: number;
   isDeadTraitorJackSpiritControlTurn: boolean;
   hasControlledMoveMonster: boolean;
+  controlledMonsterStartRequired?: boolean;
+  isViewerTurn?: boolean;
+  canControlBloodFromStoneMonsterTurn?: boolean;
+  canControlMonsterActions?: boolean;
   pendingBloodFromStoneSetupPlacementCount: number;
   selectedBloodFromStoneStoneCherubRoomCount: number;
   isBloodFromStoneSetupPlacementMode: boolean;
@@ -96,6 +100,10 @@ export function resolveBetrayalBoardActionItems({
   helpingHandsTrollHandMoveEntryCount,
   isDeadTraitorJackSpiritControlTurn,
   hasControlledMoveMonster,
+  controlledMonsterStartRequired = false,
+  isViewerTurn = true,
+  canControlBloodFromStoneMonsterTurn = true,
+  canControlMonsterActions = true,
   pendingBloodFromStoneSetupPlacementCount,
   selectedBloodFromStoneStoneCherubRoomCount,
   isBloodFromStoneSetupPlacementMode,
@@ -195,7 +203,9 @@ export function resolveBetrayalBoardActionItems({
       label: hasRoomEndTurnEffect
         ? t("board.actions.endTurnRoomEffect")
         : t("board.actions.endTurn"),
-      disabled: hasPendingPlayerAgreement,
+      disabled: hasPendingPlayerAgreement || controlledMonsterStartRequired || !isViewerTurn,
+      description: !isViewerTurn ? t("board.status.waitForCurrentPlayer")
+        : controlledMonsterStartRequired ? t("board.status.controlledMonsterMustStart") : undefined,
       variant: "ghost",
     },
   ];
@@ -290,8 +300,8 @@ export function resolveBetrayalBoardActionItems({
               label: t("board.actions.resolveMonsterTurnStart", {
                 monster: monsterTurnStartAction.name,
               }),
-              disabled: hasPendingPlayerAgreement,
-              description: monsterTurnStartAction.reason ?? undefined,
+              disabled: hasPendingPlayerAgreement || !canControlMonsterActions,
+              description: !canControlMonsterActions ? t("board.status.waitForCurrentPlayer") : monsterTurnStartAction.reason ?? undefined,
               variant: "secondary",
             },
           ]
@@ -302,13 +312,14 @@ export function resolveBetrayalBoardActionItems({
                 label: t("board.actions.rollMonsterMovement", {
                   monster: monsterMovementRollAction.name,
                 }),
-                disabled: hasPendingPlayerAgreement,
-                description: monsterMovementRollAction.reason ?? undefined,
+                disabled: hasPendingPlayerAgreement || !canControlMonsterActions,
+                description: !canControlMonsterActions ? t("board.status.waitForCurrentPlayer") : monsterMovementRollAction.reason ?? undefined,
                 variant: "secondary",
               },
             ]
-          : selectedMonsterMoveAction
+          : selectedMonsterMoveAction || selectedMonsterAttackAction
             ? [
+                ...(selectedMonsterMoveAction ? [
                 {
                   id: "monsterMove",
                   label:
@@ -317,13 +328,12 @@ export function resolveBetrayalBoardActionItems({
                       : t("board.actions.moveMonster", {
                           monster: selectedMonsterMoveAction.name,
                         }),
-                  disabled: hasPendingPlayerAgreement,
-                  description: selectedMonsterMoveAction.reason ?? undefined,
-                  variant: "secondary",
+                  disabled: hasPendingPlayerAgreement || !canControlMonsterActions,
+                  description: !canControlMonsterActions ? t("board.status.waitForCurrentPlayer") : selectedMonsterMoveAction.reason ?? undefined,
+                  variant: "secondary" as const,
                 },
-              ]
-            : selectedMonsterAttackAction
-              ? [
+                ] : []),
+                ...(selectedMonsterAttackAction ? [
                   {
                     id: "monsterAttack",
                     label:
@@ -332,20 +342,22 @@ export function resolveBetrayalBoardActionItems({
                         : t("board.actions.attackMonster", {
                             monster: selectedMonsterAttackAction.name,
                           }),
-                    disabled: hasPendingPlayerAgreement,
+                    disabled: hasPendingPlayerAgreement || !canControlMonsterActions,
                     description:
-                      selectedMonsterAttackAction.reason ?? undefined,
-                    variant: "secondary",
+                      !canControlMonsterActions ? t("board.status.waitForCurrentPlayer") : selectedMonsterAttackAction.reason ?? undefined,
+                    variant: "secondary" as const,
                   },
-                ]
-              : bloodFromStoneMonsterTurnEndAction
+                ] : []),
+              ]
+            : bloodFromStoneMonsterTurnEndAction
                 ? [
                     {
                       id: "bloodFromStoneMonsterTurnEnd",
                       label: t("board.actions.endBloodFromStoneMonsterTurn"),
-                      disabled: hasPendingPlayerAgreement,
+                      disabled: hasPendingPlayerAgreement || !canControlBloodFromStoneMonsterTurn,
                       description:
-                        bloodFromStoneMonsterTurnEndAction.reason ?? undefined,
+                        !canControlBloodFromStoneMonsterTurn ? t("board.status.waitForCurrentPlayer")
+                          : bloodFromStoneMonsterTurnEndAction.reason ?? undefined,
                       variant: "secondary",
                     },
                   ]
@@ -380,7 +392,10 @@ export function resolveBetrayalBoardActionItems({
         ? helpingHandsMonsterTurnActionItems
         : isDeadTraitorJackSpiritControlTurn || hasControlledMoveMonster
           ? monsterActionItemsWithHauntAction.length > 0
-            ? monsterActionItemsWithHauntAction
+            ? [
+                ...monsterActionItemsWithHauntAction,
+                ...actionItems.filter((action) => action.id === "endTurn"),
+              ]
             : actionItems.filter(
                 (action) => action.id === "move" || action.id === "endTurn",
               )

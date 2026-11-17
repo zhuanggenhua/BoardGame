@@ -1,5 +1,5 @@
 import { projectFatePlayedCards } from '../domain/playerView';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { fateTokenAsset } from '../data/identityArtwork';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { fateCardPreview } from '../data/cardArtwork';
@@ -18,15 +18,18 @@ interface Props {
     onSelect: (id: string | null) => void;
     onDetail: (id: string) => void;
     onInspect: (asset: string, name: string) => void;
+    investigationTargets?: readonly string[];
+    onInvestigateTarget?: (id:string)=>void;
 }
 /** Persistent identity anchors; public cards expand beside them without displacing other seats. */
-export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, onDetail, onInspect }: Props) {
+export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, onDetail, onInspect, investigationTargets, onInvestigateTarget }: Props) {
     const { t } = useTranslation('game-fate-domination');
     const seats = useRef(new Map<string, HTMLElement>());
     const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const activeSeat = useRef(selectedId);
     activeSeat.current = selectedId;
     const [position, setPosition] = useState({ top: 88, right: 274, maxWidth: 640 });
+    const hasForcedReveal=Boolean(selectedId && core.players[selectedId]?.forcedRevealedHand?.length);
     const keepOpen = () => { clearTimeout(hideTimer.current); };
     const hideLater = (id:string) => {
         if (activeSeat.current !== id) return;
@@ -41,42 +44,45 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
         const place = () => {
             const rect = seats.current.get(selectedId)?.getBoundingClientRect();
             if (!rect) return;
-            setPosition({ top: Math.max(12, Math.min(rect.top, window.innerHeight - 192)), right: window.innerWidth - rect.left + 12, maxWidth: Math.max(120, rect.left - 28) });
+            setPosition({ top: Math.max(12, Math.min(rect.top, window.innerHeight - (hasForcedReveal ? 382 : 192))), right: window.innerWidth - rect.left + 12, maxWidth: Math.max(120, rect.left - 28) });
         };
         place();
         window.addEventListener('resize', place);
         window.addEventListener('scroll', place, true);
         return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
-    }, [selectedId]);
+    }, [selectedId, hasForcedReveal]);
     const selected = selectedId && selectedId !== viewerId && core.players[selectedId] ? projectFatePlayer(core, selectedId, viewerId) : null;
     const played = selected ? selected.player.publicView?.playedCards ?? projectFatePlayedCards(selected.player,viewerId) : [];
     const playedSkills=selected ? selected.player.publicView?.playedSkills ?? servantSkillsFor(selected.player)
         .filter(({skill})=>selected.player.activeSkills.includes(skill.id))
         .map(({skill,index})=>({id:skill.id,name:skill.name,assetPath:FATE_SERVANT_BY_ID[selected.player.servantId].skillAssetPaths[index]})) : [];
+    const publicCount = played.length + playedSkills.length;
+    const visibleCount = Math.max(1, publicCount, selected?.player.forcedRevealedHand?.length ?? 0);
     return <aside data-tutorial-id="fate-opponents" className="fd-runtime-player-rail" aria-label={t('ui.playerRail.playerSeats')}>
         <div className="fd-runtime-seat-list">{core.playerIds.filter(id => id !== viewerId).map(id => {
             const view = projectFatePlayer(core, id, viewerId);
+            const targetable=investigationTargets?.includes(id)===true;
             return <section key={id} data-tutorial-id={`fate-player-${id}`} ref={node => { if (node) seats.current.set(id, node); else seats.current.delete(id); }} onPointerLeave={() => hideLater(id)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(id); }} className={`fd-runtime-seat${selectedId === id ? ' is-selected' : ''}${core.currentPlayerId === id ? ' is-current' : ''}`}>
                 <div className="fd-runtime-seat-row">
-                    <button type="button" className="fd-runtime-avatar" aria-description={view.player.eliminated ? t('ui.playerRail.eliminated') : undefined} aria-label={t('ui.playerRail.viewPlayerDetails', { name: nameFor(id) })} onPointerEnter={() => show(id)} onPointerLeave={() => hideLater(id)} onFocus={() => show(id)} onClick={() => onDetail(id)}>
+                    <button type="button" className={`fd-runtime-avatar${targetable?' is-investigation-target':''}`} aria-description={view.player.eliminated ? t('ui.playerRail.eliminated') : undefined} aria-label={targetable?t('ui.investigationChoice.target',{name:nameFor(id)}):t('ui.playerRail.viewPlayerDetails', { name: nameFor(id) })} onPointerEnter={() => {if(!investigationTargets)show(id);}} onPointerLeave={() => hideLater(id)} onFocus={() => {if(!investigationTargets)show(id);}} onClick={() => {if(investigationTargets){if(targetable)onInvestigateTarget?.(id);}else onDetail(id);}}>
                         {view.master && <OptimizedImage className="fd-runtime-master-avatar" src={fateTokenAsset(view.master.id)} alt={view.master.name}/>}
                         <OptimizedImage className="fd-runtime-servant-avatar" src={view.servant?.assetPath ?? 'fate-domination/backs/servant'} alt={view.servant?.name ?? t('ui.playerRail.unrevealedServant')}/>
                         {view.player.eliminated && <span className="fd-avatar-elimination" aria-hidden="true"/>}
                     </button>
-                    <button type="button" className="fd-runtime-seat-summary" aria-expanded={selectedId === id} onClick={() => show(id)}>
+                    <button type="button" className="fd-runtime-seat-summary" aria-expanded={selectedId === id} onClick={() => {if(investigationTargets){if(targetable)onInvestigateTarget?.(id);}else show(id);}}>
                         <b title={nameFor(id)}><span className="fd-seat-name">{nameFor(id)}</span><strong className="fd-seat-power" aria-label={t('ui.playerRail.totalPower', { name: nameFor(id) })}><small>{t('ui.playerRail.power')}</small>{view.power}</strong>{!view.player.eliminated && core.currentPlayerId === id && <i>{t('ui.playerRail.acting')}</i>}</b>
                         <span>{t('ui.playerRail.playerStats', { victoryPoints: view.player.victoryPoints, mana: view.player.mana, hand: view.handCount })}</span>
                     </button>
                 </div>
             </section>;
         })}</div>
-        {selected && selectedId && <section className="fd-runtime-opponent-cards" style={position} aria-label={t('ui.playerRail.playedCards', { name: nameFor(selectedId) })} onPointerEnter={keepOpen} onPointerLeave={() => hideLater(selectedId)} onFocus={event => { if(event.target.matches(':focus-visible'))keepOpen(); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(selectedId); }} onKeyDown={event => { if (event.key === 'Escape') onSelect(null); }}>
-            <div className="fd-runtime-public-cards">{played.map(card => {
+        {selected && selectedId && <section className="fd-runtime-opponent-cards" style={{...position,width:Math.min(position.maxWidth, visibleCount * 120),maxHeight:hasForcedReveal?'calc(100dvh - 24px)':undefined}} aria-label={t('ui.playerRail.playedCards', { name: nameFor(selectedId) })} onPointerEnter={keepOpen} onPointerLeave={() => hideLater(selectedId)} onFocus={event => { if(event.target.matches(':focus-visible'))keepOpen(); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hideLater(selectedId); }} onKeyDown={event => { if (event.key === 'Escape') onSelect(null); }}>
+            <div className="fd-runtime-public-cards" style={{'--fd-public-count':Math.max(1,publicCount)} as CSSProperties}>{played.map(card => {
                 const definition = FATE_ATTACK_BY_ID[card.definitionId];
                 if(card.definitionId==='hidden')return <div key={card.id} className="fd-hidden-played-card"><OptimizedImage src="fate-domination/backs/attack" alt={t('ui.playerRail.faceDownAttack')}/></div>;
                 return definition && <button key={card.id} type="button" aria-label={t('ui.playerRail.inspectCard', { name: definition.name })} onClick={() => onInspect(definition.assetPath, definition.name)}><CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} style={{width: '100%'}}/></button>;
             })}{playedSkills.map(card=><button key={card.id} type="button" aria-label={t('ui.playerRail.inspectCard', { name: card.name })} onClick={()=>onInspect(card.assetPath,card.name)}><OptimizedImage src={card.assetPath} alt={card.name}/></button>)}{!played.length && !playedSkills.length && <p>{t('ui.playerRail.noAttacksPlayed')}</p>}</div>
-            {Boolean(selected.player.forcedRevealedHand?.length) && <section aria-label={t('ui.playerRail.forcedRevealSection')}><p>{t('ui.playerRail.forcedRevealText')}</p><div className="fd-runtime-public-cards">{selected.player.forcedRevealedHand.map(card=>{const definition=FATE_ATTACK_BY_ID[card.definitionId];return definition && <button key={card.id} type="button" aria-label={t('ui.playerRail.inspectCard', { name: definition.name })} onClick={()=>onInspect(definition.assetPath,definition.name)}><CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name}/></button>;})}</div></section>}
+            {Boolean(selected.player.forcedRevealedHand?.length) && <section aria-label={t('ui.playerRail.forcedRevealSection')}><p>{t('ui.playerRail.forcedRevealText')}</p><div className="fd-runtime-public-cards" style={{'--fd-public-count':selected.player.forcedRevealedHand.length} as CSSProperties}>{selected.player.forcedRevealedHand.map(card=>{const definition=FATE_ATTACK_BY_ID[card.definitionId];return definition && <button key={card.id} type="button" aria-label={t('ui.playerRail.inspectCard', { name: definition.name })} onClick={()=>onInspect(definition.assetPath,definition.name)}><CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name}/></button>;})}</div></section>}
         </section>}
     </aside>;
 }

@@ -3886,6 +3886,9 @@ describe('Betrayal Board foundation', () => {
         });
         fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${mummyRoomId}-${heroTarget.playerId}`));
 
+        await waitFor(() => expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
         await waitFor(() => {
             expect(screen.queryByTestId('betrayal-mummy-reward-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('betrayal-mummy-reward-actions')).not.toBeInTheDocument();
@@ -7222,6 +7225,7 @@ describe('Betrayal Board foundation', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 3, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '2', {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -9040,6 +9044,7 @@ describe('Betrayal Board foundation', () => {
             allowSkull: true,
         });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '2', {});
         const pendingRender = renderBoard(core, {
             playerID: '0',
             matchData: defaultMatchData.slice(0, 3),
@@ -9103,6 +9108,9 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(traitorToken);
 
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用砍刀');
+        await waitFor(() => expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute('data-player-id', '2');
         });
@@ -9282,6 +9290,9 @@ describe('Betrayal Board foundation', () => {
         expect(heroToken).toHaveAttribute('data-direct-target', 'true');
         fireEvent.click(heroToken);
 
+        await waitFor(() => expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute('data-player-id', '0');
         });
@@ -9327,6 +9338,9 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(traitorToken);
 
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用匕首');
+        await waitFor(() => expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute('data-player-id', '2');
         });
@@ -9372,6 +9386,9 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(traitorToken);
 
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用指环');
+        await waitFor(() => expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute('data-player-id', '2');
         });

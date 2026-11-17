@@ -136,6 +136,7 @@ export const BaseZone: React.FC<{
     onViewAction: (defId: string) => void;
     onViewBase: (defId: string) => void;
     onViewTitan: (defId: string) => void;
+    onViewMonster: (defId: string) => void;
     usableMinionTalentUids?: Set<string>;
     usableSpecialMinionUids?: Set<string>;
     usableOngoingTalentUids?: Set<string>;
@@ -155,7 +156,7 @@ export const BaseZone: React.FC<{
     onDefeatMonster?: (baseIndex: number, monsterUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, selectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, selectableTitanUids, selectedTitanUids, onTitanSelect, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, selectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, onViewMonster, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, selectableTitanUids, selectedTitanUids, onTitanSelect, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -164,6 +165,19 @@ export const BaseZone: React.FC<{
     // 响应式布局配置
     const playerCount = turnOrder.length;
     const layout = getLayoutConfig(playerCount, { isMobileViewport });
+    // 仅在基地内容或布局条件变化时读取布局快照，避免无关界面更新测量整桌。
+    const viewportWidth = typeof window === 'undefined' ? 0 : window.innerWidth;
+    const viewportHeight = typeof window === 'undefined' ? 0 : window.innerHeight;
+    const playerLayoutSignature = JSON.stringify(turnOrder.map((pid) => [pid, playerNames?.[pid] ?? '']));
+    const stackLayoutDependency = React.useMemo(() => ({
+        base, core, playerLayoutSignature, playerCount, isMobileViewport, viewportWidth, viewportHeight,
+        isMinionSelectMode, isDeployMode, isMyTurn, isSelectable, isDimmed,
+        expandedMinionUid, floatingAttachedMinionUid,
+    }), [
+        base, core, playerLayoutSignature, playerCount, isMobileViewport, viewportWidth, viewportHeight,
+        isMinionSelectMode, isDeployMode, isMyTurn, isSelectable, isDimmed,
+        expandedMinionUid, floatingAttachedMinionUid,
+    ]);
     
     const baseDef = getBaseDef(base.defId);
     const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) ?? base.defId : base.defId;
@@ -183,6 +197,10 @@ export const BaseZone: React.FC<{
     const titansOnBase = getTitansOnBase(core, baseIndex);
     const ongoingActions = base.ongoingActions ?? [];
     const monstersOnBase = base.monsters ?? [];
+    const { getTouchInspectProps: getMonsterTouchInspectProps, shouldBlockInspectClick: shouldBlockMonsterClick } = useTouchInspectGesture<string, { defId: string }>({
+        enabled: monstersOnBase.length > 0,
+        onInspect: (_key, payload) => onViewMonster(payload.defId),
+    });
     const hasOngoingRow = ongoingActions.length > 0;
     const titanCardWidth = titansOnBase.length > 1
         ? Math.max(layout.minionCardWidth - 0.4, layout.ongoingCardWidth + 1.2)
@@ -887,6 +905,7 @@ export const BaseZone: React.FC<{
                 data-monster-controller-id={monster.controllerId}
                 data-monster-selectable={canSelectMonster ? 'true' : undefined}
                 data-defeatable-monster={canDefeatMonster ? 'true' : undefined}
+                {...getMonsterTouchInspectProps(`monster-${monster.uid}`, { defId: monster.defId })}
                 className={`group relative transition-[transform,filter] duration-200 ${canInteractWithMonster ? 'z-40 cursor-pointer' : 'z-0 cursor-default'} hover:z-50 hover:-translate-y-[0.2vw]`}
                 style={{
                     width: layoutInlineSize(monsterCardWidth, layout),
@@ -903,6 +922,7 @@ export const BaseZone: React.FC<{
                         className="block h-full w-full rounded-[0.18vw] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
                         onClick={(event) => {
                             event.stopPropagation();
+                            if (shouldBlockMonsterClick(`monster-${monster.uid}`)) return;
                             onMonsterSelect?.(baseIndex, monster.uid);
                         }}
                     >
@@ -915,12 +935,26 @@ export const BaseZone: React.FC<{
                         className="block h-full w-full rounded-[0.18vw] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
                         onClick={(event) => {
                             event.stopPropagation();
+                            if (shouldBlockMonsterClick(`monster-${monster.uid}`)) return;
                             onDefeatMonster?.(baseIndex, monster.uid);
                         }}
                     >
                         {monsterCard}
                     </button>
                 ) : monsterCard}
+                {showDesktopInspectButton && (
+                    <button
+                        type="button"
+                        data-testid={`su-base-monster-magnify-${monster.uid}`}
+                        aria-label={`查看${monsterDef.name}`}
+                        onClick={(event) => { event.stopPropagation(); onViewMonster(monster.defId); }}
+                        className="absolute top-[0.15vw] right-[0.15vw] z-50 flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in"
+                    >
+                        <svg className="board-shell-fixed-icon h-[0.8vw] w-[0.8vw] fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                )}
                 {controllerLabel && (
                     <div className="absolute -bottom-[0.25vw] left-1/2 z-30 h-[0.65vw] w-[0.65vw] -translate-x-1/2 rounded-full border border-white bg-emerald-400 shadow" />
                 )}
@@ -1043,14 +1077,7 @@ export const BaseZone: React.FC<{
                         <motion.div
                             data-testid={`su-base-target-highlight-${baseIndex}`}
                             className="absolute pointer-events-none rounded-[0.35vw]"
-                            animate={{
-                                opacity: [0.78, 1, 0.78],
-                                boxShadow: [
-                                    '0 0 0.55vw rgba(34,197,94,0.92), 0 0 1.65vw rgba(34,197,94,0.62)',
-                                    '0 0 0.9vw rgba(74,222,128,1), 0 0 2.5vw rgba(34,197,94,0.82)',
-                                    '0 0 0.55vw rgba(34,197,94,0.92), 0 0 1.65vw rgba(34,197,94,0.62)',
-                                ],
-                            }}
+                            animate={{ opacity: [0.78, 1, 0.78] }}
                             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                             style={{
                                 inset: '-0.38vw',
@@ -1059,7 +1086,21 @@ export const BaseZone: React.FC<{
                                 outline: '0.12vw solid rgba(22,163,74,0.88)',
                                 background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(250,204,21,0.16))',
                             }}
-                        />
+                        >
+                            {/* 固定两端阴影，只合成透明度，避免每帧重绘大范围模糊。 */}
+                            <motion.div
+                                className="absolute inset-0 rounded-[inherit]"
+                                style={{ boxShadow: '0 0 0.55vw rgba(34,197,94,0.92), 0 0 1.65vw rgba(34,197,94,0.62)', willChange: 'opacity' }}
+                                animate={{ opacity: [1, 0, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                            />
+                            <motion.div
+                                className="absolute inset-0 rounded-[inherit]"
+                                style={{ boxShadow: '0 0 0.9vw rgba(74,222,128,1), 0 0 2.5vw rgba(34,197,94,0.82)', willChange: 'opacity' }}
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                            />
+                        </motion.div>
                     )}
 
                     {canUseBaseAbility && !isSelectable && (
@@ -1233,6 +1274,7 @@ export const BaseZone: React.FC<{
                             // 不要对整列做尺寸缩放动画。
                             // 随从自身已有 initial/animate 入场，叠加父层 full layout 会让新卡像是在开头反复放大。
                             layout="position"
+                            layoutDependency={stackLayoutDependency}
                             data-testid={`su-base-player-column-${baseIndex}-${pid}`}
                             data-player-id={pid}
                             className={`flex flex-col items-center relative ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-0'}`}
@@ -1243,6 +1285,7 @@ export const BaseZone: React.FC<{
                             {/* --- MINIONS + BURIED CARDS --- */}
                             <motion.div
                                 layout="position"
+                                layoutDependency={stackLayoutDependency}
                                 data-testid={`su-base-stack-${baseIndex}-${pid}`}
                                 data-minion-select-mode={isMinionSelectMode ? 'true' : 'false'}
                                 data-minion-select-list={shouldUseMinionSelectionScroll ? 'true' : 'false'}
@@ -1435,6 +1478,7 @@ export const BaseZone: React.FC<{
                             {/* --- SCORE (POWER) --- */}
                             <motion.div
                                 layout="position"
+                                layoutDependency={stackLayoutDependency}
                                 data-testid={`su-base-score-${baseIndex}-${pid}`}
                                 className="mt-2 flex items-center justify-center gap-1 z-10 bg-slate-900/40 rounded-full px-2 py-0.5 backdrop-blur-sm"
                                 transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}

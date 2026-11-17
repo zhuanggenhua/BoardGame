@@ -13,6 +13,10 @@ import type { FateDominationCommand, FateDominationCore, FateDominationEvent, Lo
 import { resolveFateMovement } from './movement';
 import { executeFateAbility, resolveFatePlayerAbility } from './abilityRegistry';
 import { fateRidingFrameId, fateRidingGeneration } from './ridingChoice';
+import { fateChariotFrameId } from './chariotChoice';
+import { prepareFateChariotDraw } from './chariotEvents';
+import { fateInvestigationFrameId } from './investigationChoice';
+import { projectFateHand } from './handView';
 import { createFateAttackDeck, resolveAvailableFateIdentities } from './setup';
 import {
     addFateRuleModifier,
@@ -83,6 +87,21 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
                     },
                     ...meta,
                 }];
+            }
+            if (definition.effects.some(effect => effect.type === 'replace-event')) {
+                if(!random || !command.payload.targetCardId)throw new Error('Chariot requires a target and authoritative random source');
+                const draw=prepareFateChariotDraw(core,command.playerId,command.payload.targetCardId,random);
+                if(!draw)throw new Error('Validated chariot target no longer has two drawable events');
+                const generation=fateRidingGeneration(state.sys.eventStream.nextId,state.sys.undo.rollbackRevision??0);
+                return [{type:'FATE_ABILITY_USED',payload:{playerId:command.playerId,skillId:skill.id,usageKey:fateAbilityUsageKey(skill.id,core.phase),manaSpent:0},...meta},
+                    {type:'FATE_CHARIOT_DRAWN',payload:{playerId:command.playerId,skillId:skill.id,round:core.round,generation,frameId:fateChariotFrameId(core.round,command.playerId,skill.id,generation),locationId:draw.locationId,targetId:draw.discarded.id,offered:draw.offered,deck:draw.deck,discard:draw.discard},...meta}];
+            }
+            if (definition.effects.some(effect => effect.type === 'investigate-hand')) {
+                const targetPlayerId=command.payload.targetPlayerId!;
+                const offered=projectFateHand(core.players[targetPlayerId]).available;
+                const generation=fateRidingGeneration(state.sys.eventStream.nextId,state.sys.undo.rollbackRevision??0);
+                return [{type:'FATE_ABILITY_USED',payload:{playerId:command.playerId,skillId:skill.id,usageKey:fateAbilityUsageKey(skill.id,core.phase),manaSpent:0},...meta},
+                    {type:'FATE_INVESTIGATION_VIEWED',payload:{playerId:command.playerId,targetPlayerId,skillId:skill.id,round:core.round,generation,frameId:fateInvestigationFrameId(core.round,command.playerId,skill.id,generation),offered},...meta}];
             }
             const skillEvent: FateDominationEvent = { type: 'FATE_ABILITY_USED', payload: { playerId: command.playerId, skillId: skill.id, usageKey:fateAbilityUsageKey(skill.id,core.phase), manaSpent:resolveFatePlayerAbility(core,command.playerId,skill.id)?.activationCost??0 }, ...meta };
             const abilityEvents = executeFateAbility({
@@ -331,6 +350,27 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
         }
         case 'FATE_ABILITY_UNIMPLEMENTED':
             return { ...state, actionNotice: `技能【${event.payload.skillId}】尚未接入权威效果，未扣除资源。` };
+        case 'FATE_CHARIOT_DRAWN': {
+            const {locationId,targetId,deck,discard}=event.payload;
+            const events=state.currentEvents[locationId].filter(card=>card.id!==targetId);
+            return {...state,currentEvents:{...state.currentEvents,[locationId]:events},battlefield:{...state.battlefield,[locationId]:{...state.battlefield[locationId],eventCards:events}},eventDeck:deck,eventDiscard:discard,eventDeckCount:deck.length,eventDiscardCount:discard.length};
+        }
+        case 'FATE_CHARIOT_RESOLVED': {
+            const {locationId,selected,deck,discard}=event.payload;
+            const events=[...state.currentEvents[locationId],selected];
+            return {...state,currentEvents:{...state.currentEvents,[locationId]:events},battlefield:{...state.battlefield,[locationId]:{...state.battlefield[locationId],eventCards:events}},miyamaEvent:locationId==='miyama' ? events[0] : state.miyamaEvent,eventDeck:deck,eventDiscard:discard,eventDeckCount:deck.length,eventDiscardCount:discard.length};
+        }
+        case 'FATE_INVESTIGATION_VIEWED': return state;
+        case 'FATE_INVESTIGATION_RESOLVED': {
+            const {playerId,targetPlayerId,round,cardId}=event.payload;
+            if(!cardId)return state;
+            const target=state.players[targetPlayerId],card=target.hand.find(item=>item.id===cardId);
+            if(!card)throw new Error('Investigated hand card no longer exists');
+            const changedTarget={...target,hand:target.hand.filter(item=>item.id!==cardId),deck:[card,...target.deck]};
+            const players={...state.players,[targetPlayerId]:changedTarget};
+            players[playerId]={...players[playerId],investigationBlockedRound:round+1};
+            return {...state,players};
+        }
         case 'FATE_RULE_MODIFIER_ATTACHED':
             return { ...state, ruleState: addFateRuleModifier(normalizeFateRuleState(state.ruleState), event.payload.modifier) };
         case 'FATE_RULE_MODIFIER_REMOVED':

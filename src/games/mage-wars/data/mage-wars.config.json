@@ -4911,6 +4911,7 @@
       "data": {
         "cardId": 2203,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 神殿、传送门",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -4984,6 +4985,7 @@
       "data": {
         "cardId": 2206,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 图腾",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5047,6 +5049,7 @@
       "data": {
         "cardId": 2207,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 图腾",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5110,6 +5113,7 @@
       "data": {
         "cardId": 2208,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 云雾、毒素",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5183,6 +5187,7 @@
       "data": {
         "cardId": 2209,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 传送门、符文",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5256,6 +5261,7 @@
       "data": {
         "cardId": 2212,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 装置",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5330,6 +5336,7 @@
       "data": {
         "cardId": 2218,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 再生点、传送门",
         "schoolLine": "自然",
         "targetRule": "0-1` / 区域",
@@ -5379,6 +5386,7 @@
       "data": {
         "cardId": 2219,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 神殿",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5439,6 +5447,7 @@
       "data": {
         "cardId": 2221,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 法力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -5503,6 +5512,7 @@
       "data": {
         "cardId": 2222,
         "spellType": "魔物",
+        "spellActionSpeed": "quick",
         "typeLine": "魔物 / 法力、植物",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
         "contractStatus": "locked",
@@ -8204,6 +8214,7 @@
       "data": {
         "cardId": 2908,
         "spellType": "生物",
+        "spellActionSpeed": "standard",
         "typeLine": "生物 / 动物、鸟类",
         "schoolLine": "奥术",
         "level": 3,

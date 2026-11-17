@@ -18,6 +18,8 @@ export const FATE_TUTORIAL_LESSONS = {
  masterAbility:{goal:'使用当前御主能力',when:'首次实际使用或观察该御主能力',why:'在实际使用处连接前哨时机与当前能力，不另加部署后说明卡',passages:['outpostAbility']},
  riding:{goal:'使用坐骑召唤',when:'骑乘已激活后的行动',why:'激活后的行动能力与打出时触发不同，追加攻击参与当前战场',passages:['activatedAbility']},
  ridingChoice:{goal:'完成本次骑乘追加攻击',when:'坐骑召唤已打开正式选择',why:'只点名固定演示的实际牌，不再重复已读的时机、数量限制和确认入口',passages:[]},
+ investigationChoice:{goal:'完成调查选择',when:'调查查看手牌后',why:'从查看的手牌选择置顶或保留',passages:[]},
+ chariotChoice:{goal:'选择替换事件',when:'神威车轮抽出事件后',why:'从实际展示的事件中选择',passages:[]},
  movement:{goal:'选择完整移动路线',when:'首次普通移动',why:'先移动到参与战斗的地点，再建立常规攻击；一次选完整路线并支付。战果领取留给实际战斗结算',passages:['actionOrder','movementPayment']},
  engagement:{goal:'理解抵达交战地点后为何不能常规移动',when:'首次实际移动抵达交战战场后',why:'到达的战场已有对手；用原文交代交战限制，不以按钮消失代替说明',passages:['engagement']},
  sealMana:{goal:'用令咒补足技能行动的魔力',when:'首次费用准备',why:'按当前实际魔力与8点技能门槛决定逐枚支付次数；恢复面板承接真实效果',passages:['skillThreshold']},

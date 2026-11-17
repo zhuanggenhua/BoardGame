@@ -42,6 +42,8 @@ export interface GameEngineConfig<
 > {
     /** 游戏 ID */
     gameId: string;
+    /** 洗牌等隐藏随机信息不可从客户端种子复原时，随机源只在服务端持有。 */
+    randomSeedVisibility?: 'server-only';
     /** 领域内核 */
     domain: DomainCore<TCore, TCommand, TEvent>;
     /** 启用的系统 */

@@ -32,6 +32,34 @@ test('正式详情常态与多房间容量在手机和PC保持原承载', async 
         const template = created.request().postDataJSON();
         await expect(owner.locator('[data-tutorial-id="cell-0"]')).toBeVisible({ timeout: 30_000 });
 
+        const activeContext = await browser.newContext({ baseURL: info.project.use.baseURL,
+            viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, storageState: await host.storageState() });
+        try {
+            const activePage = await activeContext.newPage();
+            await activePage.goto('/');
+            await expect(activePage.getByTestId('home-active-match-banner')).toBeVisible({ timeout: 30_000 });
+            await activePage.locator('[data-game-id="tictactoe"] .platform-game-open').tap();
+            const activeDetails = activePage.getByTestId('game-details-modal-root');
+            await expect(activeDetails.getByTestId(/^room-list-item-/).first()).toBeVisible();
+            const mine = activeDetails.locator('[data-room-ownership]').first();
+            await expect(mine).toBeVisible();
+            await expect(mine).toHaveCSS('white-space', 'nowrap');
+            const badge = await mine.evaluate(element => {
+                const range = document.createRange(); range.selectNodeContents(element);
+                return { lines: range.getClientRects().length, width: element.getBoundingClientRect().width,
+                    scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+            });
+            expect(badge.lines).toBe(1);
+            expect(badge.scrollWidth).toBeLessThanOrEqual(badge.clientWidth + 1);
+            await capture(activePage, '手机-房主房间标签单行');
+            await activeDetails.getByTestId('game-details-close-button').tap();
+            await expect(activeDetails).toHaveCount(0);
+            await activePage.locator('.platform-menu-trigger').tap();
+            await expect(activePage.locator('.platform-menu-dialog')).toBeVisible();
+            await activePage.locator('.platform-menu-close').tap();
+            await expect(activePage.locator('.platform-menu-dialog')).toBeHidden();
+        } finally { await activeContext.close(); }
+
         for (const pressure of [false, true]) {
             if (pressure) {
                 // 通过真实建房API建立合法的独立访客房间，不注入DOM或伪造大厅响应。
@@ -54,6 +82,14 @@ test('正式详情常态与多房间容量在手机和PC保持原承载', async 
                     const details = page.getByTestId('game-details-modal-root');
                     const rows = details.getByTestId(/^room-list-item-/);
                     await expect(rows).toHaveCount(pressure ? 8 : 1);
+                    if (view.mobile) {
+                        await details.getByTestId('game-details-close-button').tap();
+                        await expect(details).toHaveCount(0);
+                        await page.waitForTimeout(1200);
+                        await expect(details).toHaveCount(0);
+                        await open.tap();
+                        await expect(rows).toHaveCount(pressure ? 8 : 1);
+                    }
                     const metrics = await lobbyMetrics(page);
                     await record(`容量-${view.width}-${pressure ? '压力' : '常态'}`, metrics);
                     await capture(page, `容量-${view.width}-${pressure ? '压力' : '常态'}`);

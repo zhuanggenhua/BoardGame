@@ -22,7 +22,7 @@ function applyEvents(core: SplendorCore, events: SplendorEvent[]): SplendorCore 
     return next;
 }
 
-function turnClosureEvents(core: SplendorCore, playerId: string, now: number): SplendorEvent[] {
+function turnClosureEvents(core: SplendorCore, playerId: string, now: number, nobleAlreadyChosen = false): SplendorEvent[] {
     const events: SplendorEvent[] = [];
     const player = core.players[playerId];
 
@@ -39,7 +39,7 @@ function turnClosureEvents(core: SplendorCore, playerId: string, now: number): S
         }];
     }
 
-    const nobles = getEligibleNobles(core, playerId);
+    const nobles = nobleAlreadyChosen ? [] : getEligibleNobles(core, playerId);
     if (nobles.length > 1) {
         return [{
             type: 'PENDING_RESOLUTION_SET',
@@ -312,7 +312,7 @@ export function execute(
                 },
             ];
             const preview = applyEvents(core, base);
-            return [...base, ...turnClosureEvents(preview, playerId, now)];
+            return [...base, ...turnClosureEvents(preview, playerId, now, true)];
         }
 
         case 'PASS_TURN':

@@ -15,6 +15,7 @@ import type {
     TutorialStepSnapshot,
 } from '../types';
 import { DEFAULT_TUTORIAL_STATE } from '../types';
+import { getEffectiveTutorialSteps } from '../tutorialStepPlan';
 import {
     getTutorialHiddenAutomationContractErrors,
     isHiddenTutorialAutomationStep,
@@ -220,7 +221,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         return state;
     }
 
-    const steps=manifest.replanAfterCommand && tutorial.steps.length ? tutorial.steps : tutorial.selectedBranch?manifest.steps.filter(step=>!step.branch||step.branch===tutorial.selectedBranch):manifest.steps;
+    const steps = getEffectiveTutorialSteps(manifest, tutorial);
     const effectiveManifest=steps===manifest.steps?manifest:{...manifest,steps};
     const stepIndex = Number.isInteger(tutorial.stepIndex) ? tutorial.stepIndex : 0;
     const manifestStep = effectiveManifest.steps[stepIndex];

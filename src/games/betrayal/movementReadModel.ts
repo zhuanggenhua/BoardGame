@@ -8,6 +8,7 @@ import {
     isBetrayalPlayerControllingMonster,
 } from './hauntScenarioReadModel';
 import { getAllExplorers } from './explorerReadModel';
+import { resolveBetrayalControlledMonsterId, resolveBetrayalMonsterMoveCost } from './monsterActionReadModel';
 import {
     resolveConnectedRoomIds,
     roomDistanceByLayout,
@@ -134,10 +135,13 @@ export function resolveBetrayalMapMovementReadModel(core: BetrayalCore): Betraya
         core.currentExplorer.playerId,
     );
     const hasMovementPoint = core.movesRemaining > 0;
-    const ordinaryMoveCost = isControlledTokenMove ? 1 : resolveBetrayalMoveCost(core);
+    const controlledMonsterId = isControlledTokenMove ? resolveBetrayalControlledMonsterId(core) : undefined;
+    const ordinaryMoveCost = controlledMonsterId
+        ? resolveBetrayalMonsterMoveCost(core, controlledMonsterId)
+        : resolveBetrayalMoveCost(core);
     const mayUseOrdinaryMove = hasMovementPoint
         && (!core.turnEndedByDiscovery || isControlledTokenMove)
-        && (isControlledTokenMove || core.movesRemaining >= ordinaryMoveCost);
+        && core.movesRemaining >= ordinaryMoveCost;
     const mayUseSkeletonKey = hasMovementPoint
         && !core.turnEndedByDiscovery
         && !isControlledTokenMove;

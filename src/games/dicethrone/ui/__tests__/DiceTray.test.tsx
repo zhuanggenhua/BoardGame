@@ -310,21 +310,22 @@ describe('DiceTray', () => {
         expect(step).toHaveBeenNthCalledWith(2, { action: 'setAny', dieId: 1, newValue: 5 });
     });
 
-    it('固定多值复用选择窗口，选定数值后沿原固定值流程点骰', () => {
+    it('固定多值先选择目标骰，再在其旁选择合法值', () => {
         const step = vi.fn();
         const interaction = createModifyInteraction('set', 1, [4, 5]);
-        const tray = (targetValue?: number) => <DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract isRolling={false}
-            diceInteraction={createDiceInteraction(interaction, createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0, targetValue }, step))} />;
+        const tray = (selectedTargetDieId?: number) => <DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract isRolling={false}
+            diceInteraction={createDiceInteraction(interaction, createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0, selectedTargetDieId }, step))} />;
         const { rerender } = render(tray());
         expect(screen.queryByTestId('die-adjust-increment-0')).toBeNull();
         expect(screen.queryByTestId('die-target-value-6')).toBeNull();
-        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'false');
-        fireEvent.click(screen.getByRole('button', { name: '5' }));
-        expect(step).toHaveBeenLastCalledWith({ action: 'chooseValue', value: 5 });
-        rerender(tray(5));
-        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
+        expect(screen.queryByTestId('die-set-0-5')).toBeNull();
         fireEvent.click(screen.getByTestId('die-button-0'));
-        expect(step).toHaveBeenLastCalledWith({ action: 'select', dieId: 0, dieValue: 1 });
+        expect(step).toHaveBeenLastCalledWith({ action: 'chooseTargetDie', dieId: 0 });
+        rerender(tray(0));
+        expect(screen.queryByTestId('die-set-1-5')).toBeNull();
+        expect(screen.queryByTestId('dt-choice-options')).toBeNull();
+        fireEvent.click(screen.getByTestId('die-set-0-5'));
+        expect(step).toHaveBeenLastCalledWith({ action: 'setAllowed', dieId: 0, value: 5 });
     });
 
     it('固定多值改骰时非操作者不出现可操作的数值选择', () => {

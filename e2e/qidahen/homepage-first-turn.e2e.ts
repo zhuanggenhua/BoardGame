@@ -16,6 +16,7 @@ import { getMatchState } from '../helpers/state-injection';
 import { QIDAHEN_REGION_GRAPH_NODE_BY_ID } from '../../src/games/qidahen/ui/mapGraph';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../src/games/qidahen/ui/mapRegions';
 import { getQidahenWheelDestination } from '../../src/games/qidahen/domain/wheelRules';
+import { clickRaidRegion, payRaidCards } from './raidTestHelpers';
 
 const MAP_REGION_POINTS = {
     songjin: { x: 0.683, y: 0.586 },
@@ -56,23 +57,12 @@ async function clickMapRegionById(page: Page, regionId: string): Promise<void> {
     if (!node?.center) throw new Error(`七大恨地图缺少 ${regionId} 的真实地区中心`);
     const canvas = page.getByTestId('qidahen-map-hitmap-canvas');
     await expect(canvas).toBeVisible({ timeout: 15000 });
-    await canvas.evaluate((element, point) => {
-        const rect = element.getBoundingClientRect();
-        const init: PointerEventInit = {
-            clientX: rect.left + rect.width * point.x,
-            clientY: rect.top + rect.height * point.y,
-            pointerId: 1,
-            pointerType: 'mouse',
-            button: 0,
-            buttons: 1,
-            bubbles: true,
-            cancelable: true,
-        };
-        element.dispatchEvent(new PointerEvent('pointermove', init));
-        element.dispatchEvent(new PointerEvent('pointerdown', init));
-        element.dispatchEvent(new PointerEvent('pointerup', init));
-        element.dispatchEvent(new PointerEvent('pointerleave', init));
-    }, { x: node.center.x / QIDAHEN_MAP_WIDTH, y: node.center.y / QIDAHEN_MAP_HEIGHT });
+    const rect = await canvas.boundingBox();
+    if (!rect) throw new Error('七大恨地图画布没有可点击区域');
+    await page.mouse.click(
+        rect.x + rect.width * node.center.x / QIDAHEN_MAP_WIDTH,
+        rect.y + rect.height * node.center.y / QIDAHEN_MAP_HEIGHT,
+    );
 }
 
 async function captureEvidence(
@@ -164,15 +154,17 @@ async function enterQidahenBoard(page: Page): Promise<void> {
     await completeHostQidahenSetup(page, 'armament');
     await expect(page.getByTestId('qidahen-inmatch-setup-overlay')).toHaveCount(0, { timeout: 30000 });
     let latestDefenderAuthority: Record<string, unknown> | null = null;
+    let defendedRegionId: string | undefined;
     const humanDefenderFight = page.getByTestId('qidahen-resolve-pending-action-defender-fight');
     await expect.poll(async () => {
         const state = await getMatchState(matchId, page);
         const core = state.core as {
             factions?: Record<string, { playerId?: string }>;
-            pendingTargetAction?: { battleStep?: string; attackerFactionId?: string; defenderFactionId?: string } | null;
+            pendingTargetAction?: { battleStep?: string; attackerFactionId?: string; defenderFactionId?: string; targetRegionId?: string } | null;
         };
         const interaction = (state.sys as { interaction?: { current?: { playerId?: string; data?: { options?: Array<{ id?: string }> } } } } | undefined)?.interaction?.current;
         const mingPlayerId = core.factions?.ming?.playerId ?? null;
+        defendedRegionId = core.pendingTargetAction?.targetRegionId;
         const optionIds = (interaction?.data?.options ?? []).map((option) => option.id).filter(Boolean);
         latestDefenderAuthority = {
             stateID: state._stateID,
@@ -270,6 +262,15 @@ async function enterQidahenBoard(page: Page): Promise<void> {
         });
     await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前', { timeout: 15000 });
     await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
+    const afterBattle = await getMatchState(matchId, page);
+    const battleEvents = (afterBattle.sys?.eventStream?.entries ?? []).map((entry) => entry.event);
+    expect(defendedRegionId, '守方应战必须对应实际目标地区').toBeTruthy();
+    expect(battleEvents.some((event) => {
+        if (event.type !== 'QIDAHEN_BATTLE_ROLLED') return false;
+        const report = (event.payload as { report?: { targetRegionId?: string; defenderFactionId?: string; rolls?: unknown } }).report;
+        return report?.targetRegionId === defendedRegionId && report.defenderFactionId === 'ming' && !!report.rolls;
+    }), '真人应战后须产生针对同一地区的战斗结算').toBe(true);
+    expect((afterBattle.core as { pendingTargetAction?: unknown }).pendingTargetAction ?? null, '交回真人前战斗须收口').toBeNull();
 }
 
 async function completeHostQidahenSetup(page: Page, kind: 'character' | 'armament'): Promise<void> {
@@ -423,10 +424,78 @@ test.describe('七大恨主页首回合黄金链', () => {
         await expect(page.getByTestId('qidahen-turn-option-finish-slot')).toBeVisible({ timeout: 15000 });
         await page.getByTestId('qidahen-turn-option-finish-slot').click();
         await expect(page.getByTestId('qidahen-turn-option-skip-hand')).toBeVisible({ timeout: 15000 });
-        await page.getByTestId('qidahen-turn-option-skip-hand').click();
-
-        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前', { timeout: 15000 });
-        await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
-        await captureEvidence(page, testInfo, '七大恨-首页进入并完成首回合-04-首回合完成后.png');
+        await page.getByTestId('qidahen-action-raid').click();
+        await clickRaidRegion(page, 'city-region-15');
+        await expect.poll(async () => (await getMatchState(new URL(page.url()).pathname.split('/').pop()!, page)).core.regionFocusState?.lockedSourceRegionId).toBe('city-region-15');
+        await clickRaidRegion(page, 'city-region-7');
+        await expect.poll(async () => (await getMatchState(new URL(page.url()).pathname.split('/').pop()!, page)).core.regionFocusState?.currentTargetRegionId).toBe('city-region-7');
+        const matchId = new URL(page.url()).pathname.split('/').pop()!;
+        const beforeAttack = await getMatchState(matchId, page);
+        const defenderId = beforeAttack.core.factions?.mongol?.playerId;
+        expect(defenderId).toBeTruthy();
+        expect(defenderId).not.toBe('0');
+        const target = (beforeAttack.core.regions as Array<{ id: string; controller: string; troops: number }>)
+            .find(region => region.id === 'city-region-7');
+        expect(target).toMatchObject({ controller: 'mongol', troops: expect.any(Number) });
+        expect(target!.troops).toBeGreaterThan(0);
+        const knownEvents = new Set((beforeAttack.sys?.eventStream?.entries ?? []).map(entry => entry.id));
+        await payRaidCards(page, 1);
+        let latestDefenseDiagnostic: unknown;
+        let defenseOption: string | undefined;
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, page);
+            const freshEvents = (state.sys?.eventStream?.entries ?? []).filter(entry => !knownEvents.has(entry.id));
+            latestDefenseDiagnostic = { defenderId, pending: state.core.pendingTargetAction,
+                postBattle: state.core.postBattleSelection,
+                events: freshEvents.map(entry => entry.event).filter(event => event.type === 'SYS_INTERACTION_RESOLVED') };
+            const defense = freshEvents.find(entry => {
+                const event = entry.event as { type?: string; payload?: { playerId?: string; sourceId?: string; optionId?: string } };
+                return !knownEvents.has(entry.id) && event.type === 'SYS_INTERACTION_RESOLVED'
+                    && event.payload?.playerId === defenderId && event.payload.sourceId === 'qidahen:pending-target'
+                    && (['defender-fight', 'defender-sortie', 'defender-hold-city'].includes(event.payload.optionId ?? '')
+                        || (event.payload.optionId ?? '').startsWith('cavalry-evasion:'));
+            });
+            defenseOption = (defense?.event as { payload?: { optionId?: string } } | undefined)?.payload?.optionId;
+            return defenseOption !== undefined;
+        }, { timeout: 30000, message: '等待蒙古 AI 自主选择防守方式' }).toBe(true).catch(error => {
+            throw new Error(`${String(error)}\n防守诊断：${JSON.stringify(latestDefenseDiagnostic)}`);
+        });
+        console.log(`[QIDAHEN_AI_DEFENSE] ${defenseOption}`);
+        const fight = page.getByTestId('qidahen-resolve-pending-action');
+        const postBattle = page.getByTestId('qidahen-post-battle-selection');
+        await expect.poll(async () => await fight.isVisible().catch(() => false)
+            || await postBattle.isVisible().catch(() => false), { timeout: 15000 }).toBe(true);
+        if (await fight.isVisible()) {
+            const troop = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]').first();
+            if (await troop.isVisible().catch(() => false)) await troop.click();
+            await expect(fight).toBeEnabled({ timeout: 15000 });
+            await fight.click();
+        }
+        await expect(page.getByTestId('qidahen-raid-intent')).toHaveCount(0, { timeout: 30000 });
+        await expect.poll(async () => {
+            const current = await getMatchState(matchId, page);
+            return current.core.pendingTargetAction == null;
+        }, { timeout: 30000, message: '等待突袭待结算状态清除' }).toBe(true);
+        if (defenseOption?.startsWith('cavalry-evasion:')) {
+            const retreatId = defenseOption.slice('cavalry-evasion:'.length);
+            const retreatBefore = (beforeAttack.core.regions as Array<{ id: string; troops: number }>)
+                .find(region => region.id === retreatId);
+            expect(retreatBefore, 'AI 选择的避战地区必须存在').toBeDefined();
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, page);
+                const retreat = (state.core.regions as Array<{ id: string; troops: number }>)
+                    .find(region => region.id === retreatId);
+                return retreat?.troops ?? -1;
+            }, { timeout: 15000, message: '确认避战骑兵实际到达所选地区' }).toBeGreaterThan(retreatBefore!.troops);
+            await expect(postBattle).toBeVisible({ timeout: 15000 });
+        }
+        if (await postBattle.isVisible().catch(() => false)) {
+            await page.getByTestId('qidahen-post-battle-mode-occupy').click();
+            await page.locator('button[data-testid^="qidahen-post-battle-choice-"]').first().click();
+            await page.getByTestId('qidahen-post-battle-confirm').click();
+            await expect(postBattle).toHaveCount(0, { timeout: 15000 });
+        }
+        await expect.poll(async () => (await getMatchState(matchId, page)).core.postBattleSelection ?? null,
+            { timeout: 15000, message: '战后不能遗留待处理选择' }).toBeNull();
     });
 });

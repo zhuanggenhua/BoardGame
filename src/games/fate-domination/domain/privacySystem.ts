@@ -9,6 +9,9 @@ export function projectFateEvent(event:GameEvent,core:FateDominationCore,viewerI
  for(const key of ['deck','discard','eventDraw','recycledAttackDecks','recycledEventDeck'])delete payload[key];
  const owner=payload.playerId===viewerId;
  if(event.type==='FATE_CARDS_DRAWN'&&!owner)delete payload.drawn;
+ if(event.type==='FATE_CHARIOT_DRAWN'&&!owner)delete payload.offered;
+ if(event.type==='FATE_INVESTIGATION_VIEWED'&&!owner)delete payload.offered;
+ if(event.type==='FATE_INVESTIGATION_RESOLVED'&&!owner && payload.targetPlayerId!==viewerId)delete payload.cardId;
  if(event.type==='SERVANT_SELECTED'&&!owner&&!core.players[String(payload.playerId)]?.isRevealed)delete payload.servantId;
  if(event.type==='ATTACK_CARD_SELECTED'&&!owner)delete payload.cardId;
  if(event.type==='CARD_INSPECTED'&&!owner && payload.cardId!==core.situation.id && payload.cardId!==core.miyamaEvent.id)delete payload.cardId;

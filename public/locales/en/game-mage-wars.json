@@ -202,6 +202,7 @@
     "passDeployment": "End deployment",
     "passQuickcast": "Pass quickcast",
     "endAction": "End action",
+    "noAction": "Take no action",
     "endTurn": "End Turn",
     "activateAbility": "Use ability",
     "rebindSpell": "Rebind spell",

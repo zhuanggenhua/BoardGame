@@ -116,6 +116,14 @@ html[data-home-entry-style="modern"] .platform-details-favorite[aria-pressed="tr
 .platform-details-content [data-testid^="room-list-join-"]:hover:not(:disabled) { background:#111; color: #d5ff00; }
 .platform-details-content [data-testid^="room-list-join-"]:disabled { border-color: #aaa; background: #e5e5e5; color:var(--platform-night-muted,#666); }
 .platform-details-content [data-testid^="room-list-item-"] button:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
+@media (max-width: 1023px) {
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-info] { min-width: 0; flex: 1 1 auto; }
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-title] { min-width: 0; display: flex; white-space: nowrap; }
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-name] { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-count] { flex: 0 0 auto; white-space: pre; }
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-ownership],
+    html[data-home-entry-style="modern"] .platform-details-content [data-room-actions] { flex: 0 0 auto; white-space: nowrap; }
+}
 
 .platform-details-primary .platform-active-room-primary > div { display:flex; flex-wrap:nowrap; gap:8px; width:100%; }
 .platform-details-primary .platform-active-room-primary button { min-height:44px; border:2px solid #111; background:#d5ff00; color:#111; padding:8px 12px; font-size:12px; letter-spacing:0; }

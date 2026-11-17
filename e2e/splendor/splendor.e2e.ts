@@ -1,10 +1,15 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Browser, Page } from '@playwright/test';
+import { io } from 'socket.io-client';
+import * as msgpackParser from 'socket.io-msgpack-parser';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath as getSharedEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import type { SplendorCore } from '../../src/games/splendor/domain/types';
 import {
     ensureGameServerAvailable,
+    getGameServerBaseURL,
     initContext,
     joinMatchViaAPI,
     seedMatchCredentials,
@@ -863,6 +868,158 @@ test.describe('Splendor E2E', () => {
         });
 
         await game.screenshot('splendor-choose-noble-resolved', testInfo);
+    });
+
+    test('Splendor：AI 行动触发多贵族后自主选择一位并交还真人', async ({ page, game }) => {
+        test.setTimeout(60000);
+        await page.goto('/play/splendor?players=2&playerID=0&seat1=local-ai&seat1Delay=1000');
+        await page.waitForFunction(
+            () => (window as unknown as { __BG_TEST_HARNESS__?: { state?: { isRegistered?: () => boolean } } })
+                .__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout: 20000, polling: 200 },
+        );
+        const purchased = [
+            't1-white-1', 't1-white-2',
+            't1-blue-1', 't1-blue-2', 't1-blue-3',
+            't1-green-1', 't1-green-2', 't1-green-3',
+            't1-black-1', 't1-black-2', 't1-black-3',
+        ];
+        const humanPurchased = ['t1-red-1', 't1-red-2', 't1-red-3', 't1-red-4'];
+        const initial = (await game.getState()).core;
+        const market: Record<number, string[]> = {};
+        const decks: Record<number, string[]> = {};
+        for (const tier of [1, 2, 3]) {
+            const available = [...initial.market[tier], ...initial.decks[tier]]
+                .filter((id: string) => !purchased.includes(id) && !humanPurchased.includes(id));
+            market[tier] = available.slice(0, 4);
+            decks[tier] = available.slice(4);
+        }
+        const desiredTier3 = ['t3-white-4', 't3-black-2', 't3-green-2', 't3-red-2'];
+        const tier3Pool = [...market[3], ...decks[3]];
+        market[3] = desiredTier3;
+        decks[3] = tier3Pool.filter(id => !desiredTier3.includes(id));
+        await game.setupScene({
+            gameId: 'splendor', player0: { purchasedCardIds: humanPurchased, tokens: { blue: 2, green: 2, red: 2 } },
+            player1: { purchasedCardIds: purchased, tokens: { white: 1, black: 4 } }, currentPlayer: '1',
+            extra: { core: { hostStarted: true, round: 12, market, decks, bank: { ...initial.bank,
+                white: initial.bank.white - 1, black: initial.bank.black - 4,
+                blue: initial.bank.blue - 2, green: initial.bank.green - 2, red: initial.bank.red - 2 },
+                nobleIds: ['noble-2', 'noble-3', 'noble-4'],
+                pendingResolution: undefined } },
+        });
+        await expect.poll(async () => {
+            const core = (await game.getState()).core;
+            const gained = core.players['1'].nobleIds as string[];
+            return {
+                currentPlayer: core.currentPlayer,
+                pending: core.pendingResolution ?? null,
+                gainedCount: gained.length,
+                gainedIsCandidate: gained.length === 1 && ['noble-3', 'noble-4'].includes(gained[0]),
+                remainingCount: core.nobleIds.length,
+                ineligibleRemains: core.nobleIds.includes('noble-2'),
+                distinct: gained.length === 1 && !core.nobleIds.includes(gained[0]),
+                boughtWhite: core.players['1'].purchasedCardIds.some((id: string) => !purchased.includes(id) && /^t[123]-white-/.test(id)),
+            };
+        }, { timeout: 30000 }).toEqual({ currentPlayer: '0', pending: null, gainedCount: 1,
+            gainedIsCandidate: true, remainingCount: 2, ineligibleRemains: true, distinct: true, boughtWhite: true });
+        await expect(page.getByTestId('splendor-board')).toBeVisible();
+        await expect(page.getByTestId('splendor-action-log-row').filter({ hasText: /选择贵族|chose a noble/i })).toBeVisible();
+        await expect(page.getByTestId('splendor-bank-token-white')).toBeEnabled();
+        await page.getByTestId('splendor-bank-token-white').click();
+        await page.getByTestId('splendor-bank-token-blue').click();
+        await page.getByTestId('splendor-bank-token-green').click();
+        await expect.poll(async () => {
+            const tokens = (await game.getState()).core.players['0'].tokens;
+            return { white: tokens.white, blue: tokens.blue, green: tokens.green };
+        }).toEqual({ white: 1, blue: 3, green: 3 });
+    });
+
+    test('Splendor：联机贵族选择限制席位并在刷新后继续', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const setup = await setupSplendorOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined);
+        expect(setup, '联机房间必须成功创建').not.toBeNull();
+        if (!setup) return;
+        const { hostContext, guestContext, hostPage, guestPage, matchId } = setup;
+        try {
+            const state = await getMatchState(matchId, hostPage);
+            const core = state.core as SplendorCore;
+            const purchased = [
+                't1-white-1', 't1-white-2', 't3-white-4',
+                't1-blue-1', 't1-blue-2', 't1-blue-3',
+                't1-green-1', 't1-green-2', 't1-green-3',
+                't1-black-1', 't1-black-2', 't1-black-3',
+            ];
+            for (const tier of [1, 2, 3] as const) {
+                const pool = [...core.market[tier], ...core.decks[tier]].filter(id => !purchased.includes(id));
+                core.market[tier] = pool.slice(0, 4);
+                core.decks[tier] = pool.slice(4);
+            }
+            core.hostStarted = true;
+            core.currentPlayer = '0';
+            core.round = 12;
+            core.players['0'].purchasedCardIds = purchased;
+            core.players['0'].points = 5;
+            core.nobleIds = ['noble-2', 'noble-3', 'noble-4'];
+            core.pendingResolution = { type: 'chooseNoble', nobleIds: ['noble-3', 'noble-4'] };
+            await injectMatchState(matchId, { ...state, core,
+                sys: { ...state.sys, turnOrder: ['0', '1'], currentPlayerIndex: 0 } }, hostPage);
+            const firstChoice = hostPage.getByTestId('splendor-choose-noble-noble-3');
+            await expect(firstChoice).toBeVisible({ timeout: 30000 });
+            await expect(hostPage.getByTestId('splendor-choose-noble-noble-4')).toBeVisible();
+            await expect(guestPage.getByTestId('splendor-choose-noble-noble-3')).toHaveCount(0);
+            await expect(guestPage.getByTestId('splendor-choose-noble-noble-4')).toHaveCount(0);
+            const guestCredentials = await guestPage.evaluate((id) => {
+                const stored = localStorage.getItem(`match_creds_${id}`);
+                if (!stored) throw new Error('客人席位凭据未保存');
+                return (JSON.parse(stored) as { credentials: string }).credentials;
+            }, matchId);
+            const rejected = await new Promise<{ accepted: boolean; error?: string }>((resolve, reject) => {
+                const socket = io(`${getGameServerBaseURL()}/game`, {
+                    parser: msgpackParser, transports: ['websocket'], forceNew: true, reconnection: false,
+                });
+                let error: string | undefined;
+                const timeout = setTimeout(() => { socket.disconnect(); reject(new Error('非法选择的服务端应答超时')); }, 10000);
+                socket.on('connect_error', failure => { clearTimeout(timeout); socket.disconnect(); reject(failure); });
+                socket.on('error', (id: string, reason: string) => { if (id === matchId) error = reason; });
+                socket.on('connect', () => socket.emit('sync', matchId, '1', guestCredentials));
+                socket.on('state:sync', (id: string) => {
+                    if (id !== matchId) return;
+                    socket.emit('command', matchId, 'CHOOSE_NOBLE', { nobleId: 'noble-4' }, guestCredentials, {},
+                        (result: { accepted: boolean }) => {
+                            clearTimeout(timeout);
+                            socket.disconnect();
+                            resolve({ accepted: result.accepted, error });
+                        });
+                });
+            });
+            expect(rejected).toEqual({ accepted: false, error: 'notYourTurn' });
+            await expect.poll(async () => {
+                const current = (await getMatchState(matchId, hostPage)).core as SplendorCore;
+                return { player: current.currentPlayer, pending: current.pendingResolution,
+                    hostNobles: current.players['0'].nobleIds, guestNobles: current.players['1'].nobleIds };
+            }).toEqual({ player: '0', pending: { type: 'chooseNoble', nobleIds: ['noble-3', 'noble-4'] },
+                hostNobles: [], guestNobles: [] });
+            await hostPage.reload({ waitUntil: 'domcontentloaded' });
+            await expect(firstChoice).toBeVisible({ timeout: 30000 });
+            await expect(hostPage.getByTestId('splendor-choose-noble-noble-4')).toBeVisible();
+            await expect.poll(async () => {
+                const current = (await getMatchState(matchId, hostPage)).core as SplendorCore;
+                return { currentPlayer: current.currentPlayer, pending: current.pendingResolution,
+                    owner: current.players['0'].nobleIds };
+            }).toEqual({ currentPlayer: '0', pending: { type: 'chooseNoble', nobleIds: ['noble-3', 'noble-4'] }, owner: [] });
+            await firstChoice.click();
+            await expect.poll(async () => {
+                const current = (await getMatchState(matchId, hostPage)).core as SplendorCore;
+                return { pending: current.pendingResolution ?? null, owner: current.players['0'].nobleIds, points: current.players['0'].points,
+                    market: current.nobleIds, currentPlayer: current.currentPlayer };
+            }, { timeout: 15000 }).toEqual({ pending: null, owner: ['noble-3'], points: 8,
+                market: ['noble-2', 'noble-4'], currentPlayer: '1' });
+            await expect(guestPage.getByTestId('splendor-bank-token-white')).toBeEnabled({ timeout: 15000 });
+            await expect(hostPage.getByTestId('splendor-bank-token-white')).toBeDisabled();
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
+        }
     });
 
     test('Splendor：手机竖屏联机待开局浮层不应横向溢出', async ({ browser }, testInfo) => {

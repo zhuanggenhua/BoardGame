@@ -189,6 +189,7 @@ export interface GameTransportServerConfig {
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
     /** 命令成功后回调（可选），用于刷新大厅摘要等非游戏状态视图 */
     onCommandSucceeded?: (matchID: string, gameName: string, commandType: string) => void;
+    onPlayerConnectionChanged?: (matchID: string, gameName: string) => void;
     trainingDataRecorder?: TrainingDataRecorder;
     trainingDataMinCompletedMatchDurationMs?: number;
     rulesVersion?: string | null;
@@ -383,7 +384,10 @@ export class GameTransportServer {
                 validateCommandAuth: (matchID, playerID, credentials, metadata) => (
                     this.validateCommandAuth(matchID, playerID, credentials, metadata)
                 ),
-                persistMetadata: (matchID, metadata) => this.storage.setMetadata(matchID, metadata),
+                persistMetadata: async (matchID, metadata) => {
+                    await this.storage.setMetadata(matchID, metadata);
+                    config.onPlayerConnectionChanged?.(matchID, metadata.gameName);
+                },
                 clearSyncBaseline: (match, playerID) => {
                     this.stateSynchronizer.clearBaseline(match, playerID);
                 },
@@ -559,7 +563,7 @@ export class GameTransportServer {
                     this.storage.setState(match.matchID, storedState)
                 ),
                 broadcastState: (match) => this.stateSynchronizer.broadcast(match),
-                buildAuthoritativeState: (match) => this.stateSynchronizer.buildAuthoritativeState(match),
+                buildAuthoritativeState: (match,playerId) => this.stateSynchronizer.buildPlayerState(match,playerId),
                 resolveSeatControllerType: (match, playerId) => (
                     this.resolveOnlineAiSeatControllerType(match, playerId)
                 ),
@@ -1398,6 +1402,11 @@ export class GameTransportServer {
     }
 
     /** 卸载活跃对局（销毁房间时调用） */
+    hasConnectedPlayer(matchID: string): boolean {
+        const match = this.matchRoomRegistry.get(matchID);
+        return Boolean(match && !match.unloaded && Array.from(match.connections.values()).some(sockets => sockets.size > 0));
+    }
+
     unloadMatch(matchID: string, options?: { disconnectSockets?: boolean }): boolean {
         return this.matchRoomUnloadCoordinator.unloadMatch(matchID, options);
     }

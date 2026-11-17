@@ -37,6 +37,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
         const { context, page, matchId } = match!;
         const diagnostics = attachPageDiagnostics(page);
+        const access = { playerId: match!.hostPlayerId, credentials: match!.hostCredentials };
 
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
@@ -45,6 +46,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
             expect(initialSummary.currentPlayer).toBe('0');
             expect(initialSummary.turn).toBe(1);
+            await aiStepBarrier(matchId, 'arm', access, { playerId: '2', commandType: '*' });
             const afterHostTurnSummary = await completeNaturalHumanDeckTurn({
                 matchId,
                 page,
@@ -63,9 +65,13 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 message: '等待 6 人在线 AI 房间里 seat1 已完成推进，并真实轮到 seat2 local AI，再执行第一次 refresh',
             }).toBe(true);
 
+            await expect.poll(async () => (await aiStepBarrier(matchId, 'status', access, { playerId: '2' }))?.reached).toBe(true);
+            await aiStepBarrier(matchId, 'arm', access, { playerId: '5', commandType: '*' });
             const seat2TurnSummary = await readOnlineAiStateSummary(matchId, page);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(page, '0');
+            expect((await readOnlineAiStateSummary(matchId, page)).currentPlayer).toBe('2');
+            await aiStepBarrier(matchId, 'release', access, { playerId: '2' });
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -78,6 +84,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 message: '等待第一次 refresh 后的 host 页面看到 seat3 到 seat5 继续推进，并在 seat5 回合中再执行第二次 refresh',
             }).toBe(true);
 
+            await expect.poll(async () => (await aiStepBarrier(matchId, 'status', access, { playerId: '5' }))?.reached).toBe(true);
             const seat5TurnSummary = await readOnlineAiStateSummary(matchId, page);
             expect(seat5TurnSummary.eventStreamNextId).not.toBeNull();
             expect(seat2TurnSummary.eventStreamNextId).not.toBeNull();
@@ -85,6 +92,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
             await page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(page, '0');
+            expect((await readOnlineAiStateSummary(matchId, page)).currentPlayer).toBe('5');
+            await aiStepBarrier(matchId, 'release', access, { playerId: '5' });
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -114,7 +123,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
 
             assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-ai-six-player-two-refreshes-same-round', diagnostics }]);
         } finally {
-            await context.close().catch(() => {});
+            try { await aiStepBarrier(matchId, 'release', access); }
+            finally { await context.close().catch(() => {}); }
         }
     });
 

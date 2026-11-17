@@ -18,6 +18,7 @@ export interface RoomPlayer {
     id: number;
     name?: string;
     isConnected?: boolean;
+    isAi?: boolean;
 }
 
 export interface Room {

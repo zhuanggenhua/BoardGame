@@ -12,9 +12,9 @@ import type {
 } from '../../engine/transport/storage';
 import { mongoStorage, MongoStorage } from './MongoStorage';
 import logger from '../../../server/logger';
-import { decideDuplicateOwnerRoomAction } from '../duplicateOwnerRooms';
+import { decideDuplicateOwnerRoomAction, DUPLICATE_OWNER_DISCONNECT_GRACE_MS } from '../duplicateOwnerRooms';
 
-const DISCONNECT_GRACE_MS = 5 * 60 * 1000;
+const DISCONNECT_GRACE_MS = DUPLICATE_OWNER_DISCONNECT_GRACE_MS;
 
 type OwnerType = 'user' | 'guest';
 type StorageTarget = 'mongo' | 'memory';
@@ -397,15 +397,16 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
         return Array.from(merged);
     }
 
-    async cleanupEphemeralMatches(graceMs = DISCONNECT_GRACE_MS): Promise<number> {
+    async cleanupEphemeralMatches(graceMs = DISCONNECT_GRACE_MS, hasLivePlayer: (matchID: string) => boolean = () => false): Promise<number> {
         const cleanedMongo = this.persistentEnabled
-            ? await this.mongo.cleanupEphemeralMatches()
+            ? await this.mongo.cleanupEphemeralMatches(graceMs, hasLivePlayer)
             : 0;
         const now = Date.now();
         let cleanedMemory = 0;
 
         const memoryMatches = this.memory.listMatches();
         for (const matchID of memoryMatches) {
+            if (hasLivePlayer(matchID)) continue;
             const { metadata } = this.memory.fetch(matchID, { metadata: true });
             if (!metadata) continue;
             const setupData = parseSetupData((metadata as { setupData?: unknown }).setupData);

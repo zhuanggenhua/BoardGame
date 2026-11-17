@@ -30,6 +30,15 @@ it('本人棋子直接选择移动，合法地点按钮直接提交目的地', (
  expect(screen.getByRole('button',{name:/玩家2位于/}).hasAttribute('disabled')).toBe(true);
  fireEvent.click(screen.getByTestId('fate-domination-location-shinto'));expect(onLocation).toHaveBeenCalledExactlyOnceWith('shinto');
 });
+it('神威车轮只高亮指定的事件卡并直接点击目标',()=>{
+ const core=createReplayAdapter(FateDominationDomain,'chariot-map-target').setup(['0','1','2']).core;
+ const event=core.currentEvents.miyama[0],choose=vi.fn(),inspect=vi.fn();
+ render(<FateMapSurface core={core} locale="zh-CN" legalLocations={[]} onLocation={vi.fn()} onInspect={inspect} chariotTargetIds={[event.id]} onChariotTarget={choose}/>);
+ const target=screen.getByRole('button',{name:`选择事件 ${event.name}`});
+ expect(target.classList.contains('is-chariot-target')).toBe(true);
+ fireEvent.contextMenu(target);expect(inspect).toHaveBeenCalledExactlyOnceWith(event.assetPath,event.name);
+ fireEvent.click(target);expect(choose).toHaveBeenCalledExactlyOnceWith(event.id);expect(inspect).toHaveBeenCalledOnce();
+});
 
 it('观察他席部署时仍能锚定地图上的下一合法点位，但不开放本席输入',()=>{
  const core=createReplayAdapter(FateDominationDomain,'map-observe-deployment').setup(['0','1','2']).core;

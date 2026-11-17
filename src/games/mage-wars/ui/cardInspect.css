@@ -9,3 +9,11 @@
     opacity: 1;
     pointer-events: auto;
 }
+
+/* 关闭控件贴在卡牌右上外侧，避免覆盖牌面文字。 */
+.mw-magnify-close {
+    right: 0 !important;
+    top: 0 !important;
+    border-radius: 0 !important;
+    transform: translateX(100%);
+}

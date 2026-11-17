@@ -258,6 +258,8 @@ describe('mage-wars creature summoning', () => {
         const attackState: MatchState<MageWarsCore> = {
             core: withArenaObject({
                 ...summoned.state.core,
+                // 这里构造的是该生物已就绪、法师行动已结束的独立攻击前态。
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [fairy.id]: { ...fairy, actionReady: true },
@@ -421,6 +423,7 @@ describe('mage-wars creature summoning', () => {
         const attackCore = withArenaObject(
             withPlayerInZone({
                 ...summoned.state.core,
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [archer.id]: {
@@ -601,6 +604,7 @@ describe('mage-wars creature summoning', () => {
         });
         const attackCore = withArenaObject({
             ...summoned.state.core,
+            activeCreatureAction: undefined,
             objects: {
                 ...summoned.state.core.objects,
                 [tegu.id]: {
@@ -958,7 +962,7 @@ describe('mage-wars creature summoning', () => {
             const readyGoran = { ...goran, actionReady: true };
             const core = withArenaObject(
                 withArenaObject(
-                    withPlayerInZone(summoned.state.core, '0', ownerMageZoneId),
+                    withPlayerInZone({ ...summoned.state.core, activeCreatureAction: undefined }, '0', ownerMageZoneId),
                     readyGoran,
                 ),
                 target,

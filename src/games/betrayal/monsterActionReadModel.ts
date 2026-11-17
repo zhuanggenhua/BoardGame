@@ -299,11 +299,12 @@ export function cloneMonsterMovementRollGroupResult(
 }
 
 function resolveControlledMonsterMovementRoll(
+    core: BetrayalCore,
     nextPlayerId: string,
     random: RandomFn,
     monster: BetrayalMonsterSummary | null,
 ): BetrayalMonsterMovementRollResult | null {
-    if (!monster) {
+    if (!monster || resolveMonsterStatusKind(core, monster.id) !== 'active') {
         return null;
     }
     const dice = rollBetrayalDicePips(random, monster.speed);
@@ -325,10 +326,10 @@ export function resolveBetrayalControlledMonsterMovementRoll(
     random: RandomFn,
 ): BetrayalMonsterMovementRollResult | null {
     if (shouldDeadTraitorControlJackSpirit(core, nextPlayerId)) {
-        return resolveControlledMonsterMovementRoll(nextPlayerId, random, findJackSpirit(core));
+        return resolveControlledMonsterMovementRoll(core, nextPlayerId, random, findJackSpirit(core));
     }
     if (shouldDeadPlayerControlFeverish(core, nextPlayerId)) {
-        return resolveControlledMonsterMovementRoll(nextPlayerId, random, findFeverishMonster(core, nextPlayerId));
+        return resolveControlledMonsterMovementRoll(core, nextPlayerId, random, findFeverishMonster(core, nextPlayerId));
     }
     return null;
 }
@@ -1072,6 +1073,26 @@ export function resolveBetrayalMonsterTurnRuntimeState(
     return cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
 }
 
+/** 受控怪物使用当前行动者的移动点；其他怪物使用怪物回合记录。 */
+export function resolveBetrayalControlledMonsterId(core: BetrayalCore): string | undefined {
+    return shouldDeadPlayerControlFeverish(core, core.currentPlayer)
+        ? findFeverishMonster(core, core.currentPlayer)?.id
+        : shouldDeadTraitorControlJackSpirit(core, core.currentPlayer)
+            ? findJackSpirit(core)?.id
+            : undefined;
+}
+
+export function hasPendingControlledMonsterTurnStart(core: BetrayalCore): boolean {
+    const monsterId = resolveBetrayalControlledMonsterId(core);
+    return Boolean(monsterId && resolveMonsterStatusKind(core, monsterId) === 'stunned');
+}
+
+export function resolveBetrayalMonsterRemainingMovement(core: BetrayalCore, monsterId: string): number {
+    return monsterId === resolveBetrayalControlledMonsterId(core)
+        ? core.movesRemaining
+        : core.scenarioRuntime.monsterTurn.moveRemainingById[monsterId] ?? 0;
+}
+
 export function resolveBetrayalMonsterMoveCost(
     core: BetrayalCore,
     monsterId: string,
@@ -1085,7 +1106,10 @@ export function resolveBetrayalMonsterMoveCost(
         && isExplorerTargetableByMonsters(core, explorer)
         && resolveBetrayalExplorerSide(core, explorer.playerId) === 'hero'
     ));
-    return sharesRoomWithLivingHero ? 2 : 1;
+    const cost = sharesRoomWithLivingHero ? 2 : 1;
+    const remaining = resolveBetrayalMonsterRemainingMovement(core, monsterId);
+    const hasMoved = core.scenarioRuntime.monsterTurn.movedMonsterIdsThisTurn.includes(monsterId);
+    return !hasMoved && remaining > 0 ? Math.min(cost, remaining) : cost;
 }
 
 export function resolveBetrayalMonsterMoveTargetRooms(
@@ -1200,7 +1224,7 @@ function resolveBloodFromStoneHasEnabledMonsterAction(core: BetrayalCore): boole
         const moveCost = actionSet.status === 'active'
             ? resolveBetrayalMonsterMoveCost(core, actionSet.monsterId)
             : 0;
-        const moveRemaining = core.scenarioRuntime.monsterTurn.moveRemainingById[actionSet.monsterId] ?? 0;
+        const moveRemaining = resolveBetrayalMonsterRemainingMovement(core, actionSet.monsterId);
         const canMoveNow = actionSet.canMove
             && actionSet.moveTargetRoomIds.length > 0
             && moveCost > 0
@@ -1329,6 +1353,8 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
     const slots: BetrayalMonsterActionSlot[] = [];
 
     for (const status of monsterStatuses) {
+        if (shouldDeadPlayerControlFeverish(core, core.currentPlayer)
+            && status.monsterId !== `feverish-${core.currentPlayer}`) continue;
         const preview = resolveBetrayalMonsterTurnStartResolutionPreview(core, status.monsterId);
         if (!preview.active) {
             continue;
@@ -1353,6 +1379,8 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
     }
 
     for (const group of movementGroups) {
+        if (shouldDeadPlayerControlFeverish(core, core.currentPlayer)
+            && !group.monsterIds.includes(`feverish-${core.currentPlayer}`)) continue;
         const preview = resolveBetrayalMonsterMovementRollGroupPreview(core, group.groupId);
         slots.push({
             id: `movement-roll:${group.groupId}`,
@@ -1374,11 +1402,13 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
     }
 
     for (const actionSet of actionSets) {
+        if (shouldDeadPlayerControlFeverish(core, core.currentPlayer)
+            && actionSet.monsterId !== `feverish-${core.currentPlayer}`) continue;
         const targetRoomIds = [...actionSet.moveTargetRoomIds];
         const moveCost = actionSet.status === 'active'
             ? resolveBetrayalMonsterMoveCost(core, actionSet.monsterId)
             : 0;
-        const moveRemaining = core.scenarioRuntime.monsterTurn.moveRemainingById[actionSet.monsterId] ?? 0;
+        const moveRemaining = resolveBetrayalMonsterRemainingMovement(core, actionSet.monsterId);
         const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, actionSet.monsterId);
         const hasMoveAllowance = (moveRemaining >= moveCost && moveCost > 0) || canMummyTeleportNow;
         const canMoveNow = actionSet.canMove && targetRoomIds.length > 0 && hasMoveAllowance;

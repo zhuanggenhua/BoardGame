@@ -22,8 +22,6 @@ import {
     getMageWarsZoneDistance,
     isMageWarsLegalHiddenEnchantmentTarget,
     isMageWarsChainLightningTargetObject,
-    isMageWarsElementalStaffSpell,
-    isMageWarsElementalStaffBindableSpell,
     isMageWarsSpellBindingBindableSpell,
     isMageWarsSpellBindingStaffSpell,
     isMageWarsHiddenEnchantmentArenaObject,
@@ -47,6 +45,8 @@ import {
     resolveMageWarsResurrectionManaCostForTarget,
     resolveMageWarsSleepSpellManaCostForTarget,
     resolveMageWarsSpellRawCostTotal,
+    resolveMageWarsSpellCost,
+    resolveMageWarsForcePushExtraManaCost,
     resolveMageWarsStealEnchantmentManaCost,
     resolveMageWarsStealEnchantmentNewTargetZoneId,
     resolveMageWarsToxinEnchantmentsAttachedToObject,
@@ -805,15 +805,26 @@ function buildMageWarsSpellCastCandidates(args: {
             })));
         }
         if (args.family === 'force-push') {
-            const manaCost = resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
-            return targetObjects.flatMap((targetObject) => args.state.core.arena
+            const manaCost = resolveMageWarsSpellCost(args.spell.spellCardId, 0, {
+                core: args.state.core, playerId: args.player.id, timing: 'cast',
+            })?.manaCost ?? 0;
+            const objectCandidates = targetObjects.flatMap((targetObject) => args.state.core.arena
                 .filter((zone) => areAdjacentZones(args.state.core, targetObject.zoneId, zone.id))
                 .map((zone) => buildCandidate({
                     targetObject,
-                    manaCost,
+                    manaCost: manaCost + resolveMageWarsForcePushExtraManaCost(args.state.core, targetObject.zoneId, zone.id),
                     id: `target:${targetObject.id}:push-zone:${zone.id}`,
                     pushToZoneId: zone.id,
                 })));
+            const playerCandidates = players.flatMap((targetPlayer) => args.state.core.arena
+                .filter((zone) => areAdjacentZones(args.state.core, targetPlayer.mageZoneId, zone.id))
+                .map((zone) => buildCandidate({
+                    targetPlayer,
+                    manaCost: manaCost + resolveMageWarsForcePushExtraManaCost(args.state.core, targetPlayer.mageZoneId, zone.id),
+                    id: `target-player:${targetPlayer.id}:push-zone:${zone.id}`,
+                    pushToZoneId: zone.id,
+                })));
+            return [...objectCandidates, ...playerCandidates];
         }
         if (args.family === 'teleport') {
             return targetObjects.flatMap((targetObject) => args.state.core.arena

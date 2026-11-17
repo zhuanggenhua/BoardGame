@@ -1,5 +1,7 @@
 import { fatePostBattleOpportunities } from './postBattleChoice';
 import { fateRidingChoiceOpportunities, fateRidingDrawOpportunities } from './ridingChoice';
+import { fateChariotOpportunities } from './chariotChoice';
+import { fateInvestigationOpportunities } from './investigationChoice';
 import { projectFatePlayerView } from './playerView';
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialFateDominationCore } from './setup';
@@ -123,6 +125,8 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
         };
     },
     discoverTimingOpportunities: ({ state, timing, random }) => {
+        if(timing.event?.type === 'FATE_INVESTIGATION_VIEWED')return {opportunities:fateInvestigationOpportunities(timing.event,timing)};
+        if(timing.event?.type === 'FATE_CHARIOT_DRAWN')return {opportunities:fateChariotOpportunities(timing.event,timing)};
         if(timing.event?.type === 'FATE_POST_BATTLE_STARTED')return {opportunities:fatePostBattleOpportunities(timing.event,timing)};
         if (timing.event?.type === 'FATE_RIDING_CHOICE_REQUESTED') {
             return { opportunities: fateRidingChoiceOpportunities(timing.event, timing, state.core) };

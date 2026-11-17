@@ -287,6 +287,7 @@ const HandCard: React.FC<HandCardProps> = ({
                 marginLeft: index === 0 ? 0 : spacing,
                 zIndex: isDragging ? 200 : baseZIndex,
                 boxShadow: isDragging && isDragPlayable ? DRAG_DROP_SHADOW : undefined,
+                willChange: isOpponentView ? undefined : 'transform',
                 touchAction: interactionMode === 'drag' ? 'none' : undefined,
             }}
             // 对手视角时完全不使用动画

@@ -573,7 +573,7 @@ describe('MongoStorage 行为', () => {
 
     it('cleanupEphemeralMatches 在断线超时后清理临时房间', async () => {
         const Match = mongoose.model('Match');
-        const disconnectedSince = Date.now() - 6 * 60 * 1000;
+        const disconnectedSince = Date.now() - 21 * 60 * 1000;
         await Match.create({
             matchID: 'ephemeral-empty',
             gameName: 'tictactoe',
@@ -615,6 +615,19 @@ describe('MongoStorage 行为', () => {
         const remainingIds = remaining.map(doc => doc.matchID);
         expect(remainingIds).toContain('ephemeral-active');
         expect(remainingIds).not.toContain('ephemeral-empty');
+    });
+
+    it('临时房间断线十九分钟时不清理，超过二十分钟后清理', async () => {
+        const Match = mongoose.model('Match');
+        const now = Date.now();
+        await Match.create({ matchID: 'grace-twenty', gameName: 'tictactoe', state: null, ttlSeconds: 0,
+            metadata: { gameName: 'tictactoe', players: { 0: { name: 'P0', isConnected: false } },
+                disconnectedSince: now - 19 * 60 * 1000, createdAt: now, updatedAt: now } });
+        expect(await mongoStorage.cleanupEphemeralMatches()).toBe(0);
+        expect(await Match.exists({ matchID: 'grace-twenty' })).toBeTruthy();
+        await Match.updateOne({ matchID: 'grace-twenty' }, { $set: { 'metadata.disconnectedSince': now - 21 * 60 * 1000 } });
+        expect(await mongoStorage.cleanupEphemeralMatches()).toBe(1);
+        expect(await Match.exists({ matchID: 'grace-twenty' })).toBeNull();
     });
 
     it('cleanupEphemeralMatches 标记重启遗留连接但不立即删除', async () => {
@@ -765,6 +778,28 @@ describe('MongoStorage 行为', () => {
         const players = doc?.metadata?.players ?? {};
         expect(players['0']?.isConnected).toBe(false);
         expect(typeof doc?.metadata?.disconnectedSince).toBe('number');
+    });
+
+    it('清理时真实玩家仍连接的临时房间不会因旧数据或断线标记被删除', async () => {
+        const Match = mongoose.model('Match');
+        const now = Date.now();
+        for (const [matchID, isConnected] of [['live-stale', true], ['live-disconnected', false]] as const) {
+            await Match.create({
+                matchID, gameName: 'tictactoe', state: null, ttlSeconds: 0,
+                metadata: {
+                    gameName: 'tictactoe', players: { 0: { name: 'P0', isConnected } },
+                    disconnectedSince: now - 6 * 60 * 1000,
+                    createdAt: now, updatedAt: now - 31 * 60 * 1000,
+                },
+            });
+            await Match.collection.updateOne({ matchID }, { $set: { updatedAt: new Date(now - 31 * 60 * 1000) } });
+        }
+
+        await mongoStorage.cleanupEphemeralMatches(5 * 60 * 1000, () => true);
+        const rooms = await Match.find({ matchID: { $in: ['live-stale', 'live-disconnected'] } }).lean<MatchIdDoc[]>();
+        expect(rooms.map(room => room.matchID).sort()).toEqual(['live-disconnected', 'live-stale']);
+        const live = await Match.findOne({ matchID: 'live-stale' }).lean<{ metadata: { players: Record<string, { isConnected: boolean }> } }>();
+        expect(live?.metadata.players['0'].isConnected).toBe(true);
     });
 
     it('createMatch 设置 1 天游留存时写入 TTL 与 expiresAt', async () => {

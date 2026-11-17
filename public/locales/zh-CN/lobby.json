@@ -267,6 +267,7 @@
     "return": "返回当前对局（#{{id}}）"
   },
   "rooms": {
+    "playerStatus": { "online": "在线", "offline": "离线", "ai": "电脑玩家", "unknown": "状态未知" },
     "title": "游戏房间",
     "loading": "正在加载房间…",
     "empty": "暂无活跃房间",

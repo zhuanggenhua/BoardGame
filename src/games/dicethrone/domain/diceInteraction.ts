@@ -3,6 +3,7 @@ import type { InteractionDescriptor as DtInteractionDescriptor } from './core-ty
 
 /** 骰子修改累积结果 */
 export interface DiceModifyResult {
+    selectedTargetDieId?: number;
     /** 固定结果有多个候选时，当前选择的结果；尚未修改任何骰子。 */
     targetValue?: number;
     /** copy 模式首选来源骰；保持命令顺序时不能依赖数字键对象的枚举顺序。 */
@@ -18,6 +19,8 @@ export interface DiceModifyResult {
 /** 骰子修改步骤 */
 export type DiceModifyStep =
     | { action: 'chooseValue'; value: number }
+    | { action: 'chooseTargetDie'; dieId: number }
+    | { action: 'setAllowed'; dieId: number; value: number }
     | { action: 'select'; dieId: number; dieValue: number }
     | { action: 'adjust'; dieId: number; delta: number; currentValue: number }
     | { action: 'setAny'; dieId: number; newValue: number };
@@ -43,6 +46,10 @@ export function diceModifyReducer(
     maxSelectCount?: number,
 ): DiceModifyResult {
     const mode = config?.mode;
+    if (step.action === 'chooseTargetDie') {
+        if (config?.mode !== 'set' || !config.allowedValues || current.modCount > 0) return current;
+        return { ...current, selectedTargetDieId: step.dieId };
+    }
     if (step.action === 'chooseValue') {
         if (config?.mode !== 'set' || !config.allowedValues?.includes(step.value) || current.modCount > 0) return current;
         return { ...current, targetValue: step.value };
@@ -52,6 +59,15 @@ export function diceModifyReducer(
         const alreadyTracked = Object.prototype.hasOwnProperty.call(current.modifications, String(dieId));
         return !alreadyTracked && current.modCount >= maxSelectCount;
     };
+
+    if (step.action === 'setAllowed') {
+        if (config?.mode !== 'set' || !config.allowedValues?.includes(step.value)
+            || current.selectedTargetDieId !== step.dieId
+            || (current.targetValue !== undefined && current.targetValue !== step.value)
+            || Object.prototype.hasOwnProperty.call(current.modifications, String(step.dieId))
+            || hasReachedSelectionLimit(step.dieId)) return current;
+        return { ...current, targetValue: step.value, modifications: { ...current.modifications, [step.dieId]: step.value }, modCount: current.modCount + 1 };
+    }
 
     if (step.action === 'select') {
         // set 模式：选中骰子，记录目标值

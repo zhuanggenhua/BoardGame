@@ -1,7 +1,7 @@
 import { MAGE_WARS_MAX_PREPARED_SPELLS } from '../domain';
 import type { MageWarsPhase } from '../domain/core-types';
 
-export type MageWarsTurnMainActionMode = 'plan-spells' | 'advance-phase';
+export type MageWarsTurnMainActionMode = 'plan-spells' | 'advance-phase' | 'creature-no-action';
 
 export interface MageWarsTurnMainActionModel {
     mode: MageWarsTurnMainActionMode;
@@ -41,6 +41,7 @@ export function getMageWarsTurnMainActionModel(args: {
     canSubmitPlanningSpells: boolean;
     planSpellCount: number;
     planSpellTotal?: number;
+    canTakeNoAction?: boolean;
 }): MageWarsTurnMainActionModel | null {
     if (MAGE_WARS_AUTOMATIC_PHASES.has(args.phase)) return null;
 
@@ -63,11 +64,13 @@ export function getMageWarsTurnMainActionModel(args: {
     }
 
     return {
-        mode: 'advance-phase',
+        mode: args.phase === 'creatureAction' && args.canTakeNoAction ? 'creature-no-action' : 'advance-phase',
         phase: args.phase,
         testId: 'mage-wars-turn-end',
         tutorialId: 'mw-turn-end',
-        labelKey: resolveMageWarsPhaseAdvanceActionLabelKey(args.phase),
+        labelKey: args.phase === 'creatureAction' && args.canTakeNoAction
+            ? 'actions.noAction'
+            : resolveMageWarsPhaseAdvanceActionLabelKey(args.phase),
         disabled: !args.canAdvance,
         emphasized: false,
     };

@@ -33,6 +33,18 @@ describe('isMageWarsArenaObjectActionable', () => {
         boundSpellCardId: 3500,
     });
 
+    it('keeps a moved creature selectable while its quick action is available', () => {
+        const moved = arenaObject({
+            id: 'moved-creature',
+            kind: 'creature',
+            temporaryTraits: { movedThisAction: true, quickActionAfterMoveAvailable: true },
+        });
+        const options = { canAct: true, activePlayerId: '0', phase: 'creatureAction' };
+        expect(isMageWarsArenaObjectActionable(moved, options)).toBe(true);
+        expect(isMageWarsArenaObjectActionable({ ...moved, temporaryTraits: {} }, options)).toBe(false);
+        expect(isMageWarsArenaObjectActionable(moved, { ...options, activePlayerId: '1' })).toBe(false);
+    });
+
     it('treats owned bound-spell attachments as actionable in cast phases', () => {
         expect(isMageWarsCastPhase('initiativeQuickcast')).toBe(true);
         expect(canMageWarsObjectCastBoundSpell(boundStaff, {

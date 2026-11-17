@@ -54,7 +54,6 @@ export function projectFatePlayerView(state: FateDominationCore, viewerId: strin
         ruleState: { ...ruleState, copies: ruleState.copies.filter(record => record.context.controllerId === viewerId || record.context.ownerId === viewerId) },
         players: Object.fromEntries(state.playerIds.map(id => {
             const player = state.players[id];
-            if (id === viewerId) return [id, player];
             const hand = projectFateHand(player);
             const skillCards=projectFateSkillCards(player,viewerId);
             const publicView: NonNullable<PlayerState['publicView']> = {
@@ -67,6 +66,7 @@ export function projectFatePlayerView(state: FateDominationCore, viewerId: strin
                 skillCards,
                 playedSkills: skillCards.flatMap(card=>card && player.activeSkills.includes(card.id) ? [card] : []),
             };
+            if(id===viewerId)return [id,{...player,deck:[],publicView}];
             return [id, { ...player, publicView, hand: [], deck: [], discard: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], activeAttackIds: [],
                 servantId: player.isRevealed ? player.servantId : '', skills: player.isRevealed ? player.skills : [], activeSkills: player.isRevealed ? player.activeSkills : [],
                 piercingSpearPlays: player.isRevealed ? player.piercingSpearPlays : undefined,

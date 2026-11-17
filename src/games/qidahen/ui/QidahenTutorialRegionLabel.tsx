@@ -41,7 +41,9 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
             const mapObjects = [...(mapContent?.querySelectorAll('[data-qidahen-map-token-type="army"], [data-qidahen-map-token-type="control"]') ?? [])];
             const regionObjects = mapObjects.filter(element => element.getAttribute('data-qidahen-map-token-region') === regionId)
                 .map(element => element.getBoundingClientRect());
+            const quantityControls = [...(mapContent?.querySelectorAll('[data-qidahen-dispatch-group-controls="true"]') ?? [])];
             const obstacles = [...mapObjects.map(element => element.getBoundingClientRect()),
+                ...quantityControls.map(element => element.getBoundingClientRect()),
                 ...QIDAHEN_MAP_NAMEPLATE_BOUNDS.flatMap(bounds => map ? [{
                     left: map.left + bounds.left / QIDAHEN_MAP_WIDTH * map.width,
                     right: map.left + (bounds.left + bounds.width) / QIDAHEN_MAP_WIDTH * map.width,

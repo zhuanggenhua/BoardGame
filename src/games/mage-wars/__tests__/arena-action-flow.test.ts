@@ -30,6 +30,132 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars arena action flow', () => {
+    it('allows a creature to use its quick action for a second move but not a third', () => {
+        const base = setupState('creatureAction');
+        const creature = makeArenaObject('two-step-creature', '0', PLAYER_ZERO_START_ZONE);
+        const state = { ...base, core: withArenaObject(base.core, creature) };
+        const move = (current: MatchState<MageWarsCore>, toZoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS]) => (
+            runCommand(current, {
+                type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+                playerId: '0',
+                payload: { objectId: creature.id, toZoneId },
+            })
+        );
+        const first = move(state, ARENA_ZONE_IDS.A2);
+        expect(first.success).toBe(true);
+        const second = move(first.state, ARENA_ZONE_IDS.B2);
+        expect(second.success).toBe(true);
+        expect(second.state.core.objects[creature.id].zoneId).toBe(ARENA_ZONE_IDS.B2);
+        expect(move(second.state, ARENA_ZONE_IDS.B3).success).toBe(false);
+        expect(validateCommand(second.state, {
+            type: MAGE_WARS_COMMANDS.GUARD,
+            playerId: '0',
+            payload: { objectId: creature.id },
+        })).toBe('objectActionSpent');
+    });
+
+    it.each([PLAYER_ZERO_START_ZONE, ARENA_ZONE_IDS.A2])(
+        'prevents a second move when an enemy hinders the first move at %s',
+        (enemyZone) => {
+            const base = setupState('creatureAction');
+            const creature = makeArenaObject('hindered-creature', '0', PLAYER_ZERO_START_ZONE);
+            const enemy = makeArenaObject('hindering-creature', '1', enemyZone);
+            const state = {
+                ...base,
+                core: withArenaObject(withArenaObject(base.core, creature), enemy),
+            };
+            const first = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+                playerId: '0',
+                payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.A2 },
+            });
+            expect(first.success).toBe(true);
+            const second = runCommand(first.state, {
+                type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+                playerId: '0',
+                payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.B2 },
+            });
+            expect(second.success).toBe(false);
+            expect(second.state.core.objects[creature.id].zoneId).toBe(ARENA_ZONE_IDS.A2);
+        },
+    );
+
+    it('permits guarding after one move and consumes the remaining quick action', () => {
+        const base = setupState('creatureAction');
+        const creature = makeArenaObject('move-and-guard', '0', PLAYER_ZERO_START_ZONE);
+        const moved = runCommand({ ...base, core: withArenaObject(base.core, creature) }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        expect(moved.success).toBe(true);
+        const guarded = runCommand(moved.state, {
+            type: MAGE_WARS_COMMANDS.GUARD,
+            playerId: '0',
+            payload: { objectId: creature.id },
+        });
+        expect(guarded.success).toBe(true);
+        expect(guarded.state.core.objects[creature.id].guarding).toBe(true);
+        expect(validateCommand(guarded.state, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.B2 },
+        })).toBe('objectActionSpent');
+    });
+
+    it('treats an enemy mage as a hindrance and ends a slow creature action after moving', () => {
+        const base = setupState('creatureAction');
+        const creature = makeArenaObject('mage-hindered', '0', PLAYER_ZERO_START_ZONE);
+        const withEnemyMage = withPlayerInZone(withArenaObject(base.core, creature), '1', ARENA_ZONE_IDS.A2);
+        const moved = runCommand({ ...base, core: withEnemyMage }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        expect(moved.success).toBe(true);
+        expect(validateCommand(moved.state, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.B2 },
+        })).toBe('movementActionLimitReached');
+
+        const slow = makeArenaObject('slow-creature', '0', PLAYER_ZERO_START_ZONE, {
+            attackOrTraitLine: '利爪：快速近战 2 骰；迟缓',
+        });
+        const slowMoved = runCommand({ ...base, core: withArenaObject(base.core, slow) }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: slow.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        expect(slowMoved.success).toBe(true);
+        expect(validateCommand(slowMoved.state, {
+            type: MAGE_WARS_COMMANDS.GUARD,
+            playerId: '0',
+            payload: { objectId: slow.id },
+        })).toBe('objectActionSpent');
+    });
+
+    it('cancels slow and swift so a creature may move once and then guard', () => {
+        const base = setupState('creatureAction');
+        const creature = makeArenaObject('slow-and-swift', '0', PLAYER_ZERO_START_ZONE, {
+            attackOrTraitLine: '利爪：快速近战 2 骰；迟缓；迅捷',
+        });
+        const moved = runCommand({ ...base, core: withArenaObject(base.core, creature) }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        expect(moved.success).toBe(true);
+        expect(moved.state.core.objects[creature.id].actionReady).toBe(false);
+        const guarded = runCommand(moved.state, {
+            type: MAGE_WARS_COMMANDS.GUARD,
+            playerId: '0',
+            payload: { objectId: creature.id },
+        });
+        expect(guarded.success).toBe(true);
+        expect(guarded.state.core.objects[creature.id].guarding).toBe(true);
+    });
+
     it('moves only to adjacent arena zones and guard consumes the main action', () => {
         const state = setupState('creatureAction');
 
@@ -193,6 +319,7 @@ describe('mage-wars arena action flow', () => {
         const readyState: MatchState<MageWarsCore> = {
             core: {
                 ...summoned.state.core,
+                activeCreatureAction: undefined,
                 players: {
                     ...summoned.state.core.players,
                     '0': {
@@ -361,7 +488,7 @@ describe('mage-wars arena action flow', () => {
         });
 
         expect(advanced.success).toBe(true);
-        expect(advanced.state.sys.phase).toBe('finalQuickcast');
+        expect(advanced.state.sys.phase).toBe('creatureAction');
         expect(advanced.state.core.objects[gremlinId].temporaryTraits).toBeUndefined();
         expect(advanced.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -706,6 +833,7 @@ describe('mage-wars arena action flow', () => {
         const readyState: MatchState<MageWarsCore> = {
             core: {
                 ...summoned.state.core,
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [foxId]: {
@@ -818,6 +946,7 @@ describe('mage-wars arena action flow', () => {
         const readyState: MatchState<MageWarsCore> = {
             core: {
                 ...summoned.state.core,
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [falconId]: {
@@ -1000,6 +1129,7 @@ describe('mage-wars arena action flow', () => {
         const guardedMageCore = withPlayerInZone(
             withArenaObject({
                 ...summoned.state.core,
+                activeCreatureAction: undefined,
                 objects: {
                     ...summoned.state.core.objects,
                     [shadowId]: {
@@ -1055,6 +1185,7 @@ describe('mage-wars arena action flow', () => {
                 (core, object) => withArenaObject(core, object),
                 {
                     ...summoned.state.core,
+                    activeCreatureAction: undefined,
                     objects: {
                         ...summoned.state.core.objects,
                         [shadowId]: {
@@ -1375,6 +1506,7 @@ describe('mage-wars arena action flow', () => {
         });
         const attackCore = withArenaObject({
             ...summoned.state.core,
+            activeCreatureAction: undefined,
             objects: {
                 ...summoned.state.core.objects,
                 [batId]: {

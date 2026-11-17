@@ -745,6 +745,68 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.queryAllByTestId('mage-wars-mage-hud-current-badge').some((badge) => badge.querySelector('img'))).toBe(false);
     });
 
+    it('lets a creature with a remaining quick action select a second adjacent movement', async () => {
+        const base = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const creature: MageWarsArenaObjectState = {
+            ...creatureObject('move-again-wolf', '0', 2819, '丛林灰狼', ARENA_ZONE_IDS.A2),
+            actionReady: false,
+            temporaryTraits: { movedThisAction: true, quickActionAfterMoveAvailable: true },
+        };
+        const core: MageWarsCore = {
+            ...base,
+            objects: { ...base.objects, [creature.id]: creature },
+            arena: base.arena.map((zone) => zone.id === ARENA_ZONE_IDS.A2
+                ? { ...zone, objectIds: [...zone.objectIds, creature.id] }
+                : zone),
+        };
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(core)} dispatch={dispatch} />,
+        );
+        const fieldCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="move-again-wolf"]',
+        );
+        expect(fieldCard).not.toBeNull();
+        expect(fieldCard?.getAttribute('data-primary-action-state')).toBe('enabled');
+        fireEvent.click(fieldCard!);
+        expect(fieldCard?.getAttribute('data-field-card-role')).toBe('source');
+        const target = screen.getByTestId('mage-wars-arena-zone-b2');
+        await waitFor(() => expect(target.getAttribute('data-legal-move-zone')).toBe('true'));
+        fireEvent.click(target);
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT, {
+            objectId: creature.id,
+            toZoneId: ARENA_ZONE_IDS.B2,
+        });
+    });
+
+    it('lets a stunned creature be selected to take no action', () => {
+        const base = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const creature: MageWarsArenaObjectState = {
+            ...creatureObject('stunned-no-action', '0', 2819, '丛林灰狼', ARENA_ZONE_IDS.A3),
+            statusTokens: { [STATUS_TOKEN_IDS.STUN]: 1 },
+        };
+        const core: MageWarsCore = {
+            ...base,
+            objects: { ...base.objects, [creature.id]: creature },
+            arena: base.arena.map((zone) => zone.id === ARENA_ZONE_IDS.A3
+                ? { ...zone, objectIds: [...zone.objectIds, creature.id] }
+                : zone),
+        };
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(core)} dispatch={dispatch} />);
+        const card = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="stunned-no-action"]',
+        );
+        expect(card?.getAttribute('data-primary-action-state')).toBe('enabled');
+        fireEvent.click(card!);
+        const action = screen.getByTestId('mage-wars-turn-end');
+        expect(action).toHaveTextContent('actions.noAction');
+        expect(action).toBeEnabled();
+        expect(container.querySelector('[data-legal-move-zone="true"]')).toBeNull();
+        fireEvent.click(action);
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, { objectId: creature.id });
+    });
+
     it('uses public view switching for opponent discard instead of rendering a second discard pile', async () => {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const core: MageWarsCore = {
@@ -2810,7 +2872,7 @@ describe('MageWarsBoard spell cast choices', () => {
         };
         const { container } = renderBoardWithProviders(
             <MageWarsBoard
-                {...boardProps(preparedCore, '0', { phase: 'deployment' })}
+                {...boardProps(preparedCore, '0', { phase: 'initiativeQuickcast' })}
                 dispatch={dispatch}
             />,
         );

@@ -19,7 +19,9 @@ it('对手只投影公开出牌和数量，不泄露剩余手牌、弃牌、牌�
  const core = setupWithInitialHands('fate-public-view');
  core.players['1'].activeAttackIds = [core.players['1'].hand[0].id];
  const view = projectFatePlayerView(core, '0');
- expect(view.players['0']).toBe(core.players['0']);
+ expect(view.players['0'].hand).toEqual(core.players['0'].hand);
+ expect(view.players['0'].deck).toEqual([]);
+ expect(view.players['0'].publicView?.deckCount).toBe(core.players['0'].deck.length);
  expect(view.players['1'].hand).toEqual([]);
  expect(view.players['1'].deck).toEqual([]);
  expect(view.players['1'].discard).toEqual([]);

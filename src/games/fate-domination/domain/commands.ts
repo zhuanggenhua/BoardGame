@@ -10,6 +10,7 @@ import { canPlayAttack, movementFailureToError, resolveFateMovement } from './mo
 import { canUseFateAbility } from './mechanics';
 import { resolveFateAbilityDefinition, resolveFatePlayerAbility } from './abilityRegistry';
 import {resolveFateAttack,resolveFateAttackConfirmation,fateAttackManaCost,selectedFateAttackCost,hasLegalFateNormalPlay,canSelectFateAttack,hasAffordableFateFaceUpAttack} from './attackSelection';
+import { fateChariotTargets } from './chariotEvents';
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -104,6 +105,12 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             if(player.usedAbilityIds.includes(skill.id)||player.usedAbilityIds.includes(fateAbilityUsageKey(skill.id,core.phase)))return fail('abilityAlreadyUsed');
             const abilityPhase = abilityPhaseFor(core.phase);
             if (definition?.trigger && abilityPhase && definition.trigger !== abilityPhase) return fail('wrongPhase');
+            if (definition.effects.some(effect=>effect.type==='replace-event') && (!command.payload.targetCardId || !fateChariotTargets(core,command.playerId).includes(command.payload.targetCardId))) return fail('eventTargetRequired');
+            if (definition.effects.some(effect=>effect.type==='investigate-hand')) {
+                const target=command.payload.targetPlayerId && core.players[command.payload.targetPlayerId];
+                if(player.investigationBlockedRound===core.round)return fail('investigationUnavailable');
+                if(!target || target.eliminated)return fail('investigationTargetRequired');
+            }
             const movement = definition?.effects.find(effect => effect.type === 'movement');
             if (movement?.type === 'movement') {
                 const target = command.payload.targetLocationId;

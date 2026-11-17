@@ -326,6 +326,12 @@
     },
     {
       "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-action",
+      "viewport": "desktop",
+      "reason": "次年首次征兵训练说明、每支部队训练次数限制与实际行动入口"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
       "uiStateId": "training-kind",
       "viewport": "desktop",
       "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"

@@ -2,6 +2,8 @@ import { createFateInformationBoundarySystem } from './domain/informationBoundar
 import type { LocalRuntimeControlResolver } from '../../engine/transport/followCurrentTurnPlayer';
 import { createFatePostBattleChoiceSystems, createFatePostBattleInteraction, isFatePostBattleChoice } from './domain/postBattleChoice';
 import { createFateRidingChoiceSystems, createFateRidingInteraction } from './domain/ridingChoice';
+import { createFateChariotChoiceSystems, createFateChariotInteraction } from './domain/chariotChoice';
+import { createFateInvestigationChoiceSystems, createFateInvestigationInteraction } from './domain/investigationChoice';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
 import { createFatePrivacySystem } from './domain/privacySystem';
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
@@ -68,15 +70,21 @@ function formatActionLog({ command, state, afterEventsRound }: { command: Comman
 }
 
 const [fateRidingChoiceGuard, fateRidingChoiceResolution] = createFateRidingChoiceSystems();
+const [fateChariotGuard, fateChariotResolution] = createFateChariotChoiceSystems();
+const [fateInvestigationGuard, fateInvestigationResolution] = createFateInvestigationChoiceSystems();
 const systems = [
     fateRidingChoiceGuard,
+    fateChariotGuard,
+    fateInvestigationGuard,
     ...createBaseSystems<FateDominationCore>({
     actionLog: { commandAllowlist: ACTION_ALLOWLIST, formatEntry: formatActionLog },
     undo: { snapshotCommandAllowlist: ACTION_ALLOWLIST },
     }),
     ...createFatePostBattleChoiceSystems(),
     fateRidingChoiceResolution,
-    createTimingOpportunitySystem(FateDominationDomain, { choiceRequestInteraction: ({opportunity}) => createFateRidingInteraction(opportunity) ?? createFatePostBattleInteraction(opportunity) }),
+    fateChariotResolution,
+    fateInvestigationResolution,
+    createTimingOpportunitySystem(FateDominationDomain, { choiceRequestInteraction: ({opportunity}) => createFateRidingInteraction(opportunity) ?? createFateChariotInteraction(opportunity) ?? createFateInvestigationInteraction(opportunity) ?? createFatePostBattleInteraction(opportunity) }),
     createFatePrivacySystem(),
     createFateInformationBoundarySystem(),
     createResolutionFrameSystem<FateDominationCore>({
@@ -96,7 +104,7 @@ export const engineConfig = { ...createGameEngine<FateDominationCore, FateDomina
     minPlayers: 3,
     maxPlayers: 7,
     commandTypes: [...ACTION_ALLOWLIST],
-}), resolveLocalRuntimeControlledPlayerId:resolveFateLocalRuntimeControlledPlayerId };
+}), randomSeedVisibility:'server-only' as const, resolveLocalRuntimeControlledPlayerId:resolveFateLocalRuntimeControlledPlayerId };
 
 registerCriticalImageResolver('fate-domination', fateDominationCriticalImageResolver);
 registerGameAiRuntime(fateDominationAiRuntime);

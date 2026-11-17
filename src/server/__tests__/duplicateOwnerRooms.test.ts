@@ -75,6 +75,13 @@ describe('decideDuplicateOwnerRoomAction', () => {
         });
     });
 
+    it('保留断线不足二十分钟的占座房间', () => {
+        const now = Date.now();
+        const metadata = buildMetadata({ disconnectedSince: now - 19 * 60 * 1000, players: { 0: { name: 'Alice', isConnected: false } } });
+        expect(decideDuplicateOwnerRoomAction(metadata, { now }).action).toBe('block');
+        expect(decideDuplicateOwnerRoomAction(metadata, { now: now + 60 * 1000 }).action).toBe('cleanup');
+    });
+
     it('create plan blocks active rooms by default and keeps cleanable rooms for cleanup', () => {
         const activeMetadata = buildMetadata({
             updatedAt: 200,

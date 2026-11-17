@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveHelpingHandsTrollHandMoveOptions } from '../hauntAttackRewardReadModel';
 import { resolveExplorableRoomSlots } from '../roomDiscoveryModel';
 import { resolveBetrayalMapMovementReadModel, resolveMoveTargetRooms } from '../movementReadModel';
-import { resolveBetrayalMonsterActionPanel } from '../monsterActionReadModel';
+import { hasPendingControlledMonsterTurnStart, resolveBetrayalMonsterActionPanel } from '../monsterActionReadModel';
 import { resolveBloodFromStoneMonsterTurnStatus } from '../monsterActionReadModel';
 import { resolveBetrayalMonsterActionSelectionReadModel } from '../monsterActionSelectionReadModel';
 import { resolveBetrayalBoardActionItems } from '../actionBarReadModel';
@@ -17,6 +17,7 @@ import {
     createFeverishControlReadyCore,
     createFirstScenarioHauntCore,
     createJackSpiritMovementRollReadyCore,
+    createMagicCameraHauntCore,
     createOpenFrontierHauntTestCore,
     createHelpingHandsHauntCore,
     startHelpingHandsMonsterTurn,
@@ -35,7 +36,7 @@ const validate = (
 );
 
 /** Exercise the production action-to-map seam with the same core as Domain.validate. */
-function resolveMoveUi(core: BetrayalCore) {
+function resolveMoveUi(core: BetrayalCore, isViewerTurn = true, bloodEnd?: { canControl: boolean }) {
     const mapMovement = resolveBetrayalMapMovementReadModel(core);
     const selection = resolveBetrayalMonsterActionSelectionReadModel({
         core, allExplorers: [core.currentExplorer, ...core.otherExplorers],
@@ -71,11 +72,18 @@ function resolveMoveUi(core: BetrayalCore) {
         helpingHandsTrollHandMoveEntryCount: selection.helpingHandsTrollHandMoveEntries.length,
         isDeadTraitorJackSpiritControlTurn: selection.isDeadTraitorJackSpiritControlTurn,
         hasControlledMoveMonster: Boolean(selection.controlledMoveMonsterId),
+        controlledMonsterStartRequired: hasPendingControlledMonsterTurnStart(core),
+        isViewerTurn,
+        canControlBloodFromStoneMonsterTurn: bloodEnd?.canControl,
+        canControlMonsterActions: bloodEnd?.canControl ?? isViewerTurn,
         pendingBloodFromStoneSetupPlacementCount: 0,
         selectedBloodFromStoneStoneCherubRoomCount: 0,
-        isBloodFromStoneSetupPlacementMode: false, monsterTurnStartAction: null,
-        monsterMovementRollAction: null, selectedMonsterMoveAction: null,
-        selectedMonsterAttackAction: null, bloodFromStoneMonsterTurnEndAction: null,
+        isBloodFromStoneSetupPlacementMode: false,
+        monsterTurnStartAction: selection.monsterTurnStartActionSlot ? { name: '怪物', reason: null } : null,
+        monsterMovementRollAction: selection.monsterMovementRollActionSlot ? { name: '怪物', reason: null } : null,
+        selectedMonsterMoveAction: selection.selectedMonsterMoveEntry ? { name: '怪物', reason: null } : null,
+        selectedMonsterAttackAction: selection.selectedMonsterAttackEntry ? { name: '怪物', reason: null } : null,
+        bloodFromStoneMonsterTurnEndAction: bloodEnd ? { name: '', reason: null } : null,
     });
     const mapInteraction = resolveMapObjectInteraction({
         ...actions, interactionMode: 'default', isViewerTurn: true,
@@ -84,10 +92,43 @@ function resolveMoveUi(core: BetrayalCore) {
         isDeadControlledMonster: Boolean(selection.controlledMoveMonsterId),
         hasLegalMoveTargets: mapMovement.moveTargetRooms.length > 0,
     });
-    return { ...mapInteraction, formalActionItems: actions.formalActionItems };
+    return { ...mapInteraction, formalActionItems: actions.formalActionItems, visibleActionItems: actions.visibleActionItems };
 }
 
 describe('Betrayal map interaction permissions match domain validation', () => {
+    it('普通怪物行动按钮对非当前席位禁用，对控制者可用', () => {
+        const core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const bystander = resolveMoveUi(core, false).visibleActionItems.find((action) => action.id === 'monsterTurnStart');
+        const controller = resolveMoveUi(core, true).visibleActionItems.find((action) => action.id === 'monsterTurnStart');
+        expect(bystander).toMatchObject({ disabled: true, description: 'board.status.waitForCurrentPlayer' });
+        expect(controller?.disabled).toBe(false);
+    });
+    it('石像小天使回合结束按钮只允许怪物回合控制者使用', () => {
+        const core = createFirstScenarioHauntCore();
+        core.turnEndedByDiscovery = false;
+        expect(resolveMoveUi(core, false, { canControl: false }).visibleActionItems.find(
+            (action) => action.id === 'bloodFromStoneMonsterTurnEnd',
+        )).toMatchObject({ disabled: true, description: 'board.status.waitForCurrentPlayer' });
+        expect(resolveMoveUi(core, false, { canControl: true }).visibleActionItems.find(
+            (action) => action.id === 'bloodFromStoneMonsterTurnEnd',
+        )?.disabled).toBe(false);
+    });
+    it('非当前玩家的结束回合入口不可用', () => {
+        const core = createFeverishControlReadyCore();
+        expect(resolveMoveUi(core, false).visibleActionItems.find((action) => action.id === 'endTurn')).toMatchObject({
+            disabled: true, description: 'board.status.waitForCurrentPlayer',
+        });
+    });
+    it('受控怪物被击晕时结束回合不可用，翻正后恢复', () => {
+        const core = createFeverishControlReadyCore();
+        core.scenarioRuntime.monsterStatusesById = { 'feverish-0': 'stunned' };
+        expect(resolveMoveUi(core).visibleActionItems.find((action) => action.id === 'endTurn')).toMatchObject({
+            disabled: true, description: 'board.status.controlledMonsterMustStart',
+        });
+        core.scenarioRuntime.monsterStatusesById = { 'feverish-0': 'active' };
+        expect(resolveMoveUi(core).visibleActionItems.find((action) => action.id === 'endTurn')?.disabled).toBe(false);
+    });
     it.each([
         ['Jack Spirit', createJackSpiritMovementRollReadyCore],
         ['Feverish', createFeverishControlReadyCore],
@@ -101,6 +142,7 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(ui.canMoveToRoom).toBe(true);
         expect(ui.canSelectExplorer).toBe(false);
         expect(ui.canExplore).toBe(false);
+        expect(ui.visibleActionItems.some((action) => action.id === 'endTurn' && !action.disabled)).toBe(true);
     });
 
     it('keeps ordinary haunt movement blocked after discovery ended the explorer turn', () => {

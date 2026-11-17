@@ -136,6 +136,8 @@ export interface PlayerState {
     normalAttackPlayed: boolean;
     normalMoveCompleted: boolean;
     piercingSpearPlays?: number;
+    /** 调查选择放回牌库后，下一回合不能再使用调查。 */
+    investigationBlockedRound?: number;
     skills: SkillDefinition[];
 }
 
@@ -303,6 +305,10 @@ export type SkillPlayedEvent = GameEvent<'SKILL_PLAYED', { playerId: PlayerId; s
 export type FateAbilityUsedEvent = GameEvent<'FATE_ABILITY_USED', {playerId:PlayerId;skillId:string;usageKey?:string;manaSpent?:number}>;
 export type FateRidingChoiceRequestedEvent = GameEvent<'FATE_RIDING_CHOICE_REQUESTED', {playerId:PlayerId;skillId:string;round:number;generation:string;frameId:string}>;
 export type FateRidingCardsPlayedEvent = GameEvent<'FATE_RIDING_CARDS_PLAYED', {playerId:PlayerId;skillId:string;cardIds:string[];manaSpent:number}>;
+export type FateChariotDrawnEvent = GameEvent<'FATE_CHARIOT_DRAWN', {playerId:PlayerId;skillId:string;round:number;generation:string;frameId:string;locationId:'miyama'|'shinto';targetId:string;offered:EventCardDefinition[];deck:EventCardDefinition[];discard:EventCardDefinition[]}>;
+export type FateChariotResolvedEvent = GameEvent<'FATE_CHARIOT_RESOLVED', {playerId:PlayerId;locationId:'miyama'|'shinto';selected:EventCardDefinition;deck:EventCardDefinition[];discard:EventCardDefinition[]}>;
+export type FateInvestigationViewedEvent = GameEvent<'FATE_INVESTIGATION_VIEWED', {playerId:PlayerId;targetPlayerId:PlayerId;skillId:string;round:number;generation:string;frameId:string;offered:CardInstance[]}>;
+export type FateInvestigationResolvedEvent = GameEvent<'FATE_INVESTIGATION_RESOLVED', {playerId:PlayerId;targetPlayerId:PlayerId;round:number;cardId?:string}>;
 export type FatePostBattleStartedEvent = GameEvent<'FATE_POST_BATTLE_STARTED', {round:number;frameId:string;recipients:PlayerId[]}>;
 export type FatePostBattleSealChosenEvent = GameEvent<'FATE_POST_BATTLE_SEAL_CHOSEN', {playerId:PlayerId;restore:boolean}>;
 export type FateManaGainedEvent = GameEvent<'FATE_MANA_GAINED', {playerId:PlayerId;amount:number;sourceId:string}>;
@@ -349,6 +355,10 @@ export type FatePlayerEliminatedEvent = GameEvent<'FATE_PLAYER_ELIMINATED', {
 export type CommandSpellUsedEvent = GameEvent<'COMMAND_SPELL_USED', { playerId: PlayerId; effect: 'mana' | 'battle' | 'move' }>;
 
 export type FateDominationEvent =
+    | FateInvestigationViewedEvent
+    | FateInvestigationResolvedEvent
+    | FateChariotDrawnEvent
+    | FateChariotResolvedEvent
     | PhasePlayerFinishedEvent
     | CommandSpellUsedEvent
     | MasterSelectedEvent

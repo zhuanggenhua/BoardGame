@@ -736,328 +736,117 @@ describe('mage-wars status and upkeep flow', () => {
         expect(actionLogKinds(attack.state)).toContain(MAGE_WARS_EVENTS.ATTACK_MISSED);
     });
 
-    it('removes all daze from the active mage and owned creatures when creature action ends', () => {
-        const baseState = setupState('creatureAction');
-        const activeCat = makeArenaObject('dazed-cat-0', '0', PLAYER_ZERO_START_ZONE, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.DAZE]: 2,
-                [STATUS_TOKEN_IDS.WEAK]: 1,
-            },
-        });
-        const enemyCat = makeArenaObject('enemy-dazed-cat-1', '1', ARENA_ZONE_IDS.A2, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.DAZE]: 1,
-            },
-        });
-        const state: MatchState<MageWarsCore> = {
-            core: withArenaObject(withArenaObject({
-                ...baseState.core,
-                players: {
-                    ...baseState.core.players,
-                    '0': {
-                        ...baseState.core.players['0'],
-                        statusTokens: {
-                            [STATUS_TOKEN_IDS.DAZE]: 1,
-                            [STATUS_TOKEN_IDS.WEAK]: 1,
-                        },
+    it.each([STATUS_TOKEN_IDS.DAZE, STATUS_TOKEN_IDS.STUN])(
+        'removes %s only from the creature whose action ended',
+        (statusTokenId) => {
+            const base = setupState('creatureAction');
+            const cat = makeArenaObject('status-cat-0', '0', PLAYER_ZERO_START_ZONE, {
+                statusTokens: { [statusTokenId]: 2, [STATUS_TOKEN_IDS.WEAK]: 1 },
+            });
+            const enemy = makeArenaObject('enemy-status-cat-1', '1', ARENA_ZONE_IDS.A2, {
+                statusTokens: { [statusTokenId]: 1 },
+            });
+            const state: MatchState<MageWarsCore> = {
+                ...base,
+                core: withArenaObject(withArenaObject({
+                    ...base.core,
+                    phaseReadyPlayerIds: [],
+                    players: {
+                        ...base.core.players,
+                        '0': { ...base.core.players['0'], statusTokens: { [statusTokenId]: 1 } },
                     },
-                    '1': {
-                        ...baseState.core.players['1'],
-                        statusTokens: {
-                            [STATUS_TOKEN_IDS.DAZE]: 1,
-                        },
+                }, cat), enemy),
+            };
+            const idle = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION,
+                playerId: '0',
+                payload: { objectId: cat.id },
+            });
+            expect(idle.success).toBe(true);
+            const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
+                type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {},
+            };
+            const rawEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
+                state: idle.state, from: 'creatureAction', to: 'finalQuickcast',
+                command: advanceCommand, random: fixedRandom,
+            }));
+            expect(rawEvents).toEqual(expect.arrayContaining([expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({ targetObjectId: cat.id, statusTokenId, amount: 2 }),
+            })]));
+            const advanced = runCommand(idle.state, advanceCommand);
+            expect(advanced.success).toBe(true);
+            expect(advanced.state.sys.phase).toBe('creatureAction');
+            expect(advanced.state.core.objects[cat.id].statusTokens).toEqual({ [STATUS_TOKEN_IDS.WEAK]: 1 });
+            expect(advanced.state.core.players['0'].statusTokens[statusTokenId]).toBe(1);
+            expect(advanced.state.core.objects[enemy.id].statusTokens[statusTokenId]).toBe(1);
+            expect(advanced.events).toEqual(expect.arrayContaining([expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+                payload: expect.objectContaining({ targetObjectId: cat.id, statusTokenId, amount: 2 }),
+            })]));
+        },
+    );
+
+    it.each([STATUS_TOKEN_IDS.DAZE, STATUS_TOKEN_IDS.STUN])(
+        'clears %s from a mage that takes no action without clearing a different creature',
+        (statusTokenId) => {
+            const base = setupState('creatureAction');
+            const cat = makeArenaObject('other-status-cat', '0', PLAYER_ZERO_START_ZONE, {
+                statusTokens: { [statusTokenId]: 1 },
+            });
+            const state = {
+                ...base,
+                core: withArenaObject({
+                    ...base.core,
+                    phaseReadyPlayerIds: [],
+                    players: {
+                        ...base.core.players,
+                        '0': { ...base.core.players['0'], statusTokens: { [statusTokenId]: 1 } },
                     },
-                },
-            }, activeCat), enemyCat),
-            sys: baseState.sys,
-        };
-        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
-            type: FLOW_COMMANDS.ADVANCE_PHASE,
-            playerId: '0',
-            payload: {},
-        };
-        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
-            state,
-            from: 'creatureAction',
-            to: 'finalQuickcast',
-            command: advanceCommand,
-            random: fixedRandom,
-        }));
-        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
+                }, cat),
+            };
+            const idle = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, playerId: '0', payload: {},
+            });
+            expect(idle.success).toBe(true);
+            const advanced = runCommand(idle.state, {
+                type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {},
+            });
+            expect(advanced.success).toBe(true);
+            expect(advanced.state.core.players['0'].statusTokens[statusTokenId] ?? 0).toBe(0);
+            expect(advanced.state.core.objects[cat.id].statusTokens[statusTokenId]).toBe(1);
+        },
+    );
 
-        const advanced = runCommand(state, advanceCommand);
-
-        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
-        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-        expect(rawExitEvents).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
-                payload: expect.objectContaining({
-                    targetPlayerId: '0',
-                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
-                    amount: 1,
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
-                    amount: 2,
-                }),
-            }),
-        ]));
-        expect(advanced.success).toBe(true);
-        expect(advanced.state.sys.phase).toBe('finalQuickcast');
-        expect(advanced.state.core.players['0'].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.WEAK]: 1,
-        });
-        expect(advanced.state.core.objects[activeCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.WEAK]: 1,
-        });
-        expect(advanced.state.core.players['1'].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.DAZE]: 1,
-        });
-        expect(advanced.state.core.objects[enemyCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.DAZE]: 1,
-        });
-        expect(advanced.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-                payload: expect.objectContaining({
-                    targetPlayerId: '0',
-                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
-                    amount: 1,
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
-                    amount: 2,
-                }),
-            }),
-        ]));
-        expect(actionLogKinds(advanced.state)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-    });
-
-    it('removes all stun from the active mage and owned creatures when creature action ends', () => {
-        const baseState = setupState('creatureAction');
-        const activeCat = makeArenaObject('stunned-cat-0', '0', PLAYER_ZERO_START_ZONE, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.STUN]: 2,
-                [STATUS_TOKEN_IDS.WEAK]: 1,
-            },
-        });
-        const enemyCat = makeArenaObject('enemy-stunned-cat-1', '1', ARENA_ZONE_IDS.A2, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.STUN]: 1,
-            },
-        });
-        const state: MatchState<MageWarsCore> = {
-            core: withArenaObject(withArenaObject({
-                ...baseState.core,
-                players: {
-                    ...baseState.core.players,
-                    '0': {
-                        ...baseState.core.players['0'],
-                        statusTokens: {
-                            [STATUS_TOKEN_IDS.STUN]: 1,
-                            [STATUS_TOKEN_IDS.WEAK]: 1,
-                        },
-                    },
-                    '1': {
-                        ...baseState.core.players['1'],
-                        statusTokens: {
-                            [STATUS_TOKEN_IDS.STUN]: 1,
-                        },
-                    },
-                },
-            }, activeCat), enemyCat),
-            sys: baseState.sys,
-        };
-        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
-            type: FLOW_COMMANDS.ADVANCE_PHASE,
-            playerId: '0',
-            payload: {},
-        };
-        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
-            state,
-            from: 'creatureAction',
-            to: 'finalQuickcast',
-            command: advanceCommand,
-            random: fixedRandom,
-        }));
-        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
-
-        const advanced = runCommand(state, advanceCommand);
-
-        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
-        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-        expect(rawExitEvents).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
-                payload: expect.objectContaining({
-                    targetPlayerId: '0',
-                    statusTokenId: STATUS_TOKEN_IDS.STUN,
-                    amount: 1,
-                    sourceAbilityId: 'mw.status.stun.end-creature-action',
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.STUN,
-                    amount: 2,
-                    sourceAbilityId: 'mw.status.stun.end-creature-action',
-                }),
-            }),
-        ]));
-        expect(advanced.success).toBe(true);
-        expect(advanced.state.sys.phase).toBe('finalQuickcast');
-        expect(advanced.state.core.players['0'].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.WEAK]: 1,
-        });
-        expect(advanced.state.core.objects[activeCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.WEAK]: 1,
-        });
-        expect(advanced.state.core.players['1'].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.STUN]: 1,
-        });
-        expect(advanced.state.core.objects[enemyCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.STUN]: 1,
-        });
-        expect(advanced.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-                payload: expect.objectContaining({
-                    targetPlayerId: '0',
-                    statusTokenId: STATUS_TOKEN_IDS.STUN,
-                    amount: 1,
-                    sourceAbilityId: 'mw.status.stun.end-creature-action',
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.STUN,
-                    amount: 2,
-                    sourceAbilityId: 'mw.status.stun.end-creature-action',
-                }),
-            }),
-        ]));
-        expect(actionLogKinds(advanced.state)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-    });
-
-    it('removes cripple from current player creatures on a successful end-action escape check', () => {
-        const baseState = setupState('creatureAction');
-        const activeCat = makeArenaObject('crippled-cat-0', '0', PLAYER_ZERO_START_ZONE, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.CRIPPLE]: 1,
-                [STATUS_TOKEN_IDS.WEAK]: 1,
-            },
-        });
-        const enemyCat = makeArenaObject('enemy-crippled-cat-1', '1', ARENA_ZONE_IDS.A2, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.CRIPPLE]: 1,
-            },
-        });
-        const escapeRandom: RandomFn = {
-            ...fixedRandom,
-            d: (sides: number) => (sides === 12 ? 7 : 3),
-        };
-        const state: MatchState<MageWarsCore> = {
-            core: withArenaObject(withArenaObject(baseState.core, activeCat), enemyCat),
-            sys: baseState.sys,
-        };
-        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
-            type: FLOW_COMMANDS.ADVANCE_PHASE,
-            playerId: '0',
-            payload: {},
-        };
-        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
-            state,
-            from: 'creatureAction',
-            to: 'finalQuickcast',
-            command: advanceCommand,
-            random: escapeRandom,
-        }));
-        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
-
-        const advanced = runCommand(state, advanceCommand, escapeRandom);
-
-        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
-        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-        expect(rawExitEvents).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.CRIPPLE,
-                    amount: 1,
-                    sourceAbilityId: 'mw.status.cripple.escape-check',
-                    effectDieResult: 7,
-                }),
-            }),
-        ]));
-        expect(advanced.success).toBe(true);
-        expect(advanced.state.sys.phase).toBe('finalQuickcast');
-        expect(advanced.state.core.objects[activeCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.WEAK]: 1,
-        });
-        expect(advanced.state.core.objects[enemyCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.CRIPPLE]: 1,
-        });
-        expect(advanced.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-                payload: expect.objectContaining({
-                    targetObjectId: activeCat.id,
-                    statusTokenId: STATUS_TOKEN_IDS.CRIPPLE,
-                    amount: 1,
-                    sourceAbilityId: 'mw.status.cripple.escape-check',
-                    effectDieResult: 7,
-                }),
-            }),
-        ]));
-        expect(actionLogKinds(advanced.state)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
-    });
-
-    it('keeps cripple on current player creatures after a failed end-action escape check', () => {
-        const baseState = setupState('creatureAction');
-        const activeCat = makeArenaObject('failed-escape-cat-0', '0', PLAYER_ZERO_START_ZONE, {
-            statusTokens: {
-                [STATUS_TOKEN_IDS.CRIPPLE]: 1,
-            },
-        });
-        const escapeRandom: RandomFn = {
-            ...fixedRandom,
-            d: (sides: number) => (sides === 12 ? 6 : 3),
-        };
-        const state: MatchState<MageWarsCore> = {
-            core: withArenaObject(baseState.core, activeCat),
-            sys: baseState.sys,
-        };
-
-        const advanced = runCommand(state, {
-            type: FLOW_COMMANDS.ADVANCE_PHASE,
-            playerId: '0',
-            payload: {},
-        }, escapeRandom);
-
-        expect(advanced.success).toBe(true);
-        expect(advanced.state.sys.phase).toBe('finalQuickcast');
-        expect(advanced.state.core.objects[activeCat.id].statusTokens).toEqual({
-            [STATUS_TOKEN_IDS.CRIPPLE]: 1,
-        });
-        expect(advanced.events.some((event) => (
-            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED
-            && event.payload.statusTokenId === STATUS_TOKEN_IDS.CRIPPLE
-        ))).toBe(false);
-    });
+    it.each([{ roll: 7, removes: true }, { roll: 6, removes: false }])(
+        'resolves cripple escape for the acting creature on a roll of $roll',
+        ({ roll, removes }) => {
+            const base = setupState('creatureAction');
+            const cat = makeArenaObject('crippled-cat-0', '0', PLAYER_ZERO_START_ZONE, {
+                statusTokens: { [STATUS_TOKEN_IDS.CRIPPLE]: 1, [STATUS_TOKEN_IDS.WEAK]: 1 },
+            });
+            const enemy = makeArenaObject('enemy-crippled-cat-1', '1', ARENA_ZONE_IDS.A2, {
+                statusTokens: { [STATUS_TOKEN_IDS.CRIPPLE]: 1 },
+            });
+            const state = { ...base, core: withArenaObject(withArenaObject({
+                ...base.core, phaseReadyPlayerIds: [],
+            }, cat), enemy) };
+            const idle = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, playerId: '0', payload: { objectId: cat.id },
+            });
+            expect(idle.success).toBe(true);
+            const escapeRandom: RandomFn = { ...fixedRandom, d: (sides) => sides === 12 ? roll : 3 };
+            const advanced = runCommand(idle.state, {
+                type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {},
+            }, escapeRandom);
+            expect(advanced.success).toBe(true);
+            expect(advanced.state.core.objects[cat.id].statusTokens[STATUS_TOKEN_IDS.CRIPPLE] ?? 0).toBe(removes ? 0 : 1);
+            expect(advanced.state.core.objects[cat.id].statusTokens[STATUS_TOKEN_IDS.WEAK]).toBe(1);
+            expect(advanced.state.core.objects[enemy.id].statusTokens[STATUS_TOKEN_IDS.CRIPPLE]).toBe(1);
+            expect(advanced.events.some((event) => event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED
+                && event.payload.statusTokenId === STATUS_TOKEN_IDS.CRIPPLE)).toBe(removes);
+        },
+    );
 
     it('prevents stunned mages from moving, guarding, or making basic melee attacks', () => {
         const baseState = setupState('creatureAction');

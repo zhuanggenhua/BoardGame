@@ -67,6 +67,7 @@ it('灰尘普通攻击致死会先等待伤害分配，确认后才变狂热病�
         expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
         expect(core.endgameResult).toBeNull();
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -458,6 +459,7 @@ it('灰尘阶段攻击武器仍按回合开始和已用限制参与攻击并禁�
             allowSkull: true,
         });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -515,6 +517,7 @@ it('灰尘阶段武器攻击永久感染者致死后仍生成狂热病患并掩�
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -603,6 +606,7 @@ it.each([
         expect(findTestExplorer(core, '1').inventory.map((item) => item.id)).toEqual(['map']);
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, core.recentRoll!.playerId, {});
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

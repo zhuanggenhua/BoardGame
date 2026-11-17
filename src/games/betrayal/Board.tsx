@@ -71,6 +71,7 @@ import { resolveCorpseLootTargets } from "./deathStateReadModel";
 import { resolveBetrayalMonsterRelationToExplorer } from "./entityRelationModel";
 import { resolveBetrayalHauntRevealProtocol } from "./hauntSetupModel";
 import {
+  hasPendingControlledMonsterTurnStart,
   resolveBloodFromStoneMonsterTurnStatus,
   resolveHelpingHandsMonsterTurnStatus,
   type BetrayalMonsterActionSlot,
@@ -183,6 +184,7 @@ import {
   resolveBetrayalAttackDeclarationReadModel,
   resolveBetrayalAttackTargetingReadModel,
   resolveAttackWeaponCardStatuses,
+  resolvePendingAttackRollConfirmationPlayerId,
 } from "./attackRules";
 import {
   adjustSelectedDamageTrait,
@@ -3654,7 +3656,7 @@ export default function BetrayalBoard({
   const canDismissRecentRollByBackdrop = false;
   const shouldGateDamageAllocationBehindRecentRoll = Boolean(
     pendingDamageAllocation &&
-    core.recentRoll?.kind === "eventRolledDamage" &&
+    (core.recentRoll?.kind === "eventRolledDamage" || resolvePendingAttackRollConfirmationPlayerId(core)) &&
     hasRecentRollAcknowledgement &&
     !recentRollFullyAcknowledged &&
     !isRecentRollDismissed,
@@ -6177,6 +6179,12 @@ export default function BetrayalBoard({
         helpingHandsTrollHandMoveEntries.length,
       isDeadTraitorJackSpiritControlTurn,
       hasControlledMoveMonster: Boolean(controlledMoveMonsterId),
+      controlledMonsterStartRequired: hasPendingControlledMonsterTurnStart(core),
+      isViewerTurn: core.currentPlayer === viewerPlayerId,
+      canControlBloodFromStoneMonsterTurn: interactionBloodFromStoneStatus.controllerPlayerId === viewerPlayerId,
+      canControlMonsterActions: interactionBloodFromStoneStatus.active
+        ? interactionBloodFromStoneStatus.controllerPlayerId === viewerPlayerId
+        : core.currentPlayer === viewerPlayerId,
       pendingBloodFromStoneSetupPlacementCount:
         bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
       selectedBloodFromStoneStoneCherubRoomCount:
@@ -7206,7 +7214,7 @@ export default function BetrayalBoard({
                       data-testid="betrayal-action-rail"
                       className="pointer-events-none absolute inset-x-0 bottom-1 z-50 flex flex-col items-center justify-end gap-0.5"
                     >
-                    {mummyPendingReward && isMummyRewardChooser ? (
+                    {mummyPendingReward && isMummyRewardChooser && !resolvePendingAttackRollConfirmationPlayerId(core) ? (
                       <BetrayalMummyRewardActionsSurface
                         damage={mummyPendingReward.damageToHero}
                         stealableCards={mummyStealableCards}
@@ -7220,7 +7228,7 @@ export default function BetrayalBoard({
                       />
                     ) : null}
                     {helpingHandsPendingReward &&
-                    isHelpingHandsRewardChooser ? (
+                    isHelpingHandsRewardChooser && !resolvePendingAttackRollConfirmationPlayerId(core) ? (
                       <BetrayalHelpingHandsRewardActionsSurface
                         damage={helpingHandsPendingReward.damageToDefender}
                         stealableCards={helpingHandsStealableCards}

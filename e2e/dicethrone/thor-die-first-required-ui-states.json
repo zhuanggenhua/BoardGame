@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "requiredStates": [
+    {
+      "chainId": "thor-worthy-die-first",
+      "uiStateId": "thor-worthy-choose-die",
+      "viewport": "desktop",
+      "reason": "选择目标骰前应显示选骰提示且无数值按钮。"
+    },
+    {
+      "chainId": "thor-worthy-die-first",
+      "uiStateId": "thor-worthy-die-selected",
+      "viewport": "desktop",
+      "reason": "选择目标骰后仅该骰旁显示四和五。"
+    }
+  ],
+  "reviewFile": "visual-review.json"
+}

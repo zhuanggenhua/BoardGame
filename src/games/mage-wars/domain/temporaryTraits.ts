@@ -6,6 +6,7 @@ export type MageWarsTemporaryTraitId =
     | MageWarsTemporaryTraitGrantId
     | 'swiftFreeMove'
     | 'movedThisAction'
+    | 'hinderedThisAction'
     | 'quickActionAfterMove'
     | 'charge'
     | 'meleeDice'
@@ -57,6 +58,10 @@ export function hasTemporaryQuickActionAfterMove(reader: MageWarsTemporaryTraitR
     return reader.temporaryTraits?.quickActionAfterMoveAvailable === true;
 }
 
+export function hasTemporaryHinderedThisAction(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.hinderedThisAction === true;
+}
+
 export function getTemporaryChargeDiceModifier(reader: MageWarsTemporaryTraitReader): number {
     return reader.temporaryTraits?.chargeDiceModifier ?? 0;
 }
@@ -91,6 +96,7 @@ export function getTemporaryTraitIdsForTurnCleanup(
     if (hasTemporaryElusive(reader)) traitIds.push('elusive');
     if (hasTemporarySwiftFreeMoveUsed(reader)) traitIds.push('swiftFreeMove');
     if (hasTemporaryMovedThisAction(reader)) traitIds.push('movedThisAction');
+    if (hasTemporaryHinderedThisAction(reader)) traitIds.push('hinderedThisAction');
     if (hasTemporaryQuickActionAfterMove(reader)) traitIds.push('quickActionAfterMove');
     if (getTemporaryChargeDiceModifier(reader) > 0) traitIds.push('charge');
     if (
@@ -210,7 +216,7 @@ export function applyObjectAbilityTemporaryGrants(
 export function applyMovementTemporaryTraits(
     object: MageWarsArenaObjectState,
     options: {
-        actionCost?: 'normal' | 'none';
+        actionCost?: 'normal' | 'none' | 'standard';
         isTeleportMove: boolean;
     },
 ): MageWarsArenaObjectState {
@@ -252,6 +258,9 @@ export function clearTemporaryTraits(
             case 'movedThisAction':
                 delete nextTraits.movedThisAction;
                 break;
+            case 'hinderedThisAction':
+                delete nextTraits.hinderedThisAction;
+                break;
             case 'quickActionAfterMove':
                 delete nextTraits.quickActionAfterMoveAvailable;
                 break;
@@ -286,12 +295,14 @@ export function clearTemporaryTraits(
 }
 
 export function clearPostMoveAttackTraits(object: MageWarsArenaObjectState): MageWarsArenaObjectState {
-    if (!object.temporaryTraits?.movedThisAction && !object.temporaryTraits?.quickActionAfterMoveAvailable) {
+    if (!object.temporaryTraits?.movedThisAction && !object.temporaryTraits?.quickActionAfterMoveAvailable
+        && !object.temporaryTraits?.hinderedThisAction) {
         return object;
     }
 
     const {
         movedThisAction: _movedThisAction,
+        hinderedThisAction: _hinderedThisAction,
         quickActionAfterMoveAvailable: _quickActionAfterMoveAvailable,
         ...remainingTraits
     } = object.temporaryTraits;

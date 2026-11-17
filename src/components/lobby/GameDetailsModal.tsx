@@ -34,7 +34,6 @@ import { LeaderboardTab } from './LeaderboardTab';
 import type { LeaderboardEntry } from './leaderboardTypes';
 import { GameDetailsChangelogSection } from './GameDetailsChangelogSection';
 import { GameDetailsMobilePackageCard } from './GameDetailsMobilePackageCard';
-import { GameDetailsDesktopAssets } from './GameDetailsDesktopAssets';
 import { GamePackageInstallConfirmModal } from './GamePackageInstallConfirmModal';
 import { resolveGameAuthorName, resolveGameDescription, resolveGameDisplayName } from './gameDetailsContent';
 import { logger } from '../../lib/logger';
@@ -2275,7 +2274,6 @@ export const GameDetailsModal = ({ presentation = 'modal', homeStyle = 'modern',
                         onJoinRoom={handleJoinRoom} onAction={handleAction} onForceExitLocal={handleForceExitLocal} onOpenCreateRoom={handleOpenCreateRoom} />}
                     secondaryActions={<>
                         {favoriteControl}
-                        <GameDetailsDesktopAssets gameId={gameId} />
                         {hasTutorialEntry && <button type="button" className="platform-details-tutorial" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
                         {hasConfigReview && <button type="button" className="platform-details-config" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
                     </>}

@@ -1,7 +1,9 @@
 import { canViewFateHiddenShinto } from '../domain/playerView';
-import { constrainFateTableCamera, fitFateTableCamera, resizeFateTableCamera } from './tableCameraLayout';
+import { constrainFateTableCamera, fitFateTableCamera, fitFateTargetCamera, resizeFateTableCamera } from './tableCameraLayout';
 import React from 'react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { CardInspectButton } from '../../../components/common/overlays/CardInspectButton';
+import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { PixiMapSceneHost, type MapSceneSprite, type MapViewportState } from '../../../engine/mapRenderer';
 import { getRuntimeImageCandidateUrls } from '../../../core/AssetLoader';
 import type { FateDominationCore, LocationId } from '../domain/types';
@@ -40,10 +42,13 @@ interface Props {
     canUseLocation?: (id:LocationId,slot?:number|null)=>boolean;
     onInspect: (assetPath: string, name: string) => void;
     onBattleAnchorChange?: (locationId: LocationId, element: HTMLDivElement | null) => void;
+    chariotTargetIds?: readonly string[];
+    onChariotTarget?: (id:string)=>boolean;
 }
 /** Shared Pixi camera owns world transforms. Accessible controls consume that displayed pose. */
-export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, canUseLocation=()=>true, onInspect, movablePlayerId, moving, onPawn, movementOrigin, onBattleAnchorChange }: Props) {
+export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, canUseLocation=()=>true, onInspect, movablePlayerId, moving, onPawn, movementOrigin, onBattleAnchorChange, chariotTargetIds=[], onChariotTarget }: Props) {
     const { t } = useTranslation('game-fate-domination');
+    const targetInspection=useTouchLongPress<string,{asset:string;name:string}>({enabled:true,durationMs:500,moveCancelPx:10,clickBlockMs:500,onLongPress:(_id,card)=>onInspect(card.asset,card.name)});
     const canInspectHiddenShinto=canViewFateHiddenShinto(core,viewerId);
     const [host, setHost] = React.useState<HTMLDivElement | null>(null);
     const overlay = React.useRef<HTMLDivElement>(null);
@@ -65,12 +70,14 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     }, [observeCamera]);
     const constrainViewport = React.useCallback((next: MapViewportState) => constrainFateTableCamera(next, size.w, size.h, WIDTH, HEIGHT), [size.w, size.h]);
     const manualCamera = React.useRef(false);
-    const onManualCameraInteraction = React.useCallback(() => { manualCamera.current = true; }, []);
+    const manualRevision = React.useRef(0);
+    const onManualCameraInteraction = React.useCallback(() => { manualCamera.current = true; manualRevision.current++; }, []);
     const previousFit = React.useRef<MapViewportState | null>(null);
     const fitDeployment = React.useRef((camera: MapViewportState) => camera);
     const reset = React.useCallback(() => {
         if (!size.w || !size.h)
             return;
+        manualRevision.current++;
         manualCamera.current = false;
         requestCamera(fitDeployment.current(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT)));
     }, [size, requestCamera]);
@@ -126,11 +133,41 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
         if (overlay.current)
             overlay.current.style.transform = `translate(${display.panX}px, ${display.panY}px) scale(${display.zoom})`;
     }, []);
+    const chariotTargetKey=chariotTargetIds.join('|');
+    const chariotTargetSubmitted=React.useRef(false);
+    const postChariotCamera=React.useRef<{before:MapViewportState;revision:number;playerId:string}|null>(null);
+    React.useLayoutEffect(()=>{
+        if(!host || !chariotTargetKey)return;
+        chariotTargetSubmitted.current=false;
+        const targets=Array.from(host.querySelectorAll<HTMLElement>('.fd-map-target-shell'));
+        if(!targets.length)return;
+        const left=Math.min(...targets.map(node=>node.offsetLeft)),top=Math.min(...targets.map(node=>node.offsetTop));
+        const right=Math.max(...targets.map(node=>node.offsetLeft+node.offsetWidth)),bottom=Math.max(...targets.map(node=>node.offsetTop+node.offsetHeight));
+        const hostRect=host.getBoundingClientRect();
+        const blockers=Array.from(host.closest('.fd-runtime-table')?.querySelectorAll<HTMLElement>('.fd-runtime-hand-grid .fd-runtime-card,.fd-play-summary,.fd-self-dock,.fd-phase-control,.fd-runtime-player-rail')??[])
+            .map(node=>node.getBoundingClientRect()).filter(rect=>rect.width>0&&rect.height>0)
+            .map(rect=>({left:rect.left-hostRect.left,top:rect.top-hostRect.top,right:rect.right-hostRect.left,bottom:rect.bottom-hostRect.top}));
+        const before=livePose.current,revision=manualRevision.current;
+        const fitted=fitFateTargetCamera(before,{width:host.clientWidth,height:host.clientHeight},{width:WIDTH,height:HEIGHT},{x:left,y:top,width:right-left,height:bottom-top},blockers);
+        const changed=fitted.zoom!==before.zoom||fitted.panX!==before.panX||fitted.panY!==before.panY;
+        if(changed)requestCamera(fitted);
+        return ()=>{
+            if(!changed || manualRevision.current!==revision)return;
+            if(chariotTargetSubmitted.current)postChariotCamera.current={before,revision,playerId:core.currentPlayerId};
+            else requestCamera(before);
+        };
+    },[host,chariotTargetKey,requestCamera,size.w,size.h]);
+    React.useLayoutEffect(()=>{
+        const pending=postChariotCamera.current;
+        if(!pending || (core.phase==='action' && core.currentPlayerId===pending.playerId))return;
+        postChariotCamera.current=null;
+        if(manualRevision.current===pending.revision)requestCamera(pending.before);
+    },[core.phase,core.currentPlayerId,requestCamera]);
     const cards = React.useMemo(() => {
-        const list = [{id:'situation-deck',assetPath:'fate-domination/situations/back',name:`局势牌库，剩余 ${core.situationDeckCount} 张`,x:130,y:50,w:210,h:300}, { id: 'event-deck', assetPath: 'fate-domination/events/back', name: `事件牌库，剩余 ${core.eventDeckCount} 张`, x: 130, y: 430, w: 210, h: 300 }, { id: 'situation', assetPath: core.situation.assetPath, name: core.situation.name, x: 418, y: 50, w: 226, h: 316 }];
+        const list: Array<{id:string;eventId?:string;assetPath:string;name:string;x:number;y:number;w:number;h:number}> = [{id:'situation-deck',assetPath:'fate-domination/situations/back',name:`局势牌库，剩余 ${core.situationDeckCount} 张`,x:130,y:50,w:210,h:300}, { id: 'event-deck', assetPath: 'fate-domination/events/back', name: `事件牌库，剩余 ${core.eventDeckCount} 张`, x: 130, y: 430, w: 210, h: 300 }, { id: 'situation', assetPath: core.situation.assetPath, name: core.situation.name, x: 418, y: 50, w: 226, h: 316 }];
         for (const location of ['miyama', 'shinto'] as const) {
             const events = core.currentEvents?.[location] ?? (location === 'miyama' ? [core.miyamaEvent] : []);
-            events.forEach((card, index) => list.push({ id: `${location}-${index}`, assetPath: location === 'shinto' && index === 0 && core.shintoEventFaceDown && !canInspectHiddenShinto ? 'fate-domination/events/back' : card.assetPath,
+            events.forEach((card, index) => list.push({ id: `${location}-${index}`, eventId: card.id, assetPath: location === 'shinto' && index === 0 && core.shintoEventFaceDown && !canInspectHiddenShinto ? 'fate-domination/events/back' : card.assetPath,
                 name: location === 'shinto' && index === 0 && core.shintoEventFaceDown && !canInspectHiddenShinto ? '新都暗置事件' : card.name,
                 x: 417 + index * 236, y: location === 'miyama' ? 430 : 806, w: 226, h: 316 }));
         }
@@ -169,7 +206,18 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
         })}
             <span className="fd-event-deck-count fd-situation-deck-count" style={{left:285,top:324}}>{core.situationDeckCount}</span>
             <span className="fd-event-deck-count" style={{left: 285, top: 704}}>{core.eventDeckCount}</span>
-            {cards.map(card => <button key={card.id} type="button" className="fd-runtime-map-card-hit" style={{ left: card.x, top: card.y, width: card.w, height: card.h }} aria-label={`检视${card.name}`} onClick={() => onInspect(card.assetPath, card.name)}/>)}
+            {cards.map(card => {
+                const eventId='eventId' in card ? card.eventId : undefined;
+                const target=Boolean(eventId && chariotTargetIds.includes(eventId));
+                if(target && eventId)return <div key={card.id} className="fd-map-target-shell group" style={{left:card.x,top:card.y,width:card.w,height:card.h}}>
+                    <button type="button" className="fd-runtime-map-card-hit is-chariot-target" style={{left:0,top:0,width:'100%',height:'100%'}} aria-label={`选择事件 ${card.name}`}
+                        onPointerDown={event=>targetInspection.handlePointerDown(event,eventId,{asset:card.assetPath,name:card.name})} onPointerMove={event=>targetInspection.handlePointerMove(event,eventId)}
+                        onPointerUp={()=>targetInspection.handlePointerUp(eventId)} onPointerCancel={()=>targetInspection.handlePointerUp(eventId)}
+                        onContextMenu={event=>{event.preventDefault();onInspect(card.assetPath,card.name);}} onClick={()=>{if(!targetInspection.shouldBlockClick(eventId))chariotTargetSubmitted.current=onChariotTarget?.(eventId)===true;}}/>
+                    <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:card.name})} sourceCardId={eventId} buttonSize={`${Math.max(32,32/Math.max(.25,zoomPercent/100))}px`} onInspect={()=>onInspect(card.assetPath,card.name)}/>
+                </div>;
+                return <button key={card.id} type="button" className="fd-runtime-map-card-hit" style={{ left: card.x, top: card.y, width: card.w, height: card.h }} aria-label={`检视${card.name}`} onClick={() => onInspect(card.assetPath, card.name)}/>;
+            })}
         </div>
         <div className="fd-runtime-camera-controls"><span>{zoomPercent}%</span><button type="button" onClick={reset}>{t('ui.map.reset')}</button></div>
     </div>;

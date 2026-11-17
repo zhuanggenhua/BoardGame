@@ -239,10 +239,25 @@ export function applyBetrayalHauntAttackResolvedState(
         event.payload.target,
     );
     let pendingAttackDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-    if (attacker && event.payload.damageToAttacker) {
-        applyAttackDamage(attacker, event.payload.damageToAttacker, event.payload.damageKind ?? 'physical');
+    const helpingHandsHeroAttack = isHelpingHandsHaunt(core) && event.payload.target === 'hero';
+    if (attacker && event.payload.weaponSpeedCost && helpingHandsHeroAttack) {
+        applyTraitLoss(attacker, ['speed'], event.payload.weaponSpeedCost);
     }
-    if (attacker && event.payload.weaponSpeedCost) {
+    if (attacker && event.payload.damageToAttacker) {
+        if (helpingHandsHeroAttack) {
+            pendingAttackDamageAllocation = createPendingDamageAllocation({
+                id: `haunt-attack-damage-${attacker.playerId}-${event.timestamp}`,
+                explorer: attacker,
+                sourceTitle: '攻击',
+                damageKind: event.payload.damageKind ?? 'physical',
+                amount: event.payload.damageToAttacker,
+                allowSkull: true,
+            });
+        } else {
+            applyAttackDamage(attacker, event.payload.damageToAttacker, event.payload.damageKind ?? 'physical');
+        }
+    }
+    if (attacker && event.payload.weaponSpeedCost && !helpingHandsHeroAttack) {
         applyTraitLoss(attacker, ['speed'], event.payload.weaponSpeedCost);
     }
     if (defender && event.payload.damageToDefender) {
@@ -280,6 +295,7 @@ export function applyBetrayalHauntAttackResolvedState(
                 previousDamageToAttacker: event.payload.damageToAttacker ?? 0,
                 previousDamageToDefender: event.payload.damageToDefender ?? 0,
                 defenderRoll: event.payload.defenderRoll ?? 0,
+                damageDeferred: helpingHandsHeroAttack || undefined,
                 defenderDefenseExtraDice: defender
                     ? resolveDefenseExtraDiceWhenAttacked(defender)
                     : 0,

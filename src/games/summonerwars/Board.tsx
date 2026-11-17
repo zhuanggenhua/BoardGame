@@ -211,7 +211,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     : 'bg-slate-900/40 backdrop-blur-sm px-3 py-3 rounded-lg border border-slate-700/20 min-w-[8rem] pointer-events-auto';
   const phaseTrackerRailClass = isLandscapeMobileViewport
     ? ''
-    : 'absolute inset-y-0 right-2 z-20 flex items-center pointer-events-none';
+    : 'absolute inset-y-0 right-2 z-20 grid grid-rows-[minmax(0,1fr)_auto_minmax(max-content,1fr)] justify-items-end pointer-events-none';
   const phaseTrackerWrapperClass = isLandscapeMobileViewport
     ? 'absolute top-3 right-3 z-60 pointer-events-auto'
     : 'pointer-events-auto';
@@ -1447,7 +1447,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 </div>
 
                 {/* 右下区域：结束阶段按钮 + 弃牌堆 */}
-                {!shouldHidePhaseControlsForPrompt && (
+                {isLandscapeMobileViewport && !shouldHidePhaseControlsForPrompt && (
                   <div className={phaseControlsClass} data-testid="sw-phase-controls">
                     {phaseControlsNode}
                   </div>
@@ -1455,9 +1455,19 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
                 {/* 右侧：阶段指示器（桌面端独立右侧中线 rail，不再和对手/底部 HUD 共用经验值定位） */}
                 <div className={phaseTrackerRailClass}>
-                  <div className={phaseTrackerWrapperClass} data-testid="sw-phase-tracker" data-tutorial-id="sw-phase-tracker">
+                  {!isLandscapeMobileViewport && <div />}
+                  <div className={`${phaseTrackerWrapperClass} ${isLandscapeMobileViewport ? '' : 'mb-2'}`} data-testid="sw-phase-tracker" data-tutorial-id="sw-phase-tracker">
                     {phaseTrackerNode}
                   </div>
+                  {!isLandscapeMobileViewport && (
+                    <div className="flex items-end pb-3 pr-1">
+                      {!shouldHidePhaseControlsForPrompt && (
+                        <div className="pointer-events-auto" data-testid="sw-phase-controls">
+                          {phaseControlsNode}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* 顶部中央：提示横幅 */}

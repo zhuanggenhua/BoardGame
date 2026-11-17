@@ -8,6 +8,7 @@ import {
     createBetrayalMonsterMovementRollGroupResult,
     hasMummyTeleportMoveAvailable,
     resolveBetrayalMonsterMoveCost,
+    resolveBetrayalMonsterRemainingMovement,
     resolveBetrayalMonsterTurnStartResolutionPreview,
     resolveBloodFromStoneGazeDamageRolls,
     resolveBloodFromStoneMonsterTurnEndPreview,
@@ -147,7 +148,7 @@ export function resolveBetrayalMonsterMovedPayload(
     const moveCost = canMummyTeleportNow ? 0 : resolveBetrayalMonsterMoveCost(core, monster.id);
     const moveRemainingAfterCost = Math.max(
         0,
-        (core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monster.id] ?? 0) - moveCost,
+        resolveBetrayalMonsterRemainingMovement(core, monster.id) - moveCost,
     );
     const moveRemaining = canMummyTeleportNow
         ? 0

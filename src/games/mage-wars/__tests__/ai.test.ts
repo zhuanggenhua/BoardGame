@@ -139,6 +139,20 @@ describe('mage-wars local AI support', () => {
         });
     });
 
+    it('部署阶段为巢穴中已计划的动物法术提供合法施放动作', () => {
+        let core = MageWarsDomain.setup(PLAYER_IDS, fixedRandom);
+        const den = { ...sourceObject('ai-den', 2218, 'conjuration', ARENA_ZONE_IDS.A1, 4, '1'), preparedSpellCardId: 2819 };
+        core = addObject({ ...core, currentPlayerId: '1', phaseActorId: '1', phaseReadyPlayerIds: [],
+            players: { ...core.players, '1': { ...core.players['1'], mageId: MAGE_IDS.BEASTMASTER_APPRENTICE, mana: 5,
+                spellbookEntries: getMageWarsPresetSpellbookEntriesForMage(MAGE_IDS.BEASTMASTER_APPRENTICE) } } }, den);
+        const state = stateFor(core, 'deployment');
+        expect(MageWarsDomain.validate(state, { type: MAGE_WARS_COMMANDS.CAST_SPELL, playerId: '1',
+            payload: { casterObjectId: den.id, spellCardId: 2819, manaCost: 9, targetZoneId: ARENA_ZONE_IDS.A1 }, timestamp: 1 } as never)).toEqual({ valid: true });
+        const cast = buildMageWarsAiLegalActions({ playerId: '1', state }).find((action) => action.kind === 'cast-object-spell');
+        expect(cast).toBeDefined();
+        expect(MageWarsDomain.validate(state, { ...cast!.commands[0], playerId: '1', timestamp: 1 } as never).valid).toBe(true);
+    });
+
     it('策略层会比较准备方案，而不是永远按动作种类拿第一个', () => {
         let core = withMage(MageWarsDomain.setup(PLAYER_IDS, fixedRandom), MAGE_IDS.WIZARD_APPRENTICE);
         core = addObject(core, sourceObject('familiar-ai', 2908, 'creature', ARENA_ZONE_IDS.A2, 3));

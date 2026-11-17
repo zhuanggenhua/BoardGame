@@ -24,6 +24,7 @@ import {
   createCorpseLootReadyCore,
   createDogTradeReadyCore,
   createDustHauntCore,
+  createHelpingHandsHauntCore,
   createDustFeverishAttackReadyCore,
   createDustFeverishNaturalMonsterTurnBeforeRollCore,
   createExchangeReadyCore,
@@ -4274,46 +4275,7 @@ export function createMagicCameraHauntRuntimeCore(
 function createHelpingHandsHauntRuntimeCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
-  let core = createStartedFirstScenarioCore(playerIds);
-  const helpingHandsEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
-    (event) => event.name === "大宅饿了",
-  );
-  if (!helpingHandsEvent) {
-    throw new Error("山屋 E2E 夹具缺少作祟 12 事件：大宅饿了");
-  }
-
-  core.drawOrder = ["event"];
-  core.eventOrder = [helpingHandsEvent];
-  core.currentExplorer.inventory = [
-    ...core.currentExplorer.inventory,
-    { id: "omen-book", name: "书本", kind: "omen" },
-    { id: "dog", name: "狗", kind: "omen" },
-    { id: "mask", name: "面具", kind: "omen" },
-  ];
-  core.currentExplorer.traits = {
-    ...core.currentExplorer.traits,
-    might: 5,
-    sanity: 5,
-  };
-  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
-    ...card,
-  }));
-  core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "hallway",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
-    roomId: "ground-north",
-  });
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-    "0",
-    { accept: true },
-    100,
-    createBetrayalScriptedRandom(3, 3, 3),
-  );
+  const core = createHelpingHandsHauntCore(playerIds);
   core.recommendedAction = "use";
   return dismissBetrayalE2EBlockingOverlays(core);
 }

@@ -1,7 +1,7 @@
 import type { MatchMetadata } from '../engine/transport/storage';
 import { hasOccupiedPlayers } from './matchOccupancy';
 
-export const DUPLICATE_OWNER_DISCONNECT_GRACE_MS = 5 * 60 * 1000;
+export const DUPLICATE_OWNER_DISCONNECT_GRACE_MS = 20 * 60 * 1000;
 
 export type DuplicateOwnerRoomDecision =
     | { action: 'cleanup'; reason: 'missing_metadata' | 'empty_room' | 'gameover' | 'disconnect_timeout' }
