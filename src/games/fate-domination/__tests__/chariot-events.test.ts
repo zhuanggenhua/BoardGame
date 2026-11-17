@@ -1,3 +1,5 @@
+import { createRespondToPromptCommand, getCurrentInteractionSummary, getPromptOptions } from '../../../engine/testing/interactionTestFacade';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { expect, it } from 'vitest';
 import type { RandomFn } from '../../../engine/types';
 import { createReplayAdapter } from '../../../engine/adapter';
@@ -47,21 +49,22 @@ it('神威车轮走正式交互，拒绝他人或旧输入并不泄露抽取的�
     expect(started.state.core.currentEvents.miyama.some(card=>card.id===target.id)).toBe(false);
     expect(started.state.core.eventDiscard.some(card=>card.id===target.id)).toBe(true);
     expect(started.state.sys.undo.snapshots).toEqual([]);
-    const interaction=started.state.sys.interaction.current!;
-    expect(interaction?.data.sourceId).toBe('fate:chariot-choice');
-    const options=(interaction.data as {options:Array<{id:string}>}).options;
+    const interaction=getCurrentInteractionSummary(started.state);
+    expect(interaction.sourceId).toBe('fate:chariot-choice');
+    const options=getPromptOptions(started.state);
+    const response=createRespondToPromptCommand(started.state,{playerId:'0',optionId:options[0].id});
     expect(options).toHaveLength(2);
-    expect(buildFateAiLegalActions({playerId:'0',state:started.state}).filter(item=>item.commands[0].type==='SYS_INTERACTION_RESPOND')).toHaveLength(2);
+    expect(buildFateAiLegalActions({playerId:'0',state:started.state}).filter(item=>item.commands[0].type===INTERACTION_COMMANDS.RESPOND)).toHaveLength(2);
     const owner=applyPlayerViewToState(engineConfig,started.state,'0');
-    expect(buildFateAiLegalActions({playerId:'0',state:owner}).filter(item=>item.commands[0].type==='SYS_INTERACTION_RESPOND')).toHaveLength(2);
+    expect(buildFateAiLegalActions({playerId:'0',state:owner}).filter(item=>item.commands[0].type===INTERACTION_COMMANDS.RESPOND)).toHaveLength(2);
     const other=applyPlayerViewToState(engineConfig,started.state,'1');
-    expect(other.sys.interaction.current).toBeUndefined();
+    expect(getCurrentInteractionSummary(other).id).toBeUndefined();
     expect(JSON.stringify(other)).not.toContain(options[0].id);
     const spectator=applyPlayerViewToState(engineConfig,started.state,'__spectator__');
     expect(JSON.stringify(spectator)).not.toContain(options[0].id);
-    expect(run(started.state,'1','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id}).success).toBe(false);
-    expect(validFateChariotResponse(started.state,{type:'SYS_INTERACTION_RESPOND',playerId:'0',payload:{interactionId:interaction.id,optionId:options[0].id}})).toBe(true);
-    const finished=run(started.state,'0','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id});
+    expect(run(started.state,'1',response.type,response.payload).success).toBe(false);
+    expect(validFateChariotResponse(started.state,response)).toBe(true);
+    const finished=run(started.state,'0',response.type,response.payload);
     expect(finished.success,finished.error).toBe(true);
     expect(finished.state.core.currentEvents.miyama.map(card=>card.id)).toContain(options[0].id);
     expect(finished.state.core.eventDeck.map(card=>card.id)).toContain(options[1].id);
@@ -69,8 +72,8 @@ it('神威车轮走正式交互，拒绝他人或旧输入并不泄露抽取的�
     const afterCards=[...finished.state.core.eventDeck,...finished.state.core.eventDiscard,...finished.state.core.currentEvents.miyama,...finished.state.core.currentEvents.shinto].map(card=>card.id).sort();
     expect(afterCards).toEqual(beforeCards);
     expect(finished.state.core.battlefield.miyama.eventCards).toEqual(finished.state.core.currentEvents.miyama);
-    expect(finished.state.sys.interaction.current).toBeUndefined();
-    expect(run(finished.state,'0','SYS_INTERACTION_RESPOND',{interactionId:interaction.id,optionId:options[0].id}).success).toBe(false);
+    expect(getCurrentInteractionSummary(finished.state).id).toBeUndefined();
+    expect(run(finished.state,'0',response.type,response.payload).success).toBe(false);
 });
 
 it('牌堆不足时先用尽再洗弃牌，包含刚弃置的事件', () => {
