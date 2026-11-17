@@ -29,7 +29,7 @@ export function fateInvestigationOpportunities(event:FateInvestigationViewedEven
             resolution:{type:'child-frame',frameId:context.frameId,frameKind:FATE_INVESTIGATION_CHOICE,phase:'outpost',phaseGate:'block-advance-when-blocked',metadata:{playerId:context.playerId,targetPlayerId:context.targetPlayerId,skillId:context.skillId,round:context.round,generation:context.generation,frameId:context.frameId}},visibility:{scope:'controller'},metadata:{priority:100}},
         {id,timing,sourceRef,controllerId:context.playerId,class:'mandatory',condition:true,resolution:{type:'choice-request'},visibility:{scope:'controller'},
             choice:{requestId:id,playerId:context.playerId,ownerFrameId:context.frameId,kind:'select-card',candidates:[
-                ...context.offered.map(card=>({id:card.id,label:card.id,value:card.id})),{id:FATE_INVESTIGATION_KEEP,label:'不调整手牌',value:FATE_INVESTIGATION_KEEP}],
+                ...context.offered.map(card=>({id:card.id,label:card.id,value:card.id})),{id:FATE_INVESTIGATION_KEEP,label:'不调整手牌',labelKey:'game-fate-domination:ui.investigationChoice.keep',value:FATE_INVESTIGATION_KEEP}],
                 selection:{min:1,max:1},skipPolicy:'forbidden',resolution:{type:'interaction-response'},ai:{status:'game-policy',policyId:'baseline',reason:'从可见手牌选择或保留原样。'},metadata:context}},
     ];
 }
