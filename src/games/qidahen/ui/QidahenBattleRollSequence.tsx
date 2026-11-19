@@ -5,6 +5,7 @@ import type { DiceBoxDieType, DiceBoxDieSkin } from '../../../lib/dice-box-three
 import type { QidahenBattleRoll, QidahenBattleRolls, QidahenMapToken, QidahenTroopKind } from '../domain/types';
 import { createQidahenD6Skin, QIDAHEN_BATTLE_DICE_STYLES } from './battleDiceAppearance';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { QidahenBattleRoster } from './QidahenBattleRoster';
 
 export const QIDAHEN_BATTLE_DAMAGE_HOLD_MS = 1800;
 const battleLabelStyle: React.CSSProperties = { background: 'rgba(36,19,9,0.78)', padding: '2px 8px' };
@@ -20,28 +21,6 @@ type Props = {
     fixedSides?: boolean;
     rosters?: Record<'attacker' | 'defender', readonly QidahenMapToken[]>;
 };
-
-function BattleRoster({ tokens, kinds, side }: { tokens: readonly QidahenMapToken[]; kinds: ReadonlySet<QidahenTroopKind>; side: 'attacker' | 'defender' }) {
-    const groups = new Map<string, QidahenMapToken[]>();
-    for (const token of tokens) {
-        const key = JSON.stringify([token.troopKind, token.imageSrc, token.rotationDeg ?? 0]);
-        const group = groups.get(key);
-        if (group) group.push(token); else groups.set(key, [token]);
-    }
-    return <div className="flex min-h-[62px] shrink-0 gap-2 overflow-x-auto py-1 [justify-content:safe_center]" data-testid={`qidahen-battle-roster-${side}`}>
-        {[...groups].map(([key, [token, ...rest]]) => {
-            const active = Boolean(token.troopKind && kinds.has(token.troopKind));
-            return <div key={key} className={`relative flex w-10 shrink-0 flex-col items-center gap-0.5 ${active ? '' : 'opacity-65'}`}
-                data-qidahen-arena-unit={side} data-qidahen-arena-active={active ? 'true' : 'false'}
-                data-piece-ids={[token, ...rest].map(piece => piece.pieceId).join(' ')}>
-                <OptimizedImage src={token.imageSrc!} alt="" placeholder={false} draggable={false}
-                    className={`h-10 w-10 rounded-[6px] ${active ? 'ring-2 ring-amber-200' : ''}`}
-                    style={{ transform: `rotate(${token.rotationDeg ?? 0}deg)` }} />
-                {rest.length ? <span className="text-xs font-black leading-4">×{rest.length + 1}</span> : null}
-            </div>;
-        })}
-    </div>;
-}
 
 /** 领域已结算的骰值只播一次：双方同阶段同时投掷，全部停稳后显示损伤，再进下一阶段。 */
 export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attacker, defender, onComplete, fixedSides = false, rosters }: Props) {
@@ -114,7 +93,7 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
                                 style={{ clipPath: 'circle(48%)' }} placeholder={false} /> : null}
                             {t('board.battleRoll.sideOwner', { faction: actors[side].name, role: t(`board.battleRoll.${side}`) })}
                         </span></div>
-                        {rosters ? <BattleRoster side={side} tokens={rosters[side]}
+                        {rosters ? <QidahenBattleRoster side={side} tokens={rosters[side]}
                             kinds={new Set((side === 'attacker' ? stage.attackerRolls : stage.defenderRolls).map(die => die.troopKind))} /> : null}
                         <div className="flex min-h-0 flex-1 gap-2">
                             {groups.filter(group => group.side === side).map(group => (

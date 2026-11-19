@@ -16,9 +16,8 @@ function SubmissionReview({ token, record, refresh }: { token: string; record: G
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const submit = async (decision: 'approved' | 'rejected') => {
-        if (!comment.trim()) { setError(t('platform.creatorReview.commentRequired')); return; }
         setBusy(true); setError('');
-        try { await reviewSubmission(token, record.submissionId, { decision, comment: comment.trim(), revision: record.status === 'approved' && !record.gameId ? record.reviewRevision ?? record.updatedAt : record.updatedAt }); refresh(); }
+        try { await reviewSubmission(token, record.submissionId, { decision, comment: comment.trim() || undefined, revision: record.status === 'approved' && !record.gameId ? record.reviewRevision ?? record.updatedAt : record.updatedAt }); refresh(); }
         catch (cause) { setError(cause instanceof Error ? cause.message : t('platform.creatorReview.reviewFailed')); } finally { setBusy(false); }
     };
     return <article className="review-card"><div className="review-card-head"><h2>{record.name}</h2><span>{record.status === 'approved' ? t('platform.creatorReview.inclusionPending') : t('platform.creatorReview.pendingReview')}</span></div>
@@ -50,14 +49,14 @@ function ClaimReview({ token, claim, game, refresh }: { token: string; claim: Cr
     };
     return <article className="review-card"><div className="review-card-head"><h2>{game?.name ?? t('platform.creatorReview.gameHidden')}</h2><span>{t('platform.creatorReview.authorClaim')}</span></div>
         <p>{t('platform.creatorReview.applicant')}: {claim.applicantName || t('platform.creatorReview.accountUnavailable')}</p><p>{t('platform.creatorReview.workRelationship')}: {claim.explanation}</p>
-        <p>{t('platform.creatorReview.authorProfile')}: <a href={claim.profileUrl} target="_blank" rel="noopener noreferrer">{claim.profileUrl} ↗</a></p>
-        <p>{t('platform.creatorReview.verificationCode')}: <strong>{claim.verificationCode}</strong> · {t('platform.creatorReview.submissionDeadline', { deadline: new Date(claim.verificationExpiresAt).toLocaleString() })}</p>
+        <p>{t('platform.creatorReview.authorProfile')}: {claim.profileUrl ? <a href={claim.profileUrl} target="_blank" rel="noopener noreferrer">{claim.profileUrl} ↗</a> : t('platform.creatorReview.notProvided')}</p>
+        <p>{t('platform.creatorReview.verificationCode')}: <strong>{claim.verificationCode}</strong></p>
         {claim.hasEvidence && <PrivateEvidence token={token} claimId={claim.claimId} admin />}
-        <label className="review-check"><input type="checkbox" checked={profileChecked} onChange={event => setProfileChecked(event.target.checked)} /> {t('platform.creatorReview.profileControlChecked')}</label>
+        {claim.profileUrl && <label className="review-check"><input type="checkbox" checked={profileChecked} onChange={event => setProfileChecked(event.target.checked)} /> {t('platform.creatorReview.profileControlChecked')}</label>}
         <label className="review-check"><input type="checkbox" checked={relationshipChecked} onChange={event => setRelationshipChecked(event.target.checked)} /> {t('platform.creatorReview.relationshipChecked')}</label>
         <label>{t('platform.creatorReview.reviewComment')}<textarea value={comment} onChange={event => setComment(event.target.value)} maxLength={2000} /></label>
         {error && <p role="alert">{error}</p>}
-        <div className="review-actions"><button type="button" disabled={busy || !profileChecked || !relationshipChecked} onClick={() => void submit('approved')}>{t('platform.creatorReview.approveClaim')}</button><button type="button" disabled={busy} onClick={() => void submit('rejected')}>{t('platform.creatorReview.rejectClaim')}</button></div>
+        <div className="review-actions"><button type="button" disabled={busy || (Boolean(claim.profileUrl) && !profileChecked) || !relationshipChecked} onClick={() => void submit('approved')}>{t('platform.creatorReview.approveClaim')}</button><button type="button" disabled={busy} onClick={() => void submit('rejected')}>{t('platform.creatorReview.rejectClaim')}</button></div>
     </article>;
 }
 

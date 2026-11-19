@@ -26,7 +26,7 @@ export const BetrayalPixiRoomViewport = React.forwardRef<HTMLDivElement, {
     width: number;
     height: number;
     /** Preserved across floor-keyed remounts; each floor still starts centered on its own bounds. */
-    initialZoom?: number;
+    initialZoom?: () => number | undefined;
     focusPoint: MapScenePoint | null;
     focusKey?: number;
     focusTarget?: string | null;
@@ -87,7 +87,7 @@ export const BetrayalPixiRoomViewport = React.forwardRef<HTMLDivElement, {
         const availableWidth = Math.max(1, size.width - insets.left - insets.right);
         const availableHeight = Math.max(1, size.height - insets.top - insets.bottom);
         const fitZoom = Math.min(1, Math.max(0.55, Math.min(availableWidth / width, availableHeight / height)));
-        const zoom = Math.min(2.4, Math.max(0.55, initialZoom ?? fitZoom));
+        const zoom = Math.min(2.4, Math.max(0.55, initialZoom?.() ?? fitZoom));
         const initialViewport = {
             zoom,
             panX: insets.left + availableWidth / 2 - width * zoom / 2,

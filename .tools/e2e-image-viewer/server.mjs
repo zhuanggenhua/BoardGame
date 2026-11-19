@@ -672,6 +672,7 @@ const readMediaIndex = (dirPath) => {
       const entry = {
         displayTitle: String(label || (hasBehaviorSentence ? behaviorSentence : displayTitleForFile(fileName))),
         description: String(label ? description : (hasBehaviorSentence ? "" : description)),
+        effectReference: typeof rawItem.effectReference === "string" ? rawItem.effectReference : "",
       };
       exact.set(fileName, entry);
       matchedCount += 1;
@@ -891,6 +892,7 @@ const collectMedia = (dirPath, mediaIndex, selectedFiles = []) => {
       relativePath,
       displayTitle: indexEntry?.displayTitle ?? displayTitleForFile(relativePath),
       description: indexEntry?.description ?? "",
+      effectReference: indexEntry?.effectReference ?? "",
       absolutePath: fullPath,
       kind: mediaKind(fullPath),
       size: stats.size,
@@ -917,6 +919,7 @@ const writeOfflineViewerFile = (dirPath) => {
     relativePath: item.relativePath,
     displayTitle: item.displayTitle,
     description: item.description,
+    effectReference: item.effectReference,
     kind: item.kind,
   }));
   const title = mediaIndex.title || displayTitleForDirectory(dirPath) || "端到端截图";
@@ -969,6 +972,15 @@ const writeOfflineViewerFile = (dirPath) => {
           const description = document.createElement("span");
           description.textContent = item.description;
           caption.append(description);
+        }
+        if (item.effectReference) {
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "效果原文与出处";
+          const source = document.createElement("p");
+          source.textContent = item.effectReference;
+          details.append(summary, source);
+          caption.append(details);
         }
         figure.append(image, caption);
         gallery.append(figure);

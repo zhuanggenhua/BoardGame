@@ -112,9 +112,8 @@
 .fd-runtime-card > img { display: block; width: 100%; height: auto; aspect-ratio: auto 544 / 768; object-fit: contain; }
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); }
 .fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
-.fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: -2px; }
 .fd-played-cards .fd-runtime-card.is-available { outline: 2px solid #ffe08a; outline-offset: 1px; }
-.fd-skill-cards .fd-runtime-card.is-available { outline: 3px solid #ffe08a; outline-offset: -3px; box-shadow:0 0 10px #e9bd5980; }
+.fd-runtime-card:is([data-card-zone="hand"], [data-card-zone="skill"])[aria-disabled="true"] { filter:grayscale(.9) brightness(.72); }
 .fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: -2px; }
 .fd-runtime-card[aria-disabled="true"] { cursor: default; }
 
@@ -191,3 +190,4 @@
 @media (prefers-reduced-motion: reduce) {
     .fd-runtime-card-shell { transition: none; }
 }
+.fd-card-residual { position:absolute; inset:auto 4px 5px; width:max-content; padding:2px 5px; background:#0d1614; color:#f1e4bb; font-size:10px; line-height:1.2; }

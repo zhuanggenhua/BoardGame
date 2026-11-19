@@ -152,6 +152,12 @@ export interface BattlefieldState {
     eventCards: EventCardDefinition[];
 }
 
+export interface FateBattlefieldAttack {
+    playerId: PlayerId;
+    skillId: string;
+    locationId: 'miyama' | 'shinto';
+}
+
 export interface BattleResult {
     playerId: PlayerId;
     locationId: LocationId;
@@ -190,6 +196,7 @@ export interface FateDominationCore {
     playerIds: PlayerId[];
     players: Record<PlayerId, PlayerState>;
     battlefield: Record<LocationId, BattlefieldState>;
+    battlefieldAttacks?: FateBattlefieldAttack[];
     situation: SituationCardDefinition;
     miyamaEvent: EventCardDefinition;
     shintoEventFaceDown: boolean;
@@ -355,6 +362,7 @@ export type FatePlayerEliminatedEvent = GameEvent<'FATE_PLAYER_ELIMINATED', {
 export type CommandSpellUsedEvent = GameEvent<'COMMAND_SPELL_USED', { playerId: PlayerId; effect: 'mana' | 'battle' | 'move' }>;
 
 export type FateDominationEvent =
+    | GameEvent<'FATE_BATTLEFIELD_ATTACK_DECIDED', FateBattlefieldAttack & { placed: boolean }>
     | FateInvestigationViewedEvent
     | FateInvestigationResolvedEvent
     | FateChariotDrawnEvent

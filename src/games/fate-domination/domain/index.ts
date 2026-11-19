@@ -2,6 +2,7 @@ import { fatePostBattleOpportunities } from './postBattleChoice';
 import { fateRidingChoiceOpportunities, fateRidingDrawOpportunities } from './ridingChoice';
 import { fateChariotOpportunities } from './chariotChoice';
 import { fateInvestigationOpportunities } from './investigationChoice';
+import { fateFieldAttackOpportunities } from './battlefieldAttacks';
 import { projectFatePlayerView } from './playerView';
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialFateDominationCore } from './setup';
@@ -132,7 +133,7 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
             return { opportunities: fateRidingChoiceOpportunities(timing.event, timing, state.core) };
         }
         if (timing.event?.type === 'ATTACKS_CONFIRMED') {
-            return { opportunities: fateRidingDrawOpportunities(timing.event, timing, state.core, random) };
+            return { opportunities: [...fateRidingDrawOpportunities(timing.event, timing, state.core, random), ...fateFieldAttackOpportunities(timing.event, timing, state.core)] };
         }
         if (timing.event?.type === 'FATE_BATTLE_RESOLUTION_STARTED') {
             const event = timing.event;

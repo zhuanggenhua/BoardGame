@@ -4,7 +4,11 @@ import {
     DEFAULT_MONGO_COMMAND,
     DEFAULT_MONGO_SSH_TARGET,
 } from './feedback-status-writer.mjs';
-import { projectFeedbackDiagnosticMetadata } from '../../../../../src/lib/feedback/diagnosticPacketProjectionPolicy.mjs';
+import {
+    projectFeedbackDiagnosticMetadata,
+    projectFailedFeedbackAsset,
+    projectStoredFeedbackErrorLocation,
+} from '../../../../../src/lib/feedback/diagnosticPacketProjectionPolicy.mjs';
 
 const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 export const MAX_TARGETED_FEEDBACK_IDS = 100;
@@ -387,6 +391,12 @@ export function summarizeLegacyFeedbackDiagnostics(item) {
     const errorName = typeof error?.name === 'string' && safeErrorNames.has(error.name)
         ? error.name
         : undefined;
+    const location = projectStoredFeedbackErrorLocation(error?.location);
+    const causeName = safeErrorNames.has(error?.causeName) ? error.causeName : undefined;
+    const causeLocation = projectStoredFeedbackErrorLocation(error?.causeLocation);
+    const failedAsset = projectFailedFeedbackAsset(item?.clientContext?.failedAsset);
+    const buildSha = item?.clientContext?.appCommitSha;
+    const appCommitSha = typeof buildSha === 'string' && /^[a-f0-9]{7,64}$/i.test(buildSha) ? buildSha : undefined;
     const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
     const messageCode = rawMessage
         ? rawMessage.split(/[:|]/, 1)[0]
@@ -401,12 +411,17 @@ export function summarizeLegacyFeedbackDiagnostics(item) {
             present: Boolean(error && Object.keys(error).length > 0),
             ...(source ? { source } : {}),
             ...(errorName ? { name: errorName } : {}),
+            ...(location ? { location } : {}),
+            ...(causeName ? { causeName } : {}),
+            ...(causeLocation ? { causeLocation } : {}),
             ...(safeMessageCode ? { messageCode: safeMessageCode } : {}),
             ...(typeof error?.stack === 'string' && error.stack.trim() ? { hasStack: true } : {}),
             ...(typeof error?.jsStack === 'string' && error.jsStack.trim() ? { hasJsStack: true } : {}),
             ...(typeof error?.componentStack === 'string' && error.componentStack.trim() ? { hasComponentStack: true } : {}),
         },
         ...(routeClass ? { routeClass } : {}),
+        ...(appCommitSha ? { appCommitSha } : {}),
+        ...(failedAsset ? { failedAsset } : {}),
         actionLog: summarizeCompatibilityActionLog(item?.actionLog),
         stateSnapshot: summarizeCompatibilitySnapshot(item?.stateSnapshot),
     };

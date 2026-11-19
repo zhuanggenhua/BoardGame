@@ -132,7 +132,6 @@ function CreatorClaimForm({ claim, token, gameId, gameName, profileUrl = '', onS
         const data = new FormData(event.currentTarget);
         const nextUrl = claim ? claim.profileUrl : String(data.get('profileUrl') ?? '').trim();
         const nextExplanation = claim ? claim.explanation : String(data.get('explanation') ?? '').trim();
-        if (action === 'submit' && !file && !claim?.hasEvidence) { setError(t('platform.creatorCenter.claim.evidenceRequired')); return; }
         setBusy(true); setError('');
         try {
             let claimId = claim?.claimId;
@@ -155,7 +154,7 @@ function CreatorClaimForm({ claim, token, gameId, gameName, profileUrl = '', onS
             values={{ code: claim.verificationCode, deadline: new Date(claim.verificationExpiresAt).toLocaleString() }}
             components={{ strong: <strong /> }} /></p>}
         <fieldset disabled={locked} className="platform-upload-fields">
-            <label>{t('platform.creatorCenter.claim.authorProfile')}<input name="profileUrl" required type="url" placeholder="https://" maxLength={2048} defaultValue={claim?.profileUrl ?? profileUrl} readOnly={Boolean(claim)} /></label>
+            <label>{t('platform.creatorCenter.claim.authorProfile')}<input name="profileUrl" type="url" placeholder="https://" maxLength={2048} defaultValue={claim?.profileUrl ?? profileUrl} readOnly={Boolean(claim)} /></label>
             <div className={`platform-cover-upload${dragging && !locked ? ' is-dragging' : ''}`}
                 onDragOver={event => { event.preventDefault(); if (!locked) setDragging(true); }}
                 onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
@@ -174,7 +173,7 @@ function CreatorClaimForm({ claim, token, gameId, gameName, profileUrl = '', onS
                 </button>
                 <small>{t('platform.creatorCenter.claim.evidenceRequirement')}</small>
             </div>
-            <label className="creator-claim-explanation">{t('platform.creatorCenter.claim.relationship')}<textarea name="explanation" required minLength={10} maxLength={4000} placeholder={t('platform.creatorCenter.claim.relationshipPlaceholder')} defaultValue={claim?.explanation} readOnly={Boolean(claim)} /></label>
+            <label className="creator-claim-explanation">{t('platform.creatorCenter.claim.relationship')}<textarea name="explanation" maxLength={4000} placeholder={t('platform.creatorCenter.claim.relationshipPlaceholder')} defaultValue={claim?.explanation} readOnly={Boolean(claim)} /></label>
         </fieldset>
         {error && <p role="alert">{error}</p>}
         {pending ? <button type="button" disabled={busy} onClick={async () => {

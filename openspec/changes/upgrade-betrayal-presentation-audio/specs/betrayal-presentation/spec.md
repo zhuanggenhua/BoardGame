@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: 小黑屋房间入场带淡出
-系统 SHALL 在 `betrayal` 对局中为房间发现提供淡出/入场表现。新放置的房间 MUST 有提亮落下。普通相邻换房 MUST 使用单步 hop 表达空间连续性；跨层、传送和强制位移 MUST 按移动类型表达，MUST NOT 一律套用普通步行轨迹。发现新房间时 MUST 播放场景层（由暗到亮）。地图、棋子与场景表现 MUST 由同一 Pixi 场景承载，MUST NOT 新建独立自定义 shader 引擎。氛围层 MUST 不拦截棋盘点击，MUST NOT 出现在其它游戏。
+系统 SHALL 在 `betrayal` 对局中为房间发现提供淡出/入场表现。新放置的房间 MUST 有提亮落下。普通相邻换房 MUST 使用单步 hop 表达空间连续性；跨层、传送和强制位移 MUST 按移动类型表达。正式对局 MUST 默认以同一 Three.js 场景承载 TTS 房间板块、已有探索者模型和场景动效。地图命中 MUST 跟随同一相机。3D 棋桌无法呈现时 SHALL 用原有 Pixi 棋盘继续该对局。氛围层 MUST 不拦截棋盘点击，MUST NOT 出现在其它游戏。
 
 #### Scenario: 新房间提亮落下
 - **GIVEN** 玩家完成一次探索并放下新房间

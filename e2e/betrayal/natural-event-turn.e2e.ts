@@ -24,6 +24,12 @@ type HarnessWindow = Window & {
   };
 };
 
+test.use({
+  launchOptions: {
+    args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+  },
+});
+
 async function readCore(page: Page): Promise<BetrayalCore> {
   const core = await page.evaluate(
     () => (window as HarnessWindow).__BG_TEST_HARNESS__?.state?.get?.().core,
@@ -88,6 +94,10 @@ test("自然开局探索事件后 AI 自主行动并交回真人", async ({ page
   if (await turnIntro.isVisible().catch(() => false)) await turnIntro.click();
   await expect(turnIntro).toHaveCount(0);
   await expect(page.getByTestId("betrayal-board")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("betrayal-three-map-canvas")).toBeVisible();
+  await expect(page.getByTestId("betrayal-room-grid")).toHaveAttribute(
+    "data-visible-explorer-models", "3", { timeout: 30000 },
+  );
 
   const initialCore = await readCore(page);
   expect(initialCore.currentPlayer).toBe("0");

@@ -1,3 +1,4 @@
+import { isFateResidualSkill } from './battlefieldAttacks';
 import { fateFinalResult, emptyFateBattleResult } from './battleAwards';
 import type { BattleResult, FateDominationEvent } from './types';
 import { drawFateCards } from './cardDraw';
@@ -55,7 +56,7 @@ export function reduceFateRound(state: FateDominationCore, event: BattleResolved
             ...current, locationId: null, deploymentSlot: null,
             skills,
             revealedSkillIds: current.revealedSkillIds.filter(id => skills.some(skill => skill.id === id)),
-            activeAttackIds: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], forcedRevealedHand: [], activeSkills: [], usedAbilityIds: [],
+            activeAttackIds: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], forcedRevealedHand: [], activeSkills: current.eliminated ? [] : current.activeSkills.filter(isFateResidualSkill), usedAbilityIds: [],
             normalAttackPlayed: false, normalMoveCompleted: false, defeatMarkers: [], hasPassedAction: false,
             mana: capFateMana(current.masterId, current.mana + (isComplete || current.eliminated ? 0 : nextSituation.printedMana ?? 0)),
             hand, deck, discard,

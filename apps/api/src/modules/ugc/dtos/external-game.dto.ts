@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { GameSubmissionDto } from './game-submission.dto';
 
 export class ExternalGameEditDto extends GameSubmissionDto {
@@ -6,8 +6,8 @@ export class ExternalGameEditDto extends GameSubmissionDto {
 }
 export class CreateCreatorClaimDto {
     @IsString() @MinLength(1) @MaxLength(100) gameId!: string;
-    @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) profileUrl!: string;
-    @IsString() @MinLength(10) @MaxLength(4000) explanation!: string;
+    @ValidateIf((_object, value) => value != null && value !== '') @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) profileUrl?: string;
+    @IsOptional() @IsString() @MaxLength(4000) explanation?: string;
 }
 export class ReviewCreatorClaimDto {
     @IsIn(['approved', 'rejected']) decision!: 'approved' | 'rejected';
@@ -18,7 +18,7 @@ export class ReviewCreatorClaimDto {
 }
 export class ReviewSubmissionDto {
     @IsIn(['approved', 'rejected']) decision!: 'approved' | 'rejected';
-    @IsString() @MinLength(1) @MaxLength(2000) comment!: string;
+    @IsOptional() @IsString() @MaxLength(2000) comment?: string;
     @IsDateString() revision!: string;
 }
 export class CheckEmbedDto {

@@ -1,3 +1,4 @@
+import { isFateFieldAttack } from './battlefieldAttacks';
 import type { FateDominationCore } from './types';
 import {resolveFateAttack} from './attackSelection';
 import {fateDeploymentTerrain} from './deployment';
@@ -9,6 +10,11 @@ export const calculateFatePower = (core: FateDominationCore, playerId: string, c
     const selected = [...new Set([...cardIds, ...player.activeSkills])]
         .filter(id => !(player.faceDownAttackIds ?? []).includes(id) && !(player.selectedFaceDownIds ?? []).includes(id))
         .map(id => resolveFateAttack(player, id)?.definition).filter(Boolean);
+    const fieldCards = core.battlefieldAttacks?.filter(card => card.playerId === playerId && card.locationId === player.locationId) ?? [];
+    for (const card of fieldCards) {
+        const definition = resolveFateAttack(player, card.skillId)?.definition;
+        if (definition && isFateFieldAttack(card.skillId)) selected.push({ ...definition, type: definition.type?.replace('/宝具', '') });
+    }
     const attackTypes = selected.map((card) => card!.type ?? card!.name);
     const location = player.locationId ? core.battlefield[player.locationId] : undefined;
     const events = location?.eventCards ?? [];
@@ -37,4 +43,3 @@ export const calculateFatePower = (core: FateDominationCore, playerId: string, c
         ? resolveFatePowerValue(core, total, { selector: 'total', actorId: playerId, locationId: player.locationId, attackTypes }).value
         : total;
 };
-

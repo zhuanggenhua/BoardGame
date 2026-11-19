@@ -13,6 +13,14 @@
 .fd-runtime-deployment-slot:disabled:hover { background:transparent; }
 .fd-runtime-map-card-hit { position: absolute; pointer-events: auto; border: 0; background: transparent; cursor: zoom-in; }
 .fd-runtime-map-card-hit:focus-visible { outline: 4px solid #e2c269; }
+.fd-field-attack { display:grid; justify-items:stretch; padding:0; z-index:2; background:#121c19; color:#fff0be; box-shadow:0 0 0 2px #c3a466; }
+.fd-field-attack img { width:100%; display:block; }
+.fd-field-attack span { padding:3px; font-size:16px; text-align:center; }
+.fd-field-attack[data-fate-field-slot] { grid-template-rows: 70px 20px; }
+.fd-field-attack[data-fate-field-slot] img { height:100%; object-fit:contain; }
+.fd-field-attack[data-fate-field-slot] span { padding:0; font-size:14px; line-height:20px; }
+.fd-field-attack:hover { outline:2px solid #fff0b5; }
+.fd-runtime-map-overlay[data-moving="true"] .fd-field-attack { pointer-events:none; }
 .fd-runtime-map-card-hit.is-chariot-target { outline: 4px solid #ffe0a0; outline-offset: 2px; cursor:pointer; }
 .fd-map-target-shell { position:absolute; pointer-events:none; }
 .fd-map-exposed-events { position:absolute; z-index:2; display:grid; justify-items:start; gap:4px; pointer-events:none; }

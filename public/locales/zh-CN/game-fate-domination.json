@@ -8,7 +8,7 @@
   },
   "round": "回合",
   "ui": {
-    "investigationChoice": {"label":"调查手牌","prompt":"可将 {{name}} 的一张手牌放回其牌库顶。若放回，下回合不能调查。","empty":"{{name}}没有手牌","card":"放回牌库顶 {{name}}","keep":"保留手牌","done":"完成","target":"调查 {{name}}","chooseTarget":"选择要调查的玩家","choosingCard":"调查中"},
+    "investigationChoice": {"label":"调查手牌","prompt":"点一张牌放回 {{name}} 的牌库顶","empty":"{{name}}没有手牌","card":"放回牌库顶 {{name}}","keep":"保留手牌","done":"完成","target":"调查 {{name}}","chooseTarget":"选择要调查的玩家"},
     "chariotChoice": {"label":"选择神威车轮事件","prompt":"选择一张事件牌放入战场","card":"选择事件 {{name}}"},
     "board": {
       "cancelDeployment": "取消部署",
@@ -88,6 +88,8 @@
       "ridingStatus": "坐骑召唤 · 已选 {{selected}} 张（最多 {{maximum}} 张）· 实付 {{cost}} / {{mana}} 魔力 · 本次选牌固定明置",
       "selectionMode": "暗置选牌",
       "adjustedCost": "实付 {{current}} · 原 {{printed}}",
+      "currentCost": "当前费用 {{current}}",
+      "residual": "残留",
       "skillAction": "{{action}} {{name}}",
       "skillCards": "技能牌",
       "totalPower": "合计威力"
@@ -130,6 +132,11 @@
       "viewFront": "查看正面"
     },
     "map": {
+      "fieldAttackChoice": "决定战场攻击",
+      "placeFieldAttack": "放置到{{location}}",
+      "closeFieldAttack": "关闭此牌",
+      "fieldAttack": "{{location}}的{{name}}，玩家{{seat}}所有",
+      "fieldAttackOwner": "玩家 {{seat}}",
       "reset": "复位",
       "shintoEvents": "新都事件",
       "miyamaEvents": "深山町事件"

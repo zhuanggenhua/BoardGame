@@ -4,6 +4,7 @@ import { createFatePostBattleChoiceSystems, createFatePostBattleInteraction, isF
 import { createFateRidingChoiceSystems, createFateRidingInteraction } from './domain/ridingChoice';
 import { createFateChariotChoiceSystems, createFateChariotInteraction } from './domain/chariotChoice';
 import { createFateInvestigationChoiceSystems, createFateInvestigationInteraction } from './domain/investigationChoice';
+import { createFateFieldAttackSystems, createFateFieldAttackInteraction } from './domain/battlefieldAttacks';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
 import { createFatePrivacySystem } from './domain/privacySystem';
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
@@ -73,6 +74,7 @@ const [fateRidingChoiceGuard, fateRidingChoiceResolution] = createFateRidingChoi
 const [fateChariotGuard, fateChariotResolution] = createFateChariotChoiceSystems();
 const [fateInvestigationGuard, fateInvestigationResolution] = createFateInvestigationChoiceSystems();
 const systems = [
+    ...createFateFieldAttackSystems(),
     fateRidingChoiceGuard,
     fateChariotGuard,
     fateInvestigationGuard,
@@ -84,7 +86,7 @@ const systems = [
     fateRidingChoiceResolution,
     fateChariotResolution,
     fateInvestigationResolution,
-    createTimingOpportunitySystem(FateDominationDomain, { choiceRequestInteraction: ({opportunity}) => createFateRidingInteraction(opportunity) ?? createFateChariotInteraction(opportunity) ?? createFateInvestigationInteraction(opportunity) ?? createFatePostBattleInteraction(opportunity) }),
+    createTimingOpportunitySystem(FateDominationDomain, { choiceRequestInteraction: ({opportunity}) => createFateRidingInteraction(opportunity) ?? createFateChariotInteraction(opportunity) ?? createFateInvestigationInteraction(opportunity) ?? createFateFieldAttackInteraction(opportunity) ?? createFatePostBattleInteraction(opportunity) }),
     createFatePrivacySystem(),
     createFateInformationBoundarySystem(),
     createResolutionFrameSystem<FateDominationCore>({

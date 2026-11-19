@@ -117,19 +117,19 @@ describe('创作者中心空态与列表', () => {
         expect(screen.getByRole('button', { name: '提交审核' })).toHaveClass('platform-submit');
     });
 
-    it('空白认领填写复用投稿表单并要求截图才能送审', async () => {
+    it('资料全部留空也能提交认领审核', async () => {
         api.listCreatorClaims.mockResolvedValue({ items: [] });
+        api.createCreatorClaim.mockResolvedValue({ claimId: 'empty-claim' });
+        api.submitCreatorClaim.mockResolvedValue({});
         mount(<CreatorClaimPanel token="t" userId="u" gameId="g1" gameName="山中小屋" onClose={() => {}} />);
         expect(await screen.findByRole('heading', { name: '申请认领' })).toBeTruthy();
         expect(document.querySelector('.platform-upload-form')).toBeTruthy();
         expect(document.querySelector('.platform-upload-fields')).toBeTruthy();
         expect(document.querySelector('.platform-cover-upload')).toBeTruthy();
         expect(screen.getByText('当前游戏：山中小屋')).toBeTruthy();
-        fireEvent.change(screen.getByLabelText('作者主页'), { target: { value: 'https://example.com/author' } });
-        fireEvent.change(screen.getByLabelText('你与游戏的关系'), { target: { value: '我是这款游戏的作者和开发者。' } });
         fireEvent.click(screen.getByRole('button', { name: '提交审核' }));
-        expect(await screen.findByRole('alert')).toHaveTextContent(/截图|证据/);
-        expect(api.createCreatorClaim).not.toHaveBeenCalled();
-        expect(api.submitCreatorClaim).not.toHaveBeenCalled();
+        await waitFor(() => expect(api.createCreatorClaim).toHaveBeenCalledWith('t', { gameId: 'g1', profileUrl: '', explanation: '' }));
+        await waitFor(() => expect(api.submitCreatorClaim).toHaveBeenCalledWith('t', 'empty-claim'));
+        expect(api.uploadClaimEvidence).not.toHaveBeenCalled();
     });
 });

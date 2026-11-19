@@ -43,7 +43,7 @@ describe('Betrayal camera focus ownership', () => {
         expect(preservedZoom).toBe(1.25);
         firstFloor.unmount();
 
-        render(<BetrayalPixiRoomViewport {...props} width={900} height={600} initialZoom={preservedZoom} />);
+        render(<BetrayalPixiRoomViewport {...props} width={900} height={600} initialZoom={() => preservedZoom} />);
         expect(capture.props!.viewport).toEqual({ zoom: 1.25, panX: -62.5, panY: -25 });
     });
 

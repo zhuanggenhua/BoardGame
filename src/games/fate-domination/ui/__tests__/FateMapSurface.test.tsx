@@ -2,6 +2,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {expect, it, vi} from 'vitest';
 import {createReplayAdapter} from '../../../../engine/adapter';
 import {FateDominationDomain} from '../../domain';
+import {FATE_SERVANT_BY_ID} from '../../data';
 import {FateMapSurface} from '../FateMapSurface';
 const cameraProps = vi.hoisted(() => vi.fn());
 const resizeLifecycle = vi.hoisted(() => ({ created: 0, observed: 0, disconnected: 0 }));
@@ -46,6 +47,33 @@ it('观察他席部署时仍能锚定地图上的下一合法点位，但不开�
  render(<FateMapSurface core={core} locale="zh-CN" legalLocations={[]} onLocation={vi.fn()} onInspect={vi.fn()}/>);
  expect(document.querySelector('[data-tutorial-id="fate-deployment-shinto"]')).toBeTruthy();
  expect(screen.queryByRole('button',{name:/部署到新都/})).toBeNull();
+});
+
+it('场地牌使用空点位，给本席可部署点和已部署棋子让位', () => {
+ const core = createReplayAdapter(FateDominationDomain, 'field-attack-slots').setup(['0', '1', '2']).core;
+ const servant = FATE_SERVANT_BY_ID['servant-gilles'];
+ const skill = servant.skillCards!.find(card => card.id === 'sc_gilles_np')!;
+ core.players['0'] = { ...core.players['0'], servantId: servant.id, skills: [skill] };
+ core.battlefieldAttacks = [{ playerId: '0', skillId: skill.id, locationId: 'miyama' }];
+ const onInspect = vi.fn(), onLocation = vi.fn();
+ const props = { core, viewerId: '0', locale: 'zh-CN', legalLocations: [] as const, onInspect, onLocation };
+ const view = render(<FateMapSurface {...props}/>);
+ const fieldCard = () => view.container.querySelector<HTMLButtonElement>('[data-fate-field-attack]')!;
+ expect(fieldCard().dataset.fateFieldSlot).toBe('0');
+
+ core.phase = 'outpost';
+ view.rerender(<FateMapSurface {...props} legalLocations={['miyama']}/>);
+ expect(fieldCard().dataset.fateFieldSlot).toBe('1');
+ fireEvent.click(screen.getByTestId('fate-domination-location-miyama'));
+ expect(onLocation).toHaveBeenCalledExactlyOnceWith('miyama', 0);
+
+ core.battlefield.miyama.playerIds = ['1', '2'];
+ core.players['1'] = { ...core.players['1'], locationId: 'miyama', deploymentSlot: 0 };
+ core.players['2'] = { ...core.players['2'], locationId: 'miyama', deploymentSlot: 1 };
+ view.rerender(<FateMapSurface {...props}/>);
+ expect(fieldCard().hasAttribute('data-fate-field-slot')).toBe(false);
+ fireEvent.click(fieldCard());
+ expect(onInspect).toHaveBeenCalledExactlyOnceWith(servant.skillAssetPaths[servant.skillCards!.indexOf(skill)], skill.name);
 });
 
 it('地图上的可访问对象与画布共用一个输入面，拖动阈值由共享相机处理', () => {

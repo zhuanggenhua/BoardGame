@@ -9,6 +9,7 @@ import {FATE_ATTACK_BY_ID} from '../data';
 import type {CardInstance, PlayerState, SkillDefinition} from '../domain/types';
 import {projectFateHand} from '../domain/handView';
 import {fateAttackManaCost, resolveFateAttack} from '../domain/attackSelection';
+import {isFateResidualSkill, isFateTerritoryCreation} from '../domain/battlefieldAttacks';
 import './hand-surface.css';
 import {useTouchLongPress} from '../../../hooks/ui/useTouchLongPress';
 import {useTranslation} from 'react-i18next';
@@ -21,6 +22,7 @@ export type FateSkillCardView = {
 };
 
 interface Props {
+    round?: number;
     player: PlayerState;
     power: number;
     skills: readonly FateSkillCardView[];
@@ -49,7 +51,7 @@ interface Props {
 }
 
 /** The attack and skill hands stay separate; played cards remain direct card objects. */
-export function FateHandSurface({player, power, skills, canSelect, canSelectCard, onSelect, onRejectCard, onReject, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, requestedCardId, rollbackRevision = 0}: Props) {
+export function FateHandSurface({player, round, power, skills, canSelect, canSelectCard, onSelect, onRejectCard, onReject, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, requestedCardId, rollbackRevision = 0}: Props) {
     const { t } = useTranslation('game-fate-domination');
     const interactionScope = JSON.stringify([player.id, canSelect, ridingChoice?.interactionId ?? null, ridingChoice?.round ?? null, rollbackRevision]);
     const [faceDownState, setFaceDownState] = useState<{scope: string; value: boolean}>({scope: '', value: false});
@@ -104,7 +106,8 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
 
     const costAdjustment = (id: string, faceDown = false) => {
         const printed = resolveFateAttack(player, id)?.definition.manaCost;
-        const current = fateAttackManaCost(player, id, faceDown);
+        const current = fateAttackManaCost(player, id, faceDown, round);
+        if (current !== undefined && isFateTerritoryCreation(id)) return <span className="fd-card-cost-adjustment">{t('ui.hand.currentCost', { current })}</span>;
         if (printed === undefined || current === undefined || printed === current) return null;
         return <span className="fd-card-cost-adjustment">{t('ui.hand.adjustedCost', { current, printed })}</span>;
     };
@@ -116,7 +119,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             layoutId={`fate-skill-${player.id}-${skill.id}`}
             key={skill.id}
             type="button"
-            className={`fd-runtime-card${requestedCardId===skill.id?' is-requested':''}${stagedSkill ? ' is-staged' : ridingChoice?.sourceSkillId===skill.id || (!ridingChoice && (active ? abilityAvailable : available&&!faceDownMode)) ? ' is-available' : ''}`}
+            className={`fd-runtime-card${requestedCardId===skill.id?' is-requested':''}${stagedSkill ? ' is-staged' : ridingChoice?.sourceSkillId===skill.id || (!ridingChoice && active && abilityAvailable) ? ' is-available' : ''}`}
             aria-label={ridingChoice?.sourceSkillId===skill.id ? t('ui.hand.cancelRide') : t('ui.hand.skillAction', { action: stagedSkill ? t('ui.hand.actions.retract') : active ? t('ui.hand.actions.activate') : t('ui.hand.actions.select'), name: skill.name })}
             aria-disabled={ridingChoice ? ridingChoice.sourceSkillId!==skill.id : (active ? !abilityAvailable : !stagedSkill&&(!available||faceDownMode))}
             data-focus-card={`skill-${player.id}-${skill.id}`}
@@ -142,6 +145,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             }}
         >
             <OptimizedImage src={assetPath} alt={skill.name}/>
+            {active && isFateResidualSkill(skill.id) && <span className="fd-card-residual">{t('ui.hand.residual')}</span>}
             {!active && costAdjustment(skill.id)}
         </motion.button>
         <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:skill.name})} sourceCardId={skill.id} onInspect={()=>onInspect(assetPath,skill.name,true)} buttonSize="32px" className="fd-card-inspect"/>
@@ -170,7 +174,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 layoutId={`fate-card-${card.id}`}
                 key={card.id}
                 type="button"
-                className={`fd-runtime-card${requestedCardId === card.id ? ' is-requested' : ''}${isStaged ? ' is-staged' : ridingSelected ? ' is-riding-selected' : selectable || (!ridingChoice && abilityAvailable) ? ' is-available' : ''}`}
+                className={`fd-runtime-card${requestedCardId === card.id ? ' is-requested' : ''}${isStaged ? ' is-staged' : ridingSelected ? ' is-riding-selected' : !ridingChoice && abilityAvailable ? ' is-available' : ''}`}
                 initial={{opacity: 0, y: 14}}
                 animate={{opacity: 1, y: 0}}
                 exit={{opacity: 0, y: -28}}

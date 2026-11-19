@@ -325,6 +325,7 @@ worker 任务必须包含反馈 ID、诊断包路径、文件 / 模块边界、�
 
 - 以下 `update-feedback-status.mjs` 和 `finalize-feedback-group.mjs` 是线上回写入口：未设置 `--base-url` / `BOARDGAME_FEEDBACK_BASE_URL` 时默认生产 API，生产地址缺 token 或返回 401 / 403 时会选择生产 Mongo / SSH。不得把脚本默认值当成本地口径；本地任务先锁定本地真实写入口，未经线上回写授权不执行上述生产默认路径。
 - `triage-open-feedback.mjs`：线上口径下拉取开放反馈、排重、分类、生成诊断包与并行候选；包含结构化现场包摘要，以及线上 watchdog 私密回放的可用性和去隐私状态摘要；可用 `--ids` 定向读取指定记录。显式提供 `--ids` 时至少要有一个有效 ID；参数为空或无效必须在发起网络请求前报错，不能退化为全状态列表读取。
+- 客户端异常先由执行者读取分诊包中的公开构建位置、原始错误类别和失败资源时序。CPU 告警先用 [`summarize-cpu-profile.mjs`](scripts/summarize-cpu-profile.mjs) 离线解析与该告警关联的本地 `.cpuprofile`，再对照采样窗口内的命令日志。缺少采样或关联时保留证据缺口。检查附件可用性后，仅在定位依赖原始对局状态时执行完整回放。诊断材料由执行者读取。
 - `sync-feedback-status-board.mjs`：从 `summary.json` 初始化或刷新本地状态镜像，覆盖代表项和同组反馈 ID。
 - `update-feedback-status.mjs`：线上口径下自动选择 HTTP 管理接口或生产机 Mongo 回写状态，并同步本地镜像。
 - `finalize-feedback-group.mjs`：按 `summary.json` 收口代表项，并默认同步同组反馈状态。

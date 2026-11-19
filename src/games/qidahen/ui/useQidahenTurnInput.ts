@@ -79,7 +79,7 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     return { active, canAct, step, maintenanceFortificationId, actorName, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
         dispatchEligiblePieceIds: step === 'dispatch-troops' && canAct ? options.filter(option => !option.disabled && pieceIds.includes(option.id)).map(option => option.id) : [],
         committedPieceIds: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.selectedPieceIds ?? [] : [],
-        dispatchSourceRegionId: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.sourceRegionId ?? null : null,
+        dispatchSourceRegionId: step === 'dispatch-troops' || step === 'dispatch-target' ? frame?.metadata.qidahenTurn.sourceRegionId ?? null : null,
         season: frame?.metadata.qidahenTurn.season ?? null, choose, isDirectChoice,
         yearOpening: active && frame?.metadata.qidahenTurn.season === 'new-year'
             && frame.metadata.qidahenTurn.yearCharacterIndex >= 0

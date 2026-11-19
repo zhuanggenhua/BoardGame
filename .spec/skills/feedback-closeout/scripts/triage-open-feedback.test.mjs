@@ -230,8 +230,17 @@ test('历史反馈诊断包不输出原始日志、快照、异常文本、堆�
             message: 'SECRET_EXCEPTION_MESSAGE_CANARY',
             stack: 'SECRET_STACK_CANARY\n    at SECRET_CARD_CANARY',
             jsStack: 'SECRET_STACK_CANARY',
+            causeName: 'TypeError',
+            causeLocation: { bundle: 'XyZ12345', line: 42, column: 8, url: 'SECRET_ROUTE_CANARY' },
         },
-        clientContext: { gameId: 'qidahen', route: `/play/qidahen/match/SECRET_ROUTE_CANARY` },
+        clientContext: {
+            gameId: 'qidahen', route: `/play/qidahen/match/SECRET_ROUTE_CANARY`,
+            appCommitSha: '77344b3b41f739e9473520d5ff25d3600412e5b9',
+            failedAsset: {
+                path: '/assets/HomeEntry-Bo8WHdSd.css', observedAt: '2026-01-01T00:00:00.000Z',
+                transferSize: 0, timingResponseStartPresent: false, online: true, url: 'SECRET_ROUTE_CANARY',
+            },
+        },
     };
     const server = http.createServer((request, response) => {
         requests.push(request.url);
@@ -272,4 +281,11 @@ test('历史反馈诊断包不输出原始日志、快照、异常文本、堆�
     assert.match(packet, /"isBlocked": true/);
     assert.match(packet, /"hasStack": true/);
     assert.match(packet, /routeClass: game-match/);
+    assert.match(packet, /"causeName": "TypeError"/);
+    assert.match(packet, /"bundle": "XyZ12345"/);
+    assert.match(packet, /"line": 42/);
+    assert.match(packet, /"appCommitSha": "77344b3b41f739e9473520d5ff25d3600412e5b9"/);
+    assert.match(packet, /"path": "\/assets\/HomeEntry-Bo8WHdSd\.css"/);
+    assert.match(packet, /"timingResponseStartPresent": false/);
+    assert.doesNotMatch(packet, /"responseStatus"/);
 });

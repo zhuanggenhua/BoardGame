@@ -8,7 +8,7 @@ import { GameSubmission, type GameSubmissionDocument } from './schemas/game-subm
 import type { GameSubmissionDetailsDto, GameSubmissionDto } from './dtos/game-submission.dto';
 import type { ReviewSubmissionDto } from './dtos/external-game.dto';
 import { ExternalGamesService } from './external-games.service';
-import { editableGameFields, gameFieldsUpdate, validateExternalFields } from './external-game-fields';
+import { editableGameFields, gameFieldsUpdate, validateExternalDetails, validateExternalFields } from './external-game-fields';
 import { validateGameRulesFile, type GameRulesUpload } from './game-rules-file';
 import { storeWebGameZip } from './external-web-game-host';
 
@@ -24,11 +24,7 @@ export class GameSubmissionsService {
         if (!record) throw new NotFoundException('没有找到这份投稿');
         return record;
     }
-    private validate(data: GameSubmissionDto) {
-        validateExternalFields(data);
-    }
     create(ownerId: string, data: GameSubmissionDto) {
-        this.validate(data);
         return this.records.create({ ...editableGameFields(data), ownerId, submissionId: randomUUID(), status: 'draft' });
     }
     async update(ownerId: string, id: string, data: GameSubmissionDto) {
@@ -38,11 +34,11 @@ export class GameSubmissionsService {
     async saveWebZip(ownerId: string, details: GameSubmissionDetailsDto, file: { name: string; buffer: Buffer }, id?: string) {
         const record = id ? await this.editable(ownerId, id) : null;
         const submissionId = record?.submissionId ?? randomUUID();
-        this.validate({ ...details, url: '' });
+        validateExternalDetails(details);
         const url = await storeWebGameZip(submissionId, file.buffer);
         const data = { ...details, url };
         if (record) return this.updateDraft(record, data, file.name);
-        return this.records.create({ ...editableGameFields(data), ownerId, submissionId, webZipName: file.name, status: 'draft' });
+        return this.records.create({ ...editableGameFields(data, file.name), ownerId, submissionId, webZipName: file.name, status: 'draft' });
     }
     private async editable(ownerId: string, id: string) {
         const record = await this.owned(ownerId, id);
@@ -52,7 +48,7 @@ export class GameSubmissionsService {
         return record;
     }
     private async updateDraft(record: GameSubmissionDocument, data: GameSubmissionDto, webZipName?: string) {
-        const fields = gameFieldsUpdate(data);
+        const fields = gameFieldsUpdate(data, webZipName);
         const updated = await this.records.findOneAndUpdate({ _id: record._id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
             {
                 $set: { ...fields.$set, ...(webZipName ? { webZipName } : {}), status: 'draft', reviewComment: '' },
@@ -102,8 +98,7 @@ export class GameSubmissionsService {
     }
     async submit(ownerId: string, id: string) {
         const record = await this.editable(ownerId, id);
-        this.validate(record);
-        if (!record.coverUrl) throw new BadRequestException('请先上传封面');
+        validateExternalFields(record);
         const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
             { $set: { status: 'pending', reviewComment: '' }, $unset: { reviewRevision: 1, reviewerId: 1 } }, { new: true });
         if (!updated) throw new ConflictException('投稿已送审或已发生变化，请刷新');
@@ -119,7 +114,6 @@ export class GameSubmissionsService {
     }
     pending() { return this.records.find({ $or: [{ status: 'pending' }, { status: 'approved', gameId: { $exists: false } }] }).sort({ updatedAt: 1 }); }
     async review(reviewerId: string, id: string, data: ReviewSubmissionDto) {
-        if (!data.comment.trim()) throw new BadRequestException('请填写审核意见');
         let record = await this.records.findOne({ submissionId: id, status: 'pending', updatedAt: new Date(data.revision) });
         const retry = !record && data.decision === 'approved'
             ? await this.records.findOne({ submissionId: id, status: 'approved', gameId: { $exists: false }, reviewRevision: data.revision }) : null;
@@ -127,13 +121,10 @@ export class GameSubmissionsService {
         if (retry) record = retry;
         if (!record) throw new ConflictException('投稿不存在');
         if (record.gameId) await this.games.assertSubmissionEditable(record.ownerId, record.gameId);
-        if (data.decision === 'approved') {
-            this.validate(record);
-            if (!record.coverUrl) throw new BadRequestException('请先上传封面');
-        }
+        if (data.decision === 'approved') validateExternalFields(record);
         const reviewed = retry ?? await this.records.findOneAndUpdate({ submissionId: id, status: 'pending', updatedAt: record.updatedAt },
             {
-                $set: { status: data.decision, reviewComment: data.comment, reviewRevision: data.revision, reviewerId },
+                $set: { status: data.decision, reviewComment: data.comment?.trim() ?? '', reviewRevision: data.revision, reviewerId },
                 // 新收录和版本更新都能沿用待发布审核记录重试。公开游戏记录保留原入口，直到发布成功。
                 ...(data.decision === 'approved' ? { $unset: { gameId: 1 } } : {}),
             }, { new: true });

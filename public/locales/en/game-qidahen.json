@@ -529,6 +529,7 @@
       "skipHandAndEndTurn": "Skip hand action and end turn",
       "selectedSupport": "Selected {{cards}} cards and {{units}} troops",
       "selectedTroops": "Selected {{units}} troops",
+      "chooseDispatchTarget": "Choose destination",
       "supportOrRemove": "Choose support cards or troops to remove",
       "selectHand": "Choose from your hand",
       "confirm": "Confirm",

@@ -37,6 +37,7 @@ export interface EvidenceScreenshotIndexEntry {
     sourceRevision?: string;
     requirements?: string[];
     description: string;
+    effectReference?: string;
     role?: 'main-flow' | 'auxiliary-detail';
     viewport?: 'desktop' | 'mobile';
     viewportSize?: string;

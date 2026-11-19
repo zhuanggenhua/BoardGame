@@ -8,7 +8,7 @@ export class CreatorClaimRecord {
     @Prop({ type: String, required: true, unique: true }) claimId!: string;
     @Prop({ type: String, required: true, index: true }) gameId!: string;
     @Prop({ type: String, required: true, index: true }) applicantId!: string;
-    @Prop({ type: String, required: true }) profileUrl!: string;
+    @Prop({ type: String, default: '' }) profileUrl!: string;
     @Prop({ type: String, default: '' }) explanation!: string;
     @Prop({ type: String, required: true }) verificationCode!: string;
     @Prop({ required: true, type: Date }) verificationExpiresAt!: Date;

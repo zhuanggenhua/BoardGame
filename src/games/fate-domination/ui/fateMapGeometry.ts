@@ -16,6 +16,17 @@ export const FATE_DEPLOYMENT_SLOTS: Partial<Record<LocationId, readonly { x: num
   shinto: [{ x: 1216, y: 880, w: 199, h: 96, pawnX: 1367, pawnY: 926 }, { x: 1216, y: 977, w: 199, h: 96, pawnX: 1367, pawnY: 1023 }],
 };
 
+/** 残留牌借用空阵地的棋子位置，保留点位左边的地利数值。 */
+export function fateFieldAttackSlotBounds(locationId: LocationId) {
+  return (FATE_DEPLOYMENT_SLOTS[locationId] ?? []).map(slot => ({ x: slot.pawnX - 28, y: slot.y + 3, w: 56, h: 90 }));
+}
+
+export function fateFieldAttackSlots(core: FateDominationCore, locationId: LocationId, protectedSlots: readonly (number | null)[]) {
+  const reserved = new Set(protectedSlots);
+  for (const playerId of core.battlefield[locationId].playerIds) reserved.add(core.players[playerId].deploymentSlot);
+  return fateFieldAttackSlotBounds(locationId).flatMap((bounds, index) => reserved.has(index) ? [] : [{ ...bounds, index }]);
+}
+
 /** 地图棋子和战斗演出共用同一份地点、部署槽及自由站位坐标。 */
 export function fatePawnPosition(core: FateDominationCore, locationId: LocationId, playerId: string) {
   const room = FATE_MAP_ROOMS[locationId];

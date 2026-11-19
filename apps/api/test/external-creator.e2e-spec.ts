@@ -14,6 +14,7 @@ import { AuthModule } from '../src/modules/auth/auth.module';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema';
 import { UgcModule } from '../src/modules/ugc/ugc.module';
+import { ExternalGameRecord } from '../src/modules/ugc/schemas/external-game.schema';
 import { ExternalPlayRecord, type ExternalPlayDocument } from '../src/modules/ugc/schemas/external-play.schema';
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
@@ -174,4 +175,20 @@ describe('外链收录、作者认领与停留时间 HTTP 合同', () => {
         const game = await api().get('/ugc/external-games/external-yuanyi-games').expect(200);
         expect([one.id, two.id]).toContain(game.body.ownerUserId);
     }, 120_000);
+    it('不填写选填资料也可送审并由管理员核实后认领', async () => {
+        const applicant = await register('creator-optional'), admin = await register('optional-admin');
+        await users.updateOne({ _id: admin.id }, { $set: { role: 'admin' } });
+        const games = app.get<Model<unknown>>(getModelToken(ExternalGameRecord.name));
+        await games.create({ gameId: 'optional-claim-game', name: '选填测试', url: 'https://example.com', published: true });
+        const created = await api().post('/ugc/creator-claims').auth(applicant.token, { type: 'bearer' })
+            .send({ gameId: 'optional-claim-game' }).expect(201);
+        const id = created.body.claimId as string;
+        const pending = await api().post(`/ugc/creator-claims/${id}/submit`).auth(applicant.token, { type: 'bearer' }).expect(201);
+        expect(pending.body).toMatchObject({ status: 'pending', profileUrl: '', explanation: '', hasEvidence: false });
+        await api().post(`/ugc/creator-review/claims/${id}`).auth(admin.token, { type: 'bearer' })
+            .send({ decision: 'approved', comment: '已核实作品关系', evidenceDigest: '', profileControlVerified: false, gameRelationshipVerified: true }).expect(201);
+        const owned = await api().get('/ugc/external-games/mine').auth(applicant.token, { type: 'bearer' }).expect(200);
+        expect(owned.body.items).toContainEqual(expect.objectContaining({ gameId: 'optional-claim-game' }));
+    }, 120_000);
+
 });

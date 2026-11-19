@@ -7,7 +7,8 @@ import { useSceneMovement } from "./useSceneMovement";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { BetrayalPixiRoomViewport } from "./pixiRoomViewportSurface";
+import { BetrayalRoomViewport } from "./threeRoomViewportSurface";
+import type { SceneFigureAsset } from "./threeRoomScene";
 import { resolveBetrayalRoomSceneSprites, resolveBetrayalEntitySceneSprites } from "./roomSceneModel";
 import type { ZoomPanViewportFitInsets } from "../../components/game/framework/ZoomPanViewport";
 import type { EntityRelation } from "../../engine/primitives";
@@ -31,6 +32,7 @@ import {
 } from "./attackImpactPresentation";
 import type { BetrayalTraitDelta } from "./activityPresentation";
 import { getAllExplorers } from "./explorerReadModel";
+import { inferMonsterDefinitionId } from "./monsterReadModel";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import type { BetrayalRoomTileVisual } from "./roomAtlas";
 import {
@@ -403,9 +405,25 @@ export function BetrayalRoomMapSurface({
     const discovered = new Set(visibleRooms.filter(room => room.state === 'discovered').map(room => room.id));
     return sceneSprites.filter(sprite => discovered.has(sprite.id));
   }, [sceneSprites, visibleRooms]);
+  const sceneFigures = React.useMemo(() => {
+    const figures = new Map<string, SceneFigureAsset>(
+      getAllExplorers(core).map(explorer => [`player:${explorer.playerId}`, { id: explorer.explorerId }]),
+    );
+    for (const monster of core.monsters) {
+      const definition = inferMonsterDefinitionId(monster);
+      if (definition) {
+        figures.set(`monster:${monster.id}`, {
+          id: `monster-${definition}`,
+          mirrorX: monster.tokenAsset === "betrayal/tokens/monsters/troll-left-hand",
+        });
+      }
+    }
+    return figures;
+  }, [core]);
   // Zoom is remembered only for a floor remount. Keeping it in React state
   // rebuilt every room/marker subtree during each wheel frame.
   const cameraZoomRef = React.useRef<number | undefined>(undefined);
+  const readCameraZoom = React.useCallback(() => cameraZoomRef.current, []);
   const rememberCameraZoom = React.useCallback((zoom: number) => {
     cameraZoomRef.current = zoom;
   }, []);
@@ -458,9 +476,10 @@ export function BetrayalRoomMapSurface({
     <div className="relative min-h-0 flex-1" data-room-reveal-active={sceneMovement.roomRevealActive}>
       <AnimatePresence initial={false} mode="wait">
       <BetrayalFloorScene key={selectedFloor} reducedMotion={reducedSceneMotion}>
-      <BetrayalPixiRoomViewport
+      <BetrayalRoomViewport
         ref={roomGridRef}
         sprites={sceneMovement.sprites}
+        figures={sceneFigures}
         lightingRooms={lightingRooms}
         activeExplorerId={`player:${core.currentExplorer.playerId}`}
         onMotionComplete={sceneMovement.complete}
@@ -468,7 +487,7 @@ export function BetrayalRoomMapSurface({
         onResourceError={sceneMovement.cancel}
         width={roomCanvasWidth}
         height={roomCanvasHeight}
-        initialZoom={cameraZoomRef.current}
+        initialZoom={readCameraZoom}
         fitInsets={roomMapFitInsets}
         focusPoint={focusPoint}
         focusKey={roomFocusPanInstructionKey}
@@ -1156,7 +1175,7 @@ export function BetrayalRoomMapSurface({
             </div>
           );
         })}
-      </BetrayalPixiRoomViewport>
+      </BetrayalRoomViewport>
       </BetrayalFloorScene>
       </AnimatePresence>
       {pendingRoomPlacementFailureText ? (

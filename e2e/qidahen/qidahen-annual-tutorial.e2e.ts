@@ -300,6 +300,17 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
         await onSelected?.();
         return;
     }
+    const roster = page.getByTestId('qidahen-dispatch-roster');
+    if (await roster.isVisible()) {
+        await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
+        for (const id of targets) {
+            await roster.locator(`[data-piece-ids~="${id}"]`).getByTestId(/^qidahen-dispatch-pick-/).click();
+        }
+        await onSelected?.();
+        await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
+        await page.getByTestId('qidahen-turn-confirm').click();
+        return;
+    }
     for (const id of targets) {
         if (snapshot.core.regions.some(region => !region.isLogicalRegion && region.id === id)) await clickRegion(page, id);
         else if (snapshot.core.handCards.some(card => card.id === id)) await clickCard(page, id);
@@ -621,48 +632,52 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 }
                 if (id === 'dispatch-troops') {
                     const snapshot = await read(page);
+                    const roster = page.getByTestId('qidahen-dispatch-roster');
+                    const units = roster.getByTestId(/^qidahen-dispatch-unit-/);
+                    expect(await units.count()).toBeGreaterThan(0);
+                    await expect(page.locator('[data-pending-committed-selectable="true"]')).toHaveCount(0);
+                    const geometry = await units.evaluateAll(items => items.map(item => ({
+                        ids: (item.getAttribute('data-piece-ids') ?? '').split(' '),
+                        count: Number(item.getAttribute('data-qidahen-dispatch-selected')),
+                        bounds: item.getBoundingClientRect().toJSON(),
+                    })));
                     const hint = (await page.getByTestId('tutorial-overlay-card').boundingBox())!;
-                    const troops = await page.locator('[data-pending-committed-selectable="true"]').all();
-                    expect(troops.length).toBeGreaterThan(0);
+                    const validIds = snapshot.interaction!.data.options.filter(option => !option.disabled
+                        && snapshot.core.pieces.some(piece => piece.id === option.id)).map(option => option.id).sort();
+                    expect(geometry.flatMap(unit => unit.ids).sort()).toEqual(validIds);
+                    expect(geometry.reduce((count, unit) => count + unit.count, 0)).toBe(suffix === '-selected' ? dynamicTargets.length : 0);
+                    await expect(roster.locator('[data-qidahen-dispatch-recommended="true"]')).toHaveCount(1);
+                    for (const { bounds } of geometry) {
+                        expect(bounds.top).toBeGreaterThanOrEqual(0);
+                        expect(bounds.bottom).toBeLessThanOrEqual(viewport.height);
+                        const covered = hint.x < bounds.right && hint.x + hint.width > bounds.left && hint.y < bounds.bottom && hint.y + hint.height > bounds.top;
+                        expect(covered, 'tutorial text must not cover any selectable troop').toBe(false);
+                    }
                     if (!suffix) {
                         await expect.poll(() => readQidahenStoredTutorialStep(page), { timeout: 60_000 }).toBe('dispatch-troops');
                         const saved = await page.evaluate(seed => localStorage.getItem(`local_match_snapshot_v1:qidahen:${seed}`), qidahenTutorialProgressIdentity.seed);
                         expect(saved, '诊断检查点来自本次正式对局').toBeTruthy();
                         writeFileSync(resolve(dir, 'dispatch-checkpoint.encoded'), saved!);
-                        const geometry = await page.evaluate(() => {
-                            const rect = (element: Element) => { const r = element.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
-                            const map = document.querySelector('[data-testid="qidahen-map-content"]')!;
-                            const layer = document.querySelector('[data-testid="qidahen-map-layer"]')!;
-                            return { map: rect(map), zoom: layer.getAttribute('data-map-zoom'),
-                                troops: [...document.querySelectorAll('[data-pending-committed-selectable="true"]')].map(element => ({
-                                    id: element.getAttribute('data-testid'), region: element.getAttribute('data-qidahen-map-token-region'),
-                                    bounds: rect(element), style: element.getAttribute('style'),
-                                })) };
-                        });
                         writeFileSync(resolve(dir, 'dispatch-layout-diagnostic.json'), JSON.stringify({ core: snapshot.core, geometry }, null, 2));
                     }
-                    for (const troop of troops) {
-                        const rect = (await troop.boundingBox())!;
-                        expect(rect.y, 'whole selectable troop above screen edge').toBeGreaterThanOrEqual(0);
-                        const covered = hint.x < rect.x + rect.width && hint.x + hint.width > rect.x && hint.y < rect.y + rect.height && hint.y + hint.height > rect.y;
-                        expect(covered, 'tutorial text must not cover any selectable troop').toBe(false);
-                        const tokenId = (await troop.getAttribute('data-testid'))!.slice('qidahen-map-token-'.length);
-                        const pieceId = snapshot.core.mapTokens.find(token => token.id === tokenId)?.pieceId;
-                        const piece = snapshot.core.pieces.find(piece => piece.id === pieceId)!;
-                        await expect(troop).toHaveAttribute('data-qidahen-unit-level', String(piece.level));
-                    }
-                    if (suffix === '-selected') await expect(page.locator('[data-pending-committed-selected="true"]')).toHaveCount(dynamicTargets.length);
-                    await expect(page.locator('[data-qidahen-tutorial-recommended="true"]')).toHaveCount((snapshot.tutorial.step.recommendedTargets ?? snapshot.tutorial.step.allowedTargets ?? []).length);
                 }
-                if (id === 'tactic-card' && suffix === '-selected') {
-                    const covered = await page.getByTestId('qidahen-tactic-card-selection-panel').evaluate(panel => {
-                        const p = panel.getBoundingClientRect();
-                        return [...document.querySelectorAll('[data-qidahen-map-protected-token="true"], [data-qidahen-map-protected-population="true"]')].filter(token => {
-                            const r = token.getBoundingClientRect();
-                            return r.width > 0 && r.height > 0 && p.left < r.right && p.right > r.left && p.top < r.bottom && p.bottom > r.top;
-                        }).map(token => token.getAttribute('data-testid'));
-                    });
-                    expect(covered, 'tactic confirmation must not cover map units or markers').toEqual([]);
+                if (id === 'dispatch-source') await expect(page.getByTestId('qidahen-turn-choice')).toHaveCount(0);
+                if (id === 'dispatch-target') {
+                    const panel = page.getByTestId('qidahen-turn-choice');
+                    await expect(panel.getByTestId('qidahen-battle-roster-attacker').locator('[data-piece-ids]')).not.toHaveCount(0);
+                    await expect(page.locator('[data-pending-committed-selected="true"]')).toHaveCount(0);
+                    await expect(panel.getByTestId('qidahen-turn-option-back')).toBeEnabled();
+                }
+                if (id === 'tactic-card') {
+                    const panel = page.getByTestId('qidahen-battle-preparation');
+                    await expect(panel.getByTestId('qidahen-battle-roster-attacker').locator('[data-piece-ids]')).not.toHaveCount(0);
+                    await expect(panel.getByTestId('qidahen-battle-roster-defender').locator('[data-piece-ids]')).not.toHaveCount(0);
+                    await expect(page.getByTestId('qidahen-map-guide-route-overlay')).toHaveCount(0);
+                    const lineup = (await panel.boundingBox())!;
+                    const blocker = (await page.getByTestId(suffix ? 'qidahen-tactic-card-selection-panel' : 'qidahen-player-float').boundingBox())!;
+                    const overlap = lineup.x < blocker.x + blocker.width && lineup.x + lineup.width > blocker.x
+                        && lineup.y < blocker.y + blocker.height && lineup.y + lineup.height > blocker.y;
+                    expect(overlap, 'battle lineup must not be covered').toBe(false);
                 }
                 if (id === 'upkeep-pyongyang') {
                     const covered = await page.evaluate(() => {
@@ -1157,10 +1172,10 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                                 await page.getByTestId('qidahen-resolve-hand-limit-discard').click();
                             } else if (step.id === 'recruit-troops' || (step.id === 'opening-farm-cycle' && openingHandStage === 3)) await page.getByTestId(`qidahen-recruit-choice-${targets[0]}`).click();
                             else if (step.id === 'battle-roll') {
-                                for (const id of before.core.pendingTargetAction!.forceCommitments!.flatMap(force => force.selectedSpecialPieceIds ?? [])) {
-                                    const token = before.core.mapTokens.find(token => token.pieceId === id)!;
-                                    await expect(page.getByTestId(`qidahen-map-token-${token.id}`)).toHaveAttribute('data-pending-committed-selected', 'true');
-                                }
+                                const committed = before.core.pendingTargetAction!.forceCommitments!.flatMap(force => force.selectedSpecialPieceIds ?? []);
+                                const rendered = await page.getByTestId('qidahen-battle-roster-attacker').locator('[data-piece-ids]')
+                                    .evaluateAll(nodes => nodes.flatMap(node => (node.getAttribute('data-piece-ids') ?? '').split(' ')));
+                                expect(rendered.sort()).toEqual(committed.sort());
                                 await expect(page.getByTestId('qidahen-pending-committed-troops')).toHaveCount(0);
                                 await page.getByTestId('qidahen-resolve-pending-action').click();
                             }

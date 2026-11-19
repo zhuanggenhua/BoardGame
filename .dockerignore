@@ -95,6 +95,7 @@ public/**/*.webm
 !public/assets/demo/**
 !public/assets/common/logos/**
 public/**/*.glb
+!public/betrayal-models/*.glb
 public/**/*.gltf
 public/**/*.fbx
 public/**/*.obj

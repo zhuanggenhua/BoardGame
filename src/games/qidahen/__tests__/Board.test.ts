@@ -724,7 +724,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("pendingTargetAction?.sourceRegionId ?? wheelDispatchSelection?.sourceRegionId ?? null");
         expect(boardSource).toContain('token.regionId === pendingCommittedSourceRegionId');
         expect(boardSource).toContain('token.troopIndex <= activeCommittedMax');
-        expect(boardSource).toContain("pendingCommittedSelected={dispatchGroup ? dispatchSelected > 0 : formalPieceSelectable || formalPieceSelected ? formalPieceSelected : pendingExactPieceIds.length > 0 ? pendingExactPieceIds.includes(token.pieceId ?? '') : pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}");
+        expect(boardSource).toContain("pendingCommittedSelected={formalPieceSelectable || formalPieceSelected ? formalPieceSelected : pendingExactPieceIds.length > 0 ? !battleUsesSeparateLineup && pendingExactPieceIds.includes(token.pieceId ?? '') : pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}");
         expect(boardSource).toContain('pendingExactPieceIds.includes');
         expect(boardSource).toContain("tokenSelectable ? 'none' : `0 2px 8px ${UI_STYLE.shadowSoft}`");
         expect(boardSource).not.toContain("0 0 0 4px rgba(77, 157, 78, 0.78), 0 5px 14px");
@@ -824,8 +824,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('height: wheelRecruitTrainProgress && wheelRecruitTrainProgress.phase');
         expect(boardSource).toContain('className={`min-h-0 pr-1 ${wheelRecruitTrainProgress');
         expect(boardSource).toContain("'flex-none flex flex-col overflow-visible' : 'flex-1 overflow-y-auto'");
-        expect(boardSource).toContain('left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,');
-        expect(boardSource).toContain('width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,');
+        expect(boardSource).toContain('width: showBattleLineup ? BATTLE_DOCK_WIDTH : suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,');
         expect(boardSource).toContain('expandedSelectionPanel ? STAGE_HEIGHT - ACTIONS_DOCK_TOP - CARD_DIMENSIONS.deck.height - MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET - 24 : ACTIONS_DOCK_HEIGHT');
     });
 
@@ -1056,7 +1055,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("filter: 'brightness(1.04) saturate(1.05)'");
         expect(boardSource).toContain('data-testid={`qidahen-pending-committed-highlight-${token.id}`}');
         expect(boardSource).not.toContain('data-testid="qidahen-committed-troop-check"');
-        expect(boardSource).toContain('const tokenSelectable = Boolean(dispatchGroup) || grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed) || Boolean(onExpandStack);');
+        expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed) || Boolean(onExpandStack);');
         expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
         expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : inArmyGroup ? 16 : 14');
         expect(boardSource).toContain('className="pointer-events-auto absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');

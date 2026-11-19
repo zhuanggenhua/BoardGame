@@ -54,7 +54,6 @@ const screenshotNotes: Partial<Record<string, string>> = {
     'chariot-target': '卡面原文：【真名解放】行动阶段：将你所在地点的一张事件牌弃置，然后抽2张新的事件牌。将其中1张作为新的事件牌，另一张洗回牌堆。来源：中文电子规则书，伊斯坎达尔「神威车轮」卡图。',
     'effect-move-target': '急行卡面原文：行动阶段：无视交战状态，沿箭头移动至下一地点。来源：中文基本攻击牌图集第 14 格。',
     'riding-choice': '卡牌原文：打出时：若此牌与一张基础攻击一同打出，抽一张牌。坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。来源：中文电子规则书，伊斯坎达尔「骑乘」卡图。',
-    draft: '标有「暗置」的牌不耗魔力，也不计威力。明置牌的印刷威力、地利和适用效果决定预计合计。左下角显示选牌后的预计剩余魔力，确认后才扣费。',
 };
 
 test.use({ viewport: { width: 1600, height: 900 }, actionTimeout: 15000, trace: 'retain-on-failure' });
@@ -133,7 +132,9 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
         shots.push({
             path: path.relative(process.cwd(), path.join(run.stableDir, file)).replace(/\\/g, '/'),
             chainId, chainStep: shots.length + 1, stage: '独特界面态', role: 'main-flow', transition: action,
-            viewport: 'desktop', viewportSize: `${viewport.width}x${viewport.height}`, description: note ? `${shot[0]}。${note}` : shot[0],
+            viewport: 'desktop', viewportSize: `${viewport.width}x${viewport.height}`,
+            description: `图片表达：${action}`,
+            effectReference: note,
             uiStateId: id, uiChange: shot[1], uiChangeReason: shot[0], behaviorStepId: id, requirements: [shot[0]], sha256,
         });
     };
@@ -202,8 +203,10 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 continue;
             }
             if (core.phase === 'outpost' && !actor.locationId) {
-                const deploy = page.getByTestId('fate-domination-location-workshop');
-                const target = await deploy.isVisible() ? deploy : board.locator('button[data-fate-destination]:enabled').first();
+                const workshop = page.getByTestId('fate-domination-location-workshop');
+                const shinto = page.getByTestId('fate-domination-location-shinto');
+                const preferred = seen.has('riding') && !seen.has('chariot') && await shinto.isVisible() ? shinto : workshop;
+                const target = await preferred.isVisible() ? preferred : board.locator('button[data-fate-destination]:enabled').first();
                 if (!seen.has('deploy')) {
                     const canvas = page.getByTestId('fate-pixi-map-canvas');
                     const canvasHost = page.getByTestId('fate-pixi-map-canvas-host');
@@ -256,12 +259,12 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     await page.getByRole('button',{name:'发动调查',exact:true}).click();
                     const investigationTarget=board.locator('[data-tutorial-id="fate-player-1"] .fd-runtime-avatar');
                     await expect(investigationTarget).toHaveClass(/is-investigation-target/);
-                    await mark('investigation-target','点击调查后选择亮起的对手头像',[check('选择目标前对手手牌未改变',(await read()).core.players['1'].hand.length,core.players['1'].hand.length)],['调查选择目标玩家','target-highlight']);
+                    await mark('investigation-target','进入调查，描边标出可查看手牌的玩家',[check('选择目标前对手手牌未改变',(await read()).core.players['1'].hand.length,core.players['1'].hand.length),check('调查提示只出现一次',await board.getByText('选择要调查的玩家',{exact:true}).count(),1),check('等待选人时不显示阶段按钮',await primary.count(),0)],['调查选择目标玩家','target-highlight']);
                     await investigationTarget.click();
                     const inquiry=page.getByTestId('fate-investigation-choice');await expect(inquiry).toBeVisible();
                     const viewed=(await read()).sys.interaction.current!.data as {fateContext:{offered:Array<{id:string}>}};
                     expect(viewed.fateContext.offered.length).toBeGreaterThan(0);
-                    await mark('investigation-hand','查看所选对手手牌并选择一张',[check('查看期间目标手牌未移动',(await read()).core.players['1'].hand.length,core.players['1'].hand.length)],['调查查看并选择目标手牌','interaction-mode']);
+                    await mark('investigation-hand','选中目标后展示该玩家的手牌',[check('查看期间目标手牌未移动',(await read()).core.players['1'].hand.length,core.players['1'].hand.length),check('查看期间不显示阶段按钮',await primary.count(),0)],['调查查看并选择目标手牌','interaction-mode']);
                     const chosenId=viewed.fateContext.offered[0].id;
                     await inquiry.locator('.fd-investigation-card > button:first-child').first().click();
                     await expect.poll(async()=>(await read()).core.players['1'].deck[0]?.id).toBe(chosenId);
@@ -312,8 +315,18 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 const rushId = actor.hand.find(card => card.definitionId === 'cardSurveil')?.id;
                 const ridingPairs = (!seen.has('attack') || !seen.has('riding')) && ridingId ? choices.filter(choice => choice.cardIds.includes(ridingId)
                     && choice.faceDownIds.length === 1 && mixesHandAndSkill(choice) && costOf(choice) > 0) : [];
+                const huntingChariot = seen.has('riding') && !seen.has('chariot') && actor.locationId === 'shinto';
+                const chariotPair = huntingChariot && chariotId ? choices.find(choice => choice.cardIds.includes(chariotId) && choice.cardIds.some(id => hand.has(id))) : undefined;
+                if (huntingChariot && !chariotPair && actor.mana < 8 && validate(state, { type: 'USE_COMMAND_SPELL', playerId: '0', payload: { effect: 'mana' } }).valid) {
+                    await page.getByRole('button', { name: '使用令咒', exact: true }).click();
+                    await page.getByRole('button', { name: /恢复魔力/ }).click();
+                    await page.getByRole('button', { name: '确认使用' }).click();
+                    await expect.poll(async () => (await read()).core.players['0'].commandSpells).toBe(actor.commandSpells - 1);
+                    continue;
+                }
                 // 保留骑乘可追加的低威力牌，优先以不能骑乘的高威力牌搭配骑乘。
                 const pair = (ridingPairs.find(choice => choice.faceDownIds.some(id => (resolveFateAttack(actor, id)?.definition.basePower ?? 0) > 3)) ?? ridingPairs[0])
+                    ?? chariotPair
                     ?? (seen.has('riding') && !seen.has('chariot') && chariotId && rushId && actor.locationId==='miyama' ? choices.find(choice=>choice.cardIds.includes(chariotId) && choice.cardIds.includes(rushId) && !choice.faceDownIds.includes(rushId)) : undefined)
                     ?? (!seen.has('effect-move') && rushId ? choices.find(choice => choice.cardIds.includes(rushId) && !choice.faceDownIds.includes(rushId)) : undefined)
                     ?? choices.find(choice => choice.faceDownIds.length === 1) ?? choices[0];
@@ -351,6 +364,8 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     if (capturePaidAttack) {
                         const mana = board.getByTestId('fate-self-mana');
                         await expect(mana.locator('b')).toHaveText(String(actor.mana - cost));
+                        await expect(primary).toHaveText('确认攻击');
+                        await expect(primary).toHaveCSS('border-top-left-radius', '3px');
                         await mark('draft', '真人选出两张攻击牌并检查合计威力', [
                             check('暂存两张', (await snapshot()).visible.draftCount, 2),
                             check('权威暂存为空', (await read()).core.players['0'].selectedAttackIds, []),

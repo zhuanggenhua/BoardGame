@@ -25,14 +25,17 @@ export class CreatorClaimsService {
     }
     async create(userId: string, data: CreateCreatorClaimDto) {
         if (!await this.games.exists({ gameId: data.gameId, published: true })) throw new NotFoundException('请选择已收录的游戏');
-        let url: URL;
-        try { url = parseExternalUrl(data.profileUrl); } catch { throw new BadRequestException('作者主页网址无效'); }
-        if (url.protocol !== 'https:') throw new BadRequestException('作者主页需要 HTTPS 网址');
-        if (data.explanation.trim().length < 10) throw new BadRequestException('请填写至少十个字的作品关系说明');
+        let profileUrl = '';
+        if (data.profileUrl?.trim()) {
+            let url: URL;
+            try { url = parseExternalUrl(data.profileUrl.trim()); } catch { throw new BadRequestException('作者主页网址无效'); }
+            if (url.protocol !== 'https:') throw new BadRequestException('作者主页需要 HTTPS 网址');
+            profileUrl = url.href;
+        }
         if (await this.claims.exists({ gameId: data.gameId, applicantId: userId, status: { $in: ['draft', 'pending'] } })) throw new ConflictException('已有未完成的申请，请先完成或撤回');
         return this.claims.create({
-            claimId: randomUUID(), applicantId: userId, gameId: data.gameId, profileUrl: url.href,
-            explanation: data.explanation.trim(), verificationCode: `BG-${randomBytes(5).toString('hex').toUpperCase()}`,
+            claimId: randomUUID(), applicantId: userId, gameId: data.gameId, profileUrl,
+            explanation: (data.explanation ?? '').trim(), verificationCode: `BG-${randomBytes(5).toString('hex').toUpperCase()}`,
             verificationExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), status: 'draft',
         });
     }
@@ -45,9 +48,8 @@ export class CreatorClaimsService {
         return record;
     }
     async submit(userId: string, claimId: string) {
-        const record = await this.claims.findOneAndUpdate({ claimId, applicantId: userId, status: 'draft', hasEvidence: true,
-            verificationExpiresAt: { $gt: new Date() } }, { $set: { status: 'pending' } }, { new: true });
-        if (!record) throw new BadRequestException('请先上传材料，并在验证期限内送审；过期可撤回后重新申请');
+        const record = await this.claims.findOneAndUpdate({ claimId, applicantId: userId, status: 'draft' }, { $set: { status: 'pending' } }, { new: true });
+        if (!record) throw new BadRequestException('只能提交自己的未送审申请');
         return record;
     }
     async withdraw(userId: string, claimId: string) {
@@ -68,7 +70,7 @@ export class CreatorClaimsService {
         if (claim.status !== 'pending') throw new ConflictException('申请状态已变化，请刷新');
         if (data.comment.trim().length < 5) throw new BadRequestException('请填写至少五个字的审核意见');
         if (data.evidenceDigest !== claim.evidenceDigest) throw new ConflictException('认证材料已变化，请重新打开核对');
-        if (data.decision === 'approved' && (!claim.hasEvidence || !data.profileControlVerified || !data.gameRelationshipVerified)) throw new BadRequestException('必须核对作者主页控制权和目标游戏关系');
+        if (data.decision === 'approved' && ((claim.profileUrl && !data.profileControlVerified) || !data.gameRelationshipVerified)) throw new BadRequestException('必须核对目标游戏关系；提供主页时还须核对主页控制权');
         try {
             const updated = await this.claims.findOneAndUpdate({ claimId, status: 'pending' }, { $set: {
                 status: data.decision, reviewComment: data.comment.trim(), reviewerId, reviewedAt: new Date(),

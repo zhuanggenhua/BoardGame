@@ -103,6 +103,7 @@ export function ExplorerFigureToken({
           viewBox="0 0 100 108"
         >
           <polygon
+            className={sceneArtwork ? "[[data-map-renderer=three]_&]:[stroke-width:3]" : undefined}
             points="50,0 100,30 82,108 18,108 0,30"
             fill="none"
             stroke={outlineColor}
@@ -234,6 +235,7 @@ export function MonsterBoardToken({
           viewBox={`0 0 ${tokenSurfaceSize} ${tokenSurfaceSize}`}
         >
           <rect
+            className={sceneArtwork ? "[[data-map-renderer=three]_&]:[stroke-width:2]" : undefined}
             x="0"
             y="0"
             width={tokenSurfaceSize}

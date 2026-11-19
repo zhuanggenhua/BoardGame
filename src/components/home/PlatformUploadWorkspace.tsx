@@ -18,7 +18,7 @@ const statusLabelKeys = {
 } as const;
 
 export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, headerAction }: { record?: GameSubmissionRecord; ownedGame?: ExternalGame; onSaved: (id: string) => void | Promise<void>; onDraftSaved?: (record: GameSubmissionRecord) => void | Promise<void>; headerAction?: ReactNode }) {
-    const { token, user } = useAuth();
+    const { token } = useAuth();
     const { t } = useTranslation(['lobby', 'common']);
     const [draftId, setDraftId] = useState(record?.submissionId);
     const source = ownedGame ?? record;
@@ -57,7 +57,6 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
         };
         if ((gameSource === 'url' && !validUrl) || ((minPlayers == null) !== (maxPlayers == null)) || (minPlayers != null && maxPlayers != null && minPlayers > maxPlayers)) { setError(t('platform.uploadWorkspace.invalidSubmission')); return; }
         if (gameSource === 'zip' && !zipFile && !savedZip) { setZipError(t('platform.uploadWorkspace.zipRequired')); return; }
-        if (!ownedGame && action === 'submit' && !file && !record?.coverUrl) { setError(t('platform.uploadWorkspace.coverRequired')); return; }
         setBusy(true); setError('');
         try {
             if (ownedGame) {
@@ -104,7 +103,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                     </label>)}
                 </div>
             </fieldset>}
-            <label>{t('platform.uploadWorkspace.gameName')}<input name="name" required maxLength={100} defaultValue={source?.name} /></label>
+            <label>{t('platform.uploadWorkspace.gameName')}<input name="name" maxLength={100} defaultValue={source?.name} /></label>
             {gameSource === 'zip' ? <label key="web-zip" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.webZip')}
                 {!ownedGame && <input key={savedZip?.url} type="file" accept=".zip" required={!savedZip} aria-label={t('platform.uploadWorkspace.webZip')} aria-describedby="submission-zip-check" onChange={event => {
                     const selected = event.currentTarget.files?.[0];
@@ -121,16 +120,16 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 <small id="submission-url-check">{!url ? t('platform.uploadWorkspace.urlEmptyHint') : validUrl ? t('platform.uploadWorkspace.urlValid') : t('platform.uploadWorkspace.urlInvalid')}</small>
             </label>}
             <div className="platform-upload-game-meta">
-            <label>{t('platform.uploadWorkspace.category')}<select name="category" defaultValue={source?.category ?? 'card'}>
+            <label>{t('platform.uploadWorkspace.category')}<select name="category" defaultValue={source?.category ?? 'uncategorized'}>
                 <option value="uncategorized">{t('platform.uploadWorkspace.uncategorized')}</option>
                 <option value="card">{t('common:category.card')}</option><option value="dice">{t('common:category.dice')}</option><option value="abstract">{t('common:category.abstract')}</option><option value="wargame">{t('common:category.wargame')}</option><option value="casual">{t('common:category.casual')}</option><option value="tools">{t('common:category.tools')}</option>
             </select></label>
             <fieldset className="platform-upload-players"><legend>{t('platform.uploadWorkspace.players')}</legend><div className="platform-player-range">
-                <select name="minPlayers" aria-label={t('platform.uploadWorkspace.minPlayers')} defaultValue={source ? source.minPlayers ?? '' : 2}><option value="">{t('platform.uploadWorkspace.notProvided')}</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
-                <span>{t('platform.uploadWorkspace.rangeSeparator')}</span><select name="maxPlayers" aria-label={t('platform.uploadWorkspace.maxPlayers')} defaultValue={source ? source.maxPlayers ?? '' : 4}><option value="">{t('platform.uploadWorkspace.notProvided')}</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
+                <select name="minPlayers" aria-label={t('platform.uploadWorkspace.minPlayers')} defaultValue={source?.minPlayers ?? ''}><option value="">{t('platform.uploadWorkspace.notProvided')}</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
+                <span>{t('platform.uploadWorkspace.rangeSeparator')}</span><select name="maxPlayers" aria-label={t('platform.uploadWorkspace.maxPlayers')} defaultValue={source?.maxPlayers ?? ''}><option value="">{t('platform.uploadWorkspace.notProvided')}</option>{Array.from({ length: 16 }, (_, i) => <option key={i + 1}>{i + 1}</option>)}</select>
             </div></fieldset>
             </div>
-            <label>{t('platform.uploadWorkspace.author')}<input name="author" maxLength={100} defaultValue={source?.author ?? user?.username} /></label>
+            <label>{t('platform.uploadWorkspace.author')}<input name="author" maxLength={100} defaultValue={source?.author} /></label>
             <label>{t('platform.uploadWorkspace.authorProfile')}<input name="authorProfileUrl" type="url" maxLength={2048} defaultValue={source?.authorProfileUrl} placeholder="https://" /></label>
             </div>
             </section>
@@ -139,12 +138,11 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 <SubmissionCoverField preview={preview} fileName={file?.name} disabled={record?.status === 'pending' || busy}
                     onSelect={selected => { setError(''); setFile(selected); }}
                     onPreviewError={() => { setPreview(''); setError(t('platform.uploadWorkspace.coverUnreadable')); }} />
-                {!ownedGame && <p className="platform-cover-help">{t('platform.uploadWorkspace.coverSubmitHint')}</p>}
             </section>
             <section className="platform-upload-section platform-upload-content-section">
             <h3>{t('platform.uploadWorkspace.gameContent')}</h3>
             <div className="platform-upload-input-grid">
-            <label>{t('platform.uploadWorkspace.introduction')}<textarea name="description" aria-label={t('platform.uploadWorkspace.introduction')} required maxLength={10000} defaultValue={source?.description} /></label>
+            <label>{t('platform.uploadWorkspace.introduction')}<textarea name="description" aria-label={t('platform.uploadWorkspace.introduction')} maxLength={10000} defaultValue={source?.description} /></label>
             <div className="platform-upload-rules">
                 <RulesDocumentField document={rulesRemoved ? undefined : source?.rulesDocument} file={rulesFile} error={rulesError}
                     disabled={record?.status === 'pending' || busy} onSelect={next => {

@@ -468,6 +468,7 @@ export function BetrayalRoomEntityLayerSurface({
                   data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                   data-highlight-shape="pentagon"
                   data-direct-target="true"
+                  data-scene-figure-id={`player:${occupant.playerId}`}
                   data-visual-transition-anchor-hidden={
                     isMovingExplorerAnchor ? "true" : undefined
                   }
@@ -516,6 +517,7 @@ export function BetrayalRoomEntityLayerSurface({
                     : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
                 }`}
                 data-testid={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
+                data-scene-figure-id={`player:${occupant.playerId}`}
                 data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                 data-tutorial-id={
                   occupant.playerId === currentExplorerPlayerId
@@ -664,6 +666,7 @@ export function BetrayalRoomEntityLayerSurface({
                   style={slotStyle(`monster:${monster.id}`, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52)}
                   type="button"
                   data-testid={`betrayal-room-monster-${roomId}-${monster.id}`}
+                  data-scene-figure-id={`monster:${monster.id}`}
                   data-highlight-shape="token"
                   data-direct-target="true"
                   data-monster-status={monsterStatus}
@@ -743,6 +746,7 @@ export function BetrayalRoomEntityLayerSurface({
                     : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
                 }`}
                 data-testid={`betrayal-room-monster-${roomId}-${monster.id}`}
+                data-scene-figure-id={`monster:${monster.id}`}
                 data-monster-status={monsterStatus}
                 data-visual-transition-anchor-hidden={
                   isMovingMonsterAnchor ? "true" : undefined

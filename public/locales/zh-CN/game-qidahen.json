@@ -529,6 +529,7 @@
       "skipHandAndEndTurn": "放弃手牌行动并结束回合",
       "selectedSupport": "已选 {{cards}} 张手牌、{{units}} 支部队",
       "selectedTroops": "已选 {{units}} 支",
+      "chooseDispatchTarget": "选择目的地",
       "supportOrRemove": "选择手牌支持，或选择部队移除",
       "selectHand": "从手牌中选择",
       "confirm": "确认",

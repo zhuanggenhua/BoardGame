@@ -44,7 +44,7 @@ export const updateExternalSession = (token: string, sessionId: string, data: { 
 export const getExternalHistory = (token: string) => request<ExternalPlayHistory>('/external-games/history', { token });
 export interface CreatorReviewQueue { submissions: GameSubmissionRecord[]; claims: CreatorClaim[]; games: ExternalGame[]; }
 export const getCreatorReviewQueue = (token: string) => request<CreatorReviewQueue>('/creator-review', { token });
-export const reviewSubmission = (token: string, submissionId: string, data: { decision: 'approved' | 'rejected'; comment: string; revision: string }) =>
+export const reviewSubmission = (token: string, submissionId: string, data: { decision: 'approved' | 'rejected'; comment?: string; revision: string }) =>
     request<GameSubmissionRecord>(`/creator-review/submissions/${id(submissionId)}`, { token, method: 'POST', data });
 export const reviewClaim = (token: string, claimId: string, data: { decision: 'approved' | 'rejected'; comment: string; evidenceDigest: string; profileControlVerified: boolean; gameRelationshipVerified: boolean }) =>
     request<CreatorClaim>(`/creator-review/claims/${id(claimId)}`, { token, method: 'POST', data });

@@ -2194,8 +2194,8 @@
     "skills/compressed/sc_gilles_np": {
       "variants": {
         "webp": {
-          "sha256": "0b9e5c2690a9109cb6ccc1f8c413c7b5aea58d20d68edad618193e4c973d46b1",
-          "bytes": 229872,
+          "sha256": "9fca99b047aabc2759b877f8944803a3403611be2831386287d1a06ee1907e17",
+          "bytes": 525180,
           "mime": "image/webp"
         }
       }
@@ -2572,8 +2572,8 @@
     "skills/sc_gilles_np": {
       "variants": {
         "png": {
-          "sha256": "5abe8cc57a9fa6421a6ffec59a8c458c6a9d34e66ae2e1f12c8d3e0a97e97bbc",
-          "bytes": 969240,
+          "sha256": "dcf740910fb4b0da5b362a4101b57009feb6d86155b5eab1a1e470767fb4861c",
+          "bytes": 652530,
           "mime": "image/png"
         }
       }

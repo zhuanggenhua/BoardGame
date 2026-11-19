@@ -28,6 +28,7 @@
 - [ ] 4.3 为 Fate 真实入口建立机制 smoke flow 和代表性 E2E 证据。
 - [ ] 4.4 运行 `openspec validate add-fate-domination-mechanism-framework --strict --no-interactive`、类型检查与相关 Vitest。
 - [ ] 4.5 为规则改写、复制/借用、控制权变化、代理对象分别增加正向、拒绝、递归/循环和跨回合恢复测试。
+- [ ] 4.6 场地牌与残留分别验收。已接入吉尔的螺湮城教本放置或关闭、同场计威力及战败退场，以及吉尔和美狄亚的阵地建造跨回合、动态费用及工房收益。按中文卡图继续补战场关闭的触发方、哈桑自我改造、肯尼斯流体力学，以及无限剑制的待核规则；每项按实际触发、保留和退场给证据。
 
 ## 5. Explicitly skipped
 - [ ] 5.1 本 change 不改设计稿与 Board 视觉实现。

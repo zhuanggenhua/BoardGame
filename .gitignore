@@ -129,6 +129,7 @@ public/assets/fate-domination/fgo/**
 
 # 可能的 3D/模型/动画/纹理素材
 public/**/*.glb
+!public/betrayal-models/*.glb
 public/**/*.gltf
 public/**/*.fbx
 public/**/*.obj

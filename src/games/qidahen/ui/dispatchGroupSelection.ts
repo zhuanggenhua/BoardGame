@@ -1,5 +1,7 @@
 import type { QidahenMapToken, QidahenPiece } from '../domain/types';
 
+export const QIDAHEN_DISPATCH_ROSTER_ID = 'qidahen-dispatch-roster';
+
 export interface DispatchGroup {
     tokenId: string;
     pieceIds: string[];

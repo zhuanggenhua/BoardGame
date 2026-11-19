@@ -597,6 +597,7 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
     for (const [entryIndex, entry] of mediaEntries.entries()) {
         for (const field of REQUIRED_FIELDS) assertString(entry?.[field], `第 ${entryIndex + 1} 条媒体的 ${field}`);
         assertChineseDescription(entry.description, entryIndex);
+        if (entry.effectReference !== undefined) assertString(entry.effectReference, `第 ${entryIndex + 1} 条媒体的 effectReference`);
         if (visualOnly && entry.stage !== '独立代表态') throw new Error('纯视觉媒体必须明确为独立代表态');
         const resolvedPath = resolveMediaReference(entry.path, { projectRoot, manifestDir, indexDir });
         if (!existsSync(resolvedPath)) {

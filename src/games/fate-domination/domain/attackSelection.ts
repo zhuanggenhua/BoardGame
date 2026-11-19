@@ -1,4 +1,5 @@
 import {canPlayAttack} from './movement';
+import { fateBattlefieldSkillIds, isFateTerritoryCreation } from './battlefieldAttacks';
 import {FATE_ATTACK_BY_ID, FATE_SERVANT_BY_ID} from '../data';
 import type {PlayerState, AttackCardDefinition, SkillDefinition, FateDominationCore, ConfirmAttackCommand} from './types';
 
@@ -42,7 +43,7 @@ export function resolveFateAttack(player: PlayerState, id: string): {kind:'hand'
     }};
 }
 /** Evaluate payable cost against the same pre-play state used for confirmation. */
-export function fateAttackManaCost(player: PlayerState, id: string, faceDown = false): number | undefined {
+export function fateAttackManaCost(player: PlayerState, id: string, faceDown = false, round?: number): number | undefined {
     const attack = resolveFateAttack(player, id);
     if (!attack) return undefined;
     if (faceDown && attack.kind === 'hand') return 0;
@@ -52,11 +53,12 @@ export function fateAttackManaCost(player: PlayerState, id: string, faceDown = f
     const spearIncrease = skillId === 'sc_cu_1'
         ? (player.piercingSpearPlays ?? 0) * 2
         : 0;
-    return Math.max(0, attack.definition.manaCost + spearIncrease - smallGrailDiscount - hiddenNameDiscount);
+    const baseCost = round !== undefined && attack.kind === 'skill' && isFateTerritoryCreation(id) ? 16 - 2 * round : attack.definition.manaCost;
+    return Math.max(0, baseCost + spearIncrease - smallGrailDiscount - hiddenNameDiscount);
 }
 
-export const selectedFateAttackCost = (player: PlayerState) => player.selectedAttackIds.reduce(
-    (sum, id) => sum + (fateAttackManaCost(player, id, player.selectedFaceDownIds?.includes(id)) ?? 0), 0,
+export const selectedFateAttackCost = (player: PlayerState, round?: number) => player.selectedAttackIds.reduce(
+    (sum, id) => sum + (fateAttackManaCost(player, id, player.selectedFaceDownIds?.includes(id), round) ?? 0), 0,
 );
 
 /** Printed attacks may be placed face down without paying; skills cannot. */
@@ -67,18 +69,18 @@ export function canSelectFateAttack(core:import('./types').FateDominationCore,pl
  if(!player.locationId)return {valid:false,error:'notDeployed'};
  if(faceDown)return attack.kind==='hand'?{valid:true}:{valid:false,error:'skillCannotBeFaceDown'};
  const hasLancelotLowManaException=player.skills.some(skill=>skill.id.split(':')[0]==='sc_lance_2');
- if(attack.kind==='skill'&&((player.mana<8&&!hasLancelotLowManaException)||player.activeSkills.includes(id)))return {valid:false,error:'skillAttackUnavailable'};
+ if(attack.kind==='skill'&&((player.mana<8&&!hasLancelotLowManaException)||player.activeSkills.includes(id)||fateBattlefieldSkillIds(core,playerId).includes(id)))return {valid:false,error:'skillAttackUnavailable'};
  return canPlayAttack(core,playerId,attack.definition);
 }
 export function hasAffordableFateFaceUpAttack(core:import('./types').FateDominationCore,playerId:string):boolean {
  const player=core.players[playerId];
- return [...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)].some(id=>canSelectFateAttack(core,playerId,id).valid && (fateAttackManaCost(player,id)??Infinity)<=player.mana);
+ return [...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)].some(id=>canSelectFateAttack(core,playerId,id).valid && (fateAttackManaCost(player,id,false,core.round)??Infinity)<=player.mana);
 }
 /** Includes legal mixed/face-down pairs; compulsory play cannot be skipped just for lack of mana. */
 export function hasLegalFateNormalPlay(core:import('./types').FateDominationCore,playerId:string):boolean {
  const player=core.players[playerId];
  const ids=[...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)];
- const choices=ids.flatMap(id=>[false,true].filter(faceDown=>canSelectFateAttack(core,playerId,id,faceDown).valid).map(faceDown=>({id,faceDown,cost:fateAttackManaCost(player,id,faceDown)??Infinity})));
+ const choices=ids.flatMap(id=>[false,true].filter(faceDown=>canSelectFateAttack(core,playerId,id,faceDown).valid).map(faceDown=>({id,faceDown,cost:fateAttackManaCost(player,id,faceDown,core.round)??Infinity})));
  const mustFaceUp=['miyama','shinto'].includes(player.locationId??'')&&hasAffordableFateFaceUpAttack(core,playerId);
  return choices.some((a,i)=>choices.slice(i+1).some(b=>a.id!==b.id&&a.cost+b.cost<=player.mana&&(!mustFaceUp||!a.faceDown||!b.faceDown)));
 }

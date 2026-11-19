@@ -8,7 +8,7 @@
   },
   "round": "Round",
   "ui": {
-    "investigationChoice": {"label":"Investigate hand","prompt":"You may return one card from {{name}}'s hand to the top of their deck. If you do, you cannot investigate next round.","empty":"{{name}} has no cards in hand","card":"Return {{name}} to the top of the deck","keep":"Leave unchanged","done":"Done","target":"Investigate {{name}}","chooseTarget":"Choose a player to investigate","choosingCard":"Investigating"},
+    "investigationChoice": {"label":"Investigate hand","prompt":"Choose a card to put on top of {{name}}'s deck","empty":"{{name}} has no cards in hand","card":"Return {{name}} to the top of the deck","keep":"Leave unchanged","done":"Done","target":"Investigate {{name}}","chooseTarget":"Choose a player to investigate"},
     "chariotChoice": {"label":"Choose Gordius Wheel event","prompt":"Choose an event for the battlefield","card":"Choose event {{name}}"},
     "board": {
       "cancelDeployment": "Cancel deployment",
@@ -88,6 +88,8 @@
       "ridingStatus": "Ride summon · {{selected}} selected (maximum {{maximum}}) · Cost {{cost}}/{{mana}} mana · selected cards are always face up",
       "selectionMode": "Card selection mode",
       "adjustedCost": "Cost {{current}} · Printed {{printed}}",
+      "currentCost": "Current cost {{current}}",
+      "residual": "Persistent",
       "skillAction": "{{action}} {{name}}",
       "skillCards": "Skill cards",
       "totalPower": "Total power"
@@ -130,6 +132,11 @@
       "viewFront": "View front"
     },
     "map": {
+      "fieldAttackChoice": "Decide battlefield attack",
+      "placeFieldAttack": "Place in {{location}}",
+      "closeFieldAttack": "Close card",
+      "fieldAttack": "{{name}} in {{location}}, owned by player {{seat}}",
+      "fieldAttackOwner": "Player {{seat}}",
       "reset": "Reset view",
       "shintoEvents": "Shinto events",
       "miyamaEvents": "Miyama events"

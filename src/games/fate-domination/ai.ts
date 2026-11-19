@@ -13,6 +13,7 @@ import { visibleFatePower } from './domain/playerView';
 import { isFateRidingChoice, validateFateRidingChoiceCommand } from './domain/ridingChoice';
 import { isFatePostBattleChoice, isValidFatePostBattleResponse } from './domain/postBattleChoice';
 import { isFateChariotChoice, validFateChariotResponse } from './domain/chariotChoice';
+import { isFateFieldAttackChoice, validFateFieldAttackResponse } from './domain/battlefieldAttacks';
 import { fateChariotTargets } from './domain/chariotEvents';
 import { FATE_INVESTIGATION_KEEP, isFateInvestigationChoice, validFateInvestigationResponse } from './domain/investigationChoice';
 
@@ -36,6 +37,9 @@ export function buildFateAiLegalActions({ playerId, state: raw }: { playerId: st
     const current = state.sys.interaction.current;
     if (current) {
         if (current.playerId !== playerId) return [];
+        if (isFateFieldAttackChoice(current)) return current.data.options.map(option =>
+            action('SYS_INTERACTION_RESPOND', { interactionId: current.id, optionId: option.id }, option.label, 'field-attack-choice'),
+        ).filter(candidate => validFateFieldAttackResponse(state, { ...candidate.commands[0], playerId } as Command));
         if(isFateInvestigationChoice(current))return current.data.options.filter(option=>!option.disabled).map(option=>
             action('SYS_INTERACTION_RESPOND',{interactionId:current.id,optionId:option.id},option.label,'investigation-choice')
         ).filter(candidate=>validFateInvestigationResponse(state,{...candidate.commands[0],playerId} as Command));
@@ -142,6 +146,7 @@ export function chooseFateAiAction(context: AiDecisionContext) {
             return payload.optionIds.reduce((sum, id) => { const card = resolveFateAttack(player, id)?.definition; return sum + (card ? card.basePower * 2 - (fateAttackManaCost(player, id) ?? 0) : 0); }, 0);
         }
         if (candidate.kind === 'post-battle-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'restore' ? 10 : 0;
+        if (candidate.kind === 'field-attack-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'place' ? 10 : 0;
         if(candidate.kind==='investigation-choice'){
             const choice=(context.visibleState as State).sys.interaction.current;
             if(!isFateInvestigationChoice(choice))return -120;

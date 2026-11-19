@@ -27,6 +27,8 @@ const empty = document.querySelector("#empty");
 const imageDetail = document.querySelector("#imageDetail");
 const imageDetailTitle = document.querySelector("#imageDetailTitle");
 const imageDetailDescription = document.querySelector("#imageDetailDescription");
+const imageDetailEffect = document.querySelector("#imageDetailEffect");
+const imageDetailEffectText = document.querySelector("#imageDetailEffectText");
 const imageDetailClose = document.querySelector("#imageDetailClose");
 const imageDetailPrevious = document.querySelector("#imageDetailPrevious");
 const imageDetailNext = document.querySelector("#imageDetailNext");
@@ -169,7 +171,7 @@ const applyIndexCollapsed = (collapsed) => {
 };
 
 const signatureForItems = (nextItems) => (
-  nextItems.map((item) => `${item.relativePath}:${item.modifiedAt}:${item.size}:${item.displayTitle ?? ""}:${item.description ?? ""}`).join("|")
+  nextItems.map((item) => `${item.relativePath}:${item.modifiedAt}:${item.size}:${item.displayTitle ?? ""}:${item.description ?? ""}:${item.effectReference ?? ""}`).join("|")
 );
 
 const updateSummary = () => {
@@ -280,6 +282,9 @@ const openDetail = (item) => {
   detailMediaElement = media;
   imageDetailTitle.textContent = displayTitle(item);
   imageDetailDescription.textContent = displayDescription(item);
+  imageDetailEffect.open = false;
+  imageDetailEffect.hidden = !item.effectReference;
+  imageDetailEffectText.textContent = item.effectReference || "";
   imageDetailViewport.replaceChildren(media);
   imageDetail.classList.add("open");
   imageDetail.setAttribute("aria-hidden", "false");

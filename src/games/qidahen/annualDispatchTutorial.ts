@@ -1,6 +1,7 @@
 import type { MatchState, TutorialAiAction, TutorialStepSnapshot } from '../../engine/types';
 import { isQidahenTacticCardPlayableForPendingBattle } from './domain/commands';
 import { getQidahenPendingBattleActingFaction } from './domain/battleState';
+import { QIDAHEN_DISPATCH_ROSTER_ID } from './ui/dispatchGroupSelection';
 import { getQidahenPendingTargetActionForCore, getQidahenPostBattleSelectionForCore } from './domain/interactionSelectionAccessors';
 import { QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID } from './domain/interactionSources';
 import { buildPendingTargetChoiceOptions } from './domain/pendingTargetChoiceOptions';
@@ -117,10 +118,9 @@ export function resolveAnnualDispatchTutorialStep(state: MatchState<QidahenCore>
         if (frame.step === 'dispatch-troops') {
             const regionId = frame.sourceRegionId;
             const piece = candidates.find(candidate => regionId && getQidahenDispatchDraftTargets(state.core, frame.factionId, regionId, [candidate.id]).length > 0);
-            const token = piece && state.core.mapTokens.find(item => item.pieceId === piece.id && item.regionId === regionId);
             return { ...step, content: `${TEXT}dispatch-troops-dynamic`, allowedTargets: undefined, recommendedTargets: piece ? [piece.id] : undefined,
-                highlightTarget: regionId ? `qidahen-map-region-focus-${regionId}` : undefined,
-                tooltipAnchorTarget: token ? `qidahen-map-token-${token.id}` : 'qidahen-map-region-focus-name',
+                highlightTarget: QIDAHEN_DISPATCH_ROSTER_ID, highlightFrame: 'none', position: 'top', tooltipArrow: 'anchor',
+                tooltipAnchorTarget: QIDAHEN_DISPATCH_ROSTER_ID,
                 ...(step.id === 'dispatch-target' ? { advanceOnEvents: undefined } : {}) };
         }
         const regionId = candidates.find(candidate => candidate.id === 'city-region-7')?.id

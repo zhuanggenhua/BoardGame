@@ -6,12 +6,12 @@ import type { Page } from '@playwright/test';
 import { test, expect, initHome, login, openPlatformProfile, capture } from './helpers/homeAcceptance';
 
 const archivePath = process.env.EXTERNAL_WEB_GAME_FIXTURE_ZIP;
-const gameName = '永恒之谷';
+const gameName = archivePath ? basename(archivePath).replace(/\.zip$/i, '') : '永恒之谷';
 
 async function approve(page: Page) {
     await page.goto('/admin/creator-review');
     const submission = page.locator('.review-card').filter({ has: page.getByRole('heading', { name: gameName, exact: true }) });
-    await submission.getByLabel('审核意见').fill('本地验证通过。');
+    await expect(submission.getByLabel('审核意见')).toHaveValue('');
     const response = page.waitForResponse(result => result.url().includes('/creator-review/submissions/') && result.request().method() === 'POST');
     await submission.getByRole('button', { name: '批准收录' }).click();
     const reviewed = await response;
@@ -31,9 +31,8 @@ test('永恒之谷原包投稿、审核、内嵌对局及不中断更新', async
     test.skip(!archivePath || !process.env.EXTERNAL_WEB_GAME_ROOT, '需要提供本地原包和隔离托管目录');
     test.setTimeout(210_000);
     const archive = await readFile(archivePath!);
-    const rawZip = unzipSync(archive, { filter: file => file.name.endsWith('/assets/cards/4.jpg') || file.name.endsWith('/js/data.js') });
-    const cover = Object.entries(rawZip).find(([name]) => name.endsWith('.jpg'))![1];
-    const originalScript = Object.entries(rawZip).find(([name]) => name.endsWith('.js'))![1];
+    const rawZip = unzipSync(archive, { filter: file => file.name.endsWith('/js/data.js') });
+    const originalScript = Object.values(rawZip)[0];
     // ZIP 注释只改变包的版本标识，包内文件字节保持与原包一致。
     expect(archive.readUInt32LE(archive.length - 22)).toBe(0x06054b50);
     const comment = Buffer.from('web-zip-e2e-update');
@@ -70,10 +69,7 @@ test('永恒之谷原包投稿、审核、内嵌对局及不中断更新', async
         await capture(author, '00b-选择游戏链接显示网址输入框');
         await zipType.check();
         await expect(linkInput).toHaveCount(0);
-        await author.getByLabel('游戏名称', { exact: true }).fill(gameName);
         await zipInput.setInputFiles(archivePath!);
-        await author.getByLabel('介绍', { exact: true }).fill('狩猎奇幻生灵、管理魔法石并培育卡牌。原包提供人机对战、联机对战和新手教程。');
-        await author.locator('.platform-upload-cover-section input[type=file]').setInputFiles({ name: 'cover.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(cover) });
         await expect(zipInput).toHaveValue(new RegExp(basename(archivePath!).replace('.', '\\.')));
         await capture(author, '01-外部游戏投稿选择原始ZIP');
         await submit(author);
@@ -84,7 +80,9 @@ test('永恒之谷原包投稿、审核、内嵌对局及不中断更新', async
         await login(admin, accounts.bob);
         const first = await approve(admin);
         const player = await authorContext.newPage();
-        await player.goto(`/?game=${first.gameId}`);
+        await initHome(player);
+        await player.getByRole('searchbox', { name: '搜索游戏' }).first().fill(gameName);
+        await player.locator(`[data-game-id="${first.gameId}"] .platform-game-open`).click();
         await player.getByRole('button', { name: '开始游戏', exact: true }).and(player.getByTestId('external-game-play')).click();
         const iframe = player.locator('.external-player iframe');
         const game = player.frameLocator('.external-player iframe');

@@ -150,7 +150,7 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             if (player.selectedAttackIds.length >= 2) return fail('tooManyAttackCards');
             const selection = canSelectFateAttack(core, command.playerId, command.payload.cardId, command.payload.faceDown);
             if (!selection.valid) return fail(selection.error ?? 'attackNotAllowed');
-            if (selectedFateAttackCost(player) + (fateAttackManaCost(player, command.payload.cardId, command.payload.faceDown) ?? Infinity) > player.mana) return fail('notEnoughMana');
+            if (selectedFateAttackCost(player, core.round) + (fateAttackManaCost(player, command.payload.cardId, command.payload.faceDown, core.round) ?? Infinity) > player.mana) return fail('notEnoughMana');
             return ok();
         }
         case 'CONFIRM_ATTACK': {
@@ -161,7 +161,7 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             const player = attackCore.players[command.playerId];
             if (player.selectedAttackIds.length !== 2) return fail('needExactlyTwoCards');
             if (player.normalAttackPlayed) return fail('normalAttackAlreadyPlayed');
-            if (selectedFateAttackCost(player) > player.mana) return fail('notEnoughMana');
+            if (selectedFateAttackCost(player, core.round) > player.mana) return fail('notEnoughMana');
             for (const cardId of player.selectedAttackIds) {
                 const check = canSelectFateAttack(attackCore, command.playerId, cardId, (player.selectedFaceDownIds ?? []).includes(cardId));
                 if (!check.valid) return fail(check.error ?? 'attackNotAllowed');
