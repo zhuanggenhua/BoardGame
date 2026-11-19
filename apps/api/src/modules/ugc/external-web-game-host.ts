@@ -8,7 +8,24 @@ import { unzipSync } from 'fflate';
 import { hasControlCharacters, MAX_WEB_ZIP_BYTES, SANDBOXED_WEB_GAME_PATH, WEB_GAME_SANDBOX } from '../../../../../src/shared/externalGames';
 
 const GAME_ID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+const MAX_WEB_ZIP_ENTRIES = 3000;
 const WEB_EXTENSIONS = new Set('.html .htm .js .mjs .css .json .map .wasm .xml .txt .md .png .jpg .jpeg .webp .gif .svg .ico .avif .bmp .mp3 .ogg .wav .m4a .aac .webm .mp4 .woff .woff2 .ttf .otf .eot .bin .data .unityweb .glb .gltf .ktx2 .webmanifest'.split(' '));
+const WEB_STATIC_OPTIONS = { dotfiles: 'allow', index: false, redirect: false, immutable: true, maxAge: '1y' } as const;
+
+function isInvalidWebPathPart(part: string) {
+    return !part || /[. ]$|[\\:*?"<>|]/.test(part) || hasControlCharacters(part)
+        || /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(part);
+}
+
+function isWebAssetRequestPath(path: string) {
+    try {
+        const decoded = decodeURIComponent(path);
+        return !decoded.slice(1).split('/').some(isInvalidWebPathPart)
+            && WEB_EXTENSIONS.has(extname(decoded).toLowerCase());
+    } catch {
+        return false;
+    }
+}
 
 function getHostConfig() {
     const { EXTERNAL_WEB_GAME_ROOT, EXTERNAL_WEB_GAME_ORIGIN, EXTERNAL_WEB_GAME_PORT, EXTERNAL_WEB_GAME_FRAME_ANCESTORS } = process.env;
@@ -41,15 +58,18 @@ function browserFiles(buffer: Buffer) {
     let files: Record<string, Uint8Array>;
     try {
         files = unzipSync(buffer, { filter: ({ name, originalSize, compression }) => {
+            if (++entries > MAX_WEB_ZIP_ENTRIES) {
+                throw new BadRequestException(`ZIP 条目超过 ${MAX_WEB_ZIP_ENTRIES} 个`);
+            }
+            const directory = name.endsWith('/');
             const children = name.replace(/\/$/, '').split('/');
-            if (++entries > 3000 || children.some(part => !part || /^[.]|[. ]$|[\\:*?"<>|]/.test(part) || hasControlCharacters(part)
-                || /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(part))) {
-                throw new BadRequestException('ZIP 文件太多或包含不受支持的路径');
+            if (children.some(isInvalidWebPathPart)) {
+                throw new BadRequestException('ZIP 包含不受支持的路径，请检查特殊字符或目录名');
             }
             const key = children.join('/').normalize('NFC').toLowerCase();
             if (names.has(key)) throw new BadRequestException('ZIP 包含重复路径');
             names.add(key);
-            if (name.endsWith('/') || !WEB_EXTENSIONS.has(extname(name).toLowerCase())) return false;
+            if (directory || !WEB_EXTENSIONS.has(extname(name).toLowerCase())) return false;
             totalBytes += originalSize;
             if (totalBytes > 128 * 1024 * 1024 || originalSize > 64 * 1024 * 1024 || ![0, 8].includes(compression)) {
                 throw new BadRequestException('ZIP 解压大小超限或使用了不支持的压缩格式');
@@ -107,7 +127,7 @@ export async function storeWebGameZip(gameId: string, buffer: Buffer) {
 export function mountSandboxedWebGames(app: express.Application) {
     const config = getHostConfig();
     if (config?.mode !== 'sandbox') return;
-    const serve = express.static(config.root, { dotfiles: 'deny', index: false, redirect: false, immutable: true, maxAge: '1y' });
+    const serve = express.static(config.root, WEB_STATIC_OPTIONS);
     app.use(SANDBOXED_WEB_GAME_PATH, (request, response) => {
         // 直接打开包内 HTML 或 SVG 时也始终使用不透明来源。
         response.setHeader('Content-Security-Policy', `sandbox ${WEB_GAME_SANDBOX}; frame-ancestors 'self'; object-src 'none'`);
@@ -116,7 +136,7 @@ export function mountSandboxedWebGames(app: express.Application) {
         response.removeHeader('Access-Control-Allow-Credentials');
         response.setHeader('Access-Control-Allow-Origin', '*');
         const [, id, revision] = request.path.split('/');
-        if (!GAME_ID.test(id ?? '') || !/^[a-f0-9]{64}$/.test(revision ?? '') || !WEB_EXTENSIONS.has(extname(request.path).toLowerCase())) {
+        if (!GAME_ID.test(id ?? '') || !/^[a-f0-9]{64}$/.test(revision ?? '') || !isWebAssetRequestPath(request.path)) {
             response.sendStatus(404);
             return;
         }
@@ -133,14 +153,14 @@ export async function startWebGameHost() {
         const host = request.hostname?.toLowerCase() ?? '';
         const id = host.slice(0, -config.suffix.length);
         if (!host.endsWith(config.suffix) || !GAME_ID.test(id)
-            || !/^\/[a-f0-9]{64}\//.test(request.path) || !WEB_EXTENSIONS.has(extname(request.path).toLowerCase())) {
+            || !/^\/[a-f0-9]{64}\//.test(request.path) || !isWebAssetRequestPath(request.path)) {
             response.sendStatus(404);
             return;
         }
         response.setHeader('Content-Security-Policy', `frame-ancestors ${config.ancestors.join(' ')}; object-src 'none'; base-uri 'self'`);
         response.setHeader('X-Content-Type-Options', 'nosniff');
         response.setHeader('Referrer-Policy', 'no-referrer');
-        express.static(join(config.root, id), { dotfiles: 'deny', index: false, redirect: false, immutable: true, maxAge: '1y' })(request, response, next);
+        express.static(join(config.root, id), WEB_STATIC_OPTIONS)(request, response, next);
     });
     return await new Promise<ReturnType<typeof app.listen>>((resolveServer, reject) => {
         const server = app.listen(config.port, '127.0.0.1', () => resolveServer(server));
