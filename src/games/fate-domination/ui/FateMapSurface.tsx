@@ -299,9 +299,9 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
                 return <button key={card.id} type="button" className="fd-runtime-map-card-hit" data-fate-shinto-event={shintoEvent} style={{ left: card.x, top: card.y, width: card.w, height: card.h }} aria-label={`检视${card.name}`} onClick={() => onInspect(card.assetPath, card.name)}/>;
             })}
         </div>
-        {exposedEvents && <section className="fd-map-exposed-events" data-testid={['fate', exposedEvents.location, 'events'].join('-')} aria-label={t('ui.map.' + exposedEvents.location + 'Events')}
+        {exposedEvents && <section className="fd-map-exposed-events" data-testid={['fate', exposedEvents.location, 'events'].join('-')} aria-label={exposedEvents.location === 'shinto' ? t('ui.map.shintoEvents') : t('ui.map.miyamaEvents')}
             style={{ left: exposedEvents.left, top: exposedEvents.top }}>
-            <b>{t('ui.map.' + exposedEvents.location + 'Events')}</b>
+            <b>{exposedEvents.location === 'shinto' ? t('ui.map.shintoEvents') : t('ui.map.miyamaEvents')}</b>
             <div className="fd-map-exposed-event-row">{locationEvents.map(card => {
                 const eventId = card.eventId!;
                 const target = chariotTargetIds.includes(eventId);

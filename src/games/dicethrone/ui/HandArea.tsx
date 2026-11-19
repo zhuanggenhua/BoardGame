@@ -840,7 +840,7 @@ export const HandArea = ({
         if (shouldBlockLongPressClick(entry.key)) return;
 
         if (blockedReason) {
-            onError?.(t(blockedReason));
+            onError?.(blockedReason);
             return;
         }
 
@@ -975,8 +975,8 @@ export const HandArea = ({
                         const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning && tutorialCardAllowed;
                         const blockedReason = isFlipped && !isReturning
-                            ? !tutorialCardAllowed ? 'error.tutorialCardUnavailable'
-                                : isDiscardMode && !handDiscardCandidateAllowed ? 'error.discardCardUnavailable' : undefined
+                            ? !tutorialCardAllowed ? t('error.tutorialCardUnavailable')
+                                : isDiscardMode && !handDiscardCandidateAllowed ? t('error.discardCardUnavailable') : undefined
                             : undefined;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
                             && !disableCardPointerEvents;
