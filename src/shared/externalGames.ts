@@ -29,6 +29,7 @@ export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
 export interface ExternalGame extends ExternalGameFields {
     webZipName?: string;
     roomProtocol?: 1;
+    roomAdapter?: 'vale-webrtc';
     rulesDocument?: GameRulesDocument;
     gameId: string;
     coverUrl: string;

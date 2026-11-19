@@ -2705,6 +2705,10 @@
     },
     "externalRoom": {
       "join": "Join room",
+      "list": "Rooms",
+      "noRooms": "No rooms to join",
+      "roomBy": "{{name}}’s room",
+      "full": "Full",
       "inviteLink": "Invite link",
       "copyInvite": "Copy invite link",
       "waiting": "Waiting for players ({{seated}} / {{capacity}})",

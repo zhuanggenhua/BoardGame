@@ -22,6 +22,7 @@ import { AdminGuard } from '../admin/guards/admin.guard';
 import { ExternalRoomRecord, ExternalRoomSchema } from './schemas/external-room.schema';
 import { ExternalRoomsController } from './external-rooms.controller';
 import { ExternalRoomsService } from './external-rooms.service';
+import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 
 @Module({
     imports: [
@@ -38,7 +39,7 @@ import { ExternalRoomsService } from './external-rooms.service';
         ]),
     ],
     controllers: [UgcController, GameSubmissionsController, ExternalGamesController, ExternalRoomsController, CreatorClaimsController, CreatorReviewController],
-    providers: [UgcService, GameSubmissionsService, ExternalGamesService, ExternalRoomsService, CreatorClaimsService, ExternalPlayService, AdminGuard],
+    providers: [UgcService, GameSubmissionsService, ExternalGamesService, ExternalRoomsService, CreatorClaimsService, ExternalPlayService, AdminGuard, OptionalJwtAuthGuard],
     exports: [UgcService],
 })
 export class UgcModule {}

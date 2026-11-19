@@ -10,6 +10,7 @@ import { useExternalPlay } from '../components/external/useExternalPlay';
 import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
 import { hasControlCharacters, isSandboxedWebGame, resolveExternalEmbed, type ExternalGame } from '../shared/externalGames';
 import { SandboxedWebGameFrame } from '../components/external/SandboxedWebGameFrame';
+import { NativeExternalRoomGame } from '../components/external/NativeExternalRoomGame';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import './external-game-page.css';
 
@@ -90,7 +91,10 @@ export default function ExternalGamePage() {
             </div>
         </div>}
         {playing && canEmbed && <div className="external-player">
-            {isSandboxedWebGame(item)
+            {item.roomAdapter === 'vale-webrtc'
+                ? <NativeExternalRoomGame key={gameId} gameId={gameId} entry={item.url}
+                    title={t('platform.externalGamePage.iframeTitle', { name: item.name })} autoOpen={search.get('createRoom') === '1'} />
+                : isSandboxedWebGame(item)
                 ? <SandboxedWebGameFrame key={gameId} gameId={gameId} entry={item.url} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} />
                 : <iframe key={gameId} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item)} referrerPolicy="no-referrer" />}
             <GameHUD mode="external" gameId={gameId} onLeave={leave} />

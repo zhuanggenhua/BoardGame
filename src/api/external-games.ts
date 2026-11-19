@@ -1,7 +1,7 @@
 import { UGC_API_URL } from '../config/server';
 import type { CreatorClaim, ExternalGame, ExternalGameFields, ExternalPlayHistory, GameRulesDocument } from '../shared/externalGames';
 import type { GameSubmissionRecord } from './game-submissions';
-import type { ExternalRoomView } from '../shared/externalRoom';
+import type { ExternalRoomListing, ExternalRoomView } from '../shared/externalRoom';
 
 export class ExternalApiError extends Error {
     readonly status: number;
@@ -12,11 +12,12 @@ export class ExternalApiError extends Error {
     }
 }
 
-async function request<T>(path: string, options: { token?: string; method?: string; data?: unknown; keepalive?: boolean } = {}): Promise<T> {
+async function request<T>(path: string, options: { token?: string | null; guestKey?: string; method?: string; data?: unknown; keepalive?: boolean } = {}): Promise<T> {
     const multipart = options.data instanceof FormData;
     const response = await fetch(`${UGC_API_URL}${path}`, {
         method: options.method ?? 'GET',
         headers: { ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+            ...(options.guestKey ? { 'X-External-Room-Guest': options.guestKey } : {}),
             ...(options.data && !multipart ? { 'Content-Type': 'application/json' } : {}) },
         ...(options.data ? { body: multipart ? options.data as FormData : JSON.stringify(options.data) } : {}),
         keepalive: options.keepalive,
@@ -29,8 +30,6 @@ async function request<T>(path: string, options: { token?: string; method?: stri
     return body as T;
 }
 const id = (value: string) => encodeURIComponent(value);
-export const createExternalRoom = (token: string, gameId: string, capacity: number) =>
-    request<ExternalRoomView>('/external-rooms', { token, method: 'POST', data: { gameId, capacity } });
 export const joinExternalRoom = (token: string, roomId: string) =>
     request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { token, method: 'POST' });
 export const readExternalRoom = (token: string, roomId: string) =>
@@ -41,6 +40,19 @@ export const leaveExternalRoom = (token: string, roomId: string) =>
     request<{ left: true }>(`/external-rooms/${id(roomId)}`, { token, method: 'DELETE', keepalive: true });
 const upload = (file: File) => { const data = new FormData(); data.append('file', file); return data; };
 export const listExternalGames = () => request<{ items: ExternalGame[] }>('/external-games');
+type NativeRoomIdentity = { token?: string | null; guestKey?: string };
+export const listNativeExternalRooms = (gameId: string) =>
+    request<{ rooms: ExternalRoomListing[] }>(`/external-rooms?gameId=${id(gameId)}`);
+export const publishNativeExternalRoom = (identity: NativeRoomIdentity, gameId: string, capacity: number, nativeName: string, expectedEntry: string) =>
+    request<ExternalRoomView>('/external-rooms', { ...identity, method: 'POST', data: { gameId, capacity, nativeName, expectedEntry } });
+export const joinNativeExternalRoom = (identity: NativeRoomIdentity, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { ...identity, method: 'POST', data: { native: true } });
+export const readNativeExternalRoom = (identity: NativeRoomIdentity, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, identity);
+export const sendNativeExternalRoomAction = (identity: NativeRoomIdentity, roomId: string, data: Record<string, unknown>) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/action`, { ...identity, method: 'POST', data, keepalive: data.type === 'start' });
+export const leaveNativeExternalRoom = (identity: NativeRoomIdentity, roomId: string) =>
+    request<{ left: true }>(`/external-rooms/${id(roomId)}`, { ...identity, method: 'DELETE', keepalive: true });
 export const getExternalGame = (gameId: string) => request<ExternalGame>(`/external-games/${id(gameId)}`);
 export const getOwnedGame = (token: string, gameId: string) => request<ExternalGame>(`/external-games/mine/${id(gameId)}`, { token });
 export const listOwnedGames = (token: string) => request<{ items: ExternalGame[] }>('/external-games/mine', { token });

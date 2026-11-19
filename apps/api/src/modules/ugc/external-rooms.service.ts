@@ -1,13 +1,14 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Model } from 'mongoose';
-import { externalRoomPlayerLimits, externalRoomRosterKey, MAX_EXTERNAL_SIGNAL_LENGTH, type ExternalRoomView } from '../../../../../src/shared/externalRoom';
+import { externalRoomPlayerLimits, externalRoomRosterKey, MAX_EXTERNAL_SIGNAL_LENGTH, type ExternalRoomListing, type ExternalRoomView } from '../../../../../src/shared/externalRoom';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import { ExternalGamesService } from './external-games.service';
 import { ExternalRoomRecord, type ExternalRoomDocument } from './schemas/external-room.schema';
 
 const expiry = () => new Date(Date.now() + 6 * 60 * 60 * 1000);
+const liveRoomExpiry = () => new Date(Date.now() + 60_000);
 
 @Injectable()
 export class ExternalRoomsService {
@@ -17,32 +18,57 @@ export class ExternalRoomsService {
         @Inject(ExternalGamesService) private readonly games: ExternalGamesService,
     ) {}
 
-    async create(userId: string, gameId: string, capacity: unknown) {
+    async create(userId: string, gameId: string, capacity: unknown, nativeName?: unknown, expectedEntry?: unknown) {
         const game = await this.games.get(gameId);
-        if (!game.roomProtocol) throw new BadRequestException('该游戏未接入易桌游房间');
-        const limits = externalRoomPlayerLimits(game.minPlayers, game.maxPlayers);
+        const native = nativeName !== undefined;
+        if (!native && userId.startsWith('guest:')) throw new ForbiddenException('旧版房间需要登录');
+        if (native ? game.roomAdapter !== 'vale-webrtc' : (!game.roomProtocol || game.roomAdapter)) {
+            throw new BadRequestException('此游戏不支持此房间入口');
+        }
+        if (native && expectedEntry !== game.url) throw new ConflictException('游戏已更新，请重新打开游戏。');
+        const limits = native ? { min: 2, max: 4 } : externalRoomPlayerLimits(game.minPlayers, game.maxPlayers);
         if (typeof capacity !== 'number' || !Number.isInteger(capacity) || capacity < limits.min || capacity > limits.max) {
             throw new BadRequestException('房间人数不在游戏支持范围内');
         }
-        const member = await this.newMember(userId);
+        const member = await this.newMember(userId, nativeName);
         const room = await this.records.create({ roomId: randomUUID(), gameId, title: game.name, entry: game.url,
-            capacity, members: [member], expiresAt: expiry() });
+            capacity, native, members: [member], expiresAt: native ? liveRoomExpiry() : expiry() });
         return this.view(room, userId);
     }
 
-    async join(roomId: string, userId: string) {
+    async list(gameId: string): Promise<{ rooms: ExternalRoomListing[] }> {
+        if (!await this.games.canListNativeRooms(gameId)) return { rooms: [] };
+        const rooms = await this.records.find({ gameId, native: true, started: false, expiresAt: { $gt: new Date() } })
+            .select('roomId members.displayName capacity').sort({ _id: -1 }).limit(40).lean();
+        return { rooms: rooms.map(({ roomId, members, capacity }) => ({
+            roomId, hostName: members[0].displayName, occupied: members.length, capacity,
+        })) };
+    }
+
+    async join(roomId: string, userId: string, native: boolean) {
+        const initial = await this.read(roomId);
+        if (Boolean(initial.native) !== native) throw new NotFoundException('房间入口已变更');
+        if (!native && userId.startsWith('guest:')) throw new ForbiddenException('旧版房间需要登录');
+        if (!initial.members.some(player => player.userId === userId) && !await this.games.canListNativeRooms(initial.gameId)) {
+            throw new NotFoundException('游戏尚未公开');
+        }
         const member = await this.newMember(userId);
         return this.change(roomId, userId, room => {
             if (room.members.some(player => player.userId === userId)) return false;
             if (room.started || room.members.length >= room.capacity) throw new ConflictException('房间已满或已开局');
             room.members.push(member);
-            this.resetConnections(room);
+            if (!room.native) this.resetConnections(room);
             return true;
         });
     }
 
     async get(roomId: string, userId: string) {
-        return this.view(await this.read(roomId), userId);
+        const room = await this.read(roomId);
+        const view = this.view(room, userId);
+        if (room.native && !room.started && view.room.seatId === view.room.hostSeatId && room.expiresAt.getTime() < Date.now() + 40_000) {
+            await this.records.updateOne({ roomId, version: room.version }, { $set: { expiresAt: liveRoomExpiry() } });
+        }
+        return view;
     }
 
     async leave(roomId: string, userId: string) {
@@ -51,8 +77,10 @@ export class ExternalRoomsService {
             if (room.started) return false;
             if (room.members[0].userId === userId) room.expiresAt = new Date();
             else {
+                const seatId = room.members.find(player => player.userId === userId)?.seatId;
                 room.members = room.members.filter(player => player.userId !== userId);
-                this.resetConnections(room);
+                if (room.native) room.signals = room.signals.filter(signal => signal.fromSeatId !== seatId && signal.toSeatId !== seatId);
+                else this.resetConnections(room);
             }
             return true;
         }, false);
@@ -63,8 +91,8 @@ export class ExternalRoomsService {
             const { room: snapshot } = this.view(room, userId);
             const member = room.members.find(player => player.seatId === snapshot.seatId)!;
             if (room.started) return false;
-            if (room.members.length !== room.capacity) throw new ConflictException('请等待玩家入座');
-            if ((action?.type === 'ready' || action?.type === 'signal') && action.rosterKey !== externalRoomRosterKey(room.members)) return false;
+            if (!room.native && room.members.length !== room.capacity) throw new ConflictException('请等待玩家入座');
+            if (!room.native && (action?.type === 'ready' || action?.type === 'signal') && action.rosterKey !== externalRoomRosterKey(room.members)) return false;
             switch (action?.type) {
                 case 'ready':
                     if (typeof action.ready !== 'boolean') throw new BadRequestException('无效的就绪状态');
@@ -73,7 +101,7 @@ export class ExternalRoomsService {
                     return true;
                 case 'start':
                     if (snapshot.hostSeatId !== member.seatId) throw new ForbiddenException('只有房主可以开始对局');
-                    if (!room.members.every(player => player.ready)) throw new ConflictException('还有玩家未连接');
+                    if (!room.native && !room.members.every(player => player.ready)) throw new ConflictException('还有玩家未连接');
                     room.started = true;
                     room.expiresAt = expiry();
                     return true;
@@ -97,7 +125,17 @@ export class ExternalRoomsService {
         });
     }
 
-    private async newMember(userId: string) {
+    private async newMember(userId: string, nativeName?: unknown) {
+        if (nativeName !== undefined) {
+            if (typeof nativeName !== 'string' || !nativeName.trim() || nativeName.length > 8 || /[\x00-\x1f]/.test(nativeName)) {
+                throw new BadRequestException('请填写游戏昵称');
+            }
+            return { userId, seatId: randomUUID(), displayName: nativeName.trim(), ready: false };
+        }
+        if (userId.startsWith('guest:')) {
+            const alias = createHash('sha256').update(userId).digest('hex').slice(0, 4);
+            return { userId, seatId: randomUUID(), displayName: '游客' + alias, ready: false };
+        }
         const user = await this.users.findById(userId).select('username').lean();
         if (!user) throw new ForbiddenException('请登录后进入房间');
         return { userId, seatId: randomUUID(), displayName: user.username, ready: false };
@@ -115,11 +153,11 @@ export class ExternalRoomsService {
     }
 
     private view(record: ExternalRoomRecord, userId: string): ExternalRoomView {
-        const { roomId, gameId, capacity, title, entry, started, members, signals } = record;
+        const { roomId, gameId, capacity, title, entry, started, native, members, signals } = record;
         const member = members.find(player => player.userId === userId);
         if (!member) throw new ForbiddenException('请先加入房间');
         const players = members.map(({ seatId, displayName, ready }) => ({ seatId, displayName, ready }));
-        return { gameId, capacity, title, entry, started,
+        return { gameId, capacity, title, entry, started, native,
             room: { roomId, seatId: member.seatId, hostSeatId: members[0].seatId, players },
             signals: signals.filter(signal => signal.toSeatId === member.seatId) };
     }

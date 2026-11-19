@@ -53,12 +53,15 @@ export class ExternalGamesService implements OnModuleInit {
     }
     async list() { return this.project(await this.games.find({ published: true }).sort({ createdAt: -1 })); }
     async listForReview() { return this.project(await this.games.find({}).sort({ updatedAt: -1 })); }
+    async canListNativeRooms(gameId: string) {
+        return Boolean(await this.games.exists({ gameId, published: true }));
+    }
     async get(gameId: string) {
         const record = await this.games.findOne({ gameId, published: true });
         if (!record) throw new NotFoundException('游戏不存在或尚未公开');
         const [game] = await this.project([record]);
         const blocked = game.embedStatus === 'blocked' && game.embedCheckedUrl === game.url;
-        return { ...game, roomProtocol: blocked ? undefined : await detectExternalRoomProtocol(game) };
+        return { ...game, ...(blocked ? undefined : await detectExternalRoomProtocol(game)) };
     }
     async mine(userId: string) {
         const owned = await this.claims.find({ applicantId: userId, status: 'approved' }).select('gameId').lean();

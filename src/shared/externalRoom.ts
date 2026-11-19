@@ -1,6 +1,14 @@
 export const EXTERNAL_ROOM_CONNECT = 'boardgame:room-connect';
 export const EXTERNAL_ROOM_VERSION = 1;
 export const MAX_EXTERNAL_SIGNAL_LENGTH = 65_536;
+export const EXTERNAL_NATIVE_ROOM_CONNECT = 'boardgame:game-room-connect';
+
+export interface ExternalRoomListing {
+    roomId: string;
+    hostName: string;
+    occupied: number;
+    capacity: number;
+}
 
 export interface ExternalRoomPlayer {
     seatId: string;
@@ -30,6 +38,7 @@ export interface ExternalRoomView {
     entry: string;
     capacity: number;
     started: boolean;
+    native?: boolean;
     signals: ExternalRoomSignal[];
 }
 

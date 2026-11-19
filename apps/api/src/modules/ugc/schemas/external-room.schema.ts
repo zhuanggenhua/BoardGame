@@ -10,6 +10,7 @@ export class ExternalRoomRecord {
     entry!: string;
     capacity!: number;
     started!: boolean;
+    native?: boolean;
     members!: ExternalRoomMember[];
     signals!: ExternalRoomSignal[];
     expiresAt!: Date;
@@ -31,8 +32,10 @@ export const ExternalRoomSchema = new Schema<ExternalRoomRecord>({
     entry: String,
     capacity: Number,
     started: { type: Boolean, default: false },
+    native: Boolean,
     members: [member],
     signals: [signal],
     expiresAt: { type: Date, expires: 0 },
     version: { type: Number, default: 0 },
 });
+ExternalRoomSchema.index({ gameId: 1, native: 1, started: 1, expiresAt: 1 });

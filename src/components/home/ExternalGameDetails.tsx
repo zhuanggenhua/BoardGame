@@ -17,7 +17,7 @@ import { canOpenExternalBrowser, openExternalBrowser } from '../../lib/mobile/ex
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { DetailsPrimaryButton } from '../common/DetailsPrimaryButton';
-import { CreateExternalRoomDialog } from '../external/CreateExternalRoomDialog';
+import { NativeExternalRoomList } from '../external/NativeExternalRoomList';
 
 interface ExternalGameDetailsProps {
     gameId: string;
@@ -32,17 +32,17 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
     const navigate = useNavigate();
     const { user } = useAuth();
     const [tab, setTab] = useState<'about'>('about');
-    const [creatingRoom, setCreatingRoom] = useState(false);
     const game = useQuery({ queryKey: ['external-game', gameId], queryFn: () => getExternalGame(gameId), enabled: Boolean(gameId) });
     const item = game.data;
     const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
-    const supportsRooms = Boolean(item?.roomProtocol && embed?.canEmbed);
+    const supportsRooms = Boolean(item?.roomAdapter && embed?.canEmbed);
     const nativeBrowser = item ? !isSandboxedWebGame(item) && canOpenExternalBrowser(item.url) : false;
-    const startPlay = () => {
+    const openGame = (createRoom: boolean) => {
         const from = `${window.location.pathname}${window.location.search}`;
         writeSessionStorageItem('bg-external-return', JSON.stringify({ url: from, scroll: window.scrollY }));
-        navigate(`/external/${encodeURIComponent(gameId)}?from=${encodeURIComponent(from)}`);
+        navigate(`/external/${encodeURIComponent(gameId)}?from=${encodeURIComponent(from)}${createRoom ? '&createRoom=1' : ''}`);
     };
+    const startPlay = () => openGame(false);
     const thumbnail = item && <PlatformExternalCover name={item.name} coverUrl={item.coverUrl} />;
     return <HomeGameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0 home-game-details-layer">
         {game.isPending || !item ? <div className="platform-game-details" role="status">{t('platform.externalGamePage.loading')}</div>
@@ -52,7 +52,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
                 onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
                 primaryActions={supportsRooms
-                    ? <DetailsPrimaryButton data-testid="external-game-create-room" onClick={() => setCreatingRoom(true)}>{t('actions.createRoom')}</DetailsPrimaryButton>
+                    ? <DetailsPrimaryButton data-testid="external-game-create-room" onClick={() => openGame(true)}>{t('actions.createRoom')}</DetailsPrimaryButton>
                     : nativeBrowser
                     ? <DetailsPrimaryButton data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</DetailsPrimaryButton>
                     : embed?.canEmbed
@@ -70,10 +70,10 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 {embed?.restricted && !nativeBrowser && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
                 {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                 {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
+                {supportsRooms && <NativeExternalRoomList gameId={item.gameId} />}
                 <p>{t('platform.externalGamePage.uploader', { name: item.uploaderName || t('platform.externalGamePage.anonymousUploader') })}</p>
                 <GameRulesDocumentLink document={item.rulesDocument} />
                 {item.rules && <p><ExternalGameText text={item.rules} /></p>}
             </PlatformGameDetails>}
-        {creatingRoom && item && <CreateExternalRoomDialog game={item} onClose={() => setCreatingRoom(false)} />}
     </HomeGameDetailsPresentation>;
 }

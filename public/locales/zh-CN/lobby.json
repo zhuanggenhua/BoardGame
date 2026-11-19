@@ -2714,6 +2714,10 @@
     },
     "externalRoom": {
       "join": "加入房间",
+      "list": "房间",
+      "noRooms": "暂无可加入的房间",
+      "roomBy": "{{name}}的房间",
+      "full": "已满",
       "inviteLink": "邀请链接",
       "copyInvite": "复制邀请链接",
       "waiting": "等待入座（{{seated}} / {{capacity}}）",

@@ -5,7 +5,8 @@ import { SANDBOXED_WEB_GAME_PATH, type ExternalGame } from '../../../../../src/s
 
 const GAME_DIRECTORY = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const REVISION = /^[a-f0-9]{64}$/;
-const detected = new Map<string, Promise<boolean>>();
+type RoomSupport = Pick<ExternalGame, 'roomProtocol' | 'roomAdapter'>;
+const detected = new Map<string, Promise<RoomSupport>>();
 
 // 仅检查本机托管的不可变版本。已上线的 ZIP 同样可识别，无需重新投稿。
 export async function detectExternalRoomProtocol(item: Pick<ExternalGame, 'url' | 'webZipName'>) {
@@ -22,16 +23,19 @@ export async function detectExternalRoomProtocol(item: Pick<ExternalGame, 'url' 
     let check = detected.get(key);
     if (!check) {
         if (detected.size >= 256) detected.delete(detected.keys().next().value!);
-        check = containsRoomSdk(path, entry.join('/')).catch(() => false);
+        check = inspectRoomSupport(path, entry.join('/')).catch(() => ({}));
         detected.set(key, check);
     }
-    if (await check) return EXTERNAL_ROOM_VERSION;
+    return check;
 }
 
-async function containsRoomSdk(directory: string, entry: string): Promise<boolean> {
+async function inspectRoomSupport(directory: string, entry: string): Promise<RoomSupport> {
     const packageOrigin = 'https://package.invalid';
     const pending = [new URL(entry, packageOrigin)];
     const seen = new Set<string>();
+    let sdk = false;
+    let nativeLobby = false;
+    let nativeMatch = false;
     while (pending.length && seen.size < 256) {
         const url = pending.shift()!;
         if (url.origin !== packageOrigin || seen.has(url.pathname)) continue;
@@ -42,12 +46,15 @@ async function containsRoomSdk(directory: string, entry: string): Promise<boolea
         const file = await stat(path).catch(() => null);
         if (!file?.isFile() || file.size > 8 * 1024 * 1024) continue;
         const text = await readFile(path, 'utf8');
-        if (text.includes(EXTERNAL_ROOM_CONNECT) && text.includes('MessageChannel')) return true;
+        sdk ||= text.includes(EXTERNAL_ROOM_CONNECT) && text.includes('MessageChannel');
+        nativeLobby ||= text.includes('id="oh-create"') && text.includes('id="oh-start"') && text.includes('onlineHost(body, prof)');
+        nativeMatch ||= text.includes('hostInit(total, name)') && text.includes('guestConnect(offer, name)') && text.includes('hostAccept(i, code)');
+        if (sdk && nativeLobby && nativeMatch) return { roomProtocol: EXTERNAL_ROOM_VERSION, roomAdapter: 'vale-webrtc' };
         // HTML 的脚本地址和 JS 的静态或延迟导入均相对当前文件解析。
         for (const match of text.matchAll(/['"]([^'"\n\r]+\.m?js(?:[?#][^'"\n\r]*)?)['"]/g)) {
             if (pending.length >= 256) break;
             try { pending.push(new URL(match[1], url)); } catch { /* 无效的脚本引用 */ }
         }
     }
-    return false;
+    return sdk ? { roomProtocol: EXTERNAL_ROOM_VERSION } : {};
 }

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { readLocalStorageItem, writeLocalStorageItem } from '../../lib/browserStorage';
 import { WEB_GAME_SANDBOX } from '../../shared/externalGames';
-import { EXTERNAL_ROOM_CONNECT, EXTERNAL_ROOM_VERSION } from '../../shared/externalRoom';
+import { EXTERNAL_NATIVE_ROOM_CONNECT, EXTERNAL_ROOM_CONNECT, EXTERNAL_ROOM_VERSION } from '../../shared/externalRoom';
+import { installValeNativeRoomBridge } from './valeNativeRoomBridge';
 
 const STORAGE_MESSAGE = 'boardgame:web-game-storage';
 const MAX_STORAGE_LENGTH = 1024 * 1024;
@@ -52,16 +53,19 @@ function escapeAttribute(value: string) {
     return value.replace(/[&"<]/g, character => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;' })[character]!);
 }
 
-function launchDocument(html: string, entry: string, storageKey: string) {
+function launchDocument(html: string, entry: string, storageKey: string, nativeMode?: 'host' | 'guest', autoOpen = false) {
     const base = escapeAttribute(entry);
     const args = [readGameStorage(storageKey), window.location.origin, STORAGE_MESSAGE]
         .map(value => JSON.stringify(value).replace(/</g, '\\u003c')).join(',');
     const doctype = html.match(/^\s*<!doctype[^>]*>/i)?.[0] ?? '';
-    return `${doctype}<base href="${base}"><meta name="boardgame-platform-origin" content="${escapeAttribute(window.location.origin)}"><script>(${installGameStorage.toString()})(${args});</script>${html.slice(doctype.length)}`;
+    const nativeArgs = [window.location.origin, EXTERNAL_NATIVE_ROOM_CONNECT, nativeMode, autoOpen].map(value => JSON.stringify(value)).join(',');
+    const nativeScript = nativeMode ? `<script>(${installValeNativeRoomBridge.toString()})(${nativeArgs});</script>` : '';
+    return `${doctype}<base href="${base}"><meta name="boardgame-platform-origin" content="${escapeAttribute(window.location.origin)}"><script>(${installGameStorage.toString()})(${args});</script>${nativeScript}${html.slice(doctype.length)}`;
 }
 
-export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect }: {
+export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect, onNativeRoomConnect, nativeMode, autoOpen }: {
     gameId: string; entry: string; title: string; onRoomConnect?: (port: MessagePort) => void;
+    onNativeRoomConnect?: (port: MessagePort) => void; nativeMode?: 'host' | 'guest'; autoOpen?: boolean;
 }) {
     const { t } = useTranslation('lobby');
     const frame = useRef<HTMLIFrameElement>(null);
@@ -73,6 +77,10 @@ export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect }: {
         const receive = (event: MessageEvent<(StorageUpdate & { version?: number }) | undefined>) => {
             const data = event.data;
             if (event.source !== frame.current?.contentWindow || event.origin !== 'null') return;
+            if (data?.type === EXTERNAL_NATIVE_ROOM_CONNECT && onNativeRoomConnect && event.ports.length === 1) {
+                onNativeRoomConnect(event.ports[0]);
+                return;
+            }
             if (data?.type === EXTERNAL_ROOM_CONNECT && data.version === EXTERNAL_ROOM_VERSION && event.ports.length === 1) {
                 if (onRoomConnect) onRoomConnect(event.ports[0]);
                 else event.ports[0].postMessage({ type: 'close', reason: '独立游玩' });
@@ -94,13 +102,13 @@ export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect }: {
                 if (!response.ok || !/^text\/html\b/i.test(response.headers.get('content-type') ?? '')) throw new Error('Game HTML unavailable');
                 return response.text();
             })
-            .then(html => { if (!controller.signal.aborted) setDocumentSource(launchDocument(html, entry, storageKey)); })
+            .then(html => { if (!controller.signal.aborted) setDocumentSource(launchDocument(html, entry, storageKey, nativeMode, autoOpen)); })
             .catch(() => { if (!controller.signal.aborted) setError(true); });
         return () => {
             controller.abort();
             window.removeEventListener('message', receive);
         };
-    }, [entry, storageKey, onRoomConnect]);
+    }, [entry, storageKey, onRoomConnect, onNativeRoomConnect, nativeMode, autoOpen]);
 
     if (error) return <p role="alert" className="external-game-message">{t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })}</p>;
     return <iframe ref={frame} title={title} data-entry-url={entry} sandbox={WEB_GAME_SANDBOX} srcDoc={documentSource} referrerPolicy="no-referrer" />;
