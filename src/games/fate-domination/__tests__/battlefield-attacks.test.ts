@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
+import { createRespondToPromptCommand, getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { FateDominationDomain } from '../domain';
 import { FATE_SERVANT_BY_ID, FATE_SITUATIONS } from '../data';
 import { calculateFatePower } from '../domain/power';
@@ -36,14 +37,14 @@ it('海魔使用真实交互付款，拒绝他席和重放，放置后随地点�
     const started = confirm(skillId);
     expect(started.success, started.error).toBe(true);
     expect(started.state.core.players['0'].mana).toBe(4);
-    const interactionId = started.state.sys.interaction.current?.id;
+    const interactionId = getCurrentInteractionSummary(started.state).id;
     expect(interactionId).toContain('fate:field-attack:');
-    const respond = { interactionId, optionId: 'place' };
-    expect(run(started.state, '1', 'SYS_INTERACTION_RESPOND', respond).success).toBe(false);
-    expect(run(started.state, '0', 'SYS_INTERACTION_RESPOND', { ...respond, interactionId: 'stale' }).success).toBe(false);
-    const resolved = run(started.state, '0', 'SYS_INTERACTION_RESPOND', respond);
+    const respond = createRespondToPromptCommand(started.state, { playerId: '0', optionId: 'place' });
+    expect(run(started.state, '1', respond.type, respond.payload).success).toBe(false);
+    expect(run(started.state, '0', respond.type, { ...respond.payload, interactionId: 'stale' }).success).toBe(false);
+    const resolved = run(started.state, '0', respond.type, respond.payload);
     expect(resolved.success, resolved.error).toBe(true);
-    expect(run(resolved.state, '0', 'SYS_INTERACTION_RESPOND', respond).success).toBe(false);
+    expect(run(resolved.state, '0', respond.type, respond.payload).success).toBe(false);
     const { core } = resolved.state;
     const expected = [{ playerId: '0', skillId, locationId: 'miyama' }];
     expect(core.battlefieldAttacks).toEqual(expected);
@@ -58,7 +59,8 @@ it('海魔使用真实交互付款，拒绝他席和重放，放置后随地点�
     expect(FateDominationDomain.reduce(remote, { type: 'BATTLE_RESOLVED', payload: { result, nextRound: 4 }, timestamp: 2 }).battlefieldAttacks).toEqual(expected);
     expect(FateDominationDomain.reduce(core, { type: 'LOCATION_RESOLVED', payload: { locationId: 'miyama', results: [result] }, timestamp: 1 }).battlefieldAttacks).toEqual([]);
 
-    const closed = run(started.state, '0', 'SYS_INTERACTION_RESPOND', { interactionId, optionId: 'close' });
+    const close = createRespondToPromptCommand(started.state, { playerId: '0', optionId: 'close' });
+    const closed = run(started.state, '0', close.type, close.payload);
     expect(closed.success, closed.error).toBe(true);
     expect(closed.state.core.battlefieldAttacks ?? []).toEqual([]);
     expect(closed.state.core.players['0'].activeSkills).not.toContain(skillId);
