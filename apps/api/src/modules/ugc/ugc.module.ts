@@ -19,6 +19,9 @@ import { CreatorClaimsController } from './creator-claims.controller';
 import { CreatorReviewController } from './creator-review.controller';
 import { User, UserSchema } from '../auth/schemas/user.schema';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { ExternalRoomRecord, ExternalRoomSchema } from './schemas/external-room.schema';
+import { ExternalRoomsController } from './external-rooms.controller';
+import { ExternalRoomsService } from './external-rooms.service';
 
 @Module({
     imports: [
@@ -27,14 +30,15 @@ import { AdminGuard } from '../admin/guards/admin.guard';
             { name: ExternalGameRecord.name, schema: ExternalGameSchema },
             { name: CreatorClaimRecord.name, schema: CreatorClaimSchema },
             { name: ExternalPlayRecord.name, schema: ExternalPlaySchema },
+            { name: ExternalRoomRecord.name, schema: ExternalRoomSchema },
             { name: User.name, schema: UserSchema },
             { name: UgcPackage.name, schema: UgcPackageSchema },
             { name: UgcAsset.name, schema: UgcAssetSchema },
             { name: UgcBuilderProject.name, schema: UgcBuilderProjectSchema },
         ]),
     ],
-    controllers: [UgcController, GameSubmissionsController, ExternalGamesController, CreatorClaimsController, CreatorReviewController],
-    providers: [UgcService, GameSubmissionsService, ExternalGamesService, CreatorClaimsService, ExternalPlayService, AdminGuard],
+    controllers: [UgcController, GameSubmissionsController, ExternalGamesController, ExternalRoomsController, CreatorClaimsController, CreatorReviewController],
+    providers: [UgcService, GameSubmissionsService, ExternalGamesService, ExternalRoomsService, CreatorClaimsService, ExternalPlayService, AdminGuard],
     exports: [UgcService],
 })
 export class UgcModule {}

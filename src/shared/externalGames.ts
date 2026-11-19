@@ -28,6 +28,7 @@ export interface ExternalGameFields {
 export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
 export interface ExternalGame extends ExternalGameFields {
     webZipName?: string;
+    roomProtocol?: 1;
     rulesDocument?: GameRulesDocument;
     gameId: string;
     coverUrl: string;

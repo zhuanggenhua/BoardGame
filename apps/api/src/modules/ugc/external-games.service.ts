@@ -13,6 +13,7 @@ import { editableGameFields, gameFieldsUpdate } from './external-game-fields';
 import { encodeGameImage } from './game-image';
 import { createUGCStorageService } from '../../../../../src/server/storage/UGCStorageService';
 import { validateGameRulesFile, type GameRulesUpload } from './game-rules-file';
+import { detectExternalRoomProtocol } from './external-room-capability';
 
 @Injectable()
 export class ExternalGamesService implements OnModuleInit {
@@ -55,7 +56,9 @@ export class ExternalGamesService implements OnModuleInit {
     async get(gameId: string) {
         const record = await this.games.findOne({ gameId, published: true });
         if (!record) throw new NotFoundException('游戏不存在或尚未公开');
-        return (await this.project([record]))[0];
+        const [game] = await this.project([record]);
+        const blocked = game.embedStatus === 'blocked' && game.embedCheckedUrl === game.url;
+        return { ...game, roomProtocol: blocked ? undefined : await detectExternalRoomProtocol(game) };
     }
     async mine(userId: string) {
         const owned = await this.claims.find({ applicantId: userId, status: 'approved' }).select('gameId').lean();

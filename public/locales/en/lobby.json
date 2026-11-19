@@ -2703,6 +2703,20 @@
         "previousRejected": "Your previous application was not approved{{comment}}. Update the materials and submit again."
       }
     },
+    "externalRoom": {
+      "join": "Join room",
+      "inviteLink": "Invite link",
+      "copyInvite": "Copy invite link",
+      "waiting": "Waiting for players ({{seated}} / {{capacity}})",
+      "connecting": "Seats filled. Connecting players",
+      "waitingToStart": "Everyone is connected. Waiting for the host to start",
+      "alreadyStarted": "This room has already started the match",
+      "handshakeTimeout": "The game did not connect. Return to the game details and create a new room.",
+      "host": "Host",
+      "ready": "Connected",
+      "notReady": "Connecting",
+      "start": "Start match"
+    },
     "externalGamePage": {
       "updateAppForBrowser": "Update the app to play inside it",
       "uploader": "Uploaded by: {{name}}",

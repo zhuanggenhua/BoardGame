@@ -17,6 +17,7 @@ import { canOpenExternalBrowser, openExternalBrowser } from '../../lib/mobile/ex
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { DetailsPrimaryButton } from '../common/DetailsPrimaryButton';
+import { CreateExternalRoomDialog } from '../external/CreateExternalRoomDialog';
 
 interface ExternalGameDetailsProps {
     gameId: string;
@@ -25,15 +26,17 @@ interface ExternalGameDetailsProps {
     presentation?: 'modal' | 'inline';
 }
 
-/** 外站目录复用原生详情抽屉；开始游玩才进入试玩页，不走建房。 */
+/** 外部游戏详情复用平台抽屉，支持房间的游戏优先展示建房入口。 */
 export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, presentation = 'modal' }: ExternalGameDetailsProps) {
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
     const { user } = useAuth();
     const [tab, setTab] = useState<'about'>('about');
+    const [creatingRoom, setCreatingRoom] = useState(false);
     const game = useQuery({ queryKey: ['external-game', gameId], queryFn: () => getExternalGame(gameId), enabled: Boolean(gameId) });
     const item = game.data;
     const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
+    const supportsRooms = Boolean(item?.roomProtocol && embed?.canEmbed);
     const nativeBrowser = item ? !isSandboxedWebGame(item) && canOpenExternalBrowser(item.url) : false;
     const startPlay = () => {
         const from = `${window.location.pathname}${window.location.search}`;
@@ -48,7 +51,9 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
             : <PlatformGameDetails presentation={presentation} title={item.name} description={<ExternalGameText text={item.description} />}
                 thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
                 onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
-                primaryActions={nativeBrowser
+                primaryActions={supportsRooms
+                    ? <DetailsPrimaryButton data-testid="external-game-create-room" onClick={() => setCreatingRoom(true)}>{t('actions.createRoom')}</DetailsPrimaryButton>
+                    : nativeBrowser
                     ? <DetailsPrimaryButton data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</DetailsPrimaryButton>
                     : embed?.canEmbed
                     ? <DetailsPrimaryButton data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</DetailsPrimaryButton>
@@ -56,6 +61,8 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                     ? <button type="button" onClick={() => requestAndroidNativeUpdateCheck({ interactive: true })}>{t('platform.externalGamePage.updateAppForBrowser')}</button>
                     : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); }}>{t('platform.externalGamePage.start')}</a>}
                 secondaryActions={<>
+                    {supportsRooms && <button type="button" data-testid="external-game-play"
+                        onClick={startPlay}>{t('platform.externalGamePage.start')}</button>}
                     <PlatformFavoriteButton gameId={item.gameId} title={item.name} />
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
@@ -67,5 +74,6 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 <GameRulesDocumentLink document={item.rulesDocument} />
                 {item.rules && <p><ExternalGameText text={item.rules} /></p>}
             </PlatformGameDetails>}
+        {creatingRoom && item && <CreateExternalRoomDialog game={item} onClose={() => setCreatingRoom(false)} />}
     </HomeGameDetailsPresentation>;
 }

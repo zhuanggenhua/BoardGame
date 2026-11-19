@@ -1,0 +1,9 @@
+.external-room-page { display: grid; place-items: start center; }
+.external-room-panel { width: min(100%, 520px); pointer-events: auto; }
+.external-room-panel h2 { font-size: 24px; font-weight: 800; }
+.external-room-panel label { display: grid; gap: 6px; margin: 16px 0; font-weight: 700; }
+.external-room-panel input, .external-room-panel select { min-height: 44px; width: 100%; padding: 8px; border: 2px solid #111; }
+.external-room-panel button:disabled { opacity: .5; cursor: default; }
+.external-room-seats > li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #bbb; overflow-wrap: anywhere; }
+.external-room-preload { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
+.external-room-preload iframe { width: 100%; height: 100%; border: 0; }

@@ -1,6 +1,16 @@
 import { UGC_API_URL } from '../config/server';
 import type { CreatorClaim, ExternalGame, ExternalGameFields, ExternalPlayHistory, GameRulesDocument } from '../shared/externalGames';
 import type { GameSubmissionRecord } from './game-submissions';
+import type { ExternalRoomView } from '../shared/externalRoom';
+
+export class ExternalApiError extends Error {
+    readonly status: number;
+
+    constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+    }
+}
 
 async function request<T>(path: string, options: { token?: string; method?: string; data?: unknown; keepalive?: boolean } = {}): Promise<T> {
     const multipart = options.data instanceof FormData;
@@ -14,11 +24,21 @@ async function request<T>(path: string, options: { token?: string; method?: stri
     const body = await response.json();
     if (!response.ok) {
         const message = Array.isArray(body.message) ? body.message.join('；') : body.message || body.error;
-        throw new Error(typeof message === 'string' ? message : `请求失败（${response.status}）`);
+        throw new ExternalApiError(typeof message === 'string' ? message : `请求失败（${response.status}）`, response.status);
     }
     return body as T;
 }
 const id = (value: string) => encodeURIComponent(value);
+export const createExternalRoom = (token: string, gameId: string, capacity: number) =>
+    request<ExternalRoomView>('/external-rooms', { token, method: 'POST', data: { gameId, capacity } });
+export const joinExternalRoom = (token: string, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { token, method: 'POST' });
+export const readExternalRoom = (token: string, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, { token });
+export const externalRoomAction = (token: string, roomId: string, data: Record<string, unknown>) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/action`, { token, method: 'POST', data, keepalive: data.type === 'ready' });
+export const leaveExternalRoom = (token: string, roomId: string) =>
+    request<{ left: true }>(`/external-rooms/${id(roomId)}`, { token, method: 'DELETE', keepalive: true });
 const upload = (file: File) => { const data = new FormData(); data.append('file', file); return data; };
 export const listExternalGames = () => request<{ items: ExternalGame[] }>('/external-games');
 export const getExternalGame = (gameId: string) => request<ExternalGame>(`/external-games/${id(gameId)}`);

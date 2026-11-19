@@ -2712,6 +2712,20 @@
         "previousRejected": "上次申请未通过{{comment}}。可修改材料后重新提交。"
       }
     },
+    "externalRoom": {
+      "join": "加入房间",
+      "inviteLink": "邀请链接",
+      "copyInvite": "复制邀请链接",
+      "waiting": "等待入座（{{seated}} / {{capacity}}）",
+      "connecting": "已入座，正在建立联机连接",
+      "waitingToStart": "已连接，等待房主开始对局",
+      "alreadyStarted": "此房间已开始对局",
+      "handshakeTimeout": "游戏未连接房间，请返回详情后重新建房。",
+      "host": "房主",
+      "ready": "已连接",
+      "notReady": "等待连接",
+      "start": "开始对局"
+    },
     "externalGamePage": {
       "updateAppForBrowser": "更新 App 后在应用内游玩",
       "uploader": "上传者：{{name}}",

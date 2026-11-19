@@ -110,6 +110,7 @@ const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => im
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const ExternalGamePage = React.lazy(() => import('./pages/ExternalGamePage'));
+const ExternalRoomPage = React.lazy(() => import('./pages/ExternalRoomPage'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
 const CreatorReview = React.lazy(() => import('./pages/admin/CreatorReview'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
@@ -280,6 +281,7 @@ const AppContent = () => {
                       )}
                     />
                     <Route path="/external/:gameId" element={<React.Suspense fallback={playRouteFallback}><ExternalGamePage /></React.Suspense>} />
+                    <Route path="/external/rooms/:roomId" element={<React.Suspense fallback={playRouteFallback}><ExternalRoomPage /></React.Suspense>} />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
