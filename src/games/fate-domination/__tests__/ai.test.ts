@@ -9,7 +9,8 @@ import { engineConfig } from '../game';
 import { buildFateAiLegalActions, chooseFateAiAction, projectFateAiActionOutcome } from '../ai';
 import { FATE_EVENTS, FATE_SERVANT_BY_ID } from '../data';
 import { visibleFatePower } from '../domain/playerView';
-import { isFateChariotChoice } from '../domain/chariotChoice';
+import { FATE_CHARIOT_CHOICE } from '../domain/chariotChoice';
+import { createRespondToPromptCommand, getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 
 const ids = ['0', '1', '2'];
 function match(seed: string) {
@@ -110,11 +111,12 @@ it('领先时用神威车轮淘汰低战果事件，从实际两张候选选高�
     const activation = decide();
     expect(activation).toMatchObject({ type: 'PLAY_SKILL', payload: { targetCardId: 'fuyuki_E11' } });
     game.send(activation.type, '0', activation.payload);
-    expect(isFateChariotChoice(game.state.sys.interaction.current)).toBe(true);
+    expect(getCurrentInteractionSummary(game.state).sourceId).toBe(FATE_CHARIOT_CHOICE);
     const choice = decide();
-    expect(choice).toMatchObject({ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'fuyuki_E4' } });
+    const expectedChoice = createRespondToPromptCommand(game.state, { playerId: '0', optionId: 'fuyuki_E4' });
+    expect(choice).toMatchObject({ type: expectedChoice.type, payload: expectedChoice.payload });
     game.send(choice.type, '0', choice.payload);
-    expect(game.state.sys.interaction.current).toBeUndefined();
+    expect(getCurrentInteractionSummary(game.state).id).toBeUndefined();
     expect(game.state.core.currentEvents.miyama.map(event => event.id)).toEqual(['fuyuki_E4']);
     expect(decide().type).toBe('PASS_ACTION');
 });
