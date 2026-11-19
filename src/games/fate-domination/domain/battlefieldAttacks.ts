@@ -43,7 +43,7 @@ export function fateFieldAttackOpportunities(event: AttacksConfirmedEvent, timin
         { ...base, id: `${id}:frame`, resolution: { type: 'child-frame', frameId: field.frameId, frameKind: FATE_FIELD_ATTACK_CHOICE, phase: 'action', phaseGate: 'block-advance-when-blocked', metadata: field }, metadata: { priority: 100 } },
         { ...base, id, resolution: { type: 'choice-request' }, choice: {
             requestId: id, playerId: player.id, ownerFrameId: field.frameId, kind: 'choose-option',
-            candidates: [{ id: place, label: '放置在战场', value: place }, { id: close, label: '关闭此牌', value: close }],
+            candidates: [{ id: place, label: '放置在战场', labelKey: 'ui.fieldAttackChoice.place', value: place }, { id: close, label: '关闭此牌', labelKey: 'ui.fieldAttackChoice.close', value: close }],
             selection: { min: 1, max: 1 }, skipPolicy: 'forbidden', resolution: { type: 'interaction-response' },
             ai: { status: 'game-policy', policyId: 'baseline', reason: '在自己的战场放置攻击。' }, metadata: field,
         } },

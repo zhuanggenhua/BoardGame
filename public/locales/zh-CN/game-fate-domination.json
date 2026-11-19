@@ -8,6 +8,7 @@
   },
   "round": "回合",
   "ui": {
+    "fieldAttackChoice": {"place":"放置在战场","close":"关闭此牌"},
     "investigationChoice": {"label":"调查手牌","prompt":"点一张牌放回 {{name}} 的牌库顶","empty":"{{name}}没有手牌","card":"放回牌库顶 {{name}}","keep":"保留手牌","done":"完成","target":"调查 {{name}}","chooseTarget":"选择要调查的玩家"},
     "chariotChoice": {"label":"选择神威车轮事件","prompt":"选择一张事件牌放入战场","card":"选择事件 {{name}}"},
     "board": {

@@ -8,6 +8,7 @@
   },
   "round": "Round",
   "ui": {
+    "fieldAttackChoice": {"place":"Place on the battlefield","close":"Close this card"},
     "investigationChoice": {"label":"Investigate hand","prompt":"Choose a card to put on top of {{name}}'s deck","empty":"{{name}} has no cards in hand","card":"Return {{name}} to the top of the deck","keep":"Leave unchanged","done":"Done","target":"Investigate {{name}}","chooseTarget":"Choose a player to investigate"},
     "chariotChoice": {"label":"Choose Gordius Wheel event","prompt":"Choose an event for the battlefield","card":"Choose event {{name}}"},
     "board": {
