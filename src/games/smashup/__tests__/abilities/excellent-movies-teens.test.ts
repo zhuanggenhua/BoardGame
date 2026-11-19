@@ -1,5 +1,5 @@
 import { resolveSmashUpHandPromptUiMode } from '../../ui/interactionMode';
-import { refreshInteractionOptions, stripNonSerializableFromData } from '../../../../engine/systems/InteractionSystem';
+import { refreshInteractionOptions } from '../../../../engine/systems/InteractionSystem';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { postProcessSystemEvents } from '../../domain';
@@ -10,6 +10,9 @@ import { getCardActivatableAbilities } from '../../domain/activationMetadata';
 import {
     applyEvents,
     expectRegisteredAbilityContract,
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptSourceId,
     getPromptOption,
     getPromptOptions,
     getOptionalSimpleChoicePrompt,
@@ -593,14 +596,9 @@ describe('动作英雄代表性玩法行为', () => {
             'skip',
         ]);
 
-        const actionPrompt = chosen.finalState.sys.interaction.current!;
-        const serializedActionState = { ...chosen.finalState, sys: { ...chosen.finalState.sys,
-            interaction: { ...chosen.finalState.sys.interaction, current: { ...actionPrompt,
-                data: stripNonSerializableFromData(actionPrompt.data) as typeof actionPrompt.data,
-            } },
-        } };
+        const serializedActionState = JSON.parse(JSON.stringify(chosen.finalState));
         const refreshedAction = refreshInteractionOptions(serializedActionState);
-        expect(getPromptOptions(refreshedAction.sys.interaction.current).some(option => option.value?.cardUid === 'stored-action')).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(refreshedAction)).some(option => option.value?.cardUid === 'stored-action')).toBe(true);
 
         const selectedStored = respondToPromptOption(
             chosen.finalState,
@@ -3105,20 +3103,15 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         expect(getPromptOptions(extraPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined)))
             .toEqual(['stored-minion', 'skip']);
         // 在线传输会移除候选生成函数，刷新后仍须保留暂存区的合法牌。
-        const livePrompt = destroyed.finalState.sys.interaction.current!;
-        const serializedState = { ...destroyed.finalState, sys: { ...destroyed.finalState.sys,
-            interaction: { ...destroyed.finalState.sys.interaction, current: { ...livePrompt,
-                data: stripNonSerializableFromData(livePrompt.data) as typeof livePrompt.data,
-            } },
-        } };
+        const serializedState = JSON.parse(JSON.stringify(destroyed.finalState));
         const refreshed = refreshInteractionOptions(serializedState);
-        expect(getPromptOptions(refreshed.sys.interaction.current).some(option => option.value?.cardUid === 'stored-minion')).toBe(true);
-        expect(resolveSmashUpHandPromptUiMode({ currentPrompt: { ...refreshed.sys.interaction.current!.data, playerId: '0' } as any, playerID: '0', targetType: 'hand', hand: refreshed.core.players['0'].hand })).toBe('overlay');
+        expect(getPromptOptions(getFirstPrompt(refreshed)).some(option => option.value?.cardUid === 'stored-minion')).toBe(true);
+        expect(resolveSmashUpHandPromptUiMode({ currentPrompt: { ...getPromptHandlerData(getFirstPrompt(refreshed)), playerId: '0' } as any, playerID: '0', targetType: 'hand', hand: refreshed.core.players['0'].hand })).toBe('overlay');
         const staleServerState = { ...destroyed.finalState, core: { ...destroyed.finalState.core, players: { ...destroyed.finalState.core.players,
             '0': { ...destroyed.finalState.core.players['0'], storedCards: [] },
         } } };
         const staleServerOptions = refreshInteractionOptions(staleServerState);
-        expect(getPromptOptions(staleServerOptions.sys.interaction.current).some(option => option.value?.cardUid === 'stored-minion')).toBe(false);
+        expect(getPromptOptions(getFirstPrompt(staleServerOptions)).some(option => option.value?.cardUid === 'stored-minion')).toBe(false);
         const selected = respondToPromptOption(destroyed.finalState,
             option => option.value?.cardUid === 'stored-minion', '选择暂存随从', '0', FIXED_RANDOM);
         expect(selected.success, selected.error).toBe(true);
@@ -3127,8 +3120,8 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         expect(placement.success, placement.error).toBe(true);
         expect(placement.finalState.core.bases[0].minions.some(minion => minion.uid === 'stored-minion')).toBe(true);
         expect((placement.finalState.core.players['0'].storedCards ?? []).some(card => card.uid === 'stored-minion')).toBe(false);
-        expect(placement.finalState.sys.interaction?.current?.data?.sourceId).not.toBe('smashup_immediate_extra_minion');
-        expect((placement.finalState.sys.interaction?.queue ?? []).some(prompt => prompt.data?.sourceId === 'smashup_immediate_extra_minion')).toBe(false);
+        expect(getPromptSourceId(getFirstPrompt(placement.finalState))).not.toBe('smashup_immediate_extra_minion');
+        expect(getPromptsBySourceId(placement.finalState, 'smashup_immediate_extra_minion').length > 0).toBe(false);
     });
 
     it('已归约的恶魔犬摧毁事件仍能恢复暂存随从的额外出牌机会', () => {

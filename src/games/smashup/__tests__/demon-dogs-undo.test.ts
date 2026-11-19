@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine/pipeline';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SmashUpDomain, smashUpSystemsForTest } from '../game';
-import { makeBase, makeCard, makeMinion, makePlayer, makeState } from './helpers';
+import { getFirstPrompt, getPromptOptions, getPromptSourceId, respondToPromptOption, makeBase, makeCard, makeMinion, makePlayer, makeState } from './helpers';
 
 it('恶魔犬被摧毁后撤回，再次摧毁仍能打出暂存的随从', () => {
     resetAbilityInit();
@@ -41,16 +41,14 @@ it('恶魔犬被摧毁后撤回，再次摧毁仍能打出暂存的随从', () =
         state = result.state;
     };
     const choose = (predicate: (option: any) => boolean) => {
-        const prompt = state.sys.interaction.current;
-        expect(prompt).toBeTruthy();
-        const option = prompt.data.options.find(predicate);
-        expect(option).toBeTruthy();
-        send('SYS_INTERACTION_RESPOND', { optionId: option.id });
+        const result = respondToPromptOption(state, predicate, '选择候选', '0', random);
+        expect(result.success, result.error).toBe(true);
+        state = result.finalState;
     };
     const destroy = () => {
         send('su:use_talent', { ongoingCardUid: 'accelerator', baseIndex: 0 });
         choose(option => option.value?.cardUid === 'dogs');
-        expect(state.sys.interaction.current.data.options.some((option: any) => option.value?.cardUid === 'stored')).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(state)).some((option: any) => option.value?.cardUid === 'stored')).toBe(true);
     };
 
     destroy();
@@ -59,7 +57,7 @@ it('恶魔犬被摧毁后撤回，再次摧毁仍能打出暂存的随从', () =
     expect(state.core.players['0'].storedCards).toHaveLength(1);
     destroy();
     choose(option => option.value?.cardUid === 'stored');
-    expect(state.sys.interaction.current?.data?.sourceId).toBe('smashup_immediate_extra_minion_base');
+    expect(getPromptSourceId(getFirstPrompt(state))).toBe('smashup_immediate_extra_minion_base');
     // 覆盖选牌后、选择基地前撤回，再尝试完整出牌。
     send('SYS_REQUEST_UNDO');
     expect(state.core.bases[0].ongoingActions.some((action: any) => action.uid === 'dogs')).toBe(true);
@@ -68,7 +66,7 @@ it('恶魔犬被摧毁后撤回，再次摧毁仍能打出暂存的随从', () =
     choose(option => option.value?.cardUid === 'stored');
     choose(option => option.value?.baseIndex === 0);
     expect(state.core.bases[0].minions.some((minion: any) => minion.uid === 'stored')).toBe(true);
-    expect(state.sys.interaction?.current?.data?.sourceId).not.toBe('smashup_immediate_extra_minion');
+    expect(getPromptSourceId(getFirstPrompt(state))).not.toBe('smashup_immediate_extra_minion');
 
     // 出牌完成后再次撤回，也应还原恶魔犬和其下的牌。
     send('SYS_REQUEST_UNDO');

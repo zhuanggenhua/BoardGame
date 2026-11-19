@@ -121,7 +121,6 @@ describe('End 阶段印戒胜利条件检测', () => {
         // 规则要求相同印戒数时继续遭遇。
         expect(result).toBeUndefined();
         
-        console.log('✅ 测试通过：双方印戒相同时继续游戏');
     });
     
     it('play 阶段不提前判定印戒胜利', () => {
@@ -174,6 +173,5 @@ describe('End 阶段印戒胜利条件检测', () => {
         // 印戒胜利在回合结束时判定。
         expect(result).toBeUndefined();
         
-        console.log('✅ 测试通过：play 阶段不会提前判定印戒胜利');
     });
 });

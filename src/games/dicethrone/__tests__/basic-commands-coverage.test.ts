@@ -1,3 +1,4 @@
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 /**
  * DiceThrone 基础命令覆盖测试
  *
@@ -6417,12 +6418,12 @@ it('三人奖励骰期间选定对手后，必须先完成改骰再恢复奖励�
     send('PLAY_CARD', '2', { cardId: 'card-give-hand' });
     const selected = send('RESOLVE_INTERACTION', '2', { selectedPlayerIds: ['0'] });
     expect(selected.events.some(event => event.type === 'BONUS_DICE_SETTLED')).toBe(false);
-    expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+    expect(getCurrentInteractionSummary(state).kind).toBe('multistep-choice');
     expect(state.sys.interaction.queue[0]?.kind).toBe('dt:bonus-dice');
     send('REROLL_DIE', '2', { dieId: 0 });
     send('SYS_INTERACTION_CONFIRM', '2', {});
-    expect(state.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+    expect(getCurrentInteractionSummary(state).kind).toBe('dt:bonus-dice');
     const settled = send('SKIP_BONUS_DICE_REROLL', '0', {});
     expect(settled.events.filter(event => event.type === 'BONUS_DICE_SETTLED')).toHaveLength(1);
-    expect(state.sys.interaction.current?.kind).not.toBe('multistep-choice');
+    expect(getCurrentInteractionSummary(state).kind).not.toBe('multistep-choice');
 });

@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine/pipeline';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SmashUpDomain, smashUpSystemsForTest } from '../game';
-import { makeBase, makeCard, makeMinion, makePlayer, makeState } from './helpers';
+import { getFirstPrompt, getPromptOptions, getPromptSourceId, respondToPromptOption, makeBase, makeCard, makeMinion, makePlayer, makeState } from './helpers';
 
 it.each(['wraithrustlers_demon_dogs', 'wraithrustlers_ellen'])('恶魔犬与艾伦同时触发，先结算 %s 时仍能打出暂存牌', (firstTrigger) => {
     resetAbilityInit();
@@ -41,23 +41,21 @@ it.each(['wraithrustlers_demon_dogs', 'wraithrustlers_ellen'])('恶魔犬与艾�
         state = result.state;
     };
     const choose = (predicate: (option: any) => boolean) => {
-        const prompt = state.sys.interaction.current;
-        expect(prompt).toBeTruthy();
-        const option = prompt.data.options.find(predicate);
-        expect(option).toBeTruthy();
-        send('SYS_INTERACTION_RESPOND', { optionId: option.id });
+        const result = respondToPromptOption(state, predicate, '选择候选', '0', random);
+        expect(result.success, result.error).toBe(true);
+        state = result.finalState;
     };
     const destroy = () => {
         send('su:use_talent', { ongoingCardUid: 'accelerator', baseIndex: 0 });
         choose(option => option.value?.cardUid === 'dogs');
-        expect(state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(getPromptSourceId(getFirstPrompt(state))).toBe('smashup_reaction_choose');
     };
 
     destroy();
     choose(option => String(option.value?.triggerId).includes(firstTrigger));
-    expect(state.sys.interaction.current?.data?.sourceId).toBe('smashup_immediate_extra_minion');
+    expect(getPromptSourceId(getFirstPrompt(state))).toBe('smashup_immediate_extra_minion');
     choose(option => option.value?.cardUid === 'stored');
     choose(option => option.value?.baseIndex === 0);
     expect(state.core.bases[0].minions.some((minion: any) => minion.uid === 'stored')).toBe(true);
-    expect(state.sys.interaction?.current?.data?.sourceId).not.toBe('smashup_immediate_extra_minion');
+    expect(getPromptSourceId(getFirstPrompt(state))).not.toBe('smashup_immediate_extra_minion');
 });
