@@ -882,7 +882,6 @@ export const HandArea = ({
         onMagnifyCard,
         onPlayCard,
         shouldBlockLongPressClick,
-        t,
     ]);
 
     React.useEffect(() => {
