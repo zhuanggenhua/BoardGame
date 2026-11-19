@@ -16,6 +16,7 @@
 .platform-upload-cover-section { grid-area: cover; }
 .platform-upload-content-section { grid-area: content; padding-top: 24px; border-top: 1px solid #ddd; }
 .platform-upload-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.platform-upload-source-field { grid-column: 1 / -1; }
 .platform-upload-game-meta { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; align-items: start; }
 .platform-upload-fields .platform-upload-published { grid-area: published; flex-direction: row; align-items: center; }
 .platform-upload-form > fieldset { padding: 0; border: 0; min-width: 0; }
@@ -32,6 +33,13 @@
 .platform-submission-form .platform-upload-fields { margin: 0; }
 .platform-submission-form .platform-upload-fields label { font-size: 14px; line-height: 22px; font-weight: 600; }
 .platform-submission-form .platform-upload-fields :is(input, textarea, select) { min-height: 44px; border: 1px solid #888; padding: 10px 12px; font-size: 14px; line-height: 22px; }
+.platform-submission-form .platform-upload-type { margin: 0; padding: 0; border: 0; }
+.platform-upload-type legend { margin-bottom: 8px; padding: 0; font-size: 14px; line-height: 22px; font-weight: 600; }
+.platform-upload-type-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.platform-submission-form .platform-upload-type-options label { flex-direction: row; align-items: center; min-height: 44px; padding: 8px 10px; border: 1px solid #888; cursor: pointer; overflow-wrap: anywhere; }
+.platform-submission-form .platform-upload-type-options label:has(:checked) { border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; }
+.platform-submission-form .platform-upload-type-options label:has(:disabled) { cursor: default; }
+.platform-submission-form .platform-upload-type-options input[type="radio"] { appearance: auto; flex: 0 0 auto; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: #ff008a; }
 .platform-submission-form .platform-upload-fields textarea { min-height: 160px; }
 .platform-upload-content-section .platform-upload-input-grid { align-items: stretch; }
 .platform-upload-content-section .platform-upload-input-grid > label > textarea { flex: 1; }

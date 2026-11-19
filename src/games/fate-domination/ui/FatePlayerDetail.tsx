@@ -62,14 +62,11 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
                     <button type="button" className="fd-detail-art" aria-label={view.servantVisible ? t('ui.playerDetail.inspectServant') : t('ui.playerDetail.servantNotRevealed')} onClick={() => view.servant && onInspect(view.servant.assetPath, view.servant.name)}>
                         <OptimizedImage src={view.servant?.assetPath ?? servantBack} alt={view.servant?.name ?? t('ui.playerDetail.unrevealedServantBack')}/>
                     </button>
-                    <div className="fd-player-detail-ability">
+                    {view.player.commandSpells > 0 && (
                         <div className="fd-detail-seals" aria-label={t('ui.playerDetail.remainingSeals', { count: view.player.commandSpells })}>
                             {Array.from({ length: view.player.commandSpells }, (_, index) => <CardPreview key={index} previewRef={sealPreview} alt={t('ui.playerDetail.commandSealAlt')} className="fd-detail-seal-card" style={{ position: 'absolute', left: index * 28, top: (view.player.commandSpells - 1 - index) * 4, zIndex: view.player.commandSpells - index }}/>)}
                         </div>
-                <section className="fd-detail-ability-copy" aria-label={t('ui.playerDetail.masterAbilityDescription')}>
-                    {view.master?.skills?.map(ability => <p key={ability.id}><strong>{ability.name}</strong> {ability.desc}</p>)}
-                </section>
-                    </div>
+                    )}
                 </div>
                 <section className="fd-player-detail-skills" aria-label={t('ui.playerDetail.servantSkills')}>
                     {visibleSkills.map((card, index) => <button key={`${card.name}-${index}`} type="button" className="fd-detail-art" aria-label={t('ui.playerDetail.inspectCard', { name: card.name })} disabled={card.assetPath === skillBack} onClick={() => onInspect(card.assetPath, card.name)}>

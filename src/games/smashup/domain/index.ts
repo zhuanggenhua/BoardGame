@@ -4381,6 +4381,13 @@ registerSmashUpReactionPostProcessor(postProcessSystemEvents);
 // ============================================================================
 
 export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent> = {
+    getAfterEventsProgressKeys: (initialState, events) => events.flatMap(event => {
+        if (event.type !== SU_EVENTS.BASE_SCORED) return [];
+        const index = (event as BaseScoredEvent).payload.baseIndex;
+        return Number.isInteger(index) && index >= 0 && index < initialState.core.bases.length
+            ? [`scored-base-slot:${index}`]
+            : [];
+    }),
     gameId: 'smashup',
     setup,
     normalizeRuntimeState: normalizeLegacySmashUpMatchState,

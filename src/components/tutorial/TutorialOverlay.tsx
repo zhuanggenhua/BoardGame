@@ -1084,11 +1084,11 @@ export const TutorialOverlay: React.FC = () => {
             data-testid="tutorial-anchor-arrow" aria-hidden="true"
             className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
           >
-            <polygon points={tooltipStyles.anchorArrowPoints} fill="#fcfbf9" stroke="#c9b995" strokeWidth={1.5} />
+            <polygon data-tutorial-overlay-arrow points={tooltipStyles.anchorArrowPoints} fill="#fcfbf9" stroke="#c9b995" strokeWidth={1.5} />
           </svg>
         )}
         {currentStep.tooltipArrow !== 'anchor' && (
-          <div className={`absolute w-0 h-0 border-solid ${tooltipStyles.arrowClass}`} />
+          <div data-tutorial-overlay-arrow className={`absolute w-0 h-0 border-solid ${tooltipStyles.arrowClass}`} />
         )}
 
         {/* 内容卡片 */}

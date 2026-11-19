@@ -288,7 +288,10 @@ export function resolveMageWarsSpellCost(
     const spell = getMageWarsSpellCardFromConfig(spellCardId);
     if (!spell) return undefined;
 
-    const baseManaCost = typeof spell.manaCost === 'number' ? spell.manaCost : payloadManaCost;
+    const splitCost = resolveMageWarsManaFailureCosts(spell);
+    const baseManaCost = splitCost
+        ? context?.timing === 'reveal' ? splitCost.reveal : splitCost.cast
+        : typeof spell.manaCost === 'number' ? spell.manaCost : payloadManaCost;
     const costReductionSource = context?.core && context.playerId !== undefined
         && context.allowEquipmentReduction !== false
         ? resolveMageWarsEquipmentSpellCostReductionSource(
@@ -905,6 +908,15 @@ export function isMageWarsTargetSpellCounterResponseCardId(
     value: unknown,
 ): value is MageWarsTargetSpellCounterResponseCardId {
     return value === MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.TARGET_SPELL_COUNTER;
+}
+
+export function resolveMageWarsManaFailureCosts(
+    spell: Pick<MageWarsConfigSpellCard, 'spellCardId' | 'rawCost'>,
+): { cast: number; reveal: number } | undefined {
+    if (!isMageWarsTargetSpellCounterResponseCardId(spell.spellCardId)) return undefined;
+    const costs = /^(\d+)\s*\+\s*(\d+)$/.exec(spell.rawCost ?? '');
+    if (!costs) throw new Error('Mage Wars Mana Failure requires a cast and reveal cost');
+    return { cast: Number(costs[1]), reveal: Number(costs[2]) };
 }
 
 export function isMageWarsTargetSpellTeleportResponseCardId(

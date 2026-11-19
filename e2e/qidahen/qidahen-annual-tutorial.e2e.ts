@@ -1,4 +1,4 @@
-import { verifyQidahenMapCandidateRecovery } from './mapCandidateRecovery';
+import { assertTrainingPanelClearsCandidateOutlines, verifyQidahenMapCandidateRecovery } from './mapCandidateRecovery';
 import { dragQidahenMap } from './mapPointer';
 import { trackQidahenBlobUrls } from './blobUrlDiagnostics';
 import { createHash } from 'node:crypto';
@@ -477,6 +477,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 });
                 await expect(page.getByTestId('qidahen-draw-anchor')).toBeVisible();
                 await expect(page.getByTestId('qidahen-discard-anchor')).toBeVisible();
+                await expect(page.getByTestId(/^qidahen-unit-level-/), '地图等级只由棋子牌面表达').toHaveCount(0);
                 if (viewport.name === 'desktop' && (id === 'farm-target' || id === 'dispatch-troops')) {
                     const callouts = await page.evaluate(() => Array.from(document.querySelectorAll('[data-testid^="qidahen-army-callout-"], [data-testid^="qidahen-population-callout-"]'))
                         .map(node => ({ id: node.getAttribute('data-testid'), path: node.getAttribute('d'), bounds: node.getBoundingClientRect().toJSON() })));
@@ -760,6 +761,9 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     await expect(target).toBeVisible();
                     await expect(target).toHaveAttribute('data-pending-committed-selectable', 'true');
                     await expect(page.locator('[data-testid^="qidahen-wheel-recruit-train-choice-train"]')).toHaveCount(0);
+                }
+                if (viewport.name === 'desktop' && (id === 'training-target' || id === 'training-second-target')) {
+                    await assertTrainingPanelClearsCandidateOutlines(page);
                 }
                 if (id === 'training-recruit-target') {
                     await expect(page.locator('[data-qidahen-map-selection-space="city-region-15-liaodong"]')).toBeVisible();
@@ -1105,7 +1109,10 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                             await page.mouse.move(10, 10);
                             const shell = page.getByTestId('qidahen-hand-card-shell-hand-3');
                             const atRest = (await shell.boundingBox())!;
-                            await page.getByTestId('qidahen-hand-card-magnify-hand-3').hover();
+                            const inspectButton = page.getByTestId('qidahen-hand-card-magnify-hand-3');
+                            await expect(inspectButton).toHaveCSS('opacity', '0');
+                            await page.getByTestId('qidahen-hand-card-hand-3').hover();
+                            await expect(inspectButton).toHaveCSS('opacity', '1');
                             await expect.poll(async () => (await shell.boundingBox())!.y, { timeout: 5_000 }).toBeLessThan(atRest.y - atRest.height * 0.4);
                             await expect.poll(async () => { const raised = (await shell.boundingBox())!; return raised.y + raised.height; },
                                 { timeout: 5_000 }).toBeLessThanOrEqual(viewport.height + 1);
@@ -1205,23 +1212,18 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toBeVisible();
                         await expect(page.getByTestId('qidahen-battle-roll-context')).toBeVisible();
                         await expect(page.getByTestId('qidahen-battle-roll-context')).toHaveText('辽北 → 叶赫部');
-                        const battleLayout = await page.evaluate(() => {
-                            const map = document.querySelector('[data-testid="qidahen-map-content"]')!.getBoundingClientRect();
-                            const dice = document.querySelector('[data-testid="qidahen-battle-roll-overlay"]')!.getBoundingClientRect();
-                            const ids = new Set([...document.querySelectorAll('[data-qidahen-battle-region-space]')].map(node => node.getAttribute('data-qidahen-battle-region-space')));
-                            const regions = [...document.querySelectorAll('[data-qidahen-map-token-region]')]
-                                .filter(node => ids.has(node.getAttribute('data-qidahen-map-token-region'))).map(node => node.getBoundingClientRect());
-                            const field = { left: Math.min(...regions.map(rect => rect.left)), top: Math.min(...regions.map(rect => rect.top)),
-                                right: Math.max(...regions.map(rect => rect.right)), bottom: Math.max(...regions.map(rect => rect.bottom)) };
-                            return { map: { left: map.left, top: map.top, right: map.right, bottom: map.bottom },
-                                distance: Math.hypot(Math.max(field.left - dice.right, dice.left - field.right, 0),
-                                    Math.max(field.top - dice.bottom, dice.top - field.bottom, 0)), width: innerWidth, height: innerHeight };
-                        });
-                        expect(battleLayout.map.left, 'battle map covers west edge').toBeLessThanOrEqual(1);
-                        expect(battleLayout.map.top, 'battle map covers north edge').toBeLessThanOrEqual(1);
-                        expect(battleLayout.map.right).toBeGreaterThanOrEqual(battleLayout.width - 1);
-                        expect(battleLayout.map.bottom).toBeGreaterThanOrEqual(battleLayout.height - 1);
-                        expect(battleLayout.distance, 'dice stay next to the actual battlefield').toBeLessThanOrEqual(24);
+                        const arena = page.getByTestId('qidahen-battle-arena');
+                        await expect(arena).toBeVisible();
+                        const [panel, attackerSlot, defenderSlot] = await Promise.all(['qidahen-battle-roll-overlay', 'qidahen-battle-side-attacker', 'qidahen-battle-side-defender']
+                            .map(id => arena.getByTestId(id).boundingBox()));
+                        expect(panel).not.toBeNull();
+                        expect(attackerSlot).not.toBeNull();
+                        expect(defenderSlot).not.toBeNull();
+                        expect(attackerSlot!.x + attackerSlot!.width, 'attack and defence have distinct sides even during a one-sided roll').toBeLessThan(defenderSlot!.x);
+                        expect(panel!.x).toBeGreaterThanOrEqual(0);
+                        expect(panel!.y).toBeGreaterThanOrEqual(0);
+                        expect(panel!.x + panel!.width).toBeLessThanOrEqual(viewport.width + 1);
+                        expect(panel!.y + panel!.height).toBeLessThanOrEqual(viewport.height + 1);
                         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toBeHidden({ timeout: 90_000 });
                         const recording = await finishBattleRecording!();
                         for (const picture of recording.pictures) trace.uiStates.push({ ...picture, stepId: behaviorInstance, tutorialStepId: step.id, change: 'animation-phase', viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(picture.path)).digest('hex') });

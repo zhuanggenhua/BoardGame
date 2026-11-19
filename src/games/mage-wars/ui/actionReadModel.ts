@@ -14,7 +14,7 @@ export type MageWarsArenaObjectActionableOptions = {
     canAct: boolean;
     activePlayerId: PlayerId | undefined;
     phase: string;
-    objectAbilitySourceIds?: ReadonlySet<string>;
+    objectActionSourceIds?: ReadonlySet<string>;
     targetingBusy?: boolean;
     activeCreatureObjectId?: string | null;
 };
@@ -68,7 +68,7 @@ export function isMageWarsArenaObjectActionable(
 ): object is MageWarsArenaObjectState {
     if (!object) return false;
     if (options.targetingBusy) return false;
-    if (options.objectAbilitySourceIds?.has(object.id)) return true;
+    if (options.objectActionSourceIds?.has(object.id)) return true;
     const canCastBoundSpell = Boolean(canMageWarsObjectCastBoundSpell(object, options));
     if (canCastBoundSpell) return true;
     if (options.activeCreatureObjectId !== undefined && options.activeCreatureObjectId !== object.id) return false;

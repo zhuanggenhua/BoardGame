@@ -308,6 +308,14 @@ function continueAfterPrompt(
     const baseContext = stripChoiceContext(context, state, timestamp);
     const purpose = baseContext.purpose;
 
+    // 爆弹哥布林的正反面选择已完成掷币效果，不应再次进入 post-coin。
+    if (purpose.kind === 'blaster' && (
+        context.choiceKind === 'blaster_heads_confirm'
+        || context.choiceKind === 'blaster_tails_destination'
+    )) {
+        return { events, matchState: state };
+    }
+
     if (purpose.kind === 'demolition' && (
         context.choiceKind === 'demolition_counter_target'
         || context.choiceKind === 'demolition_destroy_action'

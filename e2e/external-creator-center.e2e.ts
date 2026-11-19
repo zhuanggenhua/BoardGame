@@ -85,6 +85,7 @@ for (const mobile of [false, true]) {
             await page.getByRole('button', { name: '＋ 投稿游戏' }).click();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
             await capture(page, `${tag}-投稿表单上部`);
+            await page.getByRole('radio', { name: '游戏链接', exact: true }).check();
             await page.getByLabel('游戏名称', { exact: true }).fill(title);
             await page.getByLabel('游戏链接', { exact: true }).fill('https://game.example.com/');
             await page.getByLabel('作者', { exact: true }).fill('测试作者');

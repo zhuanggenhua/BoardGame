@@ -5287,6 +5287,14 @@
         "printCode": "MW1J04",
         "rawCost": "8",
         "manaCost": 8,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        },
         "spellcastingSource": {
           "abilityId": "mw.source.2212.spawn-point",
           "kind": "spawn-point",
@@ -5339,7 +5347,8 @@
         "spellActionSpeed": "quick",
         "typeLine": "魔物 / 再生点、传送门",
         "schoolLine": "自然",
-        "targetRule": "0-1` / 区域",
+        "range": "0-1",
+        "targetRule": "区域",
         "attackOrTraitLine": "非活体；精神免疫；无法移动；聚魔4",
         "sourceContract": "docs/games/mage-wars/rule/familiar-spellcasting-card-contract.md",
         "contractStatus": "locked",
@@ -5365,6 +5374,14 @@
             "动物"
           ],
           "channeling": 4
+        },
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
         },
         "standardStartingRulesName": "巢穴",
         "standardStartingMageIds": [

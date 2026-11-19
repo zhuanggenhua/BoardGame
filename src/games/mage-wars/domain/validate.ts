@@ -25,7 +25,7 @@ import {
     resolveMageWarsMageSpellCastMode,
 } from './spellCasting';
 import {
-    getMageWarsPlayerSpellbookCopyCount,
+    getMageWarsAvailableSpellbookCopyCount,
     hasMageWarsPlayerSpellbookCard,
 } from './spellbook';
 import { validateMageWarsArenaObjectAbility } from './objectAbilityRuntime';
@@ -101,6 +101,7 @@ import {
     resolveMageWarsSpellCastChoiceFamily,
     resolveMageWarsSleepSpellManaCostForTarget,
     resolveMageWarsSpellCost,
+    resolveMageWarsManaFailureCosts,
     resolveMageWarsSpellRawCostTotal,
     resolveMageWarsSpellTargetZoneId,
     resolveMageWarsForcePushExtraManaCost,
@@ -151,16 +152,12 @@ function hasSpellbookCard(player: MageWarsPlayerState, spellCardId: number): boo
     return hasMageWarsPlayerSpellbookCard(player, spellCardId);
 }
 
-function getSpellbookCardCopyCount(player: MageWarsPlayerState, spellCardId: number): number {
-    return getMageWarsPlayerSpellbookCopyCount(player, spellCardId);
-}
-
-function exceedsSpellbookCopyCount(player: MageWarsPlayerState, spellCardIds: readonly number[]): boolean {
+function exceedsSpellbookCopyCount(core: MageWarsCore, playerId: string, spellCardIds: readonly number[]): boolean {
     const selectedCounts = new Map<number, number>();
     for (const spellCardId of spellCardIds) {
         const selectedCount = (selectedCounts.get(spellCardId) ?? 0) + 1;
         selectedCounts.set(spellCardId, selectedCount);
-        if (selectedCount > getSpellbookCardCopyCount(player, spellCardId)) {
+        if (selectedCount > getMageWarsAvailableSpellbookCopyCount(core, playerId, spellCardId, { replaceMagePlan: true })) {
             return true;
         }
     }
@@ -1067,7 +1064,9 @@ function validateMageWarsHiddenResponseEnchantmentSpellCast(ctx: MageWarsSpellCa
     if (!isMageWarsTargetInSpellRange(state.core, rangePlayer, costResolution.spell, targetZoneId)) {
         return invalid('targetOutOfRange');
     }
-    const enchantmentManaCost = resolveMageWarsSpellRawCostTotal(costResolution.spell);
+    const enchantmentManaCost = resolveMageWarsManaFailureCosts(costResolution.spell)
+        ? costResolution.manaCost
+        : resolveMageWarsSpellRawCostTotal(costResolution.spell);
     if (enchantmentManaCost === undefined) return invalid('missingEnchantmentManaCost');
     if (command.payload.manaCost !== enchantmentManaCost) return invalid('manaCostMismatch');
     if (player.mana < enchantmentManaCost) return invalid('insufficientMana');
@@ -1130,6 +1129,10 @@ function validateMageWarsSelfEquipmentSpellCast(ctx: MageWarsSpellCastValidation
         )
     ) {
         return invalid('invalidBoundSpell');
+    }
+    if (command.payload.boundSpellCardId !== undefined
+        && getMageWarsAvailableSpellbookCopyCount(state.core, player.id, command.payload.boundSpellCardId) === 0) {
+        return invalid('tooManyPreparedSpellCopies');
     }
     if (!isMageWarsTargetInSpellRange(state.core, rangePlayer, costResolution.spell, rangePlayer.mageZoneId)) {
         return invalid('targetOutOfRange');
@@ -1386,7 +1389,7 @@ export function validateCommand(
             if (!spellCardIds.every((spellCardId) => hasSpellbookCard(player, spellCardId))) {
                 return invalid('spellNotInPresetSpellbook');
             }
-            if (exceedsSpellbookCopyCount(player, spellCardIds)) return invalid('tooManyPreparedSpellCopies');
+            if (exceedsSpellbookCopyCount(state.core, player.id, spellCardIds)) return invalid('tooManyPreparedSpellCopies');
             return { valid: true };
         }
 
@@ -1401,6 +1404,9 @@ export function validateCommand(
             }
             if (object.preparedSpellCardId !== undefined) return invalid('objectSpellAlreadyPlanned');
             if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInPresetSpellbook');
+            if (getMageWarsAvailableSpellbookCopyCount(state.core, player.id, command.payload.spellCardId) === 0) {
+                return invalid('tooManyPreparedSpellCopies');
+            }
             const spell = getMageWarsSpellCardFromConfig(command.payload.spellCardId);
             const source = object.spellcastingSource;
             if (!source) return invalid('objectCannotCastSpells');

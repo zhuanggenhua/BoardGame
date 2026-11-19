@@ -1808,6 +1808,7 @@ export function processMoveTriggers(
             : undefined;
         const advancedCore = reduceMinionMovedEvent(coreBeforeMove, me);
         const advancedMatchState = { ...stateBeforeMove, core: advancedCore };
+        const triggerMinion = advancedCore.bases[toBaseIndex]?.minions.find(minion => minion.uid === minionUid);
         const sourceEventId = `minion-moved:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
         const frameId = `minion-moved-frame:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
 
@@ -1823,6 +1824,7 @@ export function processMoveTriggers(
             moveToBaseIndex: toBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
+            triggerMinion,
             simultaneousMoveBatchMinionUids,
             random,
             now,
@@ -1842,6 +1844,7 @@ export function processMoveTriggers(
                 moveToBaseIndex: toBaseIndex,
                 triggerMinionUid: minionUid,
                 triggerMinionDefId: minionDefId,
+                triggerMinion,
                 simultaneousMoveBatchMinionUids,
                 random,
                 now,

@@ -23,6 +23,7 @@ import { normalizeQidahenRegionMaskSaveScope } from './src/games/qidahen/regionM
 import { loadDevRuntimePorts } from './scripts/infra/dev-port-runtime.js'
 import { readyCheckPlugin } from './vite-plugins/ready-check.ts'
 import { e2eSourceIdentityPlugin } from './vite-plugins/e2e-source-identity.mjs'
+import { preloadRecoveryBootstrapPlugin } from './vite-plugins/preload-recovery-bootstrap.mjs'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
 const packageJson = JSON.parse(fs.readFileSync(path.resolve(configDir, 'package.json'), 'utf-8')) as {
@@ -708,6 +709,7 @@ export default defineConfig(({ mode }) => {
       'globalThis.__APP_RELEASE_CHANNEL__': JSON.stringify(appReleaseChannel),
     },
     plugins: [
+      preloadRecoveryBootstrapPlugin(),
       e2eSourceIdentityPlugin(Boolean(process.env.PW_RUNTIME_SCOPE || process.env.PW_E2E_SESSION_ID)),
       {
         name: 'suppress-public-dir-warning',

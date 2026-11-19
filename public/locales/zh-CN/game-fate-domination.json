@@ -8,7 +8,7 @@
   },
   "round": "回合",
   "ui": {
-    "investigationChoice": {"label":"调查手牌","prompt":"{{name}}的手牌：放回牌库顶，下回合不能调查","empty":"{{name}}没有手牌","card":"放回牌库顶 {{name}}","keep":"保留手牌","done":"完成","target":"调查 {{name}}","chooseTarget":"选择要调查的玩家","choosingCard":"调查中"},
+    "investigationChoice": {"label":"调查手牌","prompt":"可将 {{name}} 的一张手牌放回其牌库顶。若放回，下回合不能调查。","empty":"{{name}}没有手牌","card":"放回牌库顶 {{name}}","keep":"保留手牌","done":"完成","target":"调查 {{name}}","chooseTarget":"选择要调查的玩家","choosingCard":"调查中"},
     "chariotChoice": {"label":"选择神威车轮事件","prompt":"选择一张事件牌放入战场","card":"选择事件 {{name}}"},
     "board": {
       "cancelDeployment": "取消部署",
@@ -130,7 +130,9 @@
       "viewFront": "查看正面"
     },
     "map": {
-      "reset": "复位"
+      "reset": "复位",
+      "shintoEvents": "新都事件",
+      "miyamaEvents": "深山町事件"
     },
     "masterAbilities": {
       "label": "御主能力"
@@ -148,7 +150,6 @@
       "knownClass": "已知职阶",
       "mana": "魔力",
       "master": "御主",
-      "masterAbilityDescription": "御主能力说明",
       "player": "玩家 {{number}}",
       "playerFallback": "玩家",
       "remainingSeals": "剩余令咒 {{count}} 枚",
@@ -166,7 +167,6 @@
       "forcedRevealSection": "无法明置而展示的手牌",
       "forcedRevealText": "无法明置，展示手牌",
       "inspectCard": "检视{{name}}",
-      "noAttacksPlayed": "尚未打出攻击牌",
       "playedCards": "{{name}}已打出",
       "playerSeats": "玩家席位",
       "playerStats": "战果 {{victoryPoints}} · 魔力 {{mana}} · 手牌 {{hand}}",

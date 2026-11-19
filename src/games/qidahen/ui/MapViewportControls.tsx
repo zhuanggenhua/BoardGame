@@ -4,28 +4,16 @@ import { UI_STYLE, UI_SURFACE } from './qidahenTheme';
 
 export const MapViewportControls: React.FC<{
     disabled?: boolean;
-    onZoom: (factor: number) => void;
     onReset: () => void;
-    onLocateWheel?: () => void;
-}> = ({ onZoom, onReset, onLocateWheel, disabled = false }) => {
+}> = ({ onReset, disabled = false }) => {
     const { t } = useTranslation('game-qidahen');
     return (
         <div
-            className="pointer-events-auto absolute bottom-[244px] left-[26px] z-30 flex flex-col gap-2"
+            className="pointer-events-auto absolute right-[136px] z-30"
             data-testid="qidahen-map-viewport-controls"
-            data-ui-anchor="left-bottom"
+            data-ui-anchor="right-top"
+            style={{ top: 'calc(58px + var(--qidahen-mobile-top-inset, 0px))' }}
         >
-            <div className="flex gap-2">
-                <button
-                    type="button"
-                    data-testid="qidahen-map-zoom-out"
-                    disabled={disabled}
-                    className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                    onClick={() => onZoom(1 / 1.14)}
-                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                >
-                    -
-                </button>
                 <button
                     type="button"
                     data-testid="qidahen-map-zoom-reset"
@@ -36,21 +24,6 @@ export const MapViewportControls: React.FC<{
                 >
                     {t('devtools.regionMaskTool.compactBoundaryStats.reset', { defaultValue: '复位' })}
                 </button>
-                <button
-                    type="button"
-                    data-testid="qidahen-map-zoom-in"
-                    disabled={disabled}
-                    className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                    onClick={() => onZoom(1.14)}
-                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                >
-                    +
-                </button>
-            </div>
-            {onLocateWheel ? <button type="button" data-testid="qidahen-map-locate-wheel" disabled={disabled}
-                className="inline-flex min-h-[38px] items-center justify-center border-[3px] px-3 text-[12px] font-black"
-                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                onClick={onLocateWheel}>{t('board.map.returnToWheel', { defaultValue: '回到轮盘' })}</button> : null}
         </div>
     );
 };

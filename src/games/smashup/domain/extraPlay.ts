@@ -676,7 +676,8 @@ const immediateExtraMinionPromptProgram = createPromptProgram<ImmediateExtraMini
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
-        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        // 候选可能来自暂存区、牌库或弃牌堆；客户端无法序列化生成器，
+        // 不能用仅检查手牌的通用刷新过滤这些候选。权威端仍实时重算校验。
         (interactionWithSnapshot.data as any).responseValidationMode = 'live';
         (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
@@ -848,7 +849,8 @@ const immediateExtraActionPromptProgram = createPromptProgram<ImmediateExtraActi
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
-        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        // 候选可能来自暂存区、牌库或弃牌堆；客户端无法序列化生成器，
+        // 不能用仅检查手牌的通用刷新过滤这些候选。权威端仍实时重算校验。
         (interactionWithSnapshot.data as any).responseValidationMode = 'live';
         (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,

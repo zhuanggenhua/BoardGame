@@ -46,6 +46,7 @@ describe('骰盘排座与地图取景分工', () => {
         const unselected = node('unselected-stack', rect(400, 100, 40, 40)); unselected.dataset.qidahenMapPieceId = 'unselected'; unselected.dataset.qidahenMapTokenRegion = 'source';
         const defender = node('defender-army', rect(650, 300, 40, 40)); defender.dataset.qidahenMapPieceId = 'defender'; defender.dataset.qidahenMapTokenRegion = 'target';
         defender.dataset.qidahenMapTokenTroopKind = 'cavalry';
+        for (const token of [attacker, cannon, unselected, defender]) token.dataset.qidahenMapTokenType = 'army';
         document.body.append(sequence, attacker, cannon, unselected, defender);
         const rolls = { stages: [{ phase: 'cavalry', attackerRolls: [{ troopKind: 'cavalry' }], defenderRolls: [{ troopKind: 'cavalry' }] }], attackerMorale: { remainingLevels: { selected: 1, cannon: 1 } }, defenderMorale: { remainingLevels: { defender: 1 } } } as unknown as QidahenBattleRolls;
         render(<QidahenBattleRollOverlay {...props} rolls={rolls} sourceRegionId="source" targetRegionId="target" committedPieceIds={['selected', 'cannon']} layoutReady />);

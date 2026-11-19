@@ -99,7 +99,7 @@ import {
     type OnlineAiRecoveryPhaseLabel,
     type OnlineAiRecoverySequenceExecutionTrace,
 } from './onlineAiRecoverySequenceRunner';
-import { OnlineAiImmediateExecutionRunner } from './onlineAiImmediateExecutionRunner';
+import { ONLINE_AI_SLOW_DECISION_MS, OnlineAiImmediateExecutionRunner } from './onlineAiImmediateExecutionRunner';
 import { OnlineAiRecoveryCandidateResolver } from './onlineAiRecoveryCandidateResolver';
 import {
     OnlineAiManualRecoveryCoordinator,
@@ -1173,15 +1173,24 @@ export class GameTransportServer {
                 captureFeedbackReplay: async (match, playerId, request) => {
                     if (request.phase === 'prepare') {
                         const trigger = request.trigger;
-                        if (!trigger) return { accepted: false };
-                        const command = this.feedbackReplayCommandHistory.find(match.matchID, playerId, trigger);
-                        if (!command) return { accepted: false };
+                        const command = trigger && this.feedbackReplayCommandHistory.find(match.matchID, playerId, trigger);
+                        if (!command) {
+                            // 原命令已不可回放时，单独保留提交时的权威现场；不得标记为原命令回放。
+                            const capture = capturePrivateFeedbackReplay(match);
+                            if (!capture.data || capture.error) throw new Error(capture.error ?? 'feedback_capture_missing');
+                            return {
+                                accepted: true,
+                                captureId: this.feedbackReplayStaging.prepare(match.matchID, playerId, capture.data, false, capture.stateSnapshotPartial === true),
+                                triggerCaptured: false,
+                            };
+                        }
                         const replayMatch = {
                             matchID: match.matchID,
                             gameId: match.gameId,
                             stateID: command.stateIdBefore,
                             state: command.stateBefore,
                             randomSeed: command.randomSeed,
+                            ...(command.stateSnapshotPartial ? { stateSnapshotPartial: true } : {}),
                             ...(typeof command.randomCursorBefore === 'number'
                                 ? { getRandomCursor: () => command.randomCursorBefore! }
                                 : {}),
@@ -1191,7 +1200,7 @@ export class GameTransportServer {
                             commandType: command.commandType,
                             playerId: command.playerId,
                             payload: command.commandPayload,
-                            requestId: trigger.requestId,
+                            requestId: trigger?.requestId,
                             stateIdBefore: command.stateIdBefore,
                             stateIdAfter: command.stateIdAfter,
                             randomCursorBefore: command.randomCursorBefore,
@@ -1201,8 +1210,9 @@ export class GameTransportServer {
                         if (!capture.data || capture.error) throw new Error(capture.error ?? 'feedback_capture_missing');
                         return {
                             accepted: true,
-                            captureId: this.feedbackReplayStaging.prepare(match.matchID, playerId, capture.data, true),
+                            captureId: this.feedbackReplayStaging.prepare(match.matchID, playerId, capture.data, true, capture.stateSnapshotPartial === true),
                             triggerCaptured: true,
+                            ...(capture.stateSnapshotPartial ? { stateSnapshotPartial: true } : {}),
                         };
                     }
                     const entry = this.feedbackReplayStaging.getEntry(request.captureId, match.matchID, playerId);
@@ -1212,7 +1222,7 @@ export class GameTransportServer {
                     try {
                         await attachPrivateFeedbackReplay({ endpoint: config.endpoint, token: config.token, feedbackId: request.feedbackId,
                             matchId: match.matchID, playerId, privateReplay: entry.data,
-                            privateReplayTriggerCaptured: entry.triggerCaptured });
+                            privateReplayTriggerCaptured: entry.triggerCaptured, privateReplayStateSnapshotPartial: entry.stateSnapshotPartial });
                         return { accepted: true };
                     } catch {
                         try {
@@ -1592,9 +1602,11 @@ export class GameTransportServer {
         });
     }
     private logOnlineAiExecutionTrace(trace: OnlineAiExecutionTrace): void {
-        // 生产日志默认保留 warn；慢决策需保留对局和动作关联，便于对照 CPU 采样。
-        if (trace.decisionMs >= 1000) {
+        // 恢复耗时包含等待和执行，不能当成决策耗时；两类慢事件均保留告警。
+        if (trace.decisionMs !== undefined && trace.decisionMs >= ONLINE_AI_SLOW_DECISION_MS) {
             logger.warn('[GameTransport] online-ai-slow-decision', trace);
+        } else if (trace.recoveryElapsedMs !== undefined && trace.recoveryElapsedMs >= ONLINE_AI_SLOW_DECISION_MS) {
+            logger.warn('[GameTransport] online-ai-slow-recovery', trace);
         } else {
             logger.info('[GameTransport] online-ai-execution', trace);
         }

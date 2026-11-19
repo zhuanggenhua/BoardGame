@@ -4,6 +4,20 @@ import { FeedbackReplayCommandHistory } from '../feedbackReplayCommandHistory';
 import { capturePrivateFeedbackReplay } from '../feedbackPrivateReplay';
 
 describe('权威反馈触发命令历史', () => {
+    it('真实交互选项生成器不会导致命令前后现场冻结失败', () => {
+        const history = new FeedbackReplayCommandHistory();
+        const state = { core: {}, sys: { interaction: { current: {
+            kind: 'simple-choice', data: { options: [], optionsGenerator: () => [] },
+        }, queue: [] } } };
+        const recorded = history.record({
+            matchId: 'm', gameId: 'smashup', playerId: '0', commandType: 'ADVANCE_PHASE',
+            commandPayload: {}, stateIdBefore: 1, stateIdAfter: 2,
+            stateBefore: state as any, stateAfter: state as any,
+        });
+        expect(recorded).toBe(true);
+        expect(history.find('m', '0', { commandType: 'ADVANCE_PHASE', playerId: '0', stateIdBefore: 1 })?.stateSnapshotPartial).toBe(true);
+    });
+
     it('前后状态共享的子树只保留一个冻结副本，原状态变化不影响回放', () => {
         const history = new FeedbackReplayCommandHistory();
         const shared = { entries: [{ kind: 'ROLL' }] };

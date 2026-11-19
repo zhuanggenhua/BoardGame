@@ -1222,7 +1222,7 @@ test.describe('亡灵交互技能', () => {
       await expect(hostPage.locator(allySelector).first()).toBeVisible({ timeout: 5000 });
       await hostPage.locator(allySelector).first().click({ force: true });
       await hostPage.waitForTimeout(1500);
-      await expect(hostPage.getByTestId('sw-action-banner')).toContainText(/用最多3个单位进行攻击|Attack with up to 3 units/i, { timeout: 8000 });
+      await expect(hostPage.getByTestId('sw-action-banner')).toContainText(/最多可用\s*3\s*个单位攻击|Attack with up to 3 units/i, { timeout: 8000 });
 
       await hostPage.screenshot({
         path: getEvidenceScreenshotPath(testInfo, 'life-drain-complete', {
@@ -1302,7 +1302,7 @@ test.describe('亡灵交互技能', () => {
       );
       await runWithStepTimeout(
         'soul_transfer.action-banner-restored',
-        expect(hostPage.getByTestId('sw-action-banner')).toContainText(/用最多3个单位进行攻击|Attack with up to 3 units/i, { timeout: 8000 }),
+        expect(hostPage.getByTestId('sw-action-banner')).toContainText(/最多可用\s*3\s*个单位攻击|Attack with up to 3 units/i, { timeout: 8000 }),
       );
       const latestCore = await runWithStepTimeout('soul_transfer.fetch-core', readCoreStateViaServer(hostPage));
       expect(latestCore.board?.[prepared.archerPosition.row]?.[prepared.archerPosition.col]?.unit ?? null).toBeNull();

@@ -26,21 +26,27 @@ export function fitFateTargetCamera(current:MapViewportState, viewport:{width:nu
     const gap=8;
     let best:MapViewportState|undefined,bestScore=Infinity;
     for(let zoom=current.zoom;zoom>=.25;zoom=Math.round((zoom-.025)*1000)/1000){
-        const xs=[current.panX,gap-target.x*zoom,viewport.width-gap-(target.x+target.width)*zoom];
-        const ys=[current.panY,gap-target.y*zoom,viewport.height-gap-(target.y+target.height)*zoom];
+        const xs=[current.panX,0,viewport.width-map.width*zoom,gap-target.x*zoom,viewport.width-gap-(target.x+target.width)*zoom];
+        const ys=[current.panY,0,viewport.height-map.height*zoom,gap-target.y*zoom,viewport.height-gap-(target.y+target.height)*zoom];
         for(const block of blockers){
             xs.push(block.right+gap-target.x*zoom,block.left-gap-(target.x+target.width)*zoom);
             ys.push(block.bottom+gap-target.y*zoom,block.top-gap-(target.y+target.height)*zoom);
         }
+        let fullMapPose: MapViewportState | undefined;
+        let fullMapDistance = Infinity;
         for(const x of xs)for(const y of ys){
             const pose=constrainFateTableCamera({zoom,panX:x,panY:y},viewport.width,viewport.height,map.width,map.height);
             const left=pose.panX+target.x*zoom,top=pose.panY+target.y*zoom,right=left+target.width*zoom,bottom=top+target.height*zoom;
             if(left<0||top<0||right>viewport.width||bottom>viewport.height || blockers.some(b=>left<b.right+gap&&right>b.left-gap&&top<b.bottom+gap&&bottom>b.top-gap))continue;
             const crop=Math.max(0,-pose.panX)+Math.max(0,pose.panX+map.width*zoom-viewport.width)
                 +Math.max(0,-pose.panY)+Math.max(0,pose.panY+map.height*zoom-viewport.height);
-            const score=Math.abs(pose.panX-current.panX)+Math.abs(pose.panY-current.panY)+crop*4+(current.zoom-zoom)*400;
+            const distance=Math.abs(pose.panX-current.panX)+Math.abs(pose.panY-current.panY);
+            if(crop<.01 && distance<fullMapDistance){fullMapPose=pose;fullMapDistance=distance;}
+            const score=distance+crop*4+(current.zoom-zoom)*400;
             if(score<bestScore){best=pose;bestScore=score;}
         }
+        // 按缩放由大到小搜索。同一缩放下以移动最少的完整棋盘为准。
+        if(fullMapPose)return fullMapPose;
     }
     return best??current;
 }

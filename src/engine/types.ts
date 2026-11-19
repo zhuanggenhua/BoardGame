@@ -530,6 +530,8 @@ export interface TutorialManifest {
      * Defaults to the existing completion route for tutorials that teach an isolated scenario.
      */
     stayOnMatchAfterCompletion?: boolean;
+    /** 完成引导后，保留此局并让本地 AI 接管其他座位。要求声明学习者座位。 */
+    continueWithLocalAiAfterCompletion?: boolean;
     /** Close the active course when the authoritative match ends. */
     closeOnGameOver?: boolean;
     steps: TutorialStepSnapshot[];
@@ -610,6 +612,8 @@ export interface TutorialState {
     /** manifest 级别配置（用于步骤推进时复用） */
     manifestAllowManualSkip?: boolean;
     manifestRandomPolicy?: TutorialRandomPolicy;
+    /** 完成后保留课程身份，用于同局续玩与恢复。 */
+    manifestContinueWithLocalAiAfterCompletion?: boolean;
     /** Persisted policy copied from the bound manifest for terminal cleanup. */
     manifestCloseOnGameOver?: boolean;
     /** 派生值：结合 step + manifest 得出的有效随机策略 */
@@ -814,6 +818,9 @@ export interface DomainCore<
 
     /** 应用事件，返回新状态（确定性 reducer，仅作用于 core） */
     reduce(state: TState, event: TEvent): TState;
+
+    /** 返回本次管线中有限且不可重复的结算进度标识，用于有界自动推进。 */
+    getAfterEventsProgressKeys?(initialState: MatchState<TState>, events: readonly GameEvent[]): readonly string[];
 
     /**
      * 可选：系统事件后处理（afterEvents 轮中，reduce 前）

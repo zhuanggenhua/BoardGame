@@ -17,7 +17,12 @@ async function state(page:Page):Promise<State>{return page.evaluate(()=>{const w
 async function waitStep(page:Page,id:string){await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id,{timeout:20000}).not.toBe(id);}
 const quoted=(id:string)=>'[data-card-id='+JSON.stringify(id)+'],[data-focus-card='+JSON.stringify('skill-0-'+id)+']';
 const primary=(page:Page)=>page.getByTestId('fate-domination-primary-action');
-const closeInspection=(page:Page)=>page.getByTestId('fate-inspection-close').click();
+async function closeInspection(page:Page){
+ await page.getByTestId('fate-inspection-card-face').hover();
+ const close=page.getByTestId('fate-inspection-close');
+ await expect(close).toHaveCSS('opacity','1');
+ await close.click();
+}
 async function clickVisibleMapLocation(page:Page,locationId:string,onMapPan?:()=>Promise<void>){
  const target=page.getByTestId('fate-domination-location-'+locationId);
  await expect(target).toBeVisible();await expect(target).toBeEnabled();
@@ -115,6 +120,16 @@ async function startFreshTutorialSession(context:BrowserContext,attemptKey:strin
  },{prefix:snapshotPrefix,attemptKey});
 }
 
+async function openFateOnlineRoom(page:Page){
+ await page.locator('[data-game-id="fate-domination"] .platform-game-open').first().click();
+ await page.getByTestId('game-details-open-create-room').first().click();
+ const room=page.getByTestId('create-room-modal').last();
+ await room.getByRole('button',{name:'3人',exact:true}).click();
+ await room.getByRole('button',{name:/^加入 AI/}).click();
+ await room.getByTestId('create-room-confirm-button').click();
+ await page.waitForURL(/\/play\/fate-domination\/match\/[^/?]+\?playerID=0/);
+}
+
 test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢复与终局',async({page,context,baseURL},testInfo)=>{
  // 整课包含多轮和完整界面采集；动作等待仍各自受 20 秒/5 秒断言约束。
  test.setTimeout(900000);page.setDefaultTimeout(15000);
@@ -135,13 +150,14 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
   mixedAttack:'第一次选牌：点牌选择、再点撤回，选齐后确认攻击',
   movement:'先移动再出牌及移动目的',engagement:'抵达交战战场后无法常规移动的原因',cardReading:'攻击牌费用、威力与时机',sealMana:'技能出牌门槛与令咒恢复魔力',
   riding:'已打出的骑乘可以发动',ridingChoice:'选择骑乘追加的普通攻击',actionAbility:'发动已打出的急行前往新都',
+  investigationChoice:'查看所选玩家手牌，决定是否将其中一张放回牌库顶',
   battle:'结束当前玩家的战斗阶段',settlement:'战力结算',
   discard:'回合结束后，技能返回技能区，普通攻击进入弃牌堆',
   battleDeployment:'后续回合部署到深山町的最高空位，读取地利',
   battlefieldDarkAttack:'在战场准备一明一暗两张攻击',
   postBattle:'战后恢复令咒选择',revelation:'真实从者揭示与技能公开',sealBattle:'对手使用令咒强化战斗',elimination:'第十日淘汰状态',
  };
- const expectedLessonIds=new Set(['opening','overview','ending','preparation','deploymentChoice','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
+ const expectedLessonIds=new Set(['opening','overview','ending','preparation','deploymentChoice','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','investigationChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
  const capturedLessonIds=new Set<string>();
  const capturedAbilityIds=new Set<string>();
  const observedLessons=new Set<string>();
@@ -150,6 +166,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  screenshotStates.add('deployment-map-pan');
  screenshotStates.add('movement-choosing');screenshotStates.add('hand-inspection');screenshotStates.add('hand-magnifier');
  screenshotStates.add('battle-deployment-choice');
+ screenshotStates.add('investigation-target');
 
  screenshotStates.add('dark-mode');screenshotStates.add('dark-draft');
  const capture=async(key:string,name:string)=>{
@@ -159,7 +176,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
   if(await page.locator('.fd-identity-setup').isVisible())await readyImages(page,'.fd-identity-setup img');
   else await expect(page.getByTestId('fate-pixi-map-canvas-host')).toHaveAttribute('data-map-resource-status','ready');
   await expect.poll(()=>page.evaluate(()=>{
-   const roots=Array.from(document.querySelectorAll('.fd-runtime-card,.fd-post-battle-source,.fd-player-detail'));
+   const roots=Array.from(document.querySelectorAll('.fd-runtime-card,.fd-post-battle-source,.fd-player-detail,.fd-investigation-card'));
    return roots.every(root=>Array.from(root.querySelectorAll('img')).every(image=>image.complete&&image.naturalWidth>0)
     &&!root.querySelector('.atlas-shimmer'));
   }),{timeout:30000,message:'当前卡面必须解码完成，不能把扫光或空白面板拍成验收图'}).toBe(true);
@@ -256,7 +273,9 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     await expect.poll(()=>sourceCard.evaluate(card=>{
      const row=card.closest('.fd-runtime-card-row');if(!row)return false;
      const box=card.getBoundingClientRect(),clip=row.getBoundingClientRect();
-     return box.left>=clip.left-1&&box.right<=clip.right+1&&box.top>=clip.top-1&&box.bottom<=clip.bottom+1;
+     const inRow=box.left>=clip.left-1&&box.right<=clip.right+1&&box.top>=clip.top-1&&box.bottom<=clip.bottom+1;
+     const visible=[.1,.5,.9].every(fraction=>card.contains(document.elementFromPoint(box.left+box.width*fraction,box.top+box.height/2)));
+     return inRow&&visible;
     }),{message:'首次发动急行前，教程应在原牌区显露完整来源卡，不能由测试点击时自动滚入'}).toBe(true);
    }
    expect(lessonId&&expectedLessonIds.has(lessonId),`未分类的可见教程规则：${step.id} / ${lessonId??'无 lessonId'}`).toBeTruthy();
@@ -300,7 +319,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    await page.getByRole('button',{name:'复位',exact:true}).click();
    await expect.poll(async()=>(await readCamera()).zoom,{message:'复位应恢复手势前的缩放比例'}).toBe(cameraBefore.zoom);
    await page.locator('.fd-runtime-map-card-hit').first().click();await closeInspection(page);
-   const deck=page.getByRole('button',{name:/抽牌堆 \d+ 张/});await deck.click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await capture('deck-count','牌堆计数与一级资源威力同帧可读');await deck.click();
+   const deck=page.getByRole('button',{name:/抽牌堆 \d+ 张/});await deck.click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await capture('deck-count','打开抽牌堆，查看还剩多少张牌');await deck.click();
   }
   if(step.id.startsWith('ui-inspection')){
    const card=page.locator('[data-tutorial-id='+JSON.stringify(step.highlightTarget)+']');await card.scrollIntoViewIfNeeded();
@@ -350,7 +369,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    await page.getByRole('button',{name:/查看玩家\s*2详情/}).hover();
    const row=page.getByLabel('玩家 2已打出');await expect(row).toBeVisible();await row.hover();await page.waitForTimeout(2700);await expect(row).toBeVisible();
    await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
-   await capture('public-cards','对手一级威力与无框单排出牌同时可比较');
+   await capture('public-cards','悬浮对手头像，查看打出的牌和头像旁的合计威力');
    await row.getByRole('button').first().click();await closeInspection(page);
    await page.getByRole('button',{name:/查看玩家\s*2详情/}).hover();await expect(row).toBeVisible();await row.hover();
    await page.mouse.move(8,8);
@@ -453,14 +472,14 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     expect((await state(page)).core.players['0'].selectedAttackIds).toEqual([]);
     if(!retracted){await page.locator(quoted(payload.cardIds[0])).click();await page.locator(quoted(payload.cardIds[0])).click();retracted=true;}
     await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
-    await capture('draft','两张草稿及一级预计威力，确认前可撤回');
+    await capture('draft','两张牌等待确认，左侧显示预计合计威力，再点原牌可撤回');
     if(payload.faceDownIds.length)await capture('dark-draft','明暗混合草稿与暗置标记，确认前仍可撤回');
     if(!seen.has('cards-wide-desktop')){
      await page.setViewportSize({width:2560,height:1225});await page.mouse.move(2,2);
      await expectFateHandArtLoaded(page);
      await expect(page.locator('.fd-attack-cards .fd-runtime-card').first()).toBeVisible();
      await expect(page.locator('.fd-skill-cards .fd-runtime-card').first()).toBeVisible();
-     await capture('cards-wide-desktop','2560桌面的大牌、一级威力与常显技能区');
+     await capture('cards-wide-desktop','宽桌面上攻击手牌与技能牌贴底，合计威力在暂存区左侧');
      await page.setViewportSize({width:1920,height:1080});await page.mouse.move(2,2);
     }
     await primary(page).click();
@@ -477,8 +496,11 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      await abilityButton.click();
      if(payload.targetPlayerId!==undefined){
       const targetId=String(payload.targetPlayerId);
-      if(targetId==='0')await page.locator('.fd-self-identity').click();
-      else await page.locator(`[data-tutorial-id="fate-player-${targetId}"] .fd-runtime-avatar`).click();
+      const target=targetId==='0' ? page.locator('.fd-self-identity') : page.locator(`[data-tutorial-id="fate-player-${targetId}"] .fd-runtime-avatar`);
+      await expect(target).toHaveClass(/is-investigation-target/);
+      await expect(page.locator('.is-investigation-target')).toHaveCount(1);
+      await capture('investigation-target','点击调查后，选择亮起的玩家头像查看手牌');
+      await target.click();
      }
     }else await page.locator(quoted(payload.skillId)).click();
     if(payload.targetLocationId)await clickVisibleMapLocation(page,payload.targetLocationId);
@@ -512,6 +534,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     if(payload.optionIds){for(const id of payload.optionIds)await page.locator(quoted(id)).click();await capture('riding','骑乘候选卡面完整，描边区分选择，魔力显示预计消耗');await page.getByTestId('fate-domination-primary-action').click();}
     else if(before.sys.interaction.current?.data?.sourceId==='fate:investigation-choice'){
      const choice=page.getByTestId('fate-investigation-choice');await expect(choice).toBeVisible();
+     await expect(choice.locator('button[aria-disabled="false"]')).toHaveCount(1);
      if(payload.optionId==='fate:investigation-keep')await choice.getByRole('button',{name:'保留手牌'}).click();
      else {
       const index=before.sys.interaction.current.data.fateContext.offered.findIndex((card:{id:string})=>card.id===payload.optionId);
@@ -566,7 +589,10 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  await capture('terminal','自然十一轮终局与结果');
  const beforeCompletion=await snapshot(page);
  await expect(page.getByTestId('tutorial-overlay-card'),`终局仍显示教程浮层：${JSON.stringify({authoritative:terminal.sys.tutorial,tutorialContext:terminal.tutorialContext,visible:beforeCompletion.visible})}`).toHaveCount(0);
- await page.getByTestId('rematch-play-again').click();await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible();
+ await page.getByTestId('rematch-back-to-lobby').click();
+ await expect(page).toHaveURL(/\/$/);
+ await openFateOnlineRoom(page);
+ await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible();
  expect((await state(page)).sys.tutorial.active).toBe(false);
  await expect(page.getByRole('combobox')).toHaveCount(0);await expect(page.getByRole('dialog')).toHaveCount(0);
  await chooseFateIdentity(page,'master','m_rin');await expect(page.getByTestId('fate-setup-master-m_rin')).toHaveAttribute('aria-pressed','true');
@@ -595,7 +621,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  const {sourceRevision}=sourceIdentity;
  await writeFile(path.join(directory,'source-identity.json'),JSON.stringify(sourceIdentity,null,2));
  await writeFile(path.join(directory,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-natural-11-rounds',status:'PASS',visualStatus:'pending',outcome:'固定身份从中文规则课程自然十一轮至终局；可选UI、刷新、随机回退、合法偏离、退出与正式再来一局均通过',browserContextId:'single-tutorial-context',steps:trace,uiStates:media.map(item=>({id:item.key,stepId:item.stepId,change:'panel',viewport:'desktop',viewportSize:item.key==='cards-wide-desktop'?'2560x1225':item.key==='inspection-constrained'?'936x432':item.key==='identity-constrained'?'1366x768':'1920x1080',sha256:item.sha256})),media:media.map(item=>({...item,path:path.join(run.stableDir,path.basename(item.path))})),terminal:{expected:true,actual:true,visible:true,visibleVerifiedBeforeRematch:true}},null,2));
- await promoteEvidenceScreenshotRun(run,{gameId:'fate-domination',evidenceCategory:'tutorial',capturePolicy:'distinct-ui-state',media:media.map((item,index)=>({path:path.relative(process.cwd(),path.join(run.stableDir,path.basename(item.path))).replace(/\\/g,'/'),chainId:'fate-tutorial-natural-11-rounds',chainStep:index+1,stage:'独特界面态',role:'main-flow',transition:item.description,uiStateId:item.key,uiChange:'panel',uiChangeReason:item.description,behaviorStepId:item.stepId,sourceRevision,description:item.description,viewport:'desktop',viewportSize:item.key==='cards-wide-desktop'?'2560x1225':item.key==='inspection-constrained'?'936x432':item.key==='identity-constrained'?'1366x768':'1920x1080',requirements:['中文原句教学、无选角首课、正式角色UI、一级威力与自然操作生命周期']}))});
+ await promoteEvidenceScreenshotRun(run,{gameId:'fate-domination',evidenceCategory:'tutorial',capturePolicy:'distinct-ui-state',media:media.map((item,index)=>({path:path.relative(process.cwd(),path.join(run.stableDir,path.basename(item.path))).replace(/\\/g,'/'),chainId:'fate-tutorial-natural-11-rounds',chainStep:index+1,stage:'独特界面态',role:'main-flow',transition:item.description,uiStateId:item.key,uiChange:'panel',uiChangeReason:item.description,behaviorStepId:item.stepId,sourceRevision,description:item.description,viewport:'desktop',viewportSize:item.key==='cards-wide-desktop'?'2560x1225':item.key==='inspection-constrained'?'936x432':item.key==='identity-constrained'?'1366x768':'1920x1080',requirements:['中文原句教学、未部署开场、正式选角界面、随对局呈现的自然操作']}))});
 });
 
 test('教程中途从正式菜单退出，进入普通对局后教程状态与门禁不污染新决策',async({page,context,baseURL},testInfo)=>{
@@ -615,11 +641,7 @@ test('教程中途从正式菜单退出，进入普通对局后教程状态与�
  const beforeExit=await snapshot(page);
  await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().click();await page.getByRole('button',{name:'离开',exact:true}).click();
  await page.getByTestId('fab-panel-exit').getByRole('button',{name:/返回大厅/}).click();await expect(page).toHaveURL(/\/$/);
- await page.locator('[data-game-id="fate-domination"] .platform-game-open').first().click();
- await page.getByTestId('game-details-open-create-room').first().click();
- const room=page.getByTestId('create-room-modal').last();await room.getByRole('button',{name:'3人',exact:true}).click();
- await room.getByRole('button',{name:/^加入 AI/}).click();await room.getByTestId('create-room-confirm-button').click();
- await page.waitForURL(/\/play\/fate-domination\/match\/[^/?]+\?playerID=0/);
+ await openFateOnlineRoom(page);
  await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible({timeout:30000});await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
  await chooseFateIdentity(page,'master','m_rin');await expect(page.getByTestId('fate-setup-master-m_rin')).toHaveAttribute('aria-pressed','true');
  const sourceIdentity=await captureEvidenceSourceIdentity(page,'fate-domination');

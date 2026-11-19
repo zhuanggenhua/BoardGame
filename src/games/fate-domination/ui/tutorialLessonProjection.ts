@@ -5,6 +5,7 @@ import {fateTutorialText} from '../tutorialText';
 import {fateLessonCopy,type FateLessonId} from '../tutorialLessons';
 import {isFateInvestigationChoice, FATE_INVESTIGATION_KEEP} from '../domain/investigationChoice';
 import {isFateChariotChoice} from '../domain/chariotChoice';
+import {FATE_ATTACK_BY_ID} from '../data';
 
 const cardIdsKind = (player: FateDominationCore['players'][string], ids: string[]) => {
     const kinds = new Set(ids.map(id => resolveFateAttack(player, id)?.kind));
@@ -45,7 +46,7 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
             const skill = player.skills.find(skill => skill.id === payload.skillId);
             const attack = player.hand.find(card=>card.id===payload.skillId);
             const goal:FateLessonId = skill?.isMasterSkill ? 'masterAbility' : String(payload.skillId).startsWith('sc_iskandar_1') ? 'riding' : 'actionAbility';
-            const masterInput=player.masterId==='m_waver' && String(payload.skillId).split(':')[0]==='s3' ? '点击“调查”，再选择一位玩家查看手牌。' : `点击“${skill?.name}”，为本轮攻击补充手牌。`;
+            const masterInput=player.masterId==='m_waver' && String(payload.skillId).split(':')[0]==='s3' ? `点击“调查”，再点亮起的玩家 ${Number(payload.targetPlayerId)+1} 的头像。` : `点击“${skill?.name}”，为本轮攻击补充手牌。`;
             const described=lesson(goal, skill?.isMasterSkill ? masterInput : goal==='riding'?'点击已打出的“骑乘”，发动坐骑召唤。':attack&&location?`点击已打出的“${resolveFateAttack(player,attack.id)?.definition.name}”，前往${location}。`:undefined, skill?.isMasterSkill ? `fate-master-ability-${String(payload.skillId)}` : 'fate-hand');
             described.fateCopy.ability={...(skill?.isMasterSkill?{masterId:player.masterId}:attack?{attackId:attack.definitionId}:{servantId:player.servantId}),skillId:attack?.definitionId??String(payload.skillId).split(':')[0],...(goal==='riding'?{clause:'action' as const}:{})};
             described.content=fateTutorialText(described.fateCopy);
@@ -56,7 +57,13 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
         case 'SYS_INTERACTION_CANCEL': return lesson('ridingChoice', undefined, 'fate-hand');
         case 'SYS_INTERACTION_RESPOND': {
             const choice=state.sys.interaction.current;
-            if(isFateInvestigationChoice(choice))return {...lesson('investigationChoice',payload.optionId===FATE_INVESTIGATION_KEEP?'选择“保留手牌”。':'选择一张牌放回其拥有者的牌库顶。','fate-opponents'),family:`choice-investigation-${payload.optionId===FATE_INVESTIGATION_KEEP?'keep':'card'}`};
+            if(isFateInvestigationChoice(choice)){
+                const keep=payload.optionId===FATE_INVESTIGATION_KEEP;
+                const offered=choice.data.fateContext.offered.find(card=>card.id===payload.optionId);
+                const card=offered && FATE_ATTACK_BY_ID[offered.definitionId];
+                const input=keep?'这次保留原样，下回合仍可调查。':`这次选亮起的「${card?.name ?? '攻击牌'}」。`;
+                return {...lesson('investigationChoice',input,'fate-opponents'),family:`choice-investigation-${keep?'keep':'card'}`};
+            }
             if(isFateChariotChoice(choice))return {...lesson('chariotChoice','选择一张事件牌放入战场。','fate-map'),family:'choice-chariot'};
             return {
             ...lesson(Array.isArray(payload.optionIds) ? 'ridingChoice' : 'postBattle', Array.isArray(payload.optionIds)?'这次用'+(payload.optionIds as string[]).map(id=>resolveFateAttack(player,id)?.definition.name).join('、')+'追加攻击。':undefined,

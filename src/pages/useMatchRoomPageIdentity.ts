@@ -16,7 +16,10 @@ export function useMatchRoomPageIdentity(args: {
     const gameConfig = gameId ? getGameById(gameId) : undefined;
     const guestId = useMemo(() => getOrCreateGuestId(), []);
     const gameDisplayName = resolveGameDisplayName(gameConfig, tLobby, gameId ?? '');
-    const gamePageDataAttributes = getGamePageDataAttributes(gameId, gameConfig);
+    const gamePageDataAttributes = useMemo(
+        () => getGamePageDataAttributes(gameId, gameConfig),
+        [gameId, gameConfig],
+    );
     const requiresGameNamespace = Boolean(gameConfig);
     const isTutorialRoute = isTutorialRoutePath(pathname);
     const matchRoomScopeKey = `${gameId ?? 'unknown'}:${matchId ?? 'unknown'}:${isTutorialRoute ? 'tutorial' : 'online'}`;

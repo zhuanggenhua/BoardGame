@@ -90,7 +90,7 @@ export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = 
      * 
      * 规则优先级：
      * 1. 直接胜利标记（如特殊能力已明确宣告胜利）
-     * 2. 标准印戒胜利条件（任意阶段立即生效）
+     * 2. 标准印戒胜利条件（回合结束阶段检查）
      * 3. 分阶段特殊判定（如 play 阶段无牌可打、ability 阶段特殊能力胜利）
      */
     isGameOver: (core): GameOverResult | undefined => {
@@ -111,12 +111,12 @@ export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = 
             signetsCount[playerId] = getTotalSignets(player);
         }
 
-        // PR 新规则：标准印戒胜利条件在所有阶段立即生效
+        // 当前遭遇的失败者仍可通过能力改变印戒，普通胜利须等到回合结束。
         const playersWithEnoughSignets = core.playerOrder.filter(
             pid => signetsCount[pid] >= core.targetSignets
         );
 
-        if (playersWithEnoughSignets.length > 0) {
+        if (core.phase === 'end' && playersWithEnoughSignets.length > 0) {
             if (playersWithEnoughSignets.length > 1) {
                 const maxSignets = Math.max(...playersWithEnoughSignets.map(pid => signetsCount[pid]));
                 const winnersWithMaxSignets = playersWithEnoughSignets.filter(
@@ -124,7 +124,7 @@ export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = 
                 );
 
                 if (winnersWithMaxSignets.length > 1) {
-                    return { draw: true };
+                    return undefined;
                 }
                 return { winner: winnersWithMaxSignets[0] };
             }

@@ -319,7 +319,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
 
   if (abilityMode) {
     return (
-      <div data-testid="sw-ability-prompt" className="w-max max-w-[calc(100vw-1rem)] lg:max-w-[min(1000px,calc(100vw-28rem))] bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex flex-wrap items-center justify-center gap-3 shadow-lg">
+      <div data-testid="sw-ability-prompt" className="w-max max-w-[min(1000px,calc(var(--sw-hud-logical-width)-448px))] bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex flex-wrap items-center justify-center gap-3 shadow-lg">
         <span className="text-amber-200 text-sm font-bold">
           {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectCard' && t('statusBanners.ability.reviveUndead.selectCard')}
           {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition' && t('statusBanners.ability.reviveUndead.selectPosition')}

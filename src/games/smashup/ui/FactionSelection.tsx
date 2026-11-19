@@ -108,7 +108,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const [detailPreviewTab, setDetailPreviewTab] = useState<'hand' | 'bases'>('hand');
     const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'fusion' | 'titan' } | null>(null);
     const selectionGridRef = useRef<HTMLDivElement | null>(null);
-    const previousFactionSelectionsRef = useRef<string[]>([]);
+    const pendingRandomPickRef = useRef<{ playerID: PlayerId; selectionCount: number } | null>(null);
     const [selectionGridMetrics, setSelectionGridMetrics] = useState<SelectionGridMetrics>(() => ({
         scrollTop: 0,
         viewportHeight: typeof window === 'undefined' ? 900 : Math.max(1, window.innerHeight),
@@ -372,6 +372,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     }, [filteredFactionGroups.length]);
 
     const handleOpenFactionGroup = (groupId: string, preferredFactionId: string) => {
+        pendingRandomPickRef.current = null;
         setFocusedGroupId(groupId);
         setActiveFactionId(preferredFactionId);
         setDetailPreviewTab('hand');
@@ -393,9 +394,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     const handleSelectRandomFaction = () => {
-        if (!isMyTurn) return;
+        if (!isMyTurn || playerID == null) return;
         if (mySelections.length >= 2) return;
 
+        pendingRandomPickRef.current = { playerID, selectionCount: mySelections.length };
         dispatch(SU_COMMANDS.SELECT_RANDOM_FACTION, {});
         handleCloseDetails();
     };
@@ -509,50 +511,43 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     useEffect(() => {
-        const currentSelections = Object.values(selectionState?.playerSelections ?? {}).flat();
-        const previousSelections = previousFactionSelectionsRef.current;
-        const newlySelectedFactionId = currentSelections.find((factionId) => !previousSelections.includes(factionId));
-        previousFactionSelectionsRef.current = currentSelections;
-
-        if (!newlySelectedFactionId || normalizedFactionSearch.length > 0) return;
-
-        const selectedGroupId = getFactionVariantGroupById(newlySelectedFactionId)?.groupId ?? newlySelectedFactionId;
-        const selectedGroupIndex = filteredFactionGroups.findIndex(({ group }) => group.groupId === selectedGroupId);
-        const grid = selectionGridRef.current;
-        if (!grid || selectedGroupIndex < 0) return;
-
-        const optionIndex = selectedGroupIndex + (showRandomFactionOption ? 1 : 0);
-        const targetRow = Math.floor(optionIndex / selectionVirtualColumnCount);
-        const targetTop = Math.max(0, targetRow * selectionVirtualRowHeight - selectionVirtualRowHeight * 0.75);
-        if (typeof grid.scrollTo === 'function') {
-            grid.scrollTo({ top: targetTop, behavior: 'auto' });
+        const pending = pendingRandomPickRef.current;
+        if (!pending) return;
+        if (pending.playerID !== playerID || normalizedFactionSearch) {
+            pendingRandomPickRef.current = null;
+            return;
         }
 
-        const focusSelectedCard = (attempt = 0) => {
-            const selectedNode = Array.from(
-                grid.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
-            ).find((node) => node.dataset.testid === `faction-option-${selectedGroupId}`);
+        const picked = mySelections[pending.selectionCount];
+        if (!picked) return;
+        const grid = selectionGridRef.current;
+        const groupId = getFactionVariantGroupById(picked)?.groupId ?? picked;
+        const groupIndex = filteredFactionGroups.findIndex(({ group }) => group.groupId === groupId);
+        if (!grid || groupIndex < 0) {
+            pendingRandomPickRef.current = null;
+            return;
+        }
 
-            if (selectedNode) {
-                if (typeof selectedNode.scrollIntoView === 'function') {
-                    selectedNode.scrollIntoView({ block: 'center', behavior: 'auto' });
-                }
-                return;
-            }
+        if (groupIndex < visibleFactionGroupStartIndex || groupIndex >= visibleFactionGroupEndIndex) {
+            // 只在抽中的卡还没挂载时定位到虚拟行，下一轮使用卡片实际位置。
+            const row = Math.floor((groupIndex + factionOptionStartOffset) / selectionVirtualColumnCount);
+            grid.scrollTop = row * selectionVirtualRowHeight;
+            return;
+        }
 
-            if (attempt < 2) {
-                window.requestAnimationFrame(() => focusSelectedCard(attempt + 1));
-            }
-        };
-
-        window.requestAnimationFrame(() => focusSelectedCard());
+        pendingRandomPickRef.current = null;
+        grid.querySelector(`[data-testid="faction-option-${groupId}"]`)
+            ?.scrollIntoView?.({ block: 'center', inline: 'nearest' });
     }, [
+        factionOptionStartOffset,
         filteredFactionGroups,
+        mySelections,
         normalizedFactionSearch,
-        selectionState,
+        playerID,
         selectionVirtualColumnCount,
         selectionVirtualRowHeight,
-        showRandomFactionOption,
+        visibleFactionGroupEndIndex,
+        visibleFactionGroupStartIndex,
     ]);
 
     if (!selectionState) return null;

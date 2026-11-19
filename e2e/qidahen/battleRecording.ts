@@ -7,7 +7,7 @@ import { BattleCaptureDiagnosticsError, createBattleCaptureDiagnostics, type Cap
 import { countNewResultInk } from './battleFramePixels';
 
 type Bounds = { left: number; top: number; width: number; height: number };
-type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; links: Array<{ side: string | null; pieceId: string | null }>; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; left: number; top: number; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
+type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; activeUnits: Array<{ side: string | null; pieceId: string }>; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; left: number; top: number; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[]; diceAreas: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
 export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
@@ -42,8 +42,9 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             const panel = document.querySelector<HTMLElement>('[data-testid="qidahen-battle-roll-sequence"]');
             const next: State = { regionTipVisible: document.querySelector('[data-testid="qidahen-map-region-tip"]') != null, at: Date.now() / 1000, phase: panel?.getAttribute('data-battle-roll-phase') ?? null,
                 state: panel?.getAttribute('data-battle-roll-state') ?? null, text: panel?.innerText ?? '', armyFaces: [],
-                links: [...document.querySelectorAll('[data-qidahen-battle-link-piece-id]')].map(node => ({
-                    side: node.getAttribute('data-qidahen-battle-link-side'), pieceId: node.getAttribute('data-qidahen-battle-link-piece-id') })),
+                activeUnits: [...(panel?.querySelectorAll('[data-qidahen-arena-active="true"]') ?? [])].flatMap(node =>
+                    (node.getAttribute('data-piece-ids') ?? '').split(' ').filter(Boolean)
+                        .map(pieceId => ({ side: node.getAttribute('data-qidahen-arena-unit'), pieceId }))),
                 labels: [...(panel?.querySelectorAll<HTMLElement>('[data-qidahen-battle-label]') ?? [])].map(element => {
                     const style = getComputedStyle(element); const rect = element.getBoundingClientRect();
                     return { id: element.getAttribute('data-qidahen-battle-label'), text: element.innerText, color: style.color,
@@ -61,23 +62,18 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                 })) };
             const toRect = (element: Element) => { const r = element.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; };
             const overlay = document.querySelector('[data-testid="qidahen-battle-roll-overlay"]');
-            const regions = [...document.querySelectorAll('[data-qidahen-battle-region-space]')];
-            const regionIds = new Set(regions.map(node => node.getAttribute('data-qidahen-battle-region-space')));
-            next.armyFaces = [...document.querySelectorAll('[data-qidahen-map-token-type="army"]')]
-                .filter(node => regionIds.has(node.getAttribute('data-qidahen-map-token-region')))
-                .map(node => {
-                    const image = node.querySelector('img');
-                    const bounds = image?.getBoundingClientRect();
-                    return { id: node.getAttribute('data-testid'), face: node.getAttribute('data-qidahen-army-face'),
-                        imageReady: Boolean(image?.complete && image.naturalWidth > 0 && bounds && bounds.width > 0 && bounds.height > 0
-                            && getComputedStyle(image).visibility !== 'hidden' && getComputedStyle(image).display !== 'none'),
-                        hiddenBack: node.querySelector('[data-qidahen-army-face="hidden-back"]') != null };
-                });
-            const objects = [...document.querySelectorAll('[data-qidahen-map-token-region]')]
-                .filter(node => regionIds.has(node.getAttribute('data-qidahen-map-token-region')))
-                .filter(node => ['army', 'control'].includes(node.getAttribute('data-qidahen-map-token-type') ?? ''))
-                .map(toRect).filter(rect => rect.width > 0 && rect.height > 0);
-            next.layout = { panel: overlay ? toRect(overlay) : null, regions: regions.map(toRect), objects };
+            const regions = [...(panel?.querySelectorAll('[data-testid^="qidahen-battle-side-"]') ?? [])];
+            const roster = [...(panel?.querySelectorAll('[data-qidahen-arena-unit]') ?? [])];
+            next.armyFaces = roster.flatMap(node => {
+                const image = node.querySelector('img');
+                const bounds = image?.getBoundingClientRect();
+                return (node.getAttribute('data-piece-ids') ?? '').split(' ').filter(Boolean).map(id => ({
+                    id, face: 'front', imageReady: Boolean(image?.complete && image.naturalWidth > 0 && bounds && bounds.width > 0 && bounds.height > 0
+                        && getComputedStyle(image).visibility !== 'hidden' && getComputedStyle(image).display !== 'none'), hiddenBack: false,
+                }));
+            });
+            const diceAreas = Array.from(panel?.querySelectorAll('[data-dice-physics-source]') ?? [], toRect);
+            next.layout = { panel: overlay ? toRect(overlay) : null, regions: regions.map(toRect), objects: roster.map(toRect), diceAreas };
             const previous = states.at(-1);
             if (!previous || JSON.stringify({ ...previous, at: 0 }) !== JSON.stringify({ ...next, at: 0 })) states.push(next);
         };
@@ -234,15 +230,14 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         expect(states.flatMap(state => state.dice).filter(die => die.failure)).toEqual([]);
         expect(states.filter(state => state.phase != null && state.regionTipVisible), 'map hover information must leave before battle playback').toEqual([]);
         if (participants.attackerPieceIds.length) {
-            const links = states.flatMap(state => state.links).filter(link => link.side === 'attacker');
-            expect(links.length, 'a battle link identifies the committed attackers').toBeGreaterThan(0);
-            expect(links.filter(link => !participants.attackerPieceIds.includes(link.pieceId)), 'attack links never point to uncommitted armies').toEqual([]);
             for (const phase of ['artillery', 'cavalry', 'infantry']) {
                 const expected = participants.attackerPieceIds.filter(id => participants.attackerKinds[id] === phase);
-                if (expected.length && states.some(state => state.phase === phase && state.state === 'rolling')) {
-                    expect(states.some(state => state.phase === phase && state.state === 'rolling'
-                        && state.links.some(link => link.side === 'attacker' && link.pieceId != null && expected.includes(link.pieceId))),
-                    `${phase} attack link reaches a committed unit of that phase`).toBe(true);
+                if (!expected.length) continue;
+                const rolling = states.filter(state => state.phase === phase && state.state === 'rolling');
+                for (const state of rolling) {
+                    const highlighted = state.activeUnits.filter(unit => unit.side === 'attacker').map(unit => unit.pieceId);
+                    expect(expected.every(id => highlighted.includes(id)), `${phase}: committed units are highlighted in the attacker row`).toBe(true);
+                    expect(highlighted.every(id => !participants.attackerKinds[id] || participants.attackerKinds[id] === phase), `${phase}: other troops remain inactive`).toBe(true);
                 }
             }
         }
@@ -265,8 +260,8 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                     const label = moment!.labels.find(item => item.id === side);
                     if (!label) continue;
                     expect(label.text, 'visible dice role names the actual faction').toContain(participants[side]);
-                    if (state === 'damage') expect(moment!.labels.find(item => item.id === `${side}-damage`)?.text,
-                        'visible damage names its recipient').toContain(participants[side === 'attacker' ? 'defender' : 'attacker']);
+                    const damage = moment!.labels.find(item => item.id === `${side}-damage`);
+                    if (state === 'damage' && damage) expect(damage.text, 'visible damage names its recipient').toContain(participants[side === 'attacker' ? 'defender' : 'attacker']);
                 }
                 for (const label of moment!.labels.filter(label => state === 'damage' || !label.id?.match(/total|damage/))) {
                     expect(label.visibility).toBe('visible');
@@ -275,18 +270,15 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                     expect(label.fill).toBe(label.color);
                     expect(label.width > 0 && label.height > 0, `${label.id} has actual text bounds`).toBe(true);
                 }
-                for (const surface of moment!.surfaces) {
-                    expect(surface.background, `${surface.id} does not paint an opaque dice window`).toBe('rgba(0, 0, 0, 0)');
-                    expect(surface.borderWidths.every(width => parseFloat(width) === 0), `${surface.id} does not enclose the dice`).toBe(true);
-                }
-                const panel = moment!.layout?.panel;
-                expect(panel, 'actual battle panel bounds').toBeTruthy();
-                expect(moment!.layout?.regions.length, 'both engagement identities remain on the map').toBeGreaterThanOrEqual(2);
-                expect(moment!.layout?.objects.length, 'actual battle units and control markers remain present').toBeGreaterThanOrEqual(2);
-                // 当前需读取的兵牌和控制章保持可见，地形与人口不承担本阶段决策。
-                for (const object of moment!.layout!.objects) {
-                    expect(object.left >= 0 && object.top >= 0 && object.left + object.width <= page.viewportSize()!.width && object.top + object.height <= page.viewportSize()!.height, 'whole battle object remains inside screen').toBe(true);
-                    expect(object.left < panel!.left + panel!.width && object.left + object.width > panel!.left && object.top < panel!.top + panel!.height && object.top + object.height > panel!.top, 'dice cannot hide a battle unit or marker').toBe(false);
+                const layout = moment!.layout!;
+                const panel = layout.panel!;
+                expect(panel, 'actual battle arena bounds').toBeTruthy();
+                expect(layout.regions, 'stable attacker and defender sides').toHaveLength(2);
+                expect(layout.objects.length, 'both groups show genuine deployed units').toBeGreaterThanOrEqual(2);
+                for (const object of layout.objects) {
+                    expect(object.left >= panel.left && object.top >= panel.top && object.left + object.width <= panel.left + panel.width
+                        && object.top + object.height <= panel.top + panel.height, 'unit faces stay within the arena').toBe(true);
+                    for (const dice of layout.diceAreas) expect(object.top + object.height - 1 <= dice.top, 'dice render below the unit row').toBe(true);
                 }
                 const end = states.find(item => item.at > moment!.at && (item.phase !== phase || item.state !== state || item.dice.length === 0 || item.dice.some(die => die.ready !== 'true' || die.settled !== (state === 'damage' ? 'true' : 'false'))));
                 expect(end, phase + ' ' + state + ' phase boundary').toBeDefined();

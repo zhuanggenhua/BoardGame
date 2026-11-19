@@ -84,10 +84,6 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
     return phase;
   });
 
-  const detailPhaseId = isCoarsePointer ? selectedPhaseId : hoveredPhaseId;
-  const detailPhase = detailPhaseId
-    ? phasesWithCount.find(phase => phase.id === detailPhaseId) ?? null
-    : null;
   const turnHeaderClass = compact
     ? 'text-center mb-1 pb-1 border-b border-slate-600/50'
     : 'text-center mb-2 pb-2 border-b border-slate-600/50';
@@ -100,7 +96,7 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
     : 'flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all';
   const countBadgeClass = compact
     ? 'px-1 py-0.5 rounded text-[9px] font-bold min-w-[1.1rem] text-center'
-    : 'px-2 py-0.5 rounded text-xs font-bold min-w-[1.5rem] text-center';
+    : 'px-2 py-0.5 rounded text-xs font-bold min-w-[24px] text-center';
   const currentDotClass = compact ? 'h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse' : 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
 
   return (
@@ -187,38 +183,17 @@ export const PhaseTracker: React.FC<PhaseTrackerProps> = ({
               </div>
               
               {/* Tooltip */}
-              {!isCoarsePointer && (
-                <InfoTooltip
-                  title={phase.label}
-                  content={phase.desc}
-                  isVisible={isHovered}
-                  position="left"
-                />
-              )}
+              <InfoTooltip
+                title={isCoarsePointer ? <span data-testid="sw-phase-detail-panel">{phase.label}</span> : phase.label}
+                content={phase.desc}
+                isVisible={isCoarsePointer ? selectedPhaseId === phase.id : isHovered}
+                position="left"
+              />
             </div>
           );
         })}
       </div>
 
-      {isCoarsePointer && detailPhase && (
-        <div
-          className={compact
-            ? 'relative z-10 mt-1 w-[9.5rem] rounded-lg border border-amber-500/30 bg-slate-950/96 px-2 py-1.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.45)]'
-            : 'rounded-lg border border-amber-500/30 bg-slate-950/92 px-3 py-2 text-left shadow-[0_12px_40px_rgba(0,0,0,0.45)]'}
-          data-testid="sw-phase-detail-panel"
-        >
-          <div className={compact ? 'mb-1 text-[10px] font-bold tracking-wide text-amber-300' : 'mb-1 text-xs font-bold tracking-wide text-amber-300'}>
-            {detailPhase.label}
-          </div>
-          <div className={compact ? 'flex flex-col gap-0.5' : 'flex flex-col gap-1'}>
-            {detailPhase.desc.map((line, index) => (
-              <div key={`${detailPhase.id}-${index}`} className={compact ? 'text-[9px] leading-snug text-slate-200' : 'text-[11px] leading-relaxed text-slate-200'}>
-                {line}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

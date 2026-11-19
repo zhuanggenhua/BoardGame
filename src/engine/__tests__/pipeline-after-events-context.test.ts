@@ -26,6 +26,24 @@ const testDomain: DomainCore<TestCore, TestCommand, TestEvent> = {
 };
 
 describe('pipeline afterEvents pending context', () => {
+  it('有限进度标识只延长一次预算，重复标识不能无限延长', () => {
+    const domain: DomainCore<TestCore, TestCommand, TestEvent> = {
+      ...testDomain,
+      getAfterEventsProgressKeys: () => ['same-progress'],
+    };
+    const producer: EngineSystem<TestCore> = {
+      id: 'bounded-progress-test', name: 'bounded progress test',
+      afterEvents: () => ({ events: [{ type: 'AFTER_EVENTS_INCREMENTED', payload: {}, timestamp: 1 }] }),
+    };
+    const state: MatchState<TestCore> = {
+      core: { value: 0 },
+      sys: createInitialSystemState(['0'], [producer], 'bounded-progress'),
+    };
+    expect(() => executePipeline({ domain, systems: [producer] }, state,
+      { type: 'NOOP', playerId: '0', payload: {}, timestamp: 1 },
+      createSeededRandom('bounded-progress'), ['0'])).toThrow('afterEvents 未能在 20 轮内收敛');
+  });
+
   it('前置系统产出未归约事件时，FlowSystem 应等到下一轮读取已落地状态', () => {
     let produced = false;
     const producer: EngineSystem<TestCore> = {

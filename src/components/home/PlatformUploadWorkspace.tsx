@@ -2,9 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { listGameSubmissions, saveGameSubmission, submitGameSubmission, uploadSubmissionCover, uploadSubmissionRules, removeSubmissionRules, withdrawGameSubmission, type GameSubmissionDraft, type GameSubmissionRecord } from '../../api/game-submissions';
+import { listGameSubmissions, saveGameSubmission, saveWebZipSubmission, submitGameSubmission, uploadSubmissionCover, uploadSubmissionRules, removeSubmissionRules, withdrawGameSubmission, type GameSubmissionDraft, type GameSubmissionRecord } from '../../api/game-submissions';
 import { updateOwnedGame, uploadOwnedCover, uploadOwnedRules, removeOwnedRules } from '../../api/external-games';
-import { MAX_RULES_FILE_BYTES, type ExternalGame } from '../../shared/externalGames';
+import { MAX_RULES_FILE_BYTES, MAX_WEB_ZIP_BYTES, type ExternalGame } from '../../shared/externalGames';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { SubmissionCoverField } from './SubmissionCoverField';
 import { RulesDocumentField } from './RulesDocumentField';
@@ -22,7 +22,11 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
     const { t } = useTranslation(['lobby', 'common']);
     const [draftId, setDraftId] = useState(record?.submissionId);
     const source = ownedGame ?? record;
-    const [url, setUrl] = useState(source?.url ?? '');
+    const [url, setUrl] = useState(source?.webZipName ? '' : source?.url ?? '');
+    const [gameSource, setGameSource] = useState<'' | 'url' | 'zip'>(source?.webZipName ? 'zip' : source ? 'url' : '');
+    const [savedZip, setSavedZip] = useState(() => source?.webZipName ? { name: source.webZipName, url: source.url } : undefined);
+    const [zipFile, setZipFile] = useState<File>();
+    const [zipError, setZipError] = useState('');
     const [file, setFile] = useState<File>();
     const [rulesFile, setRulesFile] = useState<File>();
     const [rulesRemoved, setRulesRemoved] = useState(false);
@@ -40,18 +44,19 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
     return <form className="platform-upload-form platform-submission-form" onSubmit={async event => {
         event.preventDefault();
         const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? 'submit';
-        if (!token || busy || rulesError) return;
+        if (!token || busy || !gameSource || rulesError || (gameSource === 'zip' && zipError)) return;
         const form = new FormData(event.currentTarget);
         const minPlayers = form.get('minPlayers') ? Number(form.get('minPlayers')) : undefined;
         const maxPlayers = form.get('maxPlayers') ? Number(form.get('maxPlayers')) : undefined;
         const authorProfileUrl = String(form.get('authorProfileUrl') ?? '').trim();
         const data: GameSubmissionDraft = {
-            name: String(form.get('name') ?? '').trim(), url: url.trim(), category: String(form.get('category')),
+            name: String(form.get('name') ?? '').trim(), url: gameSource === 'zip' ? savedZip?.url ?? '' : url.trim(), category: String(form.get('category')),
             minPlayers, maxPlayers, ...(authorProfileUrl ? { authorProfileUrl } : {}),
             author: String(form.get('author') ?? '').trim(), description: String(form.get('description') ?? '').trim(), rules: String(form.get('rules') ?? '').trim(),
             ...(source?.durationMinutes != null ? { durationMinutes: source.durationMinutes } : {}),
         };
-        if (!validUrl || ((minPlayers == null) !== (maxPlayers == null)) || (minPlayers != null && maxPlayers != null && minPlayers > maxPlayers)) { setError(t('platform.uploadWorkspace.invalidSubmission')); return; }
+        if ((gameSource === 'url' && !validUrl) || ((minPlayers == null) !== (maxPlayers == null)) || (minPlayers != null && maxPlayers != null && minPlayers > maxPlayers)) { setError(t('platform.uploadWorkspace.invalidSubmission')); return; }
+        if (gameSource === 'zip' && !zipFile && !savedZip) { setZipError(t('platform.uploadWorkspace.zipRequired')); return; }
         if (!ownedGame && action === 'submit' && !file && !record?.coverUrl) { setError(t('platform.uploadWorkspace.coverRequired')); return; }
         setBusy(true); setError('');
         try {
@@ -62,8 +67,12 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 else if (rulesRemoved && source?.rulesDocument) await removeOwnedRules(token, ownedGame.gameId);
                 await onSaved(ownedGame.gameId);
             } else {
-                const saved = await saveGameSubmission(token, data, draftId);
+                const saved = gameSource === 'zip' && zipFile
+                    ? await saveWebZipSubmission(token, data, zipFile, draftId)
+                    : await saveGameSubmission(token, data, draftId);
                 setDraftId(saved.submissionId);
+                setSavedZip(saved.webZipName ? { name: saved.webZipName, url: saved.url } : undefined);
+                setZipFile(undefined);
                 if (!draftId) await onDraftSaved?.(saved);
                 if (file) await uploadSubmissionCover(token, saved.submissionId, file);
                 if (rulesFile && !rulesError) await uploadSubmissionRules(token, saved.submissionId, rulesFile);
@@ -83,10 +92,34 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
             <section className="platform-upload-section platform-upload-basic">
             <h3>{t('platform.uploadWorkspace.basicInformation')}</h3>
             <div className="platform-upload-input-grid">
+            {!ownedGame && <fieldset className="platform-upload-type">
+                <legend>{t('platform.uploadWorkspace.submissionType')}</legend>
+                <div className="platform-upload-type-options">
+                    {(['url', 'zip'] as const).map(type => <label key={type}>
+                        <input type="radio" name="gameSource" value={type} checked={gameSource === type} required onChange={() => {
+                            setGameSource(type);
+                            setZipFile(undefined); setZipError(''); setError('');
+                        }} />
+                        <span>{t(type === 'url' ? 'platform.uploadWorkspace.gameUrl' : 'platform.uploadWorkspace.webZip')}</span>
+                    </label>)}
+                </div>
+            </fieldset>}
             <label>{t('platform.uploadWorkspace.gameName')}<input name="name" required maxLength={100} defaultValue={source?.name} /></label>
-            <label>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
+            {gameSource === 'zip' ? <label key="web-zip" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.webZip')}
+                {!ownedGame && <input key={savedZip?.url} type="file" accept=".zip" required={!savedZip} aria-label={t('platform.uploadWorkspace.webZip')} aria-describedby="submission-zip-check" onChange={event => {
+                    const selected = event.currentTarget.files?.[0];
+                    setZipFile(undefined); setZipError(''); setError('');
+                    if (!selected) return;
+                    if (!/\.zip$/i.test(selected.name)) { setZipError(t('platform.uploadWorkspace.zipRequired')); return; }
+                    if (selected.size > MAX_WEB_ZIP_BYTES) { setZipError(t('platform.uploadWorkspace.zipTooLarge')); return; }
+                    setZipFile(selected);
+                }} />}
+                {savedZip && <span>{savedZip.name}</span>}
+                <small id="submission-zip-check">{ownedGame ? t('platform.uploadWorkspace.zipUpdateHint') : t('platform.uploadWorkspace.zipHint')}</small>
+                {zipError && <small role="alert">{zipError}</small>}
+            </label> : gameSource === 'url' && <label key="game-link" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
                 <small id="submission-url-check">{!url ? t('platform.uploadWorkspace.urlEmptyHint') : validUrl ? t('platform.uploadWorkspace.urlValid') : t('platform.uploadWorkspace.urlInvalid')}</small>
-            </label>
+            </label>}
             <div className="platform-upload-game-meta">
             <label>{t('platform.uploadWorkspace.category')}<select name="category" defaultValue={source?.category ?? 'card'}>
                 <option value="uncategorized">{t('platform.uploadWorkspace.uncategorized')}</option>

@@ -330,6 +330,18 @@ export function validateCommand(
     return MageWarsDomain.validate(state, command).error;
 }
 
+export function finishCreatureAction(state: MatchState<MageWarsCore>, playerId: string): MatchState<MageWarsCore> {
+    const result = runCommand(state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId, payload: {} });
+    if (!result.success) throw new Error(`Could not finish creature action for ${playerId}: ${result.error}`);
+    return result.state;
+}
+
+export function takeNoCreatureAction(state: MatchState<MageWarsCore>, playerId: string, objectId?: string): MatchState<MageWarsCore> {
+    const result = runCommand(state, { type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION, playerId, payload: { objectId } });
+    if (!result.success) throw new Error(`Could not take no action for ${objectId ?? playerId}: ${result.error}`);
+    return finishCreatureAction(result.state, playerId);
+}
+
 export function readMageWarsPhaseExitEvents(result: MageWarsEvent[] | PhaseExitResult | void): MageWarsEvent[] {
     if (!result) return [];
     return (Array.isArray(result) ? result : result.events ?? []) as MageWarsEvent[];

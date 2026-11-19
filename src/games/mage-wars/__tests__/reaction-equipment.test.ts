@@ -1099,8 +1099,7 @@ describe('mage-wars reaction equipment', () => {
             anchoredToPlayerId: '0',
             boundSpellCardId: 1704,
         });
-        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([3716]);
-        expect(cast.state.core.players['0'].discardSpellCardIds).not.toContain(1704);
+        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([]);
     });
 
     it('allows Elemental Staff to enter play without a binding', () => {
@@ -1158,8 +1157,7 @@ describe('mage-wars reaction equipment', () => {
             anchoredToPlayerId: '0',
             boundSpellCardId: 3409,
         });
-        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([3725]);
-        expect(cast.state.core.players['0'].discardSpellCardIds).not.toContain(3409);
+        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([]);
 
         const staff = makeArenaObject('mage-staff-0', '0', PLAYER_ZERO_START_ZONE, {
             kind: 'equipment',

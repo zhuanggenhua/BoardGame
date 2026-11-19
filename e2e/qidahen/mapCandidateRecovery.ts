@@ -2,6 +2,26 @@ import { dragQidahenMap } from './mapPointer';
 import { expect, type Page } from '@playwright/test';
 const read = (page: Page) => page.evaluate(() => ({ core: (window as any).__BG_TEST_HARNESS__.state.get().core }));
 
+export async function assertTrainingPanelClearsCandidateOutlines(page: Page) {
+    const panel = page.getByTestId('qidahen-wheel-recruit-train-selection');
+    await expect(panel).toBeVisible();
+    await expect.poll(() => panel.evaluate(element => {
+        const panelBounds = element.getBoundingClientRect();
+        return [...document.querySelectorAll<HTMLElement>('[data-pending-committed-selectable="true"]')].flatMap(unit => {
+            const box = unit.getBoundingClientRect();
+            if (!box.width || !box.height || box.left < 0 || box.top < 0 || box.right > innerWidth || box.bottom > innerHeight) return [];
+            // getBoundingClientRect 不含外描边。读取真实渲染的 spread 并换算到屏幕坐标。
+            const shadows = getComputedStyle(unit).boxShadow.match(/-?\d+(?:\.\d+)?px(?:\s+-?\d+(?:\.\d+)?px){2,3}/g) ?? [];
+            const spread = Math.max(0, ...shadows.map(shadow => parseFloat(shadow.split(/\s+/)[3] ?? '0')));
+            const padX = spread * box.width / unit.offsetWidth;
+            const padY = spread * box.height / unit.offsetHeight;
+            return box.left - padX < panelBounds.right && box.right + padX > panelBounds.left
+                && box.top - padY < panelBounds.bottom && box.bottom + padY > panelBounds.top
+                ? [unit.getAttribute('data-testid')] : [];
+        });
+    }), { message: '训练面板必须避开视口内候选兵牌的实际外描边' }).toEqual([]);
+}
+
 /** 用真实鼠标验证地图候选可恢复，不改对局或选择。 */
 export async function verifyQidahenMapCandidateRecovery(page: Page, onRecovered: () => Promise<void>) {
     const recommended = page.locator('[data-qidahen-tutorial-recommended="true"]').first();
@@ -57,6 +77,7 @@ export async function verifyQidahenMapCandidateRecovery(page: Page, onRecovered:
                                 const box = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
                             }), { message: 'a map candidate behind the hand can be recovered and hit by real panning' }).toBe(true);
                             await onRecovered();
+                            await assertTrainingPanelClearsCandidateOutlines(page);
                             expect((await read(page)).core, 'viewing another candidate does not change rules or selections').toEqual(coreBeforePan);
                             expect((await view()).selected, 'viewing another candidate preserves selected units').toEqual(originalView.selected);
                             await dragQidahenMap(page, originalView.x - actualView.x, originalView.y - actualView.y);

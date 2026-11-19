@@ -40,6 +40,9 @@ case "${'${1:-}'} ${'${2:-}'}" in
   "exec boardgame-game-server")
     if [[ "$*" == *"online-ai-slow-decision"* ]]; then
       printf '{"message":"[GameTransport] online-ai-slow-decision","matchId":"example","decisionMs":1200}\\n'
+      if [[ "$*" == *"online-ai-slow-recovery"* ]]; then
+        printf '{"message":"[GameTransport] online-ai-slow-recovery","matchId":"example","recoveryElapsedMs":3200}\\n'
+      fi
     else
       printf '# fake container process snapshot\\nTID=1 CPU=99\\n'
     fi ;;
@@ -92,6 +95,7 @@ esac
         assert.match(evidence, /profileInspectorPort=9229/);
         assert.match(evidence, /fake container process snapshot/);
         assert.match(evidence, /online-ai-slow-decision/);
+        assert.match(evidence, /online-ai-slow-recovery/);
         assert.match(evidence, /"matchId":"example"/);
         assert.match(evidence, /# decision/);
         const feedbackFile = readdirSync(evidenceDir).find((fileName) => fileName.endsWith('-feedback.json'));

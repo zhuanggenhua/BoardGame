@@ -5,7 +5,7 @@ import './lib/structuredClonePolyfill';
 import './index.css';
 import { i18nInitPromise } from './lib/i18n';
 import { SENTRY_DSN } from './config/server';
-import { isStaleChunkError, reloadForStaleChunkOnce } from './lib/staleChunkReloadGuard';
+import { installVitePreloadRecovery, isStaleChunkError, reloadForStaleChunkOnce } from './lib/staleChunkReloadGuard';
 import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { notifyMobileBundleReady } from './lib/mobile/mobileLiveUpdates';
 import { createNativeMobileFeatureInitializer } from './lib/mobile/mobileStartup';
@@ -70,19 +70,13 @@ if (import.meta.env.DEV) {
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('vite:preloadError', (event) => {
-    const reloaded = reloadForStaleChunkOnce('vite:preloadError', window, {
-      shouldReload: shouldAutoReloadStaleChunk,
-    });
-    if (reloaded) {
-      event.preventDefault();
-    }
-  });
+  installVitePreloadRecovery(window, shouldAutoReloadStaleChunk);
 
   window.addEventListener('unhandledrejection', (event) => {
     if (!isStaleChunkError(event.reason)) return;
     const reloaded = reloadForStaleChunkOnce('unhandledrejection', window, {
       shouldReload: shouldAutoReloadStaleChunk,
+      failure: event.reason,
     });
     if (reloaded) {
       event.preventDefault();
@@ -135,12 +129,14 @@ if (rootElement) {
     if (isStaleChunkError(error)) {
       const reloaded = reloadForStaleChunkOnce('bootstrap-app-load', window, {
         shouldReload: shouldAutoReloadStaleChunk,
+        failure: error,
       });
       if (reloaded) {
         return;
       }
     }
     console.error('[Bootstrap] 加载应用入口失败', error);
+    window.dispatchEvent(new Event('bg:bootstrap-failed'));
     reportCaptureBootstrapStatus('capture-app-load-failed', error instanceof Error ? error.message : String(error));
   });
 

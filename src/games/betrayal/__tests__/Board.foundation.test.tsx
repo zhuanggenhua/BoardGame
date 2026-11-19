@@ -6447,8 +6447,14 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await expectEventDamageAllocation('标本剥制', '分配 1 点物理伤害', ['力量', '速度'], 'discovery-card');
 
-        await completeEventDamageAllocation('betrayal-damage-allocation-trait-might-increase');
-        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-might-increase'));
+        const confirmDamage = screen.getByTestId('betrayal-damage-allocation-confirm');
+        expect(confirmDamage).not.toBeDisabled();
+        fireEvent.click(confirmDamage);
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
+        });
         expect(screen.getByTestId('betrayal-action-endTurn')).toBeInTheDocument();
     });
 

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "reviewFile": "required-visual-review.json",
+  "reviewerKind": "primary-agent",
+  "requiredStates": [
+    { "chainId": "flight", "uiStateId": "flight-rejected", "viewport": "desktop", "reason": "点击时机不符的飞行标记后显示使用时机" },
+    { "chainId": "response", "uiStateId": "response-rejected", "viewport": "desktop", "reason": "点击不符合伤害条件的隐形标记后显示原因" },
+    { "chainId": "purify", "uiStateId": "purify-rejected", "viewport": "desktop", "reason": "点击净化时找不到合法目标的提示" },
+    { "chainId": "upgrade", "uiStateId": "upgrade-rejected", "viewport": "desktop", "reason": "实际拖出不能打出的升级牌后显示阶段限制" },
+    { "chainId": "card-cost", "uiStateId": "card-cost-rejected", "viewport": "desktop", "reason": "拖动打出费用不足的卡牌后显示费用原因" },
+    { "chainId": "knockdown", "uiStateId": "knockdown-rejected", "viewport": "desktop", "reason": "点击不能解除的击倒标记时显示解除费用" }
+  ]
+}

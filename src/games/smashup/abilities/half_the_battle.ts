@@ -2397,7 +2397,9 @@ function geckosMastersTeachings(ctx: AbilityContext): AbilityResult {
 }
 
 function geckosKcSmith(ctx: AbilityContext): AbilityResult {
-    return { events: [grantContextualExtraAction(ctx, 'geckos_kc_smith')] };
+    return { events: [findSourceMinion(ctx)
+        ? grantContextualExtraAction(ctx, 'geckos_kc_smith')
+        : grantContextualExtraMinion(ctx, 'geckos_kc_smith')] };
 }
 
 function giGeraldIsMinionFace(ctx: AbilityContext): boolean {

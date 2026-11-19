@@ -6388,3 +6388,41 @@ describe('RESOLVE_CHOICE 选择交互', () => {
         expect(result2.success).toBe(true);
     });
 });
+
+
+it('三人奖励骰期间选定对手后，必须先完成改骰再恢复奖励骰确认', () => {
+    const ids = ['0', '1', '2'];
+    let state = createInitializedState(ids, fixedRandom);
+    state.core.activePlayerId = '0';
+    state.sys.phase = 'main1';
+    state.core.players['2'].resources.cp = 5;
+    state.core.players['2'].hand = [getCardById('card-give-hand')];
+    const settlement: PendingBonusDiceSettlement = {
+        id: 'opponent-interference', sourceAbilityId: 'card-zhizhuxia-head-tingle',
+        attackerId: '0', targetId: '1', dice: [{ index: 0, value: 4, face: 'fist' }],
+        rerollCount: 0, allowDiceModification: true,
+    };
+    state.core.pendingBonusDiceSettlement = settlement;
+    state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
+    state.sys.interaction = { current: {
+        id: 'dt-bonus-dice-opponent-interference', kind: 'dt:bonus-dice', playerId: '0', data: null,
+    } as any, queue: [] };
+    const send = (type: string, playerId: string, payload: Record<string, unknown>) => {
+        const result = executePipeline({ domain: DiceThroneDomain, systems: testSystems }, state,
+            { type, playerId, payload, timestamp: 100 } as any, fixedRandom, ids);
+        expect(result.success, `${type}: ${result.error}`).toBe(true);
+        state = result.state;
+        return result;
+    };
+    send('PLAY_CARD', '2', { cardId: 'card-give-hand' });
+    const selected = send('RESOLVE_INTERACTION', '2', { selectedPlayerIds: ['0'] });
+    expect(selected.events.some(event => event.type === 'BONUS_DICE_SETTLED')).toBe(false);
+    expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+    expect(state.sys.interaction.queue[0]?.kind).toBe('dt:bonus-dice');
+    send('REROLL_DIE', '2', { dieId: 0 });
+    send('SYS_INTERACTION_CONFIRM', '2', {});
+    expect(state.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+    const settled = send('SKIP_BONUS_DICE_REROLL', '0', {});
+    expect(settled.events.filter(event => event.type === 'BONUS_DICE_SETTLED')).toHaveLength(1);
+    expect(state.sys.interaction.current?.kind).not.toBe('multistep-choice');
+});

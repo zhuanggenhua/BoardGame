@@ -177,6 +177,7 @@
     "settlement": "Dice ready"
   },
   "diceResult": {
+    "wallPassage": "Wall passage attacks · Each roll resolves separately",
     "meleeAttack": "Melee Attack",
     "rangedAttack": "Ranged Attack",
     "heal": "Heal",
@@ -207,6 +208,7 @@
     "activateAbility": "Use ability",
     "rebindSpell": "Rebind spell",
     "castBoundSpell": "Cast {{name}}",
+    "planForObject": "Choose a spell from your spellbook for {{name}}",
     "meleeBonus": "Melee bonus",
     "healMode": "Heal",
     "meleeBonusMarker": "Melee +{{amount}}",
@@ -233,6 +235,8 @@
         "cancel": "Cancel attack"
       }
     },
+    "attackSource": "the attack source",
+    "attackTarget": "The target",
     "counterstrike": {
       "title": "{{defenderObjectId}} may counterstrike {{attackerObjectId}}",
       "options": {
@@ -255,10 +259,10 @@
       }
     },
     "upkeep": {
-      "title": "{{targetObjectId}} requires {{amount}} mana for upkeep",
+      "title": "Pay {{amount}} mana to keep {{targetName}} in play",
       "options": {
         "pay": "Pay upkeep",
-        "destroy": "Destroy enchantment"
+        "destroy": "Decline and destroy creature"
       }
     },
     "upkeepEquipmentDirectDamage": {
@@ -279,6 +283,8 @@
       "title": "Reveal response enchantment: {{responseCardName}}",
       "options": {
         "reveal": "Reveal and resolve",
+        "payAndReveal": "Pay {{amount}} mana and reveal",
+        "discardWithoutPaying": "Reveal and discard",
         "redirect": "Reveal and redirect the spell",
         "teleport": "Teleport to {{targetZoneId}}"
       }
@@ -295,6 +301,7 @@
     "actionUnavailable": "You cannot do that right now.",
     "wrongPhase": "You cannot do that during the current phase.",
     "tutorialBlocked": "The tutorial step does not allow that action yet. Follow the current prompt first.",
+    "tooManyPreparedSpellCopies": "No more copies of this card are available in your spellbook.",
     "invalidSpellTarget": "That target cannot receive the selected spell.",
     "invalidMoveTarget": "You cannot move to that zone.",
     "invalidAttackTarget": "You cannot attack that target right now.",
@@ -312,6 +319,9 @@
     "notYourObject": "You do not control that object.",
     "invalidTargetObject": "That target object is invalid.",
     "spellSchoolLineNotAllowed": "That spellcasting point does not allow that school.",
+    "spellTypeNotAllowed": "This source cannot prepare that spell category.",
+    "spellLevelNotAllowed": "The spell's level exceeds this source's limit.",
+    "spellTypeLineNotAllowed": "The card's type does not meet this source's requirements.",
     "targetOutOfRange": "The target is out of range.",
     "wallEdgeOccupied": "That edge already has a wall.",
     "missingTarget": "Choose a legal target first.",
@@ -459,6 +469,76 @@
     }
   },
   "tutorial": {
+    "singleMatch": {
+      "spell-card-reading": "Before preparing a spell, check its mana cost, action type, range and legal targets. Open the rules reference in Settings for more detail.",
+      "attack-bar-reading": "Read the wolf’s attack bar. Its bite is a quick melee attack against a target in the same zone. The dice icons give the dice count. Additional effects are listed on the right.",
+      "check-discard": "Minor Heal is used up. Open the discard pile to see the top card. Used incantations and defeated creatures go to their owners’ discard piles.",
+      "opponent-public-view": "Use the Priestess’s observe button to see her public information. Her discard pile and prepared card count are public; the faces of hidden and prepared cards stay private.",
+      "back-to-self-view": "Return to your own view to get back to the Beastmaster’s spellbook.",
+      "guard-wolf": "The unicorn is in the Beastmaster’s zone. Select the wounded wolf and put it on guard. The unicorn will have to go through it to reach the Beastmaster in melee.",
+      "heal-wolf": "The wolf is on guard. Cast your prepared Minor Heal on it.",
+      "healing-result": "The dice show the amount rolled. The number beside the wolf shows how much damage it actually healed. The wolf had only 3 damage to heal.",
+      "unicorn-attacks": "The unicorn turns on the wolf. Armor absorbs normal damage. Critical damage goes through.",
+      "guard-response": "The wolf can bite back. You can also decline the counterstrike. Its guard ends after this decision.",
+      "enemy-turn-ends": "Both sides have finished their creature actions. The final quickcast window is next.",
+      "pass-final": "You’ve spent your quickcast. Close this window to start the next round.",
+      "plan-summon": "Action markers are ready again and the mages gain mana. Prepare Timber Wolf and Rouse the Beast, then confirm your plan.",
+      "pass-deploy": "Deployment belongs to spawnpoints. You have no spawnpoint ready, so finish deployment.",
+      "pass-priority": "Save your quickcast. Rouse the Beast needs a creature that has just entered play.",
+      "unicorn-retreats": "The unicorn moves into the next zone. Follow it and take the initiative.",
+      "pursue-unicorn": "Select your first wolf and move it into the unicorn’s zone.",
+      "bite-unicorn": "After moving, the wolf can still take a quick action. Use its Bite on the unicorn in the same zone.",
+      "end-wolf-action": "The wolf’s attack has resolved. End its action to pass to your opponent.",
+      "priestess-moves": "The Priestess heads toward the center. The Beastmaster has a full action available to summon another wolf.",
+      "summon-second-wolf": "Choose your prepared Timber Wolf and summon it in the Beastmaster’s zone.",
+      "rouse-second-wolf": "The new wolf cannot act this round yet. Cast Rouse the Beast on the wolf you just summoned.",
+      "end-summon-action": "The new wolf is ready. End the Beastmaster’s action before activating it.",
+      "move-new-wolf": "Move the new wolf one zone to the Beastmaster’s right.",
+      "plan-wall-and-push": "The Priestess is closing in. Prepare Wall of Thorns and Force Push.",
+      "move-for-wall": "Move the Beastmaster forward one zone to get within range of the wall’s destination.",
+      "place-wall": "Choose Wall of Thorns and select the edge between the two central zones. The wall blocks line of sight and can attack creatures that cross it.",
+      "priestess-nears-wall": "The Priestess moves beside the wall. Next round you can push her through it.",
+      "plan-push": "The unused Force Push is back in your spellbook. Prepare it again.",
+      "move-for-push": "Move the Beastmaster one more zone forward in the same column.",
+      "push-through-wall": "Choose Force Push, select the Priestess, then choose the zone across the wall. The attacking wall adds 3 mana to the base cost of 3.",
+      "wall-rolls": "The Priestess is level 6. The Wall of Thorns attacks her five times, rolling two dice each time. A level-1 creature can cross it without being attacked.",
+      "plan-ward": "The opponent can still target your first wolf with an incantation. Prepare Nullify to protect it.",
+      "set-ward": "Spend 2 mana to place Nullify face down on the first wolf. The opponent sees the facedown card.",
+      "opponent-casts-sleep": "The Priestess tries to put the wolf to sleep, triggering Nullify.",
+      "pay-counter": "Pay 2 mana to reveal Nullify and counter Sleep. You can decline to discard the enchantment and let Sleep resolve.",
+      "plan-armor": "The Priestess is calling in another creature. Prepare Bearskin for the Beastmaster. You can review what happened in the action log.",
+      "equip-armor": "Equip the Beastmaster with Bearskin. The armor will absorb some normal damage from later attacks.",
+      "opponent-summons-cleric": "The Priestess summons a cleric. Move closer to bring him into range.",
+      "approach-cleric": "Move the Beastmaster one zone closer to the cleric so Geyser can reach him next round.",
+      "plan-fountain": "The cleric is in range. Prepare Geyser.",
+      "cast-fountain": "Select Geyser, then the cleric. The attack dice determine damage. The yellow effect die determines the extra effect.",
+      "restore-cleric": "The cleric was Dazed. The Priestess can remove the condition with Restore by paying its removal cost.",
+      "plan-wand": "Prepare Mage Wand so you can keep a healing incantation on your equipment.",
+      "bind-wand": "Equip the Beastmaster with Mage Wand and bind Heal to it. Casting still requires mana, range, and a legal window.",
+      "rebind-wand": "Choose Mage Wand, spend 3 mana to change the bound spell to Minor Heal, and return Heal to your spellbook.",
+      "attach-essence-drain": "The Priestess puts Essence Drain on your second wolf. Keeping it in play next round will cost 2 mana.",
+      "first-upkeep": "Pay 2 mana to keep your second wolf, or save the mana and lose that wolf.",
+      "plan-lair": "Prepare Lair. It can prepare an Animal creature separately and summon it for you during deployment.",
+      "place-lair": "Choose Lair and place it in the Beastmaster’s zone. It will gain its own mana next round.",
+      "second-upkeep": "Essence Drain is still attached. Decide whether to spend another 2 mana to keep your second wolf.",
+      "plan-lair-fox": "Select the Lair, then choose Bitterwood Fox for it from the spellbook. The Beastmaster’s own slots stay free.",
+      "deploy-fox": "Select the Lair and then its zone to summon Bitterwood Fox. The Lair pays 4 mana and the Beastmaster pays 1.",
+      "cast-bound-heal": "Cast the Minor Heal bound to your wand on the first wolf. The spell stays on the wand after you use it.",
+      "plan-defense": "The Priestess is preparing a ranged attack. Prepare Cobra Reflexes to give the wolf a chance to dodge.",
+      "opponent-equips-bow": "The Priestess equips Hunting Bow. Your first wolf is within her range.",
+      "grant-wolf-defense": "Choose Cobra Reflexes, cast it on the first wolf, and reveal it.",
+      "bow-attacks": "The arrow is coming. Cobra Reflexes gives your wolf a chance to use its defense.",
+      "bow-defense": "Roll the yellow twelve-sided die to try to evade, or decline the defense. If the arrow is not evaded, calculate its damage.",
+      "approach-priestess": "Move the Beastmaster into the Priestess’s zone. Attack with the Beastmaster next round.",
+      "duel-17": "The Priestess is in your zone. Select the Beastmaster, then the Priestess, to make a melee attack.",
+      "duel-finished": "The Priestess is still standing. Keep up the attack, cast a spell, or protect the Beastmaster. Finish the guide to continue playing from this board.",
+      "continueRound": "Continue to the next action window."
+    },
+    "outcome": {
+      "mageAttackVictory": "The Priestess falls. You held your ground, found an opening, and landed the final blow with the Beastmaster.",
+      "victory": "You defeated the opposing mage.",
+      "defeat": "The Beastmaster falls. Next time, watch the enemy’s range and save a defense or an escape."
+    },
     "catalog": {
       "basic": {
         "title": "First Game Flow: Read, Prepare, Resolve",
@@ -535,12 +615,82 @@
       "finish": "Tutorial complete. You have gone through a normal round flow and seen the wall and guard results."
     }
   },
+  "rulesReference": {
+    "title": "Rules reference",
+    "topicLabel": "Topic",
+    "topics": {
+      "arena": {
+        "title": "Mages and the arena",
+        "description": "You control a Level 6 Mage. If your Mage is defeated, you lose. The arena is divided into zones, with walls on their borders. Creatures, conjurations, walls, enchantments and equipment are objects. The owner brought the card to the game. The controller decides how to use it."
+      },
+      "rounds": {
+        "title": "Initiative and action markers",
+        "description": "Initiative alternates each round. A face-up action marker means the creature is ready to activate. Its available actions depend on its type and timing. Other markers on cards can track used abilities or limited uses."
+      },
+      "actions": {
+        "title": "Full actions and quick actions",
+        "description": "A creature can stay in its zone and take a full action, or move and then take a quick action. A second normal move is a quick action. Mages also have a separate quickcast marker, usable during quickcast phases and at the appropriate times around a friendly activation."
+      },
+      "movement": {
+        "title": "Movement and hindering",
+        "description": "A hindering enemy usually prevents a second move. Slow restricts actions after moving. Fast adds movement without ignoring hindering. Elusive lets a creature ignore hindering and guards. Pests do not hinder. Restrained prevents normal movement and guarding. Incapacitated also prevents attacking, casting, counterstriking and most defenses."
+      },
+      "walls": {
+        "title": "Walls, pushing and teleporting",
+        "description": "Walls may block line of sight and passage, or attack creatures crossing them. Climbing takes a full action and can still trigger a passage attack. A push against a wall that blocks passage or the arena boundary can cause an unavoidable three-dice attack. Teleporting bypasses objects between zones. Extending a wall costs extra mana and a second copy."
+      },
+      "spellbook": {
+        "title": "Spellbook and card restrictions",
+        "description": "Level and school affect training costs and may restrict targets or sources. Novice cards cost one spellbook point. Epic limits a card to one copy per spellbook. Legendary limits copies in play, while Unique limits copies you control. Zone Exclusive conjurations share a limit of one per zone. Mage Only spells must be cast by a Mage. Magebind raises the reveal cost on Mage targets."
+      },
+      "castingSources": {
+        "title": "Wands, familiars and spawnpoints",
+        "description": "A bound spell stays on the wand and may be cast from it once per round when the rules allow. A Mage prepares their own spells. A familiar may prepare a separate spell and cast it on its own action. A spawnpoint casts during deployment, spending its own mana before its controller pays the rest."
+      },
+      "enchantments": {
+        "title": "Hidden enchantments",
+        "description": "An enchantment may be placed face down. You know its identity, while rivals know only that it is there. Pay its reveal cost when it is revealed. Mandatory enchantments reveal at their specified timing and are lost if the cost cannot be paid. Countering stops a spell before it resolves. Objects already in play are removed when destroyed."
+      },
+      "targets": {
+        "title": "Range, guards and legal targets",
+        "description": "Melee usually targets the same zone. Ranged attacks have minimum and maximum ranges and require line of sight. Guards can intercept melee attacks, with exceptions such as Pests and Elusive attackers. Flying restricts targets. Reach allows melee attacks against Flying creatures in the same zone. Zone attacks affect objects in the target zone, excluding its border walls."
+      },
+      "attackDice": {
+        "title": "Attack dice and armor",
+        "description": "Aegis reduces attack dice using the highest applicable value, to a minimum of one die. Attack bonuses apply under the conditions stated on the card. Armor reduces normal damage and Piercing reduces effective armor. Critical damage passes through armor. Direct damage uses no attack dice and ignores armor."
+      },
+      "defense": {
+        "title": "Defense and multiple strikes",
+        "description": "A defense attempts to avoid an attack before it hits. Unavoidable attacks skip defenses. A hit can still roll zero damage. Damage barriers and melee counterstrikes resolve separately at their specified timing. Doublestrike, Triplestrike and Sweeping have distinct targeting rules. First-strike bonuses do not repeat. A canceled attack or spell stops resolving."
+      },
+      "creatures": {
+        "title": "Creature traits",
+        "description": "Living creatures can usually heal and may be affected by poison or psychic effects. Nonliving objects have Poison Immunity and Finite Life. Finite Life blocks healing and regeneration. Incorporeal usually counts only damage faces showing one. Ethereal attacks deal damage and additional effects normally. Uncontainable creatures cannot be Restrained."
+      },
+      "conditions": {
+        "title": "Conditions and the effect die",
+        "description": "The twelve-sided effect die also checks conditions and escape. During upkeep, roll one attack die for each Burn marker. A zero removes it. Rot deals direct damage during upkeep. Weak affects attacks, and Daze can make an attack miss. Stun and Sleep restrict actions. A sleeping creature that takes damage wakes and becomes Dazed. Cripple Restrains a creature, which can roll to escape at the end of its action. Burnproof prevents Burn."
+      },
+      "traits": {
+        "title": "Other abilities",
+        "description": "Taunt can determine the target of the next melee attack. Bloodthirsty creatures may be required to attack wounded Living enemies in their zone. Rage rises with damage and falls as the creature heals. Vampiric converts qualifying melee damage into healing. Traps trigger at their printed timing, and Mana Drain and Mana Transfer change mana when their conditions are met."
+      },
+      "upkeep": {
+        "title": "Upkeep and recovery",
+        "description": "Check who pays an upkeep cost and what is removed if they decline. Healing removes existing damage. Regeneration usually happens automatically during upkeep. To remove a condition early, check which spells or abilities can remove it and what they cost."
+      }
+    }
+  },
   "actionLog": {
     "separator": {
       "card": ", "
     },
     "phaseChanged": "Enter {{phase}}",
-    "spellsPlanned": "Prepared {{count}} spells: ",
+    "placeFaceDownEnchantment": "Placed a face-down enchantment",
+    "faceDownEnchantment": "Face-down enchantment",
+    "unknownObject": "Arena object",
+    "spellCountered": " was countered by ",
+    "spellsPlanned": "Prepared {{count}} spells",
     "objectSpellPlanned": "{{objectId}} prepared 1 object spell",
     "spellCast": "Cast",
     "spellCastCost": ", spent {{manaCost}} mana",

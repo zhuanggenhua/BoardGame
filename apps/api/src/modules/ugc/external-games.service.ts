@@ -39,7 +39,7 @@ export class ExternalGamesService implements OnModuleInit {
         const names = new Map(users.map(user => [String(user._id), user.username]));
         const uploaders = new Map(submissions.map(submission => [submission.submissionId, names.get(submission.ownerId) ?? null]));
         return records.map(record => ({
-            gameId: record.gameId, name: record.name, url: record.url, category: record.category,
+            gameId: record.gameId, name: record.name, url: record.url, category: record.category, webZipName: record.webZipName,
             minPlayers: record.minPlayers, maxPlayers: record.maxPlayers, durationMinutes: record.durationMinutes,
             author: record.author, authorProfileUrl: record.authorProfileUrl, description: record.description,
             rules: record.rules, rulesDocument: record.rulesDocument, coverUrl: record.coverUrl, published: record.published,
@@ -81,6 +81,7 @@ export class ExternalGamesService implements OnModuleInit {
         if (!record) throw new NotFoundException('游戏不存在');
         const fields = editableGameFields(data);
         const changedUrl = record.url !== fields.url;
+        if (changedUrl && record.webZipName) throw new BadRequestException('请在我的投稿中重新上传网页 ZIP');
         Object.assign(record, fields, { published: data.published });
         if (changedUrl) Object.assign(record, { embedStatus: 'unknown', embedReason: '', embedCheckedUrl: undefined, embedCheckedAt: undefined });
         await record.save();
@@ -109,17 +110,17 @@ export class ExternalGamesService implements OnModuleInit {
         if (!updated.matchedCount) throw new NotFoundException('游戏不存在');
         return { removed: true };
     }
-    async publishSubmission(submissionId: string, submitterId: string, fields: ExternalGameFields, coverUrl: string, rulesDocument?: GameRulesDocument) {
+    async publishSubmission(submissionId: string, submitterId: string, fields: ExternalGameFields, coverUrl: string, rulesDocument?: GameRulesDocument, webZipName?: string) {
         const existing = await this.games.findOne({ submissionId });
         await this.assertSubmissionEditable(submitterId, existing?.gameId);
         const values = editableGameFields(fields);
         const fieldUpdate = gameFieldsUpdate(fields);
         const update = {
-            ...fieldUpdate.$set, coverUrl, published: true, ...(rulesDocument ? { rulesDocument } : {}),
+            ...fieldUpdate.$set, coverUrl, published: true, ...(rulesDocument ? { rulesDocument } : {}), ...(webZipName ? { webZipName } : {}),
             ...(existing && existing.url !== values.url ? { embedStatus: 'unknown', embedReason: '', embedCheckedUrl: null, embedCheckedAt: null } : {}),
         };
         const record = await this.games.findOneAndUpdate({ submissionId }, {
-            $set: update, $unset: { ...fieldUpdate.$unset, ...(!rulesDocument ? { rulesDocument: 1 } : {}) }, $setOnInsert: { gameId: `external-${randomUUID()}` },
+            $set: update, $unset: { ...fieldUpdate.$unset, ...(!rulesDocument ? { rulesDocument: 1 } : {}), ...(!webZipName ? { webZipName: 1 } : {}) }, $setOnInsert: { gameId: `external-${randomUUID()}` },
         }, { upsert: true, new: true });
         return record!.gameId;
     }

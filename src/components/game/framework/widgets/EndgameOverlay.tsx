@@ -91,6 +91,8 @@ export interface EndgameOverlayProps {
     rematchState?: RematchActionsProps['rematchState'];
     /** 投票回调（多人模式，调用 socket.vote） */
     onVote?: () => void;
+    /** 用当前模式的结算说明覆盖默认副标题。 */
+    subtitle?: string;
     /** 自定义内容区域（可选） */
     renderContent?: (props: ContentSlotProps) => React.ReactNode;
     /** 自定义按钮区域（可选） */
@@ -106,7 +108,7 @@ export interface EndgameOverlayProps {
 /**
  * 默认内容区域：显示胜负/平局摘要
  */
-function DefaultContent({ result, playerID }: ContentSlotProps): React.ReactElement | null {
+function DefaultContent({ result, playerID, subtitle: customSubtitle }: ContentSlotProps & { subtitle?: string }): React.ReactElement | null {
     const { t } = useTranslation('common');
 
     if (!result) return null;
@@ -146,6 +148,7 @@ function DefaultContent({ result, playerID }: ContentSlotProps): React.ReactElem
         colorClass = 'text-white';
     }
 
+    const visibleSubtitle = customSubtitle ?? subtitle;
     return (
         <div className="text-center mb-6">
             <motion.h2
@@ -156,14 +159,14 @@ function DefaultContent({ result, playerID }: ContentSlotProps): React.ReactElem
             >
                 {title}
             </motion.h2>
-            {subtitle && (
+            {visibleSubtitle && (
                 <motion.p
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.4 }}
                     className="text-white text-lg mt-2 font-bold drop-shadow-lg"
                 >
-                    {subtitle}
+                    {visibleSubtitle}
                 </motion.p>
             )}
         </div>
@@ -182,6 +185,7 @@ export function EndgameOverlay({
     totalPlayers,
     rematchState,
     onVote,
+    subtitle,
     renderContent,
     renderActions,
     backdropClassName = 'bg-black/60 backdrop-blur-sm',
@@ -271,7 +275,7 @@ export function EndgameOverlay({
                             {/* 内容区域（可自定义） */}
                             {contentReady && (renderContent
                                 ? renderContent(contentProps)
-                                : <DefaultContent {...contentProps} />
+                                : <DefaultContent {...contentProps} subtitle={subtitle} />
                             )}
 
                             {/* 按钮区域（可自定义） */}

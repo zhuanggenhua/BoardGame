@@ -1,10 +1,11 @@
 import type { ChoiceRequestDirectSelectionTarget } from '../../../engine/systems';
-import type { PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     MAGE_WARS_COMMANDS,
+    MageWarsDomain,
     type MageWarsCore,
 } from '../domain';
-import type { MageWarsCastSpellCommand } from '../domain/commands';
+import type { MageWarsCastSpellCommand, MageWarsDeclareEquipmentAttackCommand } from '../domain/commands';
 import type {
     ArenaZoneId,
     MageWarsWallEdgeId,
@@ -16,10 +17,85 @@ import {
     isArenaZoneId,
 } from '../domain/utils';
 import type { MageWarsSpellCastChoiceValue } from '../domain/spellCastRuntime';
+import { getMageWarsAvailableSpellbookCopyCount } from '../domain/spellbook';
+import { getMageWarsSpellbookDisplayEntries } from './spellbookPresentation';
 import {
+    getMageWarsObjectAttackProfiles,
     isMageWarsObjectAttackTargetInRange,
     type MageWarsObjectAttackProfile,
 } from '../domain/spellRules';
+
+type EquipmentAttackPayload = MageWarsDeclareEquipmentAttackCommand['payload'];
+
+export function buildObjectSpellPlanningChoices(
+    state: MatchState<MageWarsCore>,
+    playerId: PlayerId,
+    mageDraft: readonly number[],
+) {
+    const bySource = new Map<string, ReadonlyMap<number, string | null>>();
+    const player = state.core.players[playerId];
+    if (state.sys.phase !== 'planning' || !player || state.core.phaseReadyPlayerIds?.includes(playerId)) return bySource;
+
+    const spellbook = getMageWarsSpellbookDisplayEntries(player);
+    for (const object of Object.values(state.core.objects)) {
+        if (object.ownerId !== playerId || !object.spellcastingSource || object.preparedSpellCardId !== undefined) continue;
+        const choices = new Map<number, string | null>();
+        for (const { spellCardId } of spellbook) {
+            const validation = MageWarsDomain.validate(state, {
+                type: MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL,
+                playerId,
+                payload: { objectId: object.id, spellCardId },
+            });
+            const draftedCopies = mageDraft.filter((draftedId) => draftedId === spellCardId).length;
+            const deniedReason = !validation.valid
+                ? validation.error ?? 'actionUnavailable'
+                : getMageWarsAvailableSpellbookCopyCount(state.core, playerId, spellCardId) <= draftedCopies
+                    ? 'tooManyPreparedSpellCopies'
+                    : null;
+            choices.set(spellCardId, deniedReason);
+        }
+        if ([...choices.values()].some((reason) => reason === null)) bySource.set(object.id, choices);
+    }
+    return bySource;
+}
+
+export function buildEquipmentAttackTargetsBySource(state: MatchState<MageWarsCore>, playerId: PlayerId) {
+    const bySource = new Map<string, {
+        objects: Map<string, EquipmentAttackPayload>;
+        players: Map<PlayerId, EquipmentAttackPayload>;
+    }>();
+    if (state.sys.phase !== 'creatureAction' || !state.core.players[playerId]?.actionReady
+        || state.sys.responseWindow?.current || state.sys.interaction?.current) return bySource;
+
+    const objects = Object.values(state.core.objects);
+    const enemyTargets = objects.filter((object) => object.ownerId !== playerId
+        && (object.kind === 'creature' || object.kind === 'conjuration'));
+    const enemyPlayers = Object.keys(state.core.players).filter((id) => id !== playerId);
+    for (const equipment of objects) {
+        if (equipment.kind !== 'equipment' || equipment.anchoredToPlayerId !== playerId) continue;
+        const objectTargets = new Map<string, EquipmentAttackPayload>();
+        const playerTargets = new Map<PlayerId, EquipmentAttackPayload>();
+        for (const profile of getMageWarsObjectAttackProfiles(equipment)) {
+            const base = { equipmentObjectId: equipment.id, attackProfileId: profile.id };
+            for (const target of enemyTargets) {
+                const payload = { ...base, targetObjectId: target.id };
+                if (MageWarsDomain.validate(state, { type: MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK, playerId, payload }).valid) {
+                    objectTargets.set(target.id, payload);
+                }
+            }
+            for (const targetPlayerId of enemyPlayers) {
+                const payload = { ...base, targetPlayerId };
+                if (MageWarsDomain.validate(state, { type: MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK, playerId, payload }).valid) {
+                    playerTargets.set(targetPlayerId, payload);
+                }
+            }
+        }
+        if (objectTargets.size || playerTargets.size) {
+            bySource.set(equipment.id, { objects: objectTargets, players: playerTargets });
+        }
+    }
+    return bySource;
+}
 
 export function hasEnabledChoiceCandidate(
     candidates: readonly { disabled?: boolean; stale?: boolean }[] | undefined,

@@ -15,7 +15,9 @@ import type { OnlineAiRecoveryTracker } from './onlineAiWatchdogTracker';
 import type {
     OnlineAiLegalActionRecoveryResult,
 } from './onlineAiWatchdogSequenceHelpers';
-import type { OnlineAiRecoverySequenceRoomRuntime } from './onlineAiRecoverySequenceRunner';
+import type { OnlineAiExecutionTiming, OnlineAiRecoverySequenceRoomRuntime } from './onlineAiRecoverySequenceRunner';
+
+export const ONLINE_AI_SLOW_DECISION_MS = 1000;
 
 export type OnlineAiImmediateExecutionMatch = {
     matchID: string;
@@ -36,15 +38,12 @@ export type OnlineAiImmediateExecutionTrace = {
     playerId: string;
     stateIdBefore: number;
     candidateReason: ForceEndTurnStalledAiResolution['reason'] | 'immediate-ai';
-    decisionMs: number;
-    delayMs?: number;
-    executionMs: number;
     actionKind: string | null;
     commandTypes: string[];
     outcome: string;
     blockedReason?: string | null;
     commandFailureReason?: string | null;
-};
+} & OnlineAiExecutionTiming;
 
 type OnlineAiLegalActionMissOutcome = Exclude<OnlineAiLegalActionRecoveryResult['outcome'], 'applied'>;
 
@@ -227,6 +226,22 @@ export class OnlineAiImmediateExecutionRunner<TMatch extends OnlineAiImmediateEx
                     continue;
                 }
 
+                if (immediateAction.decisionMs >= ONLINE_AI_SLOW_DECISION_MS) {
+                    this.hooks.logExecutionTrace({
+                        matchId: match.matchID,
+                        gameId: match.gameId,
+                        playerId: immediateAction.playerId,
+                        stateIdBefore: stepStateIdBefore,
+                        candidateReason: 'immediate-ai',
+                        decisionMs: immediateAction.decisionMs,
+                        actionKind: immediateAction.actionKind,
+                        commandTypes: immediateAction.executedCommandTypes,
+                        outcome: `miss:${trigger}`,
+                        blockedReason: null,
+                        commandFailureReason: immediateAction.commandFailureReason,
+                    });
+                }
+
                 const candidate = await this.hooks.resolveRecoveryCandidate(match, seatControllers);
                 if (!candidate) {
                     this.hooks.clearRecoveryProgress(match.matchID);
@@ -290,8 +305,7 @@ export class OnlineAiImmediateExecutionRunner<TMatch extends OnlineAiImmediateEx
                         playerId: candidate.playerId,
                         stateIdBefore: recoveryStepStateIdBefore,
                         candidateReason: candidate.reason,
-                        decisionMs: Date.now() - recoveryStepStartedAt,
-                        executionMs: 0,
+                        recoveryElapsedMs: Date.now() - recoveryStepStartedAt,
                         actionKind: null,
                         commandTypes: actionRecovery.executedCommandTypes,
                         outcome: `fallback:${trigger}:${actionRecovery.outcome}`,
@@ -319,8 +333,7 @@ export class OnlineAiImmediateExecutionRunner<TMatch extends OnlineAiImmediateEx
                     playerId: candidate.playerId,
                     stateIdBefore: recoveryStepStateIdBefore,
                     candidateReason: candidate.reason,
-                    decisionMs: Date.now() - recoveryStepStartedAt,
-                    executionMs: 0,
+                    recoveryElapsedMs: Date.now() - recoveryStepStartedAt,
                     actionKind: actionRecovery.reportedAction?.actionKind ?? null,
                     commandTypes: actionRecovery.executedCommandTypes,
                     outcome: `normal:${trigger}`,

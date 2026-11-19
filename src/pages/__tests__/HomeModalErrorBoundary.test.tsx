@@ -57,11 +57,12 @@ describe('HomeModalErrorBoundary', () => {
         vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const boundary = new HomeModalErrorBoundary({ children: null, resetKey: 'smashup' });
 
+        const error = new Error('[stale-lazy-module] ../components/lobby/GameDetailsModal missing export GameDetailsModal');
         boundary.componentDidCatch(
-            new Error('[stale-lazy-module] ../components/lobby/GameDetailsModal missing export GameDetailsModal'),
+            error,
             { componentStack: '\n    at Lazy' },
         );
 
-        expect(staleGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('home-modal-error-boundary', window);
+        expect(staleGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('home-modal-error-boundary', window, { failure: error });
     });
 });

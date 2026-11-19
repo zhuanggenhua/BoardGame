@@ -1646,7 +1646,12 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
     }
 
     actions.push(...acceptedOptions.map((option, index) => {
-        const aiHints = option._ai ? [option._ai] : undefined;
+        const isWithdrawal = option.value != null && typeof option.value === 'object'
+            && (option.value as { cancel?: boolean }).cancel === true;
+        const aiHints = [
+            ...(option._ai ? [option._ai] : []),
+            ...(isWithdrawal && option._ai?.effectIntent !== 'optional-skip' ? [OPTIONAL_SKIP_AI_HINT] : []),
+        ];
         return {
             actionId: createAiLegalActionId('interaction', current.id, option.id),
             kind: 'interaction-choice',

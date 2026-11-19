@@ -22,15 +22,13 @@ it('详情内循环键盘焦点，七人切换入口可辨识且不穿透到牌�
  expect(within(navigation).getAllByRole('button')[1].getAttribute('aria-label')).toContain('玩家2');
 });
 
-it('恢复两排卡牌：能力说明留在令咒同列，不插入新行把技能挤出', () => {
+it('详情保留两排原卡与令咒，行动能力由牌桌入口负责', () => {
  const core=createReplayAdapter(FateDominationDomain,'detail-rule-row').setup(['0','1','2']).core;
  const {container}=render(<FatePlayerDetail core={core} playerId="0" viewerId="0" servantBack="back" skillBack="skillback" onPlayer={vi.fn()} onClose={vi.fn()} onInspect={vi.fn()}/>);
- const copy=screen.getByRole('region',{name:'御主能力说明'});
- expect(copy.parentElement?.classList.contains('fd-player-detail-ability')).toBe(true);
- expect(copy.previousElementSibling?.classList.contains('fd-detail-seals')).toBe(true);
+ expect(screen.queryByRole('region',{name:'御主能力说明'})).toBeNull();
+ expect(container.querySelector('.fd-player-detail-identity .fd-detail-seals')).toBeTruthy();
  expect(container.querySelector('.fd-player-detail-content')?.children).toHaveLength(2);
- expect(copy.querySelectorAll('p').length).toBeGreaterThan(0);
- expect(container.querySelector('.fd-player-detail-master .fd-detail-ability-copy')).toBeNull();
+ expect(container.querySelectorAll('.fd-player-detail-skills > button')).toHaveLength(3);
 });
 
 it('未投影旁观状态也不得展示未公开技能，公开一张时仅该张翻正',()=>{

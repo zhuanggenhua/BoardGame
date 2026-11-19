@@ -11,7 +11,7 @@ import type { CardiaCore } from '../domain/types';
 import { createTestPlayedCard } from './test-helpers';
 
 describe('印戒胜利条件时机修复', () => {
-  it('应该在阶段1（打出卡牌）时也触发印戒胜利条件（现规则）', () => {
+  it('阶段1不提前判定印戒胜利', () => {
     const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
     
     // 构造场景：p1 有 5 枚印戒，但处于 play 阶段
@@ -36,13 +36,12 @@ describe('印戒胜利条件时机修复', () => {
       },
     };
 
-    // 现规则：标准印戒胜利条件在任意阶段立即生效
+    // 等待能力结算和回合结束后再判定标准印戒胜利。
     const gameOver = CardiaDomain.isGameOver(testCore);
-    expect(gameOver).toBeDefined();
-    expect(gameOver?.winner).toBe('p1');
+    expect(gameOver).toBeUndefined();
   });
 
-  it('应该在阶段2（能力阶段）时也触发印戒胜利条件（现规则）', () => {
+  it('阶段2不提前判定印戒胜利', () => {
     const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
     
     // 构造场景：p1 有 5 枚印戒，但处于 ability 阶段
@@ -67,10 +66,9 @@ describe('印戒胜利条件时机修复', () => {
       },
     };
 
-    // 现规则：标准印戒胜利条件在任意阶段立即生效
+    // 等待能力结算和回合结束后再判定标准印戒胜利。
     const gameOver = CardiaDomain.isGameOver(testCore);
-    expect(gameOver).toBeDefined();
-    expect(gameOver?.winner).toBe('p1');
+    expect(gameOver).toBeUndefined();
   });
 
   it('应该在阶段3（回合结束阶段）时触发印戒胜利条件', () => {
@@ -104,13 +102,14 @@ describe('印戒胜利条件时机修复', () => {
     expect(gameOver?.winner).toBe('p1');
   });
 
-  it('特殊胜利条件（精灵）应该在阶段2（能力阶段）判定', () => {
+  it('精灵能力产生的直接胜利在阶段2立即判定', () => {
     const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
     
     // 构造场景：p1 有精灵能力且有 5 枚印戒，处于 ability 阶段
     const testCore: CardiaCore = {
       ...core,
       phase: 'ability',
+      gameWonBy: 'p1',
       ongoingAbilities: [
         {
           id: 'ongoing1',
@@ -140,13 +139,13 @@ describe('印戒胜利条件时机修复', () => {
       },
     };
 
-    // 检查胜利条件：精灵能力应该在 ability 阶段触发胜利
+    // 检查胜利条件：精灵能力已经产生直接胜利标记
     const gameOver = CardiaDomain.isGameOver(testCore);
     expect(gameOver).toBeDefined();
     expect(gameOver?.winner).toBe('p1');
   });
 
-  it('特殊胜利条件（精灵）在阶段1不会单独判定，但标准印戒胜利仍会生效', () => {
+  it('特殊胜利条件（精灵）在阶段1不会判定', () => {
     const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
     
     // 构造场景：p1 有精灵能力且有 5 枚印戒，但处于 play 阶段
@@ -182,10 +181,9 @@ describe('印戒胜利条件时机修复', () => {
       },
     };
 
-    // play 阶段不会走精灵专属判定，但标准印戒胜利条件仍会生效
+    // play 阶段既不判定精灵能力，也不提前判定标准印戒胜利。
     const gameOver = CardiaDomain.isGameOver(testCore);
-    expect(gameOver).toBeDefined();
-    expect(gameOver?.winner).toBe('p1');
+    expect(gameOver).toBeUndefined();
   });
 
   it('特殊胜利条件（精灵）不应该在阶段3（回合结束）判定', () => {

@@ -5,6 +5,7 @@ import {
 } from '../../../engine/ai/decisionSemantics';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import { RESPONSE_WINDOW_COMMANDS } from '../../../engine/systems/ResponseWindowSystem';
 import { completeResolutionFrame, updateResolutionFrame } from '../../../engine/systems/resolutionStack';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
@@ -15,7 +16,7 @@ import { MageWarsDomain } from '../domain';
 import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore } from '../domain/types';
 import { engineConfig } from '../game';
-import { getCurrentPrompt } from './helpers/domainFlowHarness';
+import { getCurrentPrompt, withPlayerInZone } from './helpers/domainFlowHarness';
 
 const fixedRandom: RandomFn = {
     random: () => 0.5,
@@ -224,6 +225,66 @@ function responseCommand(
 }
 
 describe('mage-wars enchantment response windows', () => {
+    it.each([
+        { mana: 4, optionId: 'reveal', countered: true, remainingMana: 0 },
+        { mana: 2, optionId: 'reveal', countered: false, remainingMana: 0 },
+        { mana: 4, optionId: 'decline-payment', countered: false, remainingMana: 2 },
+    ])('only counters when Mana Failure is paid ($mana mana, $optionId)', ({ mana, optionId, countered, remainingMana }) => {
+        const base = setupState('initiativeQuickcast');
+        const target = makeCreature('mana-failure-target', '1', ARENA_ZONE_IDS.A2);
+        const inRange = addObject(withPlayerInZone(base.core, '1', ARENA_ZONE_IDS.B2), target);
+        const state = withPreparedSpell({
+            ...base,
+            core: {
+                ...inRange,
+                players: {
+                    ...inRange.players,
+                    '1': { ...inRange.players['1'], mana, preparedSpellCardIds: [1901], preparedSpellSlots: 1 },
+                },
+            },
+        }, 1800);
+        const beforePlacement = runCommand(state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} });
+        expect(beforePlacement.success).toBe(true);
+        const placed = runCommand(beforePlacement.state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '1',
+            payload: { spellCardId: 1901, manaCost: 2, targetObjectId: target.id },
+        });
+        expect(placed.success).toBe(true);
+        expect(placed.state.core.players['1'].mana).toBe(mana - 2);
+        const placementLog = placed.state.sys.actionLog.entries.find((entry) => entry.kind === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED);
+        expect(placementLog?.segments).toContainEqual(expect.objectContaining({ key: 'actionLog.placeFaceDownEnchantment' }));
+        expect(placementLog?.segments.some((segment) => segment.type === 'card')).toBe(false);
+        expect(placed.state.sys.actionLog.entries.some((entry) => entry.kind === MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED)).toBe(false);
+        const response = Object.values(placed.state.core.objects).find((object) => object.sourceSpellCardId === 1901);
+        expect(response).toMatchObject({ anchoredToObjectId: target.id, revealed: false });
+        const beforeAttack = runCommand(placed.state, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '1', payload: {} });
+        expect(beforeAttack.success).toBe(true);
+        const attacked = runCommand(beforeAttack.state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 1800, manaCost: 5, targetObjectId: target.id },
+        });
+        expect(attacked.success).toBe(true);
+        const resolved = runCommand(attacked.state, responseCommand(attacked.state, { optionId }));
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.objects[response!.id]).toBeUndefined();
+        expect(resolved.state.core.players['1'].mana).toBe(remainingMana);
+        expect(resolved.state.core.players['1'].discardSpellCardIds).toEqual([1901]);
+        expect(resolved.state.core.players['0'].mana).toBe(15);
+        expect(resolved.events.some((event) => event.type === MAGE_WARS_EVENTS.SPELL_COUNTERED)).toBe(countered);
+        const counterLogs = resolved.state.sys.actionLog.entries.filter((entry) => entry.kind === MAGE_WARS_EVENTS.SPELL_COUNTERED);
+        expect(counterLogs).toHaveLength(countered ? 1 : 0);
+        if (countered) {
+            expect(counterLogs[0].segments).toEqual([
+                expect.objectContaining({ type: 'card', cardId: '1800' }),
+                expect.objectContaining({ key: 'actionLog.spellCountered' }),
+                expect.objectContaining({ type: 'card', cardId: '1901' }),
+            ]);
+        }
+        expect(Object.values(resolved.state.core.objects).some((object) => object.sourceSpellCardId === 1800)).toBe(!countered);
+    });
+
     it('1812 teleports its attached creature to the selected arena zone and destroys itself', () => {
         let state = setupState('initiativeQuickcast');
         const target = makeCreature('interference-target-creature', '1', ARENA_ZONE_IDS.A2);
@@ -281,17 +342,6 @@ describe('mage-wars enchantment response windows', () => {
             ...state,
             core: addObject(addObject(state.core, target), response),
         }, 1800);
-        state = {
-            ...state,
-            core: {
-                ...state.core,
-                players: {
-                    ...state.core.players,
-                    '1': { ...state.core.players['1'], discardSpellCardIds: [1901] },
-                },
-            },
-        };
-
         const blockedCast = runCommand(state, {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
@@ -338,7 +388,7 @@ describe('mage-wars enchantment response windows', () => {
             interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
         );
         expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
-            .toEqual(['reveal']);
+            .toEqual(['reveal', 'decline-payment']);
 
         const passed = runCommand(blockedCast.state, {
             type: RESPONSE_WINDOW_COMMANDS.PASS,
@@ -392,6 +442,36 @@ describe('mage-wars enchantment response windows', () => {
         expect(resolved.state.core.players['1'].discardSpellCardIds).toEqual([1901]);
         expect(resolved.state.sys.responseWindow.current).toBeUndefined();
         expect(resolved.state.sys.resolution).toBeUndefined();
+    });
+
+    it.each(['reveal', 'decline-payment'])('preserves the wand copy through Mana Failure %s', (optionId) => {
+        const initial = withWizardSpellbook(setupState('creatureAction'));
+        const target = makeCreature('bound-sleep-target', '1', ARENA_ZONE_IDS.A2);
+        const response = makeHiddenResponse('bound-mana-failure', '1', target.zoneId, target.id, 1901);
+        const wand = {
+            ...makeCreature('bound-sleep-wand', '0', initial.core.players['0'].mageZoneId),
+            kind: 'equipment' as const,
+            sourceSpellCardId: 3725,
+            anchoredToPlayerId: '0',
+            boundSpellCardId: 3411,
+        };
+        const started = runCommand({
+            ...initial,
+            core: addObject(addObject(addObject(initial.core, target), response), wand),
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 3411, manaCost: 4, targetObjectId: target.id },
+        });
+        expect(started.success).toBe(true);
+        const resolved = runCommand(started.state, responseCommand(started.state, { optionId }));
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.objects[wand.id].boundSpellCardId).toBe(3411);
+        expect(resolved.state.core.players['0']).toMatchObject({
+            mana: 16,
+            preparedSpellCardIds: [],
+            discardSpellCardIds: [],
+        });
     });
 
     it('rejects stale, wrong-responder, and duplicate reveal commands', () => {
@@ -749,7 +829,8 @@ describe('mage-wars enchantment response windows', () => {
         expect(resolved.state.core.objects[familiar.id]?.statusTokens.sleep).toBe(1);
         expect(resolved.state.core.objects[target.id]?.statusTokens.sleep).toBeUndefined();
         expect(resolved.state.core.objects[response.id]).toBeUndefined();
-        expect(resolved.state.core.players['1'].discardSpellCardIds).toEqual(expect.arrayContaining([3411, 1905]));
+        expect(resolved.state.core.players['0'].discardSpellCardIds).toEqual([3411]);
+        expect(resolved.state.core.players['1'].discardSpellCardIds).toEqual([1905]);
     });
 
     it('1905 rejects wrong, stale, and duplicate redirect responses', () => {
@@ -841,7 +922,7 @@ describe('mage-wars enchantment response windows', () => {
         expect(cast.success).toBe(true);
         expect(cast.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED);
         expect(cast.state.core.players['0'].mana).toBe(13);
-        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([1905]);
+        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([]);
         expect(Object.values(cast.state.core.objects)).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'enchantment',

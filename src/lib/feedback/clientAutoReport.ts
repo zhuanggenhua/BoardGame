@@ -46,6 +46,8 @@ type ClientAutoReportPayload = {
     playerId?: string | null;
     boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     errorName: string;
+    causeName?: string;
+    causeSource?: string;
     errorMessage: string;
     errorSource: string;
     stack?: string;
@@ -357,6 +359,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
 
     setLastErrorContext({
         name: payload.errorName,
+        causeName: payload.causeName,
         message: payload.errorMessage,
         stack: combinedStack,
         source: payload.errorSource,
@@ -443,6 +446,8 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 clientContext,
                 errorContext: {
                     name: payload.errorName,
+                    causeName: payload.causeName,
+                    causeSource: payload.causeSource,
                     message: payload.errorMessage,
                     stack: combinedStack,
                     source: payload.errorSource,

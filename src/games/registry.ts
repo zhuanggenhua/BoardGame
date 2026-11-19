@@ -536,7 +536,7 @@ export const loadGameImplementation = async (
             );
             logMobileRuntimeCritical('GameRuntime', isTimeout ? 'load-timeout' : 'load-failed', payload);
             if (typeof window !== 'undefined' && isStaleChunkError(error)) {
-                reloadForStaleChunkOnce(`game-runtime-load-failed:${gameId}`, window);
+                reloadForStaleChunkOnce(`game-runtime-load-failed:${gameId}`, window, { failure: error });
             }
             throw error;
         });

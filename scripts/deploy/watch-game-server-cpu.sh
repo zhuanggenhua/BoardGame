@@ -109,12 +109,12 @@ capture_high_cpu_root_cause_evidence() {
   } >>"$evidence_file"
 
   {
-    echo "## recent slow AI decisions from application logs"
-    # 游戏服务把日志写进容器文件；只提取有限的慢决策摘要，避免复制其他对局日志。
+    echo "## recent slow AI decisions and recoveries from application logs"
+    # 保留慢决策和慢恢复摘要，也兼容历史日志。
     docker exec "$CONTAINER_NAME" sh -c '
       for file in /app/logs/app-*.log; do
         [ -f "$file" ] && tail -n 5000 "$file"
-      done | grep -F "online-ai-slow-decision" | tail -n 50
+      done | grep -F -e "online-ai-slow-decision" -e "online-ai-slow-recovery" | tail -n 50
     ' 2>&1 || true
     echo
   } >>"$evidence_file"

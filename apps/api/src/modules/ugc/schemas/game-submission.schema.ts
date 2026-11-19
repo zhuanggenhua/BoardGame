@@ -11,6 +11,7 @@ export class GameSubmission {
     @Prop({ type: String, required: true, index: true }) ownerId!: string;
     @Prop({ type: String, required: true }) name!: string;
     @Prop({ type: String, required: true }) url!: string;
+    @Prop({ type: String }) webZipName?: string;
     @Prop({ type: String, required: true }) category!: string;
     @Prop({ type: Number }) minPlayers?: number;
     @Prop({ type: Number }) maxPlayers?: number;

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "gameId": "mage-wars",
+  "evidenceCategory": "tutorial",
+  "reviewFile": "visual-review.json",
+  "requiredStates": [
+    { "chainId": "tutorial-desktop", "uiStateId": "第五回合单局开场", "viewport": "desktop", "reason": "真实入口的单局开场与守卫目标" },
+    { "chainId": "tutorial-desktop", "uiStateId": "阶段悬浮提示", "viewport": "desktop", "reason": "阶段文字与悬浮说明能在同屏读取" },
+    { "chainId": "tutorial-desktop", "uiStateId": "刚放大时叉号隐藏", "viewport": "desktop", "reason": "独立核对初次放大不遮挡卡面" },
+    { "chainId": "tutorial-desktop", "uiStateId": "悬浮放大卡上才显示关闭", "viewport": "desktop", "reason": "悬浮后原位出现关闭" },
+    { "chainId": "tutorial-desktop", "uiStateId": "治疗骰总和四与灰狼飘字加三", "viewport": "desktop", "reason": "分别呈现骰面合计与实际恢复" },
+    { "chainId": "tutorial-desktop", "uiStateId": "读牌步骤包含法术牌图例", "viewport": "desktop", "reason": "恢复用户指出缺失的图例" },
+    { "chainId": "tutorial-desktop", "uiStateId": "设置内查阅魔杖魔宠和再生点", "viewport": "desktop", "reason": "同局可回看规则释义并返回真实读牌进度" },
+    { "chainId": "tutorial-desktop", "uiStateId": "近战步骤包含攻击条图例", "viewport": "desktop", "reason": "活用狼的攻击前说明进攻标记" },
+    { "chainId": "tutorial-desktop", "uiStateId": "缩放后仍可点击兽王所在区域召唤", "viewport": "desktop", "reason": "当前镜头下的实际召唤目标" },
+    { "chainId": "tutorial-desktop", "uiStateId": "对新灰狼施放兽性觉醒", "viewport": "desktop", "reason": "召唤完成后仍保持当前镜头" },
+    { "chainId": "tutorial-desktop", "uiStateId": "荆棘五组独立掷骰含全空和双骰四点", "viewport": "desktop", "reason": "分别呈现零点和双骰上限" },
+    { "chainId": "tutorial-desktop", "uiStateId": "法力失效提示与付费按钮分开", "viewport": "desktop", "reason": "两个真实响应入口保持可操作" },
+    { "chainId": "tutorial-desktop", "uiStateId": "行为日志回看法力失效的反制", "viewport": "desktop", "reason": "可回看真正发生的反制及对应牌名" },
+    { "chainId": "tutorial-desktop", "uiStateId": "法师魔杖首绑选择", "viewport": "desktop", "reason": "从装备施法弹出可读的绑定卡" },
+    { "chainId": "tutorial-desktop", "uiStateId": "从巢穴部署苦木林狐", "viewport": "desktop", "reason": "部署来源与实际区域同屏可查" },
+    { "chainId": "tutorial-desktop", "uiStateId": "从法师魔杖施放次级治疗", "viewport": "desktop", "reason": "已绑定的牌可从装备施放" },
+    { "chainId": "tutorial-desktop", "uiStateId": "首次近战后可从原地继续对打", "viewport": "desktop", "reason": "保留第一次进攻的结果并提供正式继续入口" },
+    { "chainId": "tutorial-desktop", "uiStateId": "引导退场保留第十七回合原棋盘", "viewport": "desktop", "reason": "关闭教程后仍保留同一棋盘和真实动作入口" },
+    { "chainId": "tutorial-desktop", "uiStateId": "续局后女祭司实际接管行动", "viewport": "desktop", "reason": "刷新续局后会对玩家提交的动作作出正式对手行动" },
+    { "chainId": "tutorial-compact", "uiStateId": "较矮窗口恢复同一局和未确认计划草稿", "viewport": "desktop", "reason": "恢复入口保留真实状态和草稿且计划位可读" },
+    { "chainId": "tutorial-compact", "uiStateId": "较矮窗口查阅规则释义", "viewport": "desktop", "reason": "较矮窗口内设置入口与读牌提示可操作" },
+    { "chainId": "tutorial-compact", "uiStateId": "紧凑窗口法力失效提示与付费按钮分开", "viewport": "desktop", "reason": "原操作在较矮桌面窗口仍无新遮挡" },
+    { "chainId": "tutorial-compact", "uiStateId": "较矮窗口回看真实反制结果", "viewport": "desktop", "reason": "较矮窗口可查阅日志并返回原对局" }
+  ]
+}

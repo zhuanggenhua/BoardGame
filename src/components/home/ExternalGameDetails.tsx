@@ -6,7 +6,7 @@ import { getExternalGame } from '../../api/external-games';
 import { useAuth } from '../../contexts/AuthContext';
 import { ExternalGameText } from '../external/ExternalGameText';
 import { GameRulesDocumentLink } from '../external/GameRulesDocumentLink';
-import { playerOptionsFromRange, resolveExternalEmbed } from '../../shared/externalGames';
+import { isSandboxedWebGame, playerOptionsFromRange, resolveExternalEmbed } from '../../shared/externalGames';
 import { HomeGameDetailsPresentation } from './HomeGameDetailsPresentation';
 import { PlatformGameDetails } from './PlatformGameDetails';
 import { PlatformFavoriteButton } from './PlatformFavoriteButton';
@@ -34,7 +34,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
     const game = useQuery({ queryKey: ['external-game', gameId], queryFn: () => getExternalGame(gameId), enabled: Boolean(gameId) });
     const item = game.data;
     const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
-    const nativeBrowser = item ? canOpenExternalBrowser(item.url) : false;
+    const nativeBrowser = item ? !isSandboxedWebGame(item) && canOpenExternalBrowser(item.url) : false;
     const startPlay = () => {
         const from = `${window.location.pathname}${window.location.search}`;
         writeSessionStorageItem('bg-external-return', JSON.stringify({ url: from, scroll: window.scrollY }));

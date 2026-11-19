@@ -1,6 +1,7 @@
 import { installClientDiagnosticCapture } from './clientFeedbackContext';
 import { reportClientAutoFeedbackOnce } from './clientAutoReport';
 import type { FeedbackErrorContext } from './feedbackPayload';
+import { findPublicErrorSource } from '../../shared/publicErrorLocation';
 
 export interface LastErrorContext extends FeedbackErrorContext {
     message: string;
@@ -21,6 +22,15 @@ const truncate = (value: string | undefined, max: number): string | undefined =>
     return value.length > max ? value.slice(0, max) : value;
 };
 
+const causeName = (error: Error | undefined): string | undefined => (
+    error?.cause instanceof Error ? error.cause.name : undefined
+);
+
+const causeSource = (error: Error | undefined): string | undefined => {
+    const stack = error?.cause instanceof Error ? error.cause.stack : undefined;
+    return findPublicErrorSource(stack);
+};
+
 export const setLastErrorContext = (context: Omit<LastErrorContext, 'timestamp'> & { timestamp?: number }) => {
     const host = getHost();
     if (!host) return;
@@ -28,6 +38,7 @@ export const setLastErrorContext = (context: Omit<LastErrorContext, 'timestamp'>
         ...context,
         message: truncate(context.message, 300) ?? 'Unknown error',
         name: truncate(context.name, 120),
+        causeName: truncate(context.causeName, 120),
         stack: truncate(context.stack, 4000),
         source: truncate(context.source, 128),
         jsStack: truncate(context.jsStack, 4000),
@@ -71,6 +82,8 @@ export const installGlobalErrorContextCapture = () => {
             gameId: 'unknown',
             gameName: 'client',
             errorName: name,
+            causeName: causeName(error),
+            causeSource: causeSource(error),
             errorMessage: message,
             errorSource: source,
             stack,
@@ -100,6 +113,8 @@ export const installGlobalErrorContextCapture = () => {
                 gameId: 'unknown',
                 gameName: 'client',
                 errorName: name,
+                causeName: causeName(reason),
+                causeSource: causeSource(reason),
                 errorMessage: message,
                 errorSource: 'window.unhandledrejection',
                 stack,

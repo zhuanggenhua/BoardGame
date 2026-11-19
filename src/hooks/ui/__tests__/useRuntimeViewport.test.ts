@@ -1,9 +1,29 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { applyRuntimeViewportCssVars, useRuntimeViewport } from '../useRuntimeViewport';
 import { readBoardShellCanvasSizeValue, readBoardShellScaleValue } from '../../../shared/runtimeLayoutUnits';
 
 describe('applyRuntimeViewportCssVars', () => {
+    it('相同手机棋盘视口重复同步时不反复改写全局布局变量', () => {
+        const gamePage = document.createElement('div');
+        gamePage.setAttribute('data-game-page', 'true');
+        gamePage.setAttribute('data-mobile-profile', 'landscape-adapted');
+        gamePage.setAttribute('data-mobile-layout-preset', 'board-shell');
+        gamePage.setAttribute('data-mobile-board-shell-design-width', '1160');
+        document.body.appendChild(gamePage);
+        const style = document.documentElement.style;
+        const writes = vi.spyOn(style, 'setProperty');
+        try {
+            applyRuntimeViewportCssVars({ width: 936, height: 432 });
+            expect(style.getPropertyValue('--mobile-layout-inline-unit')).toBe('11.6000px');
+            writes.mockClear();
+            applyRuntimeViewportCssVars({ width: 936, height: 432 });
+            expect(writes.mock.calls.filter(([name]) => name.startsWith('--mobile-layout-'))).toHaveLength(0);
+            expect(style.getPropertyValue('--mobile-layout-inline-unit')).toBe('11.6000px');
+        } finally {
+            writes.mockRestore();
+        }
+    });
     it.each([
         ['width', 936, 432, '0.487500', '0.000px'],
         ['height', 936, 432, '0.450000', '36.000px'],

@@ -86,6 +86,7 @@ export interface MageWarsSpellAbilityContext extends AbilityContext {
 
 export interface MageWarsSpellAbilityInput {
     ownerId: string;
+    cardOwnerId?: string;
     timestamp: number;
     state: MatchState<MageWarsCore>;
     command: MageWarsCastSpellCommand;
@@ -381,12 +382,10 @@ function createArenaObjectInstanceIdForSpell(
         object.ownerId === ctx.ownerId
         && object.sourceSpellCardId === sourceSpellCardId
     )).length;
-    return [
-        'mwobj',
-        normalizeObjectIdPart(ctx.ownerId),
-        sourceSpellCardId,
-        existingCount + 1,
-    ].join('-');
+    const prefix = ['mwobj', normalizeObjectIdPart(ctx.ownerId), sourceSpellCardId].join('-');
+    let suffix = existingCount + 1;
+    while (ctx.state.core.objects[`${prefix}-${suffix}`]) suffix += 1;
+    return `${prefix}-${suffix}`;
 }
 
 function createWallInstanceId(ctx: MageWarsSpellAbilityContext, edgeId: string): string {
@@ -2002,5 +2001,9 @@ export function executeMageWarsSpellAbility(ctx: MageWarsSpellAbilityInput): Mag
     return executeMageWarsSpellAbilityByFamily({
         ...ctx,
         sourceId: abilityId,
-    }).events;
+    }).events.map((event) => (
+        ctx.cardOwnerId && ctx.cardOwnerId !== ctx.ownerId && event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED
+            ? { ...event, payload: { object: { ...event.payload.object, cardOwnerId: ctx.cardOwnerId } } }
+            : event
+    ));
 }

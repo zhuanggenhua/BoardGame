@@ -97,7 +97,9 @@ import {
     resolveMageWarsObjectEffectiveArmor,
     getMageWarsZoneDistance,
     isMageWarsTargetSpellRedirectResponseCardId,
+    isMageWarsTargetSpellCounterResponseCardId,
     isMageWarsTargetSpellTeleportResponseCardId,
+    resolveMageWarsSpellCost,
 } from './spellRules';
 import { getArenaZone, getOpponentId } from './utils';
 
@@ -1657,6 +1659,7 @@ function createWallPassageDamageOpportunity(
                 payload: {
                     playerId: wall.ownerId, spellCardId: wall.sourceSpellCardId,
                     sourceAbilityId: event.payload.sourceAbilityId,
+                    wallPassageId: wall.id,
                     ...(targetPlayer ? { targetPlayerId: targetPlayer.id } : { targetObjectId: targetObject!.id }),
                     targetZoneId: event.payload.toZoneId,
                     diceResults: roll.values, diceCritical: roll.critical, baseDamage: roll.total,
@@ -2157,7 +2160,8 @@ function createUpkeepCostOpportunity(
     args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
     event: MageWarsUpkeepCostAvailableEvent,
 ): Opportunity<MageWarsUpkeepCostChoiceValue> | null {
-    if (!args.state.core.objects[event.payload.sourceObjectId]) return null;
+    const target = args.state.core.objects[event.payload.targetObjectId];
+    if (!target || !args.state.core.objects[event.payload.sourceObjectId]) return null;
 
     const requestId = upkeepCostInteractionId(event);
     const baseValue = {
@@ -2226,6 +2230,7 @@ function createUpkeepCostOpportunity(
             mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_COST,
             sourceAbilityId: `mw.spell.${event.payload.sourceSpellCardId}.upkeep`,
             targetObjectId: event.payload.targetObjectId,
+            targetName: target.name,
             amount: event.payload.amount,
         },
     };
@@ -3055,46 +3060,7 @@ function createEnchantmentResponseOpportunity(
     const context = event.payload.context;
     const sourceAbilityId = `mw.spell.${context.responseCardId}.response`;
     const responseCardName = args.state.core.objects[context.responseObjectId]?.name?.trim() || '响应结界';
-    const candidates: ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue>[] =
-        isMageWarsTargetSpellTeleportResponseCardId(context.responseCardId)
-            ? args.state.core.arena.map((zone) => ({
-                id: `teleport:${zone.id}`,
-                label: 'interaction.enchantmentResponse.options.teleport',
-                labelKey: 'interaction.enchantmentResponse.options.teleport',
-                value: {
-                    action: 'teleport' as const,
-                    responseId: context.responseId,
-                    responseObjectId: context.responseObjectId,
-                    responseCardId: context.responseCardId,
-                    targetZoneId: zone.id,
-                },
-                displayMode: 'button' as const,
-            }))
-            : isMageWarsTargetSpellRedirectResponseCardId(context.responseCardId)
-                ? [{
-                    id: 'redirect',
-                    label: 'interaction.enchantmentResponse.options.redirect',
-                    labelKey: 'interaction.enchantmentResponse.options.redirect',
-                    value: {
-                        action: 'redirect' as const,
-                        responseId: context.responseId,
-                        responseObjectId: context.responseObjectId,
-                        responseCardId: context.responseCardId,
-                    },
-                    displayMode: 'button' as const,
-                }]
-            : [{
-                id: 'reveal',
-                label: 'interaction.enchantmentResponse.options.reveal',
-                labelKey: 'interaction.enchantmentResponse.options.reveal',
-                value: {
-                    action: 'reveal' as const,
-                    responseId: context.responseId,
-                    responseObjectId: context.responseObjectId,
-                    responseCardId: context.responseCardId,
-                },
-                displayMode: 'button' as const,
-            }];
+    const candidates = createEnchantmentResponseCandidates(context, args.state.core);
 
     return {
         id: event.payload.interactionId,
@@ -3310,21 +3276,41 @@ function getMageWarsResponseContextFromOpportunity(
     return value as MageWarsResponseContext;
 }
 
-function createLiveRevealOption(
+function createEnchantmentResponseCandidates(
     context: MageWarsResponseContext,
-): ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> {
-    return {
-        id: 'reveal',
-        label: 'interaction.enchantmentResponse.options.reveal',
-        labelKey: 'interaction.enchantmentResponse.options.reveal',
+    core: MageWarsCore,
+): ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue>[] {
+    if (isMageWarsTargetSpellTeleportResponseCardId(context.responseCardId)) return createLiveTeleportOptions(context, core);
+    if (isMageWarsTargetSpellRedirectResponseCardId(context.responseCardId)) return [createLiveRedirectOption(context)];
+    const revealCost = isMageWarsTargetSpellCounterResponseCardId(context.responseCardId)
+        ? resolveMageWarsSpellCost(context.responseCardId, 0, {
+            core, playerId: context.responseOwnerId, timing: 'reveal',
+        })!.manaCost
+        : undefined;
+    const revealLabel = 'interaction.enchantmentResponse.options.reveal';
+    const payLabel = 'interaction.enchantmentResponse.options.payAndReveal';
+    const discardLabel = 'interaction.enchantmentResponse.options.discardWithoutPaying';
+    const option = (
+        action: 'reveal' | 'decline-payment',
+        label: string,
+        amount?: number,
+    ): ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> => ({
+        id: action,
+        label,
+        labelKey: label,
+        ...(amount === undefined ? {} : { labelParams: { amount } }),
+        ...(amount === undefined ? {} : { aiHints: [{ priorityHint: 10 }] }),
         value: {
-            action: 'reveal',
+            action,
             responseId: context.responseId,
             responseObjectId: context.responseObjectId,
             responseCardId: context.responseCardId,
         },
         displayMode: 'button',
-    };
+    });
+    if (revealCost === undefined) return [option('reveal', revealLabel)];
+    if (core.players[context.responseOwnerId].mana < revealCost) return [option('reveal', discardLabel)];
+    return [option('reveal', payLabel, revealCost), option('decline-payment', discardLabel)];
 }
 
 function createLiveRedirectOption(
@@ -3661,11 +3647,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                     autoResolveIfSingle: false,
                     responseValidationMode: 'live',
                     optionsGenerator: <TCore>(state: { core: TCore; sys: unknown }) => {
-                        const options = isMageWarsTargetSpellTeleportResponseCardId(context.responseCardId)
-                            ? createLiveTeleportOptions(context, state.core as unknown as MageWarsCore)
-                            : isMageWarsTargetSpellRedirectResponseCardId(context.responseCardId)
-                                ? [createLiveRedirectOption(context)]
-                                : [createLiveRevealOption(context)];
+                        const options = createEnchantmentResponseCandidates(context, state.core as unknown as MageWarsCore);
                         const frame = getActiveResolutionFrame(
                             state as unknown as MatchState<MageWarsCore>,
                         );
@@ -3689,7 +3671,7 @@ TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore
                 return {
                     title: 'interaction.upkeep.title',
                     titleKey: 'interaction.upkeep.title',
-                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['targetObjectId', 'amount']),
+                    titleParams: buildMageWarsChoiceTitleParams(opportunity.metadata, ['targetName', 'amount']),
                     targetType: 'button',
                     autoResolveIfSingle: true,
                 };

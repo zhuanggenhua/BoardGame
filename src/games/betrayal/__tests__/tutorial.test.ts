@@ -874,7 +874,7 @@ describe('Betrayal 教程配置', () => {
             viewAs: '0',
         });
         expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader-goal')).toMatchObject({
-            highlightTarget: 'betrayal-scenario-book-section-special',
+            highlightTarget: 'betrayal-scenario-book-section-title-special',
             position: 'right',
             infoStep: true,
             viewAs: '0',
@@ -1499,8 +1499,8 @@ describe('Betrayal 教程配置', () => {
         expect(basicSteps.rabbitFootResult).toContain('重掷完成');
         expect(basicSteps.rabbitFootResult).toContain('新的骰面');
         expect(basicSteps.rabbitFootResult).toContain('总点数');
-        expect(basicSteps.rabbitFootResult).toContain('确认');
-        expect(basicSteps.rabbitFootResult).toContain('伤害分配');
+        expect(basicSteps.rabbitFootResult).toContain('返回牌桌');
+        expect(basicSteps.rabbitFootResult).toContain('分配伤害');
         expect(basicSteps.rabbitFootResult).not.toContain('其他玩家确认');
         expect(basicSteps.rabbitFootResult).not.toContain('确认 1/3');
         expect(basicSteps.finish).toContain('承受 1 点物理伤害');

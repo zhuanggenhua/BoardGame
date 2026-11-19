@@ -8,6 +8,7 @@ import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
 import type { MageWarsCore } from '../domain/types';
 import {
     fixedRandom,
+    finishCreatureAction,
     makeArenaObject,
     makeVampiricEnchantmentObject,
     makeVisibleEnchantmentObject,
@@ -168,8 +169,8 @@ describe('mage-wars combat enchantments', () => {
         expect(rangedAttackEvent?.payload).not.toHaveProperty('meleeDiceModifier');
 
         const advanced = runCommand({
-            core: { ...cast.state.core, phaseReadyPlayerIds: ['1'] },
-            sys: { ...cast.state.sys, phase: 'creatureAction' },
+            core: meleeAttack.state.core,
+            sys: meleeAttack.state.sys,
         }, {
             type: FLOW_COMMANDS.ADVANCE_PHASE,
             playerId: '0',
@@ -677,8 +678,11 @@ describe('mage-wars combat enchantments', () => {
             attackOrTraitLine: '利爪：快速近战 3 骰',
         });
         const outsideAttack = runCommand({
-            core: withArenaObject(enemyAttack.state.core, outsideAttacker),
-            sys: enemyAttack.state.sys,
+            core: withArenaObject(
+                withArenaObject(withArenaObject(baseState.core, outsideTarget), area),
+                outsideAttacker,
+            ),
+            sys: baseState.sys,
         }, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '0',
@@ -758,7 +762,7 @@ describe('mage-wars combat enchantments', () => {
             anchoredToZoneId: PLAYER_ZERO_START_ZONE,
         });
         const moved = runCommand({
-            core: withArenaObject(withArenaObject(baseState.core, target), area),
+            core: withArenaObject(withArenaObject({ ...baseState.core, phaseReadyPlayerIds: [] }, target), area),
             sys: baseState.sys,
         }, {
             type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
@@ -771,9 +775,10 @@ describe('mage-wars combat enchantments', () => {
         const attacker = makeArenaObject('area-aegis-moved-attacker-1', '1', ARENA_ZONE_IDS.A2, {
             attackOrTraitLine: '利爪：快速近战 3 骰',
         });
+        const afterMove = finishCreatureAction(moved.state, '0');
         const attacked = runCommand({
-            core: withCurrentPlayer(withArenaObject(moved.state.core, attacker), '1'),
-            sys: moved.state.sys,
+            core: withArenaObject(afterMove.core, attacker),
+            sys: afterMove.sys,
         }, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '1',

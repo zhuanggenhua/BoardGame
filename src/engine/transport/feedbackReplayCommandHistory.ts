@@ -1,4 +1,5 @@
 import type { MatchState } from '../types';
+import { cloneSnapshotState } from '../systems/UndoSystem';
 import type { FeedbackReplayTriggerReference } from './feedbackReplayCaptureTypes';
 
 export type FeedbackReplayCommandRecord = FeedbackReplayTriggerReference & {
@@ -11,6 +12,8 @@ export type FeedbackReplayCommandRecord = FeedbackReplayTriggerReference & {
     stateBefore: MatchState<unknown>;
     stateAfter: MatchState<unknown>;
     capturedAt: number;
+    /** 原始状态包含不可序列化值时，压缩回放只能用于部分诊断。 */
+    stateSnapshotPartial?: boolean;
 };
 
 /** Recent authoritative command boundaries let a first-trigger report replay the exact action. */
@@ -34,14 +37,21 @@ export class FeedbackReplayCommandHistory {
         let frozenRecord: FeedbackReplayCommandRecord;
         try {
             // 前后状态通常共享未变化的子树；一次克隆保留共享并避免重复复制。
-            const snapshot = structuredClone({
-                commandPayload: record.commandPayload,
-                stateBefore: record.stateBefore,
-                stateAfter: record.stateAfter,
-            });
+            const commandPayload = structuredClone(record.commandPayload);
+            let stateSnapshotPartial = false;
+            let states: { stateBefore: MatchState<unknown>; stateAfter: MatchState<unknown> };
+            try {
+                states = structuredClone({ stateBefore: record.stateBefore, stateAfter: record.stateAfter });
+            } catch {
+                // 交互选项生成器可以是函数；保留内存快照，同时显式标记持久回放不完整。
+                states = cloneSnapshotState({ stateBefore: record.stateBefore, stateAfter: record.stateAfter });
+                stateSnapshotPartial = true;
+            }
             frozenRecord = {
                 ...record,
-                ...snapshot,
+                commandPayload,
+                ...states,
+                ...(stateSnapshotPartial ? { stateSnapshotPartial: true } : {}),
                 capturedAt: this.now(),
             };
         } catch {

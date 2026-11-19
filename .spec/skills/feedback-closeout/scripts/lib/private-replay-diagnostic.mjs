@@ -433,6 +433,7 @@ export function summarizePrivateFeedbackReplay(encodedReplay, replayError) {
         if (!value || !asRecord(value.state)) return { status: 'invalid-archive' };
         return {
             status: 'available',
+            ...(value.stateSnapshotPartial === true ? { stateSnapshotPartial: true } : {}),
             ...(captureFailure ? { captureFailure } : {}),
             ...(shortNumber(value.schemaVersion) !== undefined ? { schemaVersion: value.schemaVersion } : {}),
             ...(shortString(value.matchId) ? { hasMatchId: true } : {}),

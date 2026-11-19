@@ -16,7 +16,7 @@ vi.mock('pixi.js', () => ({ Sprite: class {}, Texture: { from: () => {
 import { BetrayalRoomLighting } from '../roomLightingSurface';
 
 const room: MapSceneSprite = { id: 'library', textureUrls: [], x: 80, y: 100, width: 150, height: 150, rotation: Math.PI / 2 };
-const context = () => ({ setTransform: vi.fn(), clearRect: vi.fn(), fillRect: vi.fn(), save: vi.fn(), restore: vi.fn(), translate: vi.fn(), rotate: vi.fn(), globalCompositeOperation: '', filter: '', fillStyle: '' });
+const context = () => ({ setTransform: vi.fn(), clearRect: vi.fn(), fillRect: vi.fn(), save: vi.fn(), restore: vi.fn(), translate: vi.fn(), rotate: vi.fn(), createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })), globalCompositeOperation: '', filter: '', fillStyle: '' });
 
 describe('room silhouette lighting mask', () => {
     it('opens rotated room silhouettes and restores compositing without touching rule state', () => {
@@ -25,7 +25,7 @@ describe('room silhouette lighting mask', () => {
         expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 64, 64);
         expect(ctx.translate).toHaveBeenCalledWith(155, 175);
         expect(ctx.rotate).toHaveBeenCalledWith(Math.PI / 2);
-        expect(ctx.fillRect).toHaveBeenLastCalledWith(-78, -78, 156, 156);
+        expect(ctx.fillRect).toHaveBeenCalledWith(-78, -78, 156, 156);
         expect(ctx.globalCompositeOperation).toBe('source-over');
         expect(ctx.filter).toBe('none');
     });

@@ -92,6 +92,22 @@ describe('errorContext 自动反馈', () => {
         });
     });
 
+    it('包装异常上报时保留原始错误原因', async () => {
+        const { installGlobalErrorContextCapture } = await import('../feedback/errorContext');
+        installGlobalErrorContextCapture();
+        const event = new Event('error') as Event & { error?: Error; message?: string };
+        const cause = new TypeError('original failure');
+        cause.stack = 'TypeError: original failure\nrender@http://8.148.71.102/assets/index-AbCd1234.js:12:345';
+        event.error = Object.assign(new Error('React wrapper'), { cause });
+        event.message = 'React wrapper';
+        window.dispatchEvent(event);
+        await Promise.resolve();
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
+        expect(body.errorContext.causeName).toBe('TypeError');
+        expect(body.errorContext.causeSource).toBe('http://8.148.71.102/assets/index-AbCd1234.js:12:345');
+        expect(body.errorContext.jsStack).not.toContain('original failure');
+    });
+
     it('unhandledrejection 会自动上报', async () => {
         const { installGlobalErrorContextCapture } = await import('../feedback/errorContext');
         installGlobalErrorContextCapture();

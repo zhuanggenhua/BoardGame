@@ -82,8 +82,9 @@ import {
 import { useMovementTrails } from './ui/useMovementTrails';
 import {
   BOARD_SHELL_REFERENCE_WIDTH,
+  SUMMONER_WARS_BOARD_REFERENCE_WIDTH_PX,
+  SUMMONER_WARS_DESKTOP_HUD_REFERENCE_HEIGHT_PX,
   SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
-  SUMMONER_WARS_MOBILE_BOARD_REFERENCE_WIDTH_PX,
 } from './ui/layoutConstants';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { SUMMONER_WARS_AUDIO_CONFIG, resolveDiceRollSound, resolveAttackSoundKey, resolveDamageSoundKey } from './audio.config';
@@ -103,8 +104,6 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
   cols: BOARD_COLS,
   bounds: { x: 0.038, y: 0.135, width: 0.924, height: 0.73 },
 };
-const MOBILE_LANDSCAPE_MAP_INITIAL_SCALE = 1.18;
-const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
 const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 const DICE_RESULT_OVERLAY_DURATION_MS = 3000;
@@ -174,25 +173,18 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const { t } = useTranslation('game-summonerwars');
   const renderPipelineSettings = useRenderPipelineSettings();
   const viewport = useRuntimeViewport();
-  const viewportSafeWidth = useMemo(() => {
-    const safeWidth = viewport.width - viewport.safeArea.left - viewport.safeArea.right;
-    return safeWidth > 0 ? safeWidth : viewport.width;
-  }, [viewport.safeArea.left, viewport.safeArea.right, viewport.width]);
-  const isMobileViewport = viewport.width <= 1023;
-  const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
+  const viewportSafeWidth = Math.max(1, viewport.width - viewport.safeArea.left - viewport.safeArea.right);
+  const viewportSafeHeight = Math.max(1, viewport.height - viewport.safeArea.top - viewport.safeArea.bottom);
+  // 地图保持自由视口；常驻界面统一使用桌面设计坐标和同一倍率。
+  const hudScale = Math.min(
+    viewportSafeWidth / SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
+    viewportSafeHeight / SUMMONER_WARS_DESKTOP_HUD_REFERENCE_HEIGHT_PX,
+  );
   const shouldShowLifeToggle = true;
   const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced';
   const fxQuality = shouldReduceCombatEffects ? 'reduced' : renderPipelineSettings.fxQuality;
-  const desktopReferenceWidth = Math.min(
-    SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
-    viewportSafeWidth || SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
-  );
-  const useCompactHandLayout = isLandscapeMobileViewport || (!isMobileViewport && desktopReferenceWidth < 1100);
-  const mapInitialScale = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_INITIAL_SCALE : 1;
-  const desktopMapPadding = `calc(${BOARD_SHELL_REFERENCE_WIDTH} * ${DESKTOP_MAP_SIDE_RATIO})`;
-  const mapPaddingLeft = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_PADDING : desktopMapPadding;
-  const mapPaddingRight = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_PADDING : desktopMapPadding;
-  const mapShadeWidth = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_PADDING : desktopMapPadding;
+  const mapPadding = `${SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX * DESKTOP_MAP_SIDE_RATIO * hudScale}px`;
+  const mapShadeWidth = `calc(${BOARD_SHELL_REFERENCE_WIDTH} * ${DESKTOP_MAP_SIDE_RATIO})`;
   const activeEventLabelClass = 'text-xs px-1.5 py-0.5';
   // 持续事件需要保持卡面可读；当前实际入口按原尺寸的两倍展示，不设置最大宽度。
   const activeEventCardStyle = { width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.09)` };
@@ -203,53 +195,38 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   };
   const opponentBarClass = 'absolute top-3 right-3 pointer-events-auto flex flex-col items-end gap-2';
   const playerBarClass = 'absolute left-3 bottom-3 z-20 pointer-events-none flex flex-col items-start gap-3';
-  const phaseControlsClass = isLandscapeMobileViewport
-    ? 'absolute right-3 bottom-3 z-50 pointer-events-auto flex flex-col items-end gap-3'
-    : 'absolute right-3 bottom-3 z-20 pointer-events-auto flex flex-col items-end gap-3';
-  const phaseTrackerClass = isLandscapeMobileViewport
-    ? 'bg-slate-900/46 backdrop-blur-sm px-2 py-1.5 rounded-lg border border-slate-700/20 min-w-[5.75rem] max-w-[5.75rem] pointer-events-auto'
-    : 'bg-slate-900/40 backdrop-blur-sm px-3 py-3 rounded-lg border border-slate-700/20 min-w-[8rem] pointer-events-auto';
-  const phaseTrackerRailClass = isLandscapeMobileViewport
-    ? ''
-    : 'absolute inset-y-0 right-2 z-20 grid grid-rows-[minmax(0,1fr)_auto_minmax(max-content,1fr)] justify-items-end pointer-events-none';
-  const phaseTrackerWrapperClass = isLandscapeMobileViewport
-    ? 'absolute top-3 right-3 z-60 pointer-events-auto'
-    : 'pointer-events-auto';
-  const boardReferenceWidthCss = isLandscapeMobileViewport
-    ? `var(--mobile-board-shell-design-width, ${SUMMONER_WARS_MOBILE_BOARD_REFERENCE_WIDTH_PX}px)`
-    : !isMobileViewport
-      ? `${desktopReferenceWidth}px`
-      : '100vw';
-  const mobileLandscapeCenteredContentWidth = `calc(100vw - (${MOBILE_LANDSCAPE_MAP_PADDING} * 2))`;
-  const handReferenceWidthCss = isLandscapeMobileViewport
-    ? mobileLandscapeCenteredContentWidth
-    : !isMobileViewport
-      ? `${desktopReferenceWidth}px`
-      : '100vw';
+  const phaseTrackerClass = 'bg-slate-900/40 backdrop-blur-sm px-3 py-3 rounded-lg border border-slate-700/20 min-w-[128px] pointer-events-auto';
   const boardShellStyle = {
-    '--sw-board-reference-width': boardReferenceWidthCss,
-    '--sw-hand-reference-width': handReferenceWidthCss,
-    ...(isLandscapeMobileViewport ? { '--sw-hand-card-width-ratio': '0.145' } : {}),
+    '--sw-board-reference-width': `${SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX}px`,
+    '--sw-hand-reference-width': `${SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX}px`,
+    '--sw-energy-design-inline-unit': `${SUMMONER_WARS_BOARD_REFERENCE_WIDTH_PX / 100}px`,
   } as React.CSSProperties;
 
   const handAreaStyle: React.CSSProperties = {
     left: '50%',
     transform: 'translateX(-50%)',
-    ...(isLandscapeMobileViewport
-      ? {
-          width: mobileLandscapeCenteredContentWidth,
-          maxWidth: mobileLandscapeCenteredContentWidth,
-        }
-      : {}),
   };
-  const statusBannersWrapperStyle: React.CSSProperties | undefined = isLandscapeMobileViewport
-    ? {
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: `min(${mobileLandscapeCenteredContentWidth}, 34rem)`,
-        maxWidth: mobileLandscapeCenteredContentWidth,
-      }
-    : undefined;
+  const hudStyle: React.CSSProperties = {
+    left: viewport.safeArea.left,
+    top: viewport.safeArea.top,
+    width: viewportSafeWidth / hudScale,
+    height: viewportSafeHeight / hudScale,
+    transform: `scale(${hudScale})`,
+    transformOrigin: 'top left',
+    '--sw-hud-scale': hudScale,
+    '--sw-hud-logical-width': `${viewportSafeWidth / hudScale}px`,
+    '--spacing': '4px',
+    '--text-xs': '12px',
+    '--text-sm': '14px',
+    '--text-base': '16px',
+    '--text-lg': '18px',
+    '--text-xl': '20px',
+    '--text-2xl': '24px',
+    '--radius-sm': '4px',
+    '--radius-md': '6px',
+    '--radius-lg': '8px',
+    '--radius-xl': '12px',
+  } as React.CSSProperties;
   const useSafeCombatVisualFallback = isTestEnvironment() || (typeof navigator !== 'undefined' && navigator.webdriver);
 
   // 阵营选择状态
@@ -1126,7 +1103,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
             {t('action.discardSelected', { count: interaction.selectedCardsForDiscard.length })}
           </GameButton>
         )}
-        <GameButton onClick={interaction.handleEndPhase} disabled={!isMyTurn || interaction.isMandatoryAbilityActive || interaction.isPhaseAdvanceLocked} variant={interaction.endPhaseConfirmPending ? 'danger' : 'primary'} size="md" data-testid="sw-end-phase" data-tutorial-id="sw-end-phase-btn">
+        <GameButton onClick={interaction.handleEndPhase} disabled={!isMyTurn || interaction.isMandatoryAbilityActive || interaction.isPhaseAdvanceLocked} variant={interaction.endPhaseConfirmPending ? 'danger' : 'primary'} size="md" data-testid="sw-end-phase" data-sw-extend-hit={currentPhase !== 'magic' || interaction.selectedCardsForDiscard.length === 0} data-tutorial-id="sw-end-phase-btn">
           {interaction.endPhaseConfirmPending
             ? t(currentPhase === 'move' ? 'action.confirmEndMove' : 'action.confirmEndAttack', {
               count: currentPhase === 'move'
@@ -1153,7 +1130,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       isMyTurn={isMyTurn}
       moveCount={core.players[playerID === '1' ? '1' : '0']?.moveCount ?? 0}
       attackCount={core.players[playerID === '1' ? '1' : '0']?.attackCount ?? 0}
-      compact={isLandscapeMobileViewport}
       className={phaseTrackerClass}
     />
   );
@@ -1210,14 +1186,14 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               />
             </div>
           ) : (
-            <div className="relative min-h-0 flex-1 overflow-hidden">
+            <div className="relative min-h-0 flex-1 overflow-hidden" data-sw-board-active="true">
                 <div className="relative h-full overflow-hidden">
                   {/* 地图层 */}
                   <div ref={shakeTargetRef} className="absolute inset-0 z-10 flex items-center justify-center" data-testid="sw-map-layer" data-tutorial-id="sw-map-area">
                 <MapContainer
                   className="w-full h-full flex items-center justify-center"
-                  style={{ paddingLeft: mapPaddingLeft, paddingRight: mapPaddingRight }}
-                  initialScale={mapInitialScale}
+                  style={{ paddingLeft: mapPadding, paddingRight: mapPadding }}
+                  initialScale={1}
                   dragBoundsPaddingRatioY={0.3}
                   interactionDisabled={mapInteractionDisabled}
                   containerTestId="sw-map-container"
@@ -1334,7 +1310,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   ) : null}
 
                   {/* UI 层 */}
-                  <div className="absolute inset-0 z-20 pointer-events-none">
+                  <div className="absolute z-20 pointer-events-none" style={hudStyle} data-testid="sw-hud-layer">
                 {/* 左侧黑边渐变 */}
                 <div className="absolute inset-y-0 left-0" style={{ width: mapShadeWidth, background: 'linear-gradient(to right, rgba(0,0,0,0.95), rgba(0,0,0,0.75), rgba(0,0,0,0))' }} />
                 {/* 右侧黑边渐变 */}
@@ -1344,17 +1320,15 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    background: isLandscapeMobileViewport
-                      ? 'radial-gradient(circle at center, transparent 42%, rgba(0,0,0,0.14) 82%, rgba(0,0,0,0.24) 100%)'
-                      : 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0.5) 100%)',
-                    mixBlendMode: isLandscapeMobileViewport ? undefined : 'multiply'
+                    background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0.5) 100%)',
+                    mixBlendMode: 'multiply'
                   }}
                 />
 
                 {/* 右上：对手名+魔力条 + 持续效果 */}
                 <div className={opponentBarClass} data-testid="sw-opponent-bar">
                   <div className="flex items-center gap-3 rounded-lg border border-slate-600/20 bg-black/60 px-3 py-2">
-                    <span className="max-w-[9rem] truncate text-sm font-medium text-white text-opacity-100">
+                    <span className="max-w-[144px] truncate text-sm font-medium text-white text-opacity-100">
                       {playerView.getPlayerName(opponentPlayerId)}
                     </span>
                     <EnergyBar current={opponentMagic} testId="sw-energy-opponent" size="normal" />
@@ -1436,7 +1410,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   )}
 
                   <div className="flex items-center gap-3 rounded-lg border border-slate-600/20 bg-black/60 px-3 py-2">
-                    <span className="max-w-[9rem] truncate text-sm font-medium text-white text-opacity-100">
+                    <span className="max-w-[144px] truncate text-sm font-medium text-white text-opacity-100">
                       {playerView.getPlayerName(myPlayerId)}
                     </span>
                     <EnergyBar current={myMagic} testId="sw-energy-player" size="normal" />
@@ -1446,34 +1420,24 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* 右下区域：结束阶段按钮 + 弃牌堆 */}
-                {isLandscapeMobileViewport && !shouldHidePhaseControlsForPrompt && (
-                  <div className={phaseControlsClass} data-testid="sw-phase-controls">
-                    {phaseControlsNode}
-                  </div>
-                )}
-
                 {/* 右侧：阶段指示器（桌面端独立右侧中线 rail，不再和对手/底部 HUD 共用经验值定位） */}
-                <div className={phaseTrackerRailClass}>
-                  {!isLandscapeMobileViewport && <div />}
-                  <div className={`${phaseTrackerWrapperClass} ${isLandscapeMobileViewport ? '' : 'mb-2'}`} data-testid="sw-phase-tracker" data-tutorial-id="sw-phase-tracker">
+                <div className="absolute inset-y-0 right-2 z-20 grid grid-rows-[minmax(0,1fr)_auto_minmax(max-content,1fr)] justify-items-end pointer-events-none">
+                  <div />
+                  <div className="pointer-events-auto mb-2" data-testid="sw-phase-tracker" data-tutorial-id="sw-phase-tracker">
                     {phaseTrackerNode}
                   </div>
-                  {!isLandscapeMobileViewport && (
-                    <div className="flex items-end pb-3 pr-1">
-                      {!shouldHidePhaseControlsForPrompt && (
-                        <div className="pointer-events-auto" data-testid="sw-phase-controls">
-                          {phaseControlsNode}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-end pb-3 pr-1">
+                    {!shouldHidePhaseControlsForPrompt && (
+                      <div className="pointer-events-auto" data-testid="sw-phase-controls">
+                        {phaseControlsNode}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 顶部中央：提示横幅 */}
                 <div
-                  className={`absolute top-3 z-30 pointer-events-none ${isLandscapeMobileViewport ? '' : 'left-0 right-0 flex justify-center'}`}
-                  style={statusBannersWrapperStyle}
+                  className="absolute top-3 z-30 pointer-events-none left-0 right-0 flex justify-center"
                   data-tutorial-id="sw-action-banner"
                 >
                   <div className="pointer-events-auto">
@@ -1589,7 +1553,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       bloodSummonSelectingCard={interaction.bloodSummonMode?.step === 'selectCard'}
                       abilitySelectingCards={abilityMode?.step === 'selectCards'}
                       interactionBusy={handInteractionBusy}
-                      compactLayout={useCompactHandLayout}
                     />
                   </div>
                 </div>

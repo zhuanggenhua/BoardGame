@@ -77,20 +77,24 @@ export function layoutQidahenPopulation(
     sites: ReadonlyMap<string, PopulationSite>, regions: readonly Region[],
     tokens: readonly Obstacle[], width: number, height: number,
     reservedAreas: readonly { left: number; top: number; width: number; height: number }[] = [],
+    jointSites: ReadonlyMap<string, Point> = new Map(),
 ): PopulationPlacement[] {
     const obstacles = tokens.map(token => ({ x: token.x * width, y: token.y * height, half: (token.size ?? 30) / 2 }));
+    const reservedSites = [...jointSites];
     const half = QIDAHEN_POPULATION_SIZE / 2;
-    const free = (point: Point) => point.x >= CLEARANCE && point.x < width - CLEARANCE && point.y >= CLEARANCE && point.y < height - CLEARANCE
+    const free = (point: Point, regionId: string) => point.x >= CLEARANCE && point.x < width - CLEARANCE && point.y >= CLEARANCE && point.y < height - CLEARANCE
         && reservedAreas.every(area => point.x + half + GAP <= area.left || point.x - half - GAP >= area.left + area.width
             || point.y + half + GAP <= area.top || point.y - half - GAP >= area.top + area.height)
+        && reservedSites.every(([id, site]) => id === regionId || Math.abs(point.x - site.x) >= half * 2 + GAP
+            || Math.abs(point.y - site.y) >= half * 2 + GAP)
         && obstacles.every(box => Math.abs(point.x - box.x) >= half + box.half + GAP || Math.abs(point.y - box.y) >= half + box.half + GAP);
     const result: PopulationPlacement[] = [];
     const ordered = regions.filter(r => !r.isLogicalRegion && sites.has(r.id))
         .sort((a, b) => sites.get(a.id)!.clearance - sites.get(b.id)!.clearance || a.id.localeCompare(b.id));
     for (const region of ordered) {
         const site = sites.get(region.id)!;
-        const preferred = { x: region.x * width + 20, y: region.y * height + 22 };
-        const placement = placeQidahenMapObject(site, preferred, free, CLEARANCE + 7);
+        const preferred = jointSites.get(region.id) ?? { x: region.x * width + 20, y: region.y * height + 22 };
+        const placement = placeQidahenMapObject(site, preferred, point => free(point, region.id), CLEARANCE + 7);
         if (!placement) throw new Error(`人口标记没有可用位置：${region.id}`);
         const { point, callout } = placement;
         // 每区保留稳定的几何槽位；人口从零变正时不挤走邻区读数。

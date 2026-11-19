@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DiceBoxPhysicsSource } from '../../../lib/dice-physics/DiceBoxPhysicsSource';
 import type { DiceBoxDieType, DiceBoxDieSkin } from '../../../lib/dice-box-threejs/engine';
-import type { QidahenBattleRoll, QidahenBattleRolls } from '../domain/types';
+import type { QidahenBattleRoll, QidahenBattleRolls, QidahenMapToken, QidahenTroopKind } from '../domain/types';
 import { createQidahenD6Skin, QIDAHEN_BATTLE_DICE_STYLES } from './battleDiceAppearance';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 
@@ -17,10 +17,34 @@ type Props = {
     attacker: QidahenBattleActor;
     defender: QidahenBattleActor;
     onComplete: () => void;
+    fixedSides?: boolean;
+    rosters?: Record<'attacker' | 'defender', readonly QidahenMapToken[]>;
 };
 
+function BattleRoster({ tokens, kinds, side }: { tokens: readonly QidahenMapToken[]; kinds: ReadonlySet<QidahenTroopKind>; side: 'attacker' | 'defender' }) {
+    const groups = new Map<string, QidahenMapToken[]>();
+    for (const token of tokens) {
+        const key = JSON.stringify([token.troopKind, token.imageSrc, token.rotationDeg ?? 0]);
+        const group = groups.get(key);
+        if (group) group.push(token); else groups.set(key, [token]);
+    }
+    return <div className="flex min-h-[62px] shrink-0 gap-2 overflow-x-auto py-1 [justify-content:safe_center]" data-testid={`qidahen-battle-roster-${side}`}>
+        {[...groups].map(([key, [token, ...rest]]) => {
+            const active = Boolean(token.troopKind && kinds.has(token.troopKind));
+            return <div key={key} className={`relative flex w-10 shrink-0 flex-col items-center gap-0.5 ${active ? '' : 'opacity-65'}`}
+                data-qidahen-arena-unit={side} data-qidahen-arena-active={active ? 'true' : 'false'}
+                data-piece-ids={[token, ...rest].map(piece => piece.pieceId).join(' ')}>
+                <OptimizedImage src={token.imageSrc!} alt="" placeholder={false} draggable={false}
+                    className={`h-10 w-10 rounded-[6px] ${active ? 'ring-2 ring-amber-200' : ''}`}
+                    style={{ transform: `rotate(${token.rotationDeg ?? 0}deg)` }} />
+                {rest.length ? <span className="text-xs font-black leading-4">×{rest.length + 1}</span> : null}
+            </div>;
+        })}
+    </div>;
+}
+
 /** 领域已结算的骰值只播一次：双方同阶段同时投掷，全部停稳后显示损伤，再进下一阶段。 */
-export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attacker, defender, onComplete }: Props) {
+export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attacker, defender, onComplete, fixedSides = false, rosters }: Props) {
     const { t } = useTranslation('game-qidahen');
     const actors = { attacker, defender };
     const [index, setIndex] = React.useState(0);
@@ -48,7 +72,7 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
         }
         return result;
     }, [stage, index, d6Skin]);
-    const sides = (['attacker', 'defender'] as const).filter(side => groups.some(group => group.side === side));
+    const sides = (['attacker', 'defender'] as const).filter(side => fixedSides || groups.some(group => group.side === side));
 
     React.useEffect(() => {
         if (!stage) { completeRef.current(); return; }
@@ -86,9 +110,12 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
                 {sides.map(side => (
                     <div key={side} data-testid={`qidahen-battle-side-${side}`} className="flex min-h-0 min-w-0 flex-col">
                         <div className="shrink-0 text-center text-[16px] font-bold leading-6"><span data-qidahen-battle-label={side} className="inline-flex items-center gap-1.5" style={battleLabelStyle}>
-                            {actors[side].markerSrc ? <OptimizedImage src={actors[side].markerSrc} alt="" className="h-5 w-5 shrink-0 object-contain" placeholder={false} /> : null}
+                            {actors[side].markerSrc ? <OptimizedImage src={actors[side].markerSrc} alt="" className="h-5 w-5 shrink-0 object-contain"
+                                style={{ clipPath: 'circle(48%)' }} placeholder={false} /> : null}
                             {t('board.battleRoll.sideOwner', { faction: actors[side].name, role: t(`board.battleRoll.${side}`) })}
                         </span></div>
+                        {rosters ? <BattleRoster side={side} tokens={rosters[side]}
+                            kinds={new Set((side === 'attacker' ? stage.attackerRolls : stage.defenderRolls).map(die => die.troopKind))} /> : null}
                         <div className="flex min-h-0 flex-1 gap-2">
                             {groups.filter(group => group.side === side).map(group => (
                                 <div key={group.id} data-testid={`qidahen-battle-dice-${group.id}`} className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -127,10 +154,10 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
                 ))}
             </div>
             <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${showDamage ? 'qidahen-battle-result-enter' : ''}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
-                {sides.map(side => <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
+                {sides.map(side => groups.some(group => group.side === side) ? <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
                     <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
-                    <div data-qidahen-battle-label={`${side}-damage`} className="whitespace-nowrap text-[16px] leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: t('board.battleRoll.regionFaction', { region: side === 'attacker' ? targetName : sourceName, faction: actors[side === 'attacker' ? 'defender' : 'attacker'].name }) })}</div>
-                </div>)}
+                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[14px] leading-5 sm:text-[16px] sm:leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: t('board.battleRoll.regionFaction', { region: side === 'attacker' ? targetName : sourceName, faction: actors[side === 'attacker' ? 'defender' : 'attacker'].name }) })}</div>
+                </div> : <div key={side} aria-hidden="true" />)}
             </div>
         </section>
     );

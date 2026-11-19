@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useAnimate } from 'framer-motion';
-import type { CardPreviewRef } from '../../core';
+import { UI_Z_INDEX, type CardPreviewRef } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { CardChoiceOverlay, ZoomPanViewport } from '../../components/game/framework';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -22,6 +22,7 @@ import { CardInspectButton as SharedCardInspectButton } from '../../components/c
 import { InfoTooltip } from '../../components/common/overlays/InfoTooltip';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import './ui/cardInspect.css';
+import './ui/tutorial.css';
 import './ui/phaseTooltip.css';
 import { BoardDamageStateOverlay } from '../../components/common/animations/BoardDamageStateOverlay';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
@@ -41,9 +42,11 @@ import type { PlayerId } from '../../engine/types';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { useTouchInspectGesture } from '../../hooks/ui/useTouchInspectGesture';
 import { useEndgame } from '../../hooks/game/useEndgame';
+import { useGameMode } from '../../contexts/GameModeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
+import { getMageWarsTutorialOutcomeKey } from './ui/tutorialOutcome';
 import {
     MAGE_WARS_OBJECT_ABILITY_IDS,
     type ArenaZoneId,
@@ -123,7 +126,10 @@ import {
     type ZoneEntityDensity,
 } from './ui/arenaPresentation';
 import { getMageWarsSpellbookDisplayEntries } from './ui/spellbookPresentation';
+import { getMageWarsAvailableSpellbookCopyCount } from './domain/spellbook';
 import {
+    buildEquipmentAttackTargetsBySource,
+    buildObjectSpellPlanningChoices,
     buildMageAbilityTargetsByObjectId,
     buildNonEmptySet,
     buildObjectAbilityTargetsByObjectId,
@@ -167,6 +173,7 @@ import {
     type MageWarsTurnMainActionModel,
 } from './ui/turnMainActionModel';
 import { useMageWarsPlanningDraft } from './ui/useMageWarsPlanningDraft';
+import { getMageWarsTutorialPlan, MageWarsTutorial } from './tutorial';
 
 type Props = GameBoardProps<MageWarsCore>;
 
@@ -706,7 +713,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                             <li
                                 key={phaseId}
                                 className={cx(
-                                    'pointer-events-auto relative flex min-h-[1.9rem] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.85rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
+                                    'pointer-events-auto relative flex min-h-[1.9rem] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.94rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
                                     active
                                         ? 'translate-x-1 border-amber-300 bg-amber-200/88 text-stone-950 shadow-[0_0_12px_rgba(251,191,36,0.24)]'
                                         : complete
@@ -1851,6 +1858,7 @@ function ArenaAttachmentCard({
 
     const dataProps = {
         'data-testid': 'mage-wars-attached-card',
+        'data-tutorial-id': `mw-arena-object-${object.id}`,
         'data-object-id': object.id,
         'data-source-card-id': object.sourceSpellCardId,
         'data-bound-spell-card-id': boundSpellCardId,
@@ -2113,11 +2121,13 @@ function DiscardPile({
 
 function SpellbookShelf({
     player,
+    core,
     phase,
     canAct,
     canPlan,
     selectedCardIds,
     onSelectedCardIdsChange,
+    sourcePlan,
     onInspectCard,
     onUnavailableAction,
     tutorialStepId,
@@ -2126,11 +2136,13 @@ function SpellbookShelf({
     visibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT,
 }: {
     player: MageWarsPlayerState;
+    core: MageWarsCore;
     phase: string;
     canAct: boolean;
     canPlan: boolean;
     selectedCardIds: number[];
     onSelectedCardIdsChange: Dispatch<SetStateAction<number[]>>;
+    sourcePlan?: { choices: ReadonlyMap<number, string | null>; onSelect: (cardId: number) => void };
     onInspectCard?: (cardId: number, label?: string) => void;
     onUnavailableAction?: (reason?: string) => void;
     tutorialStepId?: string;
@@ -2174,8 +2186,15 @@ function SpellbookShelf({
     const currentPage = Math.min(page, pageCount - 1);
     const previewEntries = filteredEntries.slice(currentPage * cardsPerPage, currentPage * cardsPerPage + cardsPerPage);
     const canUseTutorialTarget = (targetId: string) => isTutorialTargetAllowed?.(targetId) ?? true;
+    const availableCopies = (cardId: number) => {
+        const available = getMageWarsAvailableSpellbookCopyCount(core, player.id, cardId, {
+            replaceMagePlan: sourcePlan === undefined,
+        });
+        return sourcePlan ? Math.max(0, available - (selectedCountsByCardId.get(cardId) ?? 0)) : available;
+    };
     const canPlanVisibleCard = (cardId: number) => (
-        planning && canUseTutorialTarget(`mw-spellbook-card-${cardId}`)
+        planning && availableCopies(cardId) > 0 && canUseTutorialTarget(`mw-spellbook-card-${cardId}`)
+        && (!sourcePlan || sourcePlan.choices.get(cardId) === null)
     );
     const hasVisiblePlanningAction = previewEntries.some((entry) => canPlanVisibleCard(entry.spellCardId));
     const completeTutorialPlanningStep = (expectedStepId: string) => {
@@ -2185,6 +2204,10 @@ function SpellbookShelf({
     };
     const togglePlannedCard = (cardId: number, copyCount: number) => {
         if (!planning) return;
+        if (sourcePlan) {
+            sourcePlan.onSelect(cardId);
+            return;
+        }
         const selectedCount = selectedCardIds.filter((id) => id === cardId).length;
         const willRemove = selectedCount > 0 && (
             selectedCount >= Math.min(copyCount, MAGE_WARS_MAX_PREPARED_SPELLS)
@@ -2276,6 +2299,7 @@ function SpellbookShelf({
             >
                 {previewEntries.map((entry) => {
                     const cardCanPlan = canPlanVisibleCard(entry.spellCardId);
+                    const copyCount = availableCopies(entry.spellCardId);
                     return (
                         <PreparedSpellCard
                             key={`${player.id}-spellbook-desktop-${entry.spellCardId}`}
@@ -2283,12 +2307,16 @@ function SpellbookShelf({
                             label={getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell')}
                             testId="mage-wars-desktop-spellbook-card"
                             tutorialId={`mw-spellbook-card-${entry.spellCardId}`}
-                            selected={(selectedCountsByCardId.get(entry.spellCardId) ?? 0) > 0}
-                            selectedCount={selectedCountsByCardId.get(entry.spellCardId) ?? 0}
-                            copyCount={entry.count}
+                            selected={!sourcePlan && (selectedCountsByCardId.get(entry.spellCardId) ?? 0) > 0}
+                            selectedCount={sourcePlan ? 0 : selectedCountsByCardId.get(entry.spellCardId) ?? 0}
+                            copyCount={copyCount}
                             primaryActionIntent={planning}
-                            onClick={cardCanPlan ? () => togglePlannedCard(entry.spellCardId, entry.count) : undefined}
-                            onUnavailable={cardCanPlan ? undefined : () => onUnavailableAction?.('tutorialBlocked')}
+                            onClick={cardCanPlan ? () => togglePlannedCard(entry.spellCardId, copyCount) : undefined}
+                            onUnavailable={cardCanPlan ? undefined : () => onUnavailableAction?.(
+                                copyCount === 0
+                                    ? 'tooManyPreparedSpellCopies'
+                                    : sourcePlan?.choices.get(entry.spellCardId) ?? 'tutorialBlocked',
+                            )}
                             onInspect={() => onInspectCard?.(
                                 entry.spellCardId,
                                 getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell'),
@@ -2637,10 +2665,12 @@ function ArenaStage({
     activePlayer,
     activeOpponent,
     selectedSpellCardId,
+    selectedSpellCasterObjectId,
     pendingSpellCastSelection,
     selectedObjectId,
     selectedMageId,
-    objectAbilitySourceIds,
+    objectActionSourceIds,
+    selectedEquipmentAttackTargets,
     selectedObjectAvailableAbilities,
     selectedMageRestoreAbility,
     canGuardSelectedActor,
@@ -2692,10 +2722,15 @@ function ArenaStage({
     activePlayer?: MageWarsPlayerState;
     activeOpponent?: MageWarsPlayerState | null;
     selectedSpellCardId?: number | null;
+    selectedSpellCasterObjectId?: string;
     pendingSpellCastSelection?: PendingSpellCastSelection | null;
     selectedObjectId?: string | null;
     selectedMageId?: PlayerId | null;
-    objectAbilitySourceIds?: ReadonlySet<string>;
+    objectActionSourceIds?: ReadonlySet<string>;
+    selectedEquipmentAttackTargets?: {
+        objects: ReadonlyMap<string, unknown>;
+        players: ReadonlyMap<PlayerId, unknown>;
+    };
     selectedObjectAvailableAbilities?: readonly { id: MageWarsObjectAbilityId; name: string }[];
     selectedMageRestoreAbility?: { abilityId: MageWarsMageAbilityId; name: string };
     canGuardSelectedActor?: boolean;
@@ -2790,7 +2825,7 @@ function ArenaStage({
         canAct,
         activePlayerId: activePlayer?.id,
         phase,
-        objectAbilitySourceIds,
+        objectActionSourceIds,
         targetingBusy,
         activeCreatureObjectId: core.activeCreatureAction
             ? core.activeCreatureAction.objectId ?? null
@@ -2865,14 +2900,15 @@ function ArenaStage({
     );
     const legalAttackTargetId = activeOpponent
         && !hasPendingAbilityTarget
-        && (selectedObject && selectedObjectCanAttack && selectedObjectAttackProfile
-            ? isMageWarsObjectAttackTargetSelectable(
-                core,
-                selectedObject.zoneId,
-                activeOpponent.mageZoneId,
-                selectedObjectAttackProfile,
-            )
-            : selectedMageCanAct && activeOpponent.mageZoneId === selectedMage?.mageZoneId)
+        && (selectedEquipmentAttackTargets?.players.has(activeOpponent.id)
+            || (selectedObject && selectedObjectCanAttack && selectedObjectAttackProfile
+                ? isMageWarsObjectAttackTargetSelectable(
+                    core,
+                    selectedObject.zoneId,
+                    activeOpponent.mageZoneId,
+                    selectedObjectAttackProfile,
+                )
+                : selectedMageCanAct && activeOpponent.mageZoneId === selectedMage?.mageZoneId))
         ? activeOpponent.id
         : null;
     const targetZoneId = legalAttackTargetId ? activeOpponent?.mageZoneId ?? null : null;
@@ -3027,15 +3063,16 @@ function ArenaStage({
                     const isSpellObjectTarget = isSelectedSpellObjectTarget(object);
                     if (selectedSpellCastChainPathObjectIds?.has(object.id)) return 'source';
                     if (object.id === pendingSpellTargetObjectId) return 'source';
-                    if (isSpellObjectTarget) return 'target';
-                    return object.id === selectedObjectId ? 'source' : undefined;
+                    if (isSpellObjectTarget || selectedEquipmentAttackTargets?.objects.has(object.id)) return 'target';
+                    return object.id === selectedObjectId || object.id === selectedSpellCasterObjectId ? 'source' : undefined;
                 };
                 const resolveAttachmentClick = (object: MageWarsArenaObjectState): (() => void) | undefined => {
                     const isSpellObjectTarget = isSelectedSpellObjectTarget(object);
-                    if (isSpellObjectTarget || selectedSpellCastCurrentChainSubmitObjectId === object.id) {
+                    if (isSpellObjectTarget || selectedSpellCastCurrentChainSubmitObjectId === object.id
+                        || selectedEquipmentAttackTargets?.objects.has(object.id)) {
                         return () => onObjectSelect?.(object.id);
                     }
-                    if (isMageWarsArenaObjectActionable(object, arenaObjectActionableOptions)) {
+                    if (object.id === selectedSpellCasterObjectId || isMageWarsArenaObjectActionable(object, arenaObjectActionableOptions)) {
                         return () => onActorObjectSelect?.(object.id);
                     }
                     return undefined;
@@ -3073,16 +3110,17 @@ function ArenaStage({
                         isMageWarsObjectAttachmentObject(attachment, object.id)
                     ));
                     const isObjectAttackTarget = Boolean(
-                        selectedObject
-                        && selectedObjectCanAttack
-                        && selectedObjectAttackProfile
-                        && object.ownerId !== activePlayer?.id
-                        && isMageWarsObjectAttackTargetSelectable(
-                            core,
-                            selectedObject.zoneId,
-                            object.zoneId,
-                            selectedObjectAttackProfile,
-                        ),
+                        selectedEquipmentAttackTargets?.objects.has(object.id)
+                        || (selectedObject
+                            && selectedObjectCanAttack
+                            && selectedObjectAttackProfile
+                            && object.ownerId !== activePlayer?.id
+                            && isMageWarsObjectAttackTargetSelectable(
+                                core,
+                                selectedObject.zoneId,
+                                object.zoneId,
+                                selectedObjectAttackProfile,
+                            )),
                     );
                     const isSpellObjectTarget = isSelectedSpellObjectTarget(object);
                     const isObjectAbilitySource = object.id === pendingObjectAbility?.objectId;
@@ -3101,6 +3139,7 @@ function ArenaStage({
                     const fieldRole = object.id === pendingSpellTargetObjectId
                         || selectedSpellCastChainPathObjectIds?.has(object.id)
                         || object.id === selectedObjectId
+                        || (object.id === selectedSpellCasterObjectId && !isSpellObjectTarget)
                         || isObjectAbilitySource
                         ? 'source'
                         : isSpellObjectTarget || isObjectAttackTarget || isObjectAbilityTarget || isMageAbilityTarget
@@ -3127,7 +3166,7 @@ function ArenaStage({
                         )
                         || (
                             selectedObject
-                            && selectedObjectCanAttack
+                            && (selectedObjectCanAttack || selectedEquipmentAttackTargets)
                             && object.ownerId !== activePlayer?.id
                         )
                         || hasPendingAbilityTarget
@@ -3184,7 +3223,7 @@ function ArenaStage({
                                             ? () => onObjectSelect?.(object.id)
                                         : isObjectAttackTarget
                                             ? () => onObjectSelect?.(object.id)
-                                            : canSelectObjectActor
+                                            : canSelectObjectActor || object.id === selectedSpellCasterObjectId
                                                 ? () => onActorObjectSelect?.(object.id)
                                                 : undefined}
                                     onInspect={resolveCardInspect(
@@ -3867,18 +3906,30 @@ function MageAbilityStatusChoiceDock({
 function MageWarsInteractionDock({
     interaction,
     playerId,
+    core,
     dispatch,
 }: {
     interaction?: InteractionDescriptor;
     playerId: PlayerId;
+    core: MageWarsCore;
     dispatch: Props['dispatch'];
 }) {
     const { t } = useTranslation('game-mage-wars');
     const prompt = asSimpleChoice(interaction);
     if (!prompt || prompt.playerId !== playerId) return null;
 
+    const displayName = (id: unknown) => {
+        if (typeof id !== 'string') return undefined;
+        const player = core.players[id];
+        return player ? getMageDisplayLabel(player) : core.objects[id]?.name;
+    };
+    const titleParams = prompt.titleParams;
     const title = t(prompt.titleKey ?? prompt.title, {
-        ...(prompt.titleParams ?? {}),
+        ...titleParams,
+        ...((prompt.titleKey === 'interaction.counterstrike.title' || prompt.titleKey === 'interaction.defense.title') ? {
+            attackerObjectId: displayName(titleParams?.attackerObjectId ?? titleParams?.attackerId) ?? t('interaction.attackSource'),
+            defenderObjectId: displayName(titleParams?.defenderObjectId ?? titleParams?.defenderId) ?? t('interaction.attackTarget'),
+        } : {}),
         defaultValue: prompt.title,
     });
 
@@ -3887,7 +3938,10 @@ function MageWarsInteractionDock({
             className="pointer-events-none absolute inset-x-0 top-[5.5rem] z-50 flex justify-center px-4"
             data-testid="mage-wars-interaction-dock"
         >
-            <section className="pointer-events-auto flex max-w-[38rem] items-center gap-3 rounded-[0.35rem] bg-stone-950/88 px-4 py-3 shadow-[0_16px_38px_rgba(0,0,0,0.52)]">
+            <section
+                className="pointer-events-auto flex max-w-[38rem] items-center gap-3 rounded-[0.35rem] bg-stone-950/88 px-4 py-3 shadow-[0_16px_38px_rgba(0,0,0,0.52)]"
+                data-tutorial-id="mw-interaction-options"
+            >
                 <div className="min-w-0 text-sm font-semibold text-amber-100">{title}</div>
                 <div className="flex shrink-0 items-center gap-2">
                     {prompt.options.filter((option) => !option.disabled).map((option) => (
@@ -3916,8 +3970,15 @@ function MageWarsInteractionDock({
 
 export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData, isMultiplayer }: Props) {
     const { t } = useTranslation('game-mage-wars');
+    const isTutorialMode = useGameMode()?.mode === 'tutorial';
+    const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep, previousStep, animationComplete, startTutorial } = useTutorial();
+    const restartTutorialMatch = useCallback(() => {
+        reset?.();
+        startTutorial(MageWarsTutorial);
+    }, [reset, startTutorial]);
     const toast = useToast();
-    const [selectedSpellCardId, setSelectedSpellCardId] = useState<number | null>(null);
+    const [spellSelection, setSpellSelection] = useState<{ cardId: number; casterObjectId?: string } | null>(null);
+    const selectedSpellCardId = spellSelection?.cardId ?? null;
     const [pendingSpellCastSelection, setPendingSpellCastSelection] = useState<PendingSpellCastSelection | null>(null);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
     const [selectedMageId, setSelectedMageId] = useState<PlayerId | null>(null);
@@ -3948,10 +4009,13 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const opponentId = resolveOpponentId(core, viewingPlayerId);
     const opponent = opponentId ? core.players[opponentId] ?? null : null;
     const gameOverResult = G.sys.gameover;
+    const tutorialOutcome = isTutorialMode && gameOverResult?.winner !== undefined && playerID !== null
+        ? t(getMageWarsTutorialOutcomeKey(gameOverResult.winner, playerID, G.sys.eventStream.entries))
+        : undefined;
     const { overlayProps: endgameProps } = useEndgame({
         result: gameOverResult || undefined,
         playerID,
-        reset,
+        reset: isTutorialMode && reset ? restartTutorialMatch : reset,
         matchData,
         isMultiplayer,
     });
@@ -3963,7 +4027,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         sys: G.sys,
     });
     useTutorialBridge(G.sys.tutorial, dispatch, tutorialRuntimeSyncKey);
-    const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep, previousStep } = useTutorial();
     const boardTutorialStep = G.sys.tutorial.step ?? G.sys.tutorial.steps[G.sys.tutorial.stepIndex] ?? tutorialStep;
     const boardTutorialActive = isTutorialActive || G.sys.tutorial.active;
     const boardTutorialHighlightTarget = boardTutorialActive ? boardTutorialStep?.highlightTarget : undefined;
@@ -3999,6 +4062,11 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
         return !!targetId && tutorialStep.allowedTargets.includes(targetId);
     }, [isTutorialActive, tutorialStep]);
+    const allowTutorialClick = (targetId: string): boolean => {
+        if (isTutorialTargetAllowed(targetId)) return true;
+        showDeniedActionToast('tutorialBlocked');
+        return false;
+    };
     const selectedNoActionObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
     const selectedNoActionMage = selectedMageId ? core.players[selectedMageId] : undefined;
     const canTakeNoAction = isPlayerId(playerID)
@@ -4035,9 +4103,15 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         phaseActorId,
         turnNumber: core.turnNumber,
     });
+    const requiredTutorialPlan = isTutorialActive ? getMageWarsTutorialPlan(tutorialStep?.id) : undefined;
+    const hasRequiredTutorialPlan = !requiredTutorialPlan || (
+        requiredTutorialPlan.length === selectedPlanningSpellCardIds.length
+        && requiredTutorialPlan.every((cardId) => selectedPlanningSpellCardIds.includes(cardId))
+    );
     const canSubmitSelectedPlanningSpells = phase === 'planning'
         && canAct
-        && canPlanSpells;
+        && canPlanSpells
+        && hasRequiredTutorialPlan;
     const togglePublicViewTarget = (targetPlayerId: PlayerId | null) => {
         if (!targetPlayerId || targetPlayerId === viewingPlayerId) {
             setPublicViewTargetPlayerId(null);
@@ -4135,7 +4209,40 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             if (abilityIds.length > 0) availableObjectAbilityIdsByObjectId.set(object.id, abilityIds);
         }
     }
-    const objectAbilitySourceIds = new Set(availableObjectAbilityIdsByObjectId.keys());
+    const objectPlanningChoices = canAct && canEditPlanningDrafts
+        && isCommandAllowed(MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL)
+        ? buildObjectSpellPlanningChoices(G, viewingPlayerId, selectedPlanningSpellCardIds)
+        : undefined;
+    const selectedObjectPlanningChoices = selectedObjectId ? objectPlanningChoices?.get(selectedObjectId) : undefined;
+    const equipmentAttackTargetsBySource = canAct && activePlayer
+        && isCommandAllowed(MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK)
+        ? buildEquipmentAttackTargetsBySource(G, activePlayer.id)
+        : undefined;
+    const selectedEquipmentAttackTargets = selectedObjectId
+        ? equipmentAttackTargetsBySource?.get(selectedObjectId)
+        : undefined;
+    const preparedObjectSpells = new Map<string, number>();
+    if (canAct && activePlayer && isMageWarsCastPhase(phase) && isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)
+        && !G.sys.responseWindow?.current && !G.sys.interaction?.current) {
+        for (const object of Object.values(core.objects)) {
+            if (object.ownerId !== activePlayer.id || object.spellcastingSource?.phase !== phase
+                || object.preparedSpellCardId === undefined) continue;
+            const opportunity = buildMageWarsSpellCastOpportunity({
+                state: G,
+                playerId: activePlayer.id,
+                spellCardId: object.preparedSpellCardId,
+                casterObjectId: object.id,
+            });
+            if (!opportunity || !hasEnabledChoiceCandidate(buildChoiceRequestFromOpportunity(opportunity)?.candidates)) continue;
+            preparedObjectSpells.set(object.id, object.preparedSpellCardId);
+        }
+    }
+    const objectActionSourceIds = new Set([
+        ...availableObjectAbilityIdsByObjectId.keys(),
+        ...(equipmentAttackTargetsBySource?.keys() ?? []),
+        ...(objectPlanningChoices?.keys() ?? []),
+        ...preparedObjectSpells.keys(),
+    ]);
     const pendingObjectAbilityOpportunity = (() => {
         if (!pendingObjectAbility) return null;
         const sourceObject = core.objects[pendingObjectAbility.objectId];
@@ -4233,6 +4340,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             state: G,
             playerId: activePlayer.id,
             spellCardId: selectedSpellCardId,
+            casterObjectId: spellSelection?.casterObjectId,
         })
         : null;
     const selectedSpellCastRequest = selectedSpellCastOpportunity
@@ -4249,25 +4357,25 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         ? buildSpellCastTargetsByObjectId(selectedSpellCastTargetSurface.targets)
         : undefined;
     const selectedSpellCastTargetIds = selectedSpellCastTargetsByObjectId
-        ? new Set(selectedSpellCastTargetsByObjectId.keys())
+        ? new Set([...selectedSpellCastTargetsByObjectId.keys()].filter((id) => isTutorialTargetAllowed(`mw-arena-object-${id}`)))
         : undefined;
     const selectedSpellCastTargetsByPlayerId = selectedSpellCastTargetSurface
         ? buildSpellCastTargetsByPlayerId(selectedSpellCastTargetSurface.targets)
         : undefined;
     const selectedSpellCastTargetPlayerIds = selectedSpellCastTargetsByPlayerId && selectedSpellCastTargetsByPlayerId.size > 0
-        ? new Set(selectedSpellCastTargetsByPlayerId.keys())
+        ? new Set([...selectedSpellCastTargetsByPlayerId.keys()].filter((id) => isTutorialTargetAllowed(`mw-mage-entity-${id}`)))
         : undefined;
     const selectedSpellCastTargetsByZoneId = selectedSpellCastTargetSurface
         ? buildSpellCastTargetsByZoneId(selectedSpellCastTargetSurface.targets)
         : undefined;
     const selectedSpellCastTargetZoneIds = selectedSpellCastTargetsByZoneId && selectedSpellCastTargetsByZoneId.size > 0
-        ? new Set(selectedSpellCastTargetsByZoneId.keys())
+        ? new Set([...selectedSpellCastTargetsByZoneId.keys()].filter((id) => isTutorialTargetAllowed(`mw-zone-${id}`)))
         : undefined;
     const selectedSpellCastTargetsByWallEdgeId = selectedSpellCastTargetSurface
         ? buildSpellCastTargetsByWallEdgeId(selectedSpellCastTargetSurface.targets)
         : undefined;
     const selectedSpellCastTargetWallEdgeIds = selectedSpellCastTargetsByWallEdgeId && selectedSpellCastTargetsByWallEdgeId.size > 0
-        ? new Set(selectedSpellCastTargetsByWallEdgeId.keys())
+        ? new Set([...selectedSpellCastTargetsByWallEdgeId.keys()].filter((id) => isTutorialTargetAllowed(`mw-wall-edge-${id}`)))
         : undefined;
     const selectedSpellCastEnabledPayloads = (selectedSpellCastTargetSurface?.targets ?? [])
         .filter((targetSelection) => targetSelection.disabled !== true && targetSelection.stale !== true)
@@ -4353,13 +4461,16 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             || (selectedMage?.id === activePlayer?.id && selectedMage.actionReady)
         ),
     );
+    const selectedBoundSpellCardId = selectedObject?.boundSpellCardId;
+    const canCastSelectedBoundSpell = selectedBoundSpellCardId != null && isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)
+        && canMageWarsObjectCastBoundSpell(selectedObject, { canAct, activePlayerId: activePlayer?.id, phase });
     const shouldShowSelectedAbilityActionDock = Boolean(
         !selectedSpell
         && !pendingSpellCastSelection
         && !pendingObjectAbility
         && !pendingMageAbility
         && !G.sys.interaction?.current
-        && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility || canGuardSelectedActor),
+        && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility || canGuardSelectedActor || canCastSelectedBoundSpell),
     );
     const spellNeedsWallEdgeTarget = selectedSpellCastTargetWallEdgeIds !== undefined;
     const selectedSpellUsesConfirmChoice = selectedSpellCastRequest?.kind === 'confirm';
@@ -4479,7 +4590,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             return false;
         }
         dispatch(MAGE_WARS_COMMANDS.CAST_SPELL, command.payload);
-        setSelectedSpellCardId(null);
+        setSpellSelection(null);
         setPendingSpellCastSelection(null);
         setSelectedObjectId(null);
         setSelectedMageId(null);
@@ -4521,17 +4632,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             },
         }))
         : undefined;
-    const selectedBoundSpellCardId = selectedObject?.boundSpellCardId;
-    const selectedBoundSpellCast = canMageWarsObjectCastBoundSpell(selectedObject, {
-        canAct,
-        activePlayerId: activePlayer?.id,
-        phase,
-    }) && selectedBoundSpellCardId != null
+    const selectedBoundSpellCast = canCastSelectedBoundSpell && selectedBoundSpellCardId != null
         ? {
             spellCardId: selectedBoundSpellCardId,
             name: getMageWarsSpellCardName(selectedBoundSpellCardId) ?? t('privateZones.spell'),
             onSelect: () => {
-                setSelectedSpellCardId(selectedBoundSpellCardId);
+                setSpellSelection({ cardId: selectedBoundSpellCardId });
                 setSelectedObjectId(null);
                 setPendingObjectAbility(null);
                 setPendingObjectAbilityTargetObjectId(null);
@@ -4632,6 +4738,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         return edgeSelections[0];
     };
     const handleZoneSelect = (zoneId: ArenaZoneId) => {
+        if (!allowTutorialClick(`mw-zone-${zoneId}`)) return;
         if (pendingObjectAbility || pendingMageAbility) {
             showDeniedActionToast('invalidAbilityTarget');
             return;
@@ -4709,6 +4816,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
     };
     const handleWallEdgeSelect = (edgeId: MageWarsWallEdgeId) => {
+        if (!allowTutorialClick(`mw-wall-edge-${edgeId}`)) return;
         if (pendingObjectAbility || pendingMageAbility) {
             showDeniedActionToast('invalidAbilityTarget');
             return;
@@ -4722,6 +4830,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         showInvalidSpellTargetToast();
     };
     const handleObjectSelect = (objectId: string) => {
+        if (!allowTutorialClick(`mw-arena-object-${objectId}`)) return;
         const target = core.objects[objectId];
         if (pendingObjectAbility) {
             const targetSelections = pendingObjectAbilityTargetsByObjectId.get(objectId) ?? [];
@@ -4747,6 +4856,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 return;
             }
             showDeniedActionToast('invalidAbilityTarget');
+            return;
+        }
+        const equipmentAttack = selectedEquipmentAttackTargets?.objects.get(objectId);
+        if (equipmentAttack) {
+            dispatch(MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK, equipmentAttack);
+            setSelectedObjectId(null);
             return;
         }
         const attacker = selectedObjectId ? core.objects[selectedObjectId] : undefined;
@@ -4855,6 +4970,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
     };
     const handlePlayerSelect = (targetPlayerId: PlayerId) => {
+        if (!allowTutorialClick(`mw-mage-entity-${targetPlayerId}`)) return;
         if (pendingObjectAbility || pendingMageAbility) {
             showDeniedActionToast('invalidAbilityTarget');
             return;
@@ -4896,6 +5012,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 showInvalidSpellTargetToast();
                 return;
             }
+        }
+        const equipmentAttack = selectedEquipmentAttackTargets?.players.get(targetPlayerId);
+        if (equipmentAttack) {
+            dispatch(MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK, equipmentAttack);
+            setSelectedObjectId(null);
+            return;
         }
         const attacker = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
@@ -4942,9 +5064,20 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         }
     };
     const handleActorObjectSelect = (objectId: string) => {
+        if (!allowTutorialClick(`mw-arena-object-${objectId}`)) return;
         const object = core.objects[objectId];
+        if (spellSelection?.casterObjectId === objectId) {
+            setSpellSelection(null);
+            setPendingSpellCastSelection(null);
+            return;
+        }
+        const preparedCardId = preparedObjectSpells.get(objectId);
+        if (preparedCardId !== undefined) {
+            handlePreparedSpellSelect(preparedCardId, objectId);
+            return;
+        }
         const willSelectObject = selectedObjectId !== objectId;
-        setSelectedSpellCardId(null);
+        setSpellSelection(null);
         setPendingSpellCastSelection(null);
         setSelectedMageId(null);
         setPendingObjectAbility(null);
@@ -4952,13 +5085,17 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         setPendingMageAbility(null);
         setPendingMageAbilityStatusTargetObjectId(null);
         setSelectedObjectId((current) => current === objectId ? null : objectId);
+        if (willSelectObject && object && objectPlanningChoices?.has(objectId)) {
+            toast.info(t('actions.planForObject', { name: object.name }), undefined, { dedupeKey: 'mage-wars.planForObject' });
+        }
         if (willSelectObject && object?.sourceSpellCardId === MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID) {
             completeLocalTutorialStep('move-select-wolf');
             completeLocalTutorialStep('guard-select-wolf');
         }
     };
     const handleActorMageSelect = (mageId: PlayerId) => {
-        setSelectedSpellCardId(null);
+        if (!allowTutorialClick(`mw-mage-entity-${mageId}`)) return;
+        setSpellSelection(null);
         setPendingSpellCastSelection(null);
         setSelectedObjectId(null);
         setPendingObjectAbility(null);
@@ -5000,7 +5137,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             showDeniedActionToast('tutorialBlocked');
             return;
         }
-        setSelectedSpellCardId(null);
+        setSpellSelection(null);
         setPendingSpellCastSelection(null);
         setSelectedMageId(null);
         setSelectedObjectId(sourceObjectId);
@@ -5040,7 +5177,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             showDeniedActionToast('tutorialBlocked');
             return;
         }
-        setSelectedSpellCardId(null);
+        setSpellSelection(null);
         setPendingSpellCastSelection(null);
         setSelectedObjectId(null);
         setSelectedMageId(sourcePlayerId);
@@ -5049,17 +5186,19 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         setPendingMageAbilityStatusTargetObjectId(null);
         setPendingMageAbility({ playerId: sourcePlayerId, abilityId });
     };
-    const handlePreparedSpellSelect = (cardId: number) => {
+    const handlePreparedSpellSelect = (cardId: number, casterObjectId?: string) => {
         if (!isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)) {
             showDeniedActionToast('tutorialBlocked');
             return;
         }
-        const willSelectPreparedSpell = selectedSpellCardId !== cardId;
+        if (!allowTutorialClick(casterObjectId ? `mw-arena-object-${casterObjectId}` : `mw-prepared-card-${cardId}`)) return;
+        const willSelectPreparedSpell = selectedSpellCardId !== cardId || spellSelection?.casterObjectId !== casterObjectId;
         if (canAct && activePlayer) {
             const opportunity = buildMageWarsSpellCastOpportunity({
                 state: G,
                 playerId: activePlayer.id,
                 spellCardId: cardId,
+                casterObjectId,
             });
             const request = opportunity ? buildChoiceRequestFromOpportunity(opportunity) : null;
             if (!hasEnabledChoiceCandidate(request?.candidates)) {
@@ -5069,7 +5208,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     : card && !resolveMageWarsSpellCastChoiceFamily(card)
                         ? 'spellRequiresCodeSupport'
                         : 'actionUnavailable';
-                setSelectedSpellCardId(null);
+                setSpellSelection(null);
                 setPendingSpellCastSelection(null);
                 showDeniedActionToast(deniedReason);
                 return;
@@ -5095,7 +5234,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         setPendingObjectAbilityTargetObjectId(null);
         setPendingMageAbility(null);
         setPendingMageAbilityStatusTargetObjectId(null);
-        setSelectedSpellCardId((current) => current === cardId ? null : cardId);
+        setSpellSelection(willSelectPreparedSpell ? { cardId, casterObjectId } : null);
+        if (casterObjectId) return;
         if (willSelectPreparedSpell && cardId === MAGE_WARS_TUTORIAL_JUNGLE_WOLF_CARD_ID) {
             completeLocalTutorialStep('deploy-select-wolf');
         }
@@ -5120,6 +5260,18 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         fxBus,
         resolveFxAnchorSnapshot: fxAnchors.resolveSnapshot,
     });
+    const readPendingEffects = useRef(mageWarsEvents.hasPendingEffects);
+    readPendingEffects.current = mageWarsEvents.hasPendingEffects;
+    useEffect(() => {
+        if (!G.sys.tutorial.pendingAnimationAdvance) return;
+        let frame = 0;
+        const advanceWhenSettled = () => {
+            if (readPendingEffects.current()) frame = requestAnimationFrame(advanceWhenSettled);
+            else animationComplete();
+        };
+        frame = requestAnimationFrame(advanceWhenSettled);
+        return () => cancelAnimationFrame(frame);
+    }, [G.sys.tutorial.pendingAnimationAdvance, G.sys.tutorial.step?.id, animationComplete]);
     const getVisualPlayerDamage = (player: MageWarsPlayerState) => (
         mageWarsEvents.damageBuffer.get(mageWarsPlayerDamageKey(player.id), player.damage)
     );
@@ -5145,7 +5297,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     canAct,
                     activePlayerId: activePlayer?.id,
                     phase,
-                    objectAbilitySourceIds,
+                    objectActionSourceIds,
                     targetingBusy: Boolean(selectedSpellCardId != null || pendingObjectAbility || pendingMageAbility),
                 }),
                 selected: selectedObjectId === attachment.id,
@@ -5304,10 +5456,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         activePlayer={activePlayer}
                         activeOpponent={activeOpponent}
                         selectedSpellCardId={selectedSpellCardId}
+                        selectedSpellCasterObjectId={spellSelection?.casterObjectId}
                         pendingSpellCastSelection={pendingSpellCastSelection}
                         selectedObjectId={selectedObjectId}
                         selectedMageId={selectedMageId}
-                        objectAbilitySourceIds={objectAbilitySourceIds}
+                        objectActionSourceIds={objectActionSourceIds}
+                        selectedEquipmentAttackTargets={selectedEquipmentAttackTargets}
                         selectedObjectAvailableAbilities={selectedObjectAvailableAbilities}
                         selectedMageRestoreAbility={selectedMageRestoreAbility}
                         canGuardSelectedActor={canGuardSelectedActor}
@@ -5382,18 +5536,23 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             <MageWarsInteractionDock
                 interaction={G.sys.interaction?.current}
                 playerId={playerID ?? viewingPlayerId}
+                core={core}
                 dispatch={dispatch}
             />
             <MageSpellCastChoiceDock
                 targetPlayer={pendingSpellTargetPlayer}
-                selections={pendingSpellCastPlayerSelections}
+                selections={pendingSpellCastPlayerSelections.filter((selection) =>
+                    selection.metadata?.targetMode === 'player-bound-spell'
+                    && isTutorialTargetAllowed(`mw-bound-card-${selection.value?.boundSpellCardId}`))}
                 onSelect={submitSpellCastTargetSelection}
                 onCancel={() => setPendingSpellCastSelection(null)}
             />
             <MageObjectAbilityChoiceDock
                 abilityName={pendingObjectAbilityDef?.name}
                 targetObject={pendingObjectAbilityTargetObject}
-                selections={pendingObjectAbilityCardOverlaySelections}
+                selections={pendingObjectAbilityCardOverlaySelections.filter((selection) =>
+                    selection.value?.boundSpellCardId === undefined
+                    || isTutorialTargetAllowed(`mw-bound-card-${selection.value.boundSpellCardId}`))}
                 onSelect={submitObjectAbilityTargetSelection}
                 onCancel={() => {
                     setPendingObjectAbilityTargetObjectId(null);
@@ -5508,11 +5667,20 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     {viewingPlayer ? (
                         <SpellbookShelf
                             player={viewingPlayer}
+                            core={core}
                             phase={phase}
                             canAct={canAct}
                             canPlan={canEditPlanningDrafts}
                             selectedCardIds={selectedPlanningSpellCardIds}
                             onSelectedCardIdsChange={setSelectedPlanningSpellCardIds}
+                            sourcePlan={selectedObjectId && selectedObjectPlanningChoices ? {
+                                choices: selectedObjectPlanningChoices,
+                                onSelect: (spellCardId) => {
+                                    if (selectedObjectPlanningChoices.get(spellCardId) !== null) return;
+                                    dispatch(MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL, { objectId: selectedObjectId, spellCardId });
+                                    setSelectedObjectId(null);
+                                },
+                            } : undefined}
                             onInspectCard={handleInspectSpellCard}
                             onUnavailableAction={showDeniedActionToast}
                             tutorialStepId={tutorialStep?.id}
@@ -5548,7 +5716,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                             phase={phase}
                             canAct={canAct}
                             canCast={isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)}
-                            selectedCardId={selectedSpellCardId}
+                            selectedCardId={spellSelection?.casterObjectId ? null : selectedSpellCardId}
                             planningDraftCardIds={selectedPlanningSpellCardIds}
                             onSelect={handlePreparedSpellSelect}
                             onInspectCard={handleInspectSpellCard}
@@ -5567,6 +5735,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 closeLabel={t('actions.close')}
                 containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-7rem)] overflow-visible rounded-none"
                 closeButtonClassName="mw-magnify-close"
+                zIndex={boardTutorialActive ? UI_Z_INDEX.cardPreviewTooltip : UI_Z_INDEX.magnify}
                 revealCloseAfterPointerMove
             >
                 {magnifiedPreview ? (
@@ -5660,7 +5829,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     </div>
                 ) : null}
             </MagnifyOverlay>
-            <EndgameOverlay {...endgameProps} />
+            <EndgameOverlay {...endgameProps} subtitle={tutorialOutcome} />
             </div>
         </UndoProvider>
     );

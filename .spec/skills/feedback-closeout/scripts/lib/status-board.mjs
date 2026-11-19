@@ -196,6 +196,13 @@ export function buildBoardFromSummary(summary, summaryPath, existingBoard = null
         for (const feedbackId of groupFeedbackIds(group)) {
             const baseItem = toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt);
             const existingItem = existingMap.get(feedbackId);
+            if (existingItem?.groupPrimaryId && existingItem.groupPrimaryId !== group.primaryId) {
+                const existingUpdatedAt = Date.parse(existingItem.updatedAt || '');
+                const summaryFetchedAt = Date.parse(summary.generatedAt || '');
+                if (!Number.isFinite(summaryFetchedAt) || (Number.isFinite(existingUpdatedAt) && existingUpdatedAt > summaryFetchedAt)) {
+                    throw new Error('旧分诊摘要与较新的状态板分组冲突，请重新分诊；未更新状态板');
+                }
+            }
             const mergedItem = mergeItem(baseItem, existingItem, summaryPath, fetchedAt);
             mergedItems.push(mergedItem);
             existingMap.delete(feedbackId);

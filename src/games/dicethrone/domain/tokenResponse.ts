@@ -113,40 +113,40 @@ function resolveAdditionalTokenCosts(
         .filter((cost) => Number.isInteger(cost.amount) && cost.amount > 0);
 }
 
-export function getUsableTokenAmountForTiming(
+export function getDamageTokenUsage(
     state: DiceThroneCore,
     playerId: PlayerId,
     tokenId: string,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
     options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number; unblockable?: boolean }
-): number {
+): { amount: number; reason?: string } {
     const player = state.players[playerId];
-    if (!player) return 0;
+    if (!player) return { amount: 0, reason: 'player_not_found' };
     // 眩晕 / 晕眩只禁止主动攻击；提示卡明确允许持有者在任何时候花气减伤，
     // 因此防御方的 beforeDamageReceived 响应不能被状态门禁吞掉。
-    if (timing === 'beforeDamageDealt'
-        && getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false })) return 0;
+    const blocked = timing === 'beforeDamageDealt'
+        ? getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false }) : undefined;
+    if (blocked) return { amount: 0, reason: blocked };
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
-    if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;
-    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) return 0;
-    if (tokenDef.activeUse.requiresUnblockable && options?.unblockable !== true) return 0;
+    if (!tokenDef?.activeUse?.timing?.includes(timing)) return { amount: 0, reason: 'invalid_token_timing' };
+    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) return { amount: 0, reason: 'tokenAlreadyUsedThisTurn' };
+    if (tokenDef.activeUse.requiresUnblockable && options?.unblockable !== true) return { amount: 0, reason: 'tokenNeedsUnblockableDamage' };
 
     const damageScope = options?.damageScope ?? 'attack';
     const hasAttackContext = !!state.pendingAttack;
     if (tokenDef.activeUse.requiresAttackDamage) {
-        if (!hasAttackContext) return 0;
-        if (damageScope !== 'attack') return 0;
+        if (!hasAttackContext || damageScope !== 'attack') return { amount: 0, reason: 'tokenNeedsAttackDamage' };
     }
     if (
         typeof tokenDef.activeUse.minimumAttackDamage === 'number'
         && ((options?.originalDamageOverride ?? state.pendingDamage?.originalDamage ?? 0) < tokenDef.activeUse.minimumAttackDamage)
     ) {
-        return 0;
+        return { amount: 0, reason: 'tokenDamageBelowMinimum' };
     }
 
     let availableAmount = getArtificerBotAvailableAmount(state, playerId, tokenDef.id) ?? (player.tokens[tokenDef.id] ?? 0);
-    if (availableAmount <= 0) return 0;
+    if (availableAmount <= 0) return { amount: 0, reason: 'no_token' };
     const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
     const sameTokenAdditionalCost = additionalCosts
         .filter(cost => cost.tokenId === tokenDef.id)
@@ -155,9 +155,9 @@ export function getUsableTokenAmountForTiming(
         availableAmount = Math.max(0, availableAmount - sameTokenAdditionalCost);
     }
     for (const cost of additionalCosts) {
-        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return 0;
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return { amount: 0, reason: 'tokenAdditionalCostMissing' };
     }
-    if (availableAmount <= 0) return 0;
+    if (availableAmount <= 0) return { amount: 0, reason: 'tokenAdditionalCostMissing' };
 
     const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
     const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[tokenDef.id] ?? 0;
@@ -166,7 +166,11 @@ export function getUsableTokenAmountForTiming(
         ? Math.max(0, maxWindowUsage - usedInWindow)
         : availableAmount;
 
-    return Math.max(0, Math.min(availableAmount, remainingWindowUsage));
+    return { amount: Math.max(0, Math.min(availableAmount, remainingWindowUsage)) };
+}
+
+export function getUsableTokenAmountForTiming(...args: Parameters<typeof getDamageTokenUsage>): number {
+    return getDamageTokenUsage(...args).amount;
 }
 
 /**

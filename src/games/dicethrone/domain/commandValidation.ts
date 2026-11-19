@@ -67,7 +67,7 @@ import { RESOURCE_IDS } from './resources';
 import { getPlayerPassiveAbilities, getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
-import { getUsableTokenAmountForTiming } from './tokenResponse';
+import { getDamageTokenUsage } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
@@ -1453,9 +1453,8 @@ const validateUseToken = (
     }
 
     const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
-    const canUseDuringRoll = !pendingDamage
-        && isRollPhase
-        && tokenDef.activeUse?.timing?.includes('duringRoll');
+    const supportsRollTiming = tokenDef.activeUse?.timing?.includes('duringRoll');
+    const canUseDuringRoll = !pendingDamage && isRollPhase && supportsRollTiming;
     if (canUseDuringRoll) {
         if (responseWindowType) {
             const responseWindowActorCheck = validateCurrentResponseWindowActor(
@@ -1495,7 +1494,7 @@ const validateUseToken = (
     }
 
     if (!pendingDamage) {
-        return fail('no_pending_damage');
+        return fail(supportsRollTiming ? 'invalid_token_timing' : 'no_pending_damage');
     }
     if (!isMoveAllowed(playerId, pendingDamage.responderId)) {
         return fail('player_mismatch');
@@ -1507,32 +1506,11 @@ const validateUseToken = (
         }
     }
 
-    const p = state.players[playerId];
-    if (!p) return fail('player_not_found');
-
-    const isArtificerBot = cmd.payload.tokenId === TOKEN_IDS.NANOBOT
-        || cmd.payload.tokenId === TOKEN_IDS.SHOCK_BOT
-        || cmd.payload.tokenId === TOKEN_IDS.HEAL_BOT;
-    const currentAmount = isArtificerBot
-        ? getUsableTokenAmountForTiming(state, playerId, cmd.payload.tokenId, pendingDamage.responseType)
-        : (p?.tokens[cmd.payload.tokenId] ?? 0);
-    if (currentAmount <= 0) {
-        return fail('no_token');
-    }
-
     if (cmd.payload.amount <= 0) {
         return fail('invalid_amount');
     }
 
-    if (!tokenDef.activeUse?.timing?.includes(pendingDamage.responseType)) {
-        return fail('invalid_token_timing');
-    }
-
-    if (tokenDef.activeUse.requiresAttackDamage && !state.pendingAttack) {
-        return fail('invalid_token_timing');
-    }
-
-    const availableAmount = getUsableTokenAmountForTiming(
+    const usage = getDamageTokenUsage(
         state,
         playerId,
         cmd.payload.tokenId,
@@ -1543,11 +1521,11 @@ const validateUseToken = (
             unblockable: pendingDamage.unblockable,
         },
     );
-    if (availableAmount <= 0) {
-        return fail('invalid_amount');
+    if (usage.amount <= 0) {
+        return fail(usage.reason ?? 'invalid_amount');
     }
 
-    const allowedConsumeAmounts = getTokenUseOptions(tokenDef, availableAmount);
+    const allowedConsumeAmounts = getTokenUseOptions(tokenDef, usage.amount);
     if (!allowedConsumeAmounts.includes(cmd.payload.amount)) {
         return fail('invalid_amount');
     }

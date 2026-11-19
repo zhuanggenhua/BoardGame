@@ -5,14 +5,16 @@ import type { ModalEntry } from '../../contexts/ModalStackContext';
 
 import { HAND_LIMIT, type DtResponseWindowType, type InteractionDescriptor, type PendingBonusDiceSettlement, type TurnPhase } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
-import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
+import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore } from './domain';
 import type { Die } from './domain/core-types';
-import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
+import { getUsableTokenAmountForTiming, getUsableTokensForTiming, hasDebuffs } from './domain/tokenResponse';
 import { getTokenUseOptions } from './domain/tokenTypes';
+import { validateCommand } from './domain/commandValidation';
+import type { DiceThroneCommand } from './domain/commands';
+import { isPurifiableDebuffId } from './domain/statusRemoval';
 import {
     ATTACK_SNAPSHOT_DIE_ID_OFFSET,
-    checkPlayCard,
     getPlayableCardsInResponseWindow,
     getAvailableAbilityIds,
     getPlayerDieFace,
@@ -35,6 +37,7 @@ import { useFxBus, FxLayer } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { diceThroneFxRegistry } from './ui/fxSetup';
 import { useToast } from '../../contexts/ToastContext';
+import { resolveCommandError } from '../../engine/transport/errorI18n';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { loadStatusAtlases, type StatusAtlases } from './ui/statusEffects';
@@ -1246,22 +1249,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // 可被净化移除的负面状态：由定义驱动（支持扩展）
     const purifiableStatusIds = (G.tokenDefinitions ?? [])
-        .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
+        .filter(def => isPurifiableDebuffId(G, def.id))
         .map(def => def.id);
 
     // 是否可以使用净化（有净化 Token 且有可移除的负面状态）
-    const canUsePurify = !isSpectator && (player.tokens?.[TOKEN_IDS.PURIFY] ?? 0) > 0 &&
-        (
-            Object.entries(player.statusEffects ?? {}).some(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0)
-            || Object.entries(player.tokens ?? {}).some(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0)
-        );
-
-    const canUseFlight = !isSpectator
-        && !G.pendingDamage
-        && (currentPhase === 'offensiveRoll' || currentPhase === 'defensiveRoll')
-        && rollerId === rootPid
-        && Boolean(G.pendingAttack)
-        && (player.tokens?.[TOKEN_IDS.FLIGHT] ?? 0) > 0;
+    const canUsePurify = !isSpectator && (player.tokens?.[TOKEN_IDS.PURIFY] ?? 0) > 0 && hasDebuffs(G, rootPid);
 
     const canUseNyraBondHeal = !isSpectator
         && player.characterId === 'lieren'
@@ -1281,8 +1273,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         const responseWindowType = currentResponseWindow?.windowType === 'afterRollConfirmed'
             ? currentResponseWindow.windowType
             : undefined;
-        return [...getUsableActiveRollTokens(G, rootPid, currentPhase, { responseWindowType })
-            .map(entry => entry.tokenId), ...(canUseDejaVuNow ? [TOKEN_IDS.DEJA_VU] : [])];
+        const tokenIds = getUsableActiveRollTokens(G, rootPid, currentPhase, { responseWindowType })
+            .filter(({ tokenId, defaultAmount }) => validateCommand(G, {
+                type: 'USE_TOKEN', playerId: rootPid, payload: { tokenId, amount: defaultAmount },
+            }, currentPhase, undefined, undefined, responseWindowType, currentResponseWindow).valid)
+            .map(entry => entry.tokenId);
+        return canUseDejaVuNow ? [...tokenIds, TOKEN_IDS.DEJA_VU] : tokenIds;
     }, [G, rawG, currentPhase, currentResponderId, currentResponseWindow, isDirectDiceActor, isResponseWindowOpen, isSpectator, rootPid]);
 
     const handleActiveRollTokenClick = React.useCallback((tokenId: string) => {
@@ -1300,10 +1296,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [G, activeRollTokenIds, currentPhase, currentResponseWindow, engineMoves, rootPid]);
 
     // 是否可以移除击倒（有击倒状态且 CP >= 2 且在 offensiveRoll 前的阶段）
-    const canRemoveKnockdown = !isSpectator && isActivePlayer &&
-        (currentPhase === 'upkeep' || currentPhase === 'income' || currentPhase === 'main1') &&
-        (player.statusEffects?.[STATUS_IDS.KNOCKDOWN] ?? 0) > 0 &&
-        (player.resources?.[RESOURCE_IDS.CP] ?? 0) >= 2;
+    const knockdownCheck = !isSpectator && (player.statusEffects?.[STATUS_IDS.KNOCKDOWN] ?? 0) > 0
+        ? validateCommand(G, { type: DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN, playerId: rootPid, payload: {} }, currentPhase)
+        : undefined;
 
     const handleCloseConfirmSkipModal = React.useCallback(() => {
         closeUiModal('confirmSkip');
@@ -2366,6 +2361,22 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }
 
     // --- 游戏进行阶段：渲染完整棋盘 UI ---
+    const validateHandCard = (card: Parameters<typeof getUpgradeTargetAbilityId>[0]) => {
+        const targetAbilityId = card.type === 'upgrade' ? getUpgradeTargetAbilityId(card) : null;
+        const command = targetAbilityId
+            ? { type: 'PLAY_UPGRADE_CARD' as const, playerId: rootPid, payload: { cardId: card.id, targetAbilityId } }
+            : { type: 'PLAY_CARD' as const, playerId: rootPid, payload: { cardId: card.id } };
+        return validateCommand(G, command, currentPhase, pendingInteraction, undefined,
+            isDtResponseWindowType(currentResponseWindow?.windowType) ? currentResponseWindow.windowType : undefined,
+            currentResponseWindow);
+    };
+    const showActionRejection = (reason: string, message = resolveCommandError(i18n, reason, 'dicethrone')) => {
+        playDeniedSound();
+        toast.warning(message, undefined, {
+            dedupeKey: `dicethrone.rejected.${reason}`,
+        });
+    };
+    const showCardRejection = (reason = 'cardUnavailable') => showActionRejection(reason);
     return (
         <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             <div
@@ -2513,8 +2524,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         drawDeckRef={drawDeckRef}
                         onPurifyClick={() => openUiModal('purify')}
                         canUsePurify={canUsePurify}
-                        onFlightClick={() => engineMoves.useToken(TOKEN_IDS.FLIGHT, 1)}
-                        canUseFlight={canUseFlight}
                         onNyraBondHealClick={() => engineMoves.useToken(TOKEN_IDS.NYRAS_BOND, 1)}
                         canUseNyraBondHeal={canUseNyraBondHeal}
                         tokenDefinitions={G.tokenDefinitions}
@@ -2522,10 +2531,30 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onResponseTokenClick={tokenInteraction?.onTokenClick}
                         activeTokenIds={activeRollTokenIds}
                         onActiveTokenClick={handleActiveRollTokenClick}
+                        onUnavailableTokenClick={isSpectator ? undefined : (tokenId) => {
+                            const definition = G.tokenDefinitions.find(def => def.id === tokenId);
+                            if (definition?.activeUse?.effect.type === 'removeDebuff') {
+                                showActionRejection('no_status', t('purify.noDebuffs'));
+                                return;
+                            }
+                            const command: DiceThroneCommand = tokenId === TOKEN_IDS.DEJA_VU
+                                ? { type: 'USE_DEJA_VU' as const, playerId: rootPid, payload: {} }
+                                : { type: 'USE_TOKEN' as const, playerId: rootPid, payload: { tokenId, amount: definition?.activeUse?.consumeAmount ?? 1 } };
+                            const result = validateCommand(G, command, currentPhase, pendingInteraction, undefined,
+                                isDtResponseWindowType(currentResponseWindow?.windowType) ? currentResponseWindow.windowType : undefined,
+                                currentResponseWindow);
+                            const reason = result.error ?? 'invalid_token_timing';
+                            showActionRejection(reason === 'invalid_amount' ? 'tokenUnavailableInResponse' : reason);
+                        }}
                         isHandHidden={isHandHidden}
                         onToggleHandHidden={handleToggleHandHidden}
                         onKnockdownClick={() => openUiModal('removeKnockdown')}
-                        canRemoveKnockdown={canRemoveKnockdown}
+                        canRemoveKnockdown={knockdownCheck?.valid}
+                        onUnavailableKnockdownClick={knockdownCheck && !knockdownCheck.valid ? () => {
+                            const reason = knockdownCheck.error === 'invalid_phase' ? 'knockdownTiming'
+                                : knockdownCheck.error === 'not_enough_cp' ? 'knockdownCost' : knockdownCheck.error;
+                            showActionRejection(reason ?? 'invalid_phase');
+                        } : undefined}
                         isSelfShaking={selfImpact.shake.isShaking}
                         isSelfCpShaking={selfCpShake.isShaking}
                         selfDamageFlashActive={selfImpact.flash.isActive}
@@ -2703,24 +2732,24 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
                                 tutorialAllowedCardIds={isTutorialActive && tutorialStep?.highlightTarget?.startsWith('hand-card-') ? tutorialStep.allowedTargets : undefined}
                                 onPlayCard={(card) => {
-                                    if (shouldBlockTutorialAction('hand-area', card.id)) return false;
+                                    if (shouldBlockTutorialAction('hand-area', card.id)) {
+                                        showCardRejection('tutorialCardUnavailable');
+                                        return false;
+                                    }
                                     const targetAbilityId = card.type === 'upgrade'
                                         ? getUpgradeTargetAbilityId(card)
                                         : null;
                                     if (targetAbilityId) {
+                                        const result = validateHandCard(card);
+                                        if (!result.valid) {
+                                            showCardRejection(result.error);
+                                            return false;
+                                        }
                                         dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
                                         return true;
                                     }
 
-                                    const cardCheck = checkPlayCard(
-                                        G,
-                                        rootPid,
-                                        card,
-                                        currentPhase,
-                                        isDtResponseWindowType(currentResponseWindow?.windowType)
-                                            ? currentResponseWindow.windowType
-                                            : undefined,
-                                    );
+                                    const cardCheck = validateHandCard(card);
                                     if (typeof window !== 'undefined') {
                                         (window as Window & { __BG_LAST_CARD_CHECK__?: unknown }).__BG_LAST_CARD_CHECK__ = {
                                             cardId: card.id,
@@ -2729,11 +2758,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                             result: cardCheck,
                                         };
                                     }
-                                    if (!cardCheck.ok) {
-                                        playDeniedSound();
-                                        toast.warning(t(`error.${cardCheck.reason}`), undefined, {
-                                            dedupeKey: `dicethrone.play-card.${cardCheck.reason}`,
-                                        });
+                                    if (!cardCheck.valid) {
+                                        showCardRejection(cardCheck.error);
                                         return false;
                                     }
 
@@ -2764,7 +2790,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     engineMoves.sellCard(cardId);
                                     advanceTutorialIfNeeded('discard-pile');
                                 }}
-                                onMagnifyCard={(card) => setMagnifiedCard(card)}
+                                onMagnifyCard={setMagnifiedCard}
                                 respondableCardIds={respondableCardIds}
                                 characterId={handOwner.characterId}
                                 playerBoardFace={handOwner.playerBoardFace}

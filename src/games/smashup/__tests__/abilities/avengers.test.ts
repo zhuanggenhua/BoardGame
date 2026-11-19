@@ -5,7 +5,8 @@ import {
     resumeAbilityRuntimeContinuationEvent,
 } from '../../domain/abilityRuntime';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import { runCommand } from '../testRunner';
 import { AVENGERS_CARDS } from '../../data/factions/avengers';
 import {
     applyEvents,
@@ -34,6 +35,28 @@ describe('复仇者代表性玩法行为', () => {
     beforeEach(() => {
         resetAbilityInit();
         initAllAbilities();
+    });
+
+    it('打出索尔后可从弃牌堆选择雷神锤', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('thor', 'avengers_thor', 'minion', '0')],
+                    deck: [makeCard('deck-card', 'avengers_hulk', 'minion', '0')],
+                    discard: [makeCard('hammer', 'avengers_mjolnir', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [])],
+        });
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'thor', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(played.success, played.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'avengers_thor_search');
+        const resolved = respondToPromptOption(played.finalState, option => option.value?.cardUid === 'hammer', '选择雷神锤', '0', FIXED_RANDOM);
+        expect(getPromptOptions(prompt).some(option => option.value?.cardUid === 'hammer')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('hammer');
     });
 
     it('18 个唯一卡面生成 20 张牌，并注册全部可执行能力入口', () => {

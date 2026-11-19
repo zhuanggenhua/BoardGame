@@ -117,4 +117,19 @@ describe('performanceDiagnostics', () => {
             },
         });
     });
+
+    it('剔除首字节时间超过完整请求时长的无效时序，保留有效样本', async () => {
+        vi.mocked(performance.getEntriesByType).mockReturnValue([
+            { entryType: 'resource', startTime: 100, name: 'https://example.com/valid', initiatorType: 'fetch', duration: 50, requestStart: 110, responseStart: 130 } as PerformanceResourceTiming,
+            { entryType: 'resource', startTime: 200, name: 'https://example.com/invalid', initiatorType: 'fetch', duration: 10, requestStart: 210, responseStart: 18_210 } as PerformanceResourceTiming,
+        ]);
+        const { getPerformanceDiagnostics, installPerformanceDiagnostics } = await import('../feedback/performanceDiagnostics');
+        installPerformanceDiagnostics();
+        const network = getPerformanceDiagnostics()?.network;
+        expect(network?.requestCount).toBe(2);
+        expect(network?.averageTtfbMs).toBe(20);
+        expect(network?.invalidTtfbSampleCount).toBe(1);
+        expect(network?.recentRequests?.[0].ttfbMs).toBe(20);
+        expect(network?.recentRequests?.[1].ttfbMs).toBeUndefined();
+    });
 });

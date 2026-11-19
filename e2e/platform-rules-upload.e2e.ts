@@ -88,6 +88,7 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实�
         await expect(page.getByRole('heading', { name: '上传新游戏', exact: true })).toBeVisible();
         check(label, '预估时长字段已移出', await page.locator('[name=durationMinutes]').count(), 0);
         await page.getByRole('textbox', { name: '游戏名称', exact: true }).fill('王权骰铸');
+        await page.getByRole('radio', { name: '游戏链接', exact: true }).check();
         await page.getByRole('textbox', { name: '游戏链接', exact: true }).fill('https://example.com/dice-duel');
         await page.locator('[name=category]').selectOption('dice');
         await page.locator('[name=author]').fill('林间晚风');

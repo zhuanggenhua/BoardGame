@@ -92,13 +92,13 @@ describe('isMageWarsArenaObjectActionable', () => {
             canAct: true,
             activePlayerId: '0',
             phase: 'initiativeQuickcast',
-            objectAbilitySourceIds: new Set(['elemental-staff-0']),
+            objectActionSourceIds: new Set(['elemental-staff-0']),
         })).toBe(true);
         expect(isMageWarsArenaObjectActionable(elementalStaff, {
             canAct: true,
             activePlayerId: '0',
             phase: 'initiativeQuickcast',
-            objectAbilitySourceIds: new Set(['elemental-staff-0']),
+            objectActionSourceIds: new Set(['elemental-staff-0']),
             targetingBusy: true,
         })).toBe(false);
     });

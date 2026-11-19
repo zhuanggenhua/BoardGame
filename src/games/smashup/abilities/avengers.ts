@@ -1300,15 +1300,17 @@ function thorOnPlay(ctx: AbilityContext): AbilityResult {
     }
 
     if (ctx.matchState && choices.length > 0) {
-        const promptResult = runtimeToAbilityResult(executeAbilityProgram(thorSearchPromptProgram, {
+        const promptResult = executeAbilityProgram(thorSearchPromptProgram, {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             searchedDeck: player.deck.length > 0,
-        }));
+        });
         return {
             events: [...events, ...promptResult.events],
             ...(promptResult.matchState ? { matchState: promptResult.matchState } : {}),
+            ...(promptResult.suspended ? { suspended: true } : {}),
+            ...(promptResult.continuationId ? { continuationId: promptResult.continuationId } : {}),
         };
     }
 

@@ -10,6 +10,7 @@ type PrivateReplayMatch = {
     state: MatchState<unknown>;
     randomSeed?: string;
     getRandomCursor?: () => number;
+    stateSnapshotPartial?: boolean;
 };
 
 export type PrivateFeedbackReplayTrigger = {
@@ -31,11 +32,12 @@ export type PrivateFeedbackReplayTrigger = {
 export function capturePrivateFeedbackReplay(
     match: PrivateReplayMatch,
     trigger?: PrivateFeedbackReplayTrigger,
-): { data?: string; error?: string } {
+): { data?: string; error?: string; stateSnapshotPartial?: boolean } {
     try {
         const memory = process.memoryUsage();
         const cpu = process.cpuUsage();
-        const archive = JSON.stringify({
+        let stateSnapshotPartial = match.stateSnapshotPartial === true;
+        const serialized = JSON.stringify({
             schemaVersion: 1,
             matchId: match.matchID,
             gameId: match.gameId,
@@ -54,14 +56,26 @@ export function capturePrivateFeedbackReplay(
             },
             state: match.state,
             ...(trigger ? { trigger } : {}),
+        }, (_key, value) => {
+            if (typeof value === 'function' || typeof value === 'symbol' || value instanceof Map || value instanceof Set) {
+                stateSnapshotPartial = true;
+            }
+            return value;
         });
+        const archive = stateSnapshotPartial
+            ? serialized.replace(/^\{/, '{"stateSnapshotPartial":true,')
+            : serialized;
         const data = gzipSync(archive).toString('base64');
         if (data.length > 1_000_000) return { error: 'private_replay_capture_failed:compressed_size_exceeds_limit' };
         const missing = [
             ...(typeof match.randomSeed === 'string' ? [] : ['randomSeed']),
             ...(typeof match.getRandomCursor === 'function' ? [] : ['randomCursor']),
         ];
-        return missing.length ? { data, error: `private_replay_missing:${missing.join(',')}` } : { data };
+        return {
+            data,
+            ...(missing.length ? { error: `private_replay_missing:${missing.join(',')}` } : {}),
+            ...(stateSnapshotPartial ? { stateSnapshotPartial: true } : {}),
+        };
     } catch (error) {
         return { error: `private_replay_capture_failed:${error instanceof Error ? error.message : String(error)}` };
     }
@@ -75,6 +89,7 @@ export async function attachPrivateFeedbackReplay(args: {
     playerId: string;
     privateReplay: string;
     privateReplayTriggerCaptured: boolean;
+    privateReplayStateSnapshotPartial?: boolean;
 }): Promise<void> {
     const endpoint = args.endpoint.replace(/\/system$/, `/${args.feedbackId}/private-replay`);
     if (endpoint === args.endpoint) throw new Error('invalid_internal_feedback_endpoint');
@@ -83,6 +98,7 @@ export async function attachPrivateFeedbackReplay(args: {
         playerId: args.playerId,
         privateReplay: args.privateReplay,
         privateReplayTriggerCaptured: args.privateReplayTriggerCaptured,
+        privateReplayStateSnapshotPartial: args.privateReplayStateSnapshotPartial === true,
     });
     await deliverFeedbackWithRetry(async () => {
         const response = await fetch(endpoint, {

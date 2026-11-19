@@ -79,7 +79,7 @@
 .fd-skill-slot > .fd-runtime-card-shell { width: 100%; }
 .fd-runtime-card-shell:has(:focus-visible) { z-index: 30; }
 @media (hover: hover) and (pointer: fine) {
-    .fd-runtime-card-shell:hover { z-index: 31; }
+    .fd-played-cards > .fd-runtime-card-shell:hover { z-index: 31; }
 }
 .fd-card-inspect { pointer-events: none; }
 @media (hover: hover) and (pointer: fine) {
@@ -158,7 +158,8 @@
 .fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1))); }
 .fd-hand-parallel > .fd-runtime-card-shell,
 .fd-skill-slot > .fd-runtime-card-shell { transition: translate .18s ease, filter .18s ease; }
-.fd-runtime-card-shell:has(.is-requested) { translate: 0 -16px; }
+/* 教程点名的出牌须露出完整牌面和点击区，同时保持原来位置。 */
+.fd-played-cards .fd-runtime-card-shell:has(.is-requested) { z-index: 2; }
 .fd-runtime-hand-zone:focus-within,
 .fd-runtime-hand-zone:hover { z-index: 4; }
 

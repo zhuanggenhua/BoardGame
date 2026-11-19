@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -36,7 +36,11 @@ export const MagnifyOverlay = ({
 }) => {
   const { t } = useTranslation("common");
   const [pointerMoved, setPointerMoved] = useState(false);
-  useEffect(() => { setPointerMoved(false); }, [isOpen]);
+  const backdropPressedRef = useRef(false);
+  useEffect(() => {
+    setPointerMoved(false);
+    backdropPressedRef.current = false;
+  }, [isOpen]);
   const portalRoot = useMemo(() => {
     if (typeof document === "undefined") return null;
     return document.getElementById("modal-root") ?? document.body;
@@ -55,7 +59,16 @@ export const MagnifyOverlay = ({
       visibility: isOpen ? "visible" : "hidden",
       }}
       aria-hidden={!isOpen}
-      onClick={closeOnBackdrop ? onClose : undefined}
+      onPointerDown={(event) => {
+        backdropPressedRef.current = event.target === event.currentTarget;
+      }}
+      onPointerCancel={() => { backdropPressedRef.current = false; }}
+      onClick={(event) => {
+        // 长按打开预览时，手指松开可能把点击派发给刚出现的遮罩。
+        const shouldDismiss = event.detail === 0 || backdropPressedRef.current;
+        backdropPressedRef.current = false;
+        if (closeOnBackdrop && shouldDismiss) onClose();
+      }}
       data-interaction-allow
       data-backdrop-dismiss={closeOnBackdrop ? "enabled" : "disabled"}
       data-testid={overlayTestId}

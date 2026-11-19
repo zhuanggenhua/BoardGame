@@ -21,7 +21,7 @@ const fixedRandom: RandomFn = {
     shuffle: <T,>(array: T[]) => [...array],
 };
 
-function stateFor(core: MageWarsCore, phase: 'planning' | 'deployment' | 'creatureAction'): MatchState<MageWarsCore> {
+function stateFor(core: MageWarsCore, phase: 'planning' | 'deployment' | 'initiativeQuickcast' | 'creatureAction'): MatchState<MageWarsCore> {
     return {
         core,
         sys: {
@@ -105,6 +105,32 @@ function withMage(core: MageWarsCore, mageId: typeof MAGE_IDS[keyof typeof MAGE_
 }
 
 describe('mage-wars familiar and spawn-point spellcasting', () => {
+    it.each([
+        { cardId: 2218, mageId: MAGE_IDS.BEASTMASTER_APPRENTICE, manaCost: 15, channeling: 4 },
+        { cardId: 2212, mageId: MAGE_IDS.WARLOCK_APPRENTICE, manaCost: 8, channeling: 0 },
+    ])('casts spawn-point card $cardId onto the arena before it can plan spells', ({ cardId, mageId, manaCost, channeling }) => {
+        const core = withMage(MageWarsDomain.setup(playerIds, fixedRandom), mageId, 20);
+        const state = stateFor({
+            ...core,
+            players: { ...core.players, '0': { ...core.players['0'], preparedSpellCardIds: [cardId], preparedSpellSlots: 1 } },
+        }, 'initiativeQuickcast');
+        const targetZoneId = ARENA_ZONE_IDS.A2;
+        const cast = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems, systemsConfig: engineConfig.systemsConfig },
+            state,
+            { type: MAGE_WARS_COMMANDS.CAST_SPELL, playerId: '0', payload: { spellCardId: cardId, manaCost, targetZoneId } },
+            fixedRandom,
+            playerIds,
+        );
+        expect(cast.success, cast.error).toBe(true);
+        expect(cast.state.core.players['0'].mana).toBe(20 - manaCost);
+        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([]);
+        expect(Object.values(cast.state.core.objects).find((object) => object.sourceSpellCardId === cardId)).toMatchObject({
+            zoneId: targetZoneId, kind: 'conjuration', anchoredToZoneId: targetZoneId, mana: 0,
+            spellcastingSource: { kind: 'spawn-point', phase: 'deployment', channeling },
+        });
+    });
+
     it('keeps source-card restrictions in the config package while standard spellbooks include their source cards', () => {
         expect(getMageWarsSpellCardFromConfig(2908)?.spellcastingSource).toEqual({
             abilityId: 'mw.source.2908.familiar',
@@ -211,7 +237,7 @@ describe('mage-wars familiar and spawn-point spellcasting', () => {
             expect.objectContaining({
                 type: 'i18n',
                 key: 'actionLog.objectSpellPlanned',
-                params: { objectId: familiar.id },
+                params: { objectId: familiar.name },
             }),
         ]);
         expect(JSON.stringify(objectSpellLogEntry?.segments)).not.toContain(String(spellCardId));

@@ -100,6 +100,11 @@ test('私密回放摘要如实区分缺失、无效编码和解压失败，且�
     assert.equal(availableButIncomplete.status, 'available');
     assert.equal(availableButIncomplete.captureFailure, 'missing-fields');
     assert.equal(JSON.stringify(availableButIncomplete).includes('randomSeed'), false);
+    const partialState = summarizePrivateFeedbackReplay(encodeReplay({
+        schemaVersion: 1, gameId: 'smashup', stateSnapshotPartial: true, state: { sys: {}, core: {} },
+    }));
+    assert.equal(partialState.status, 'available');
+    assert.equal(partialState.stateSnapshotPartial, true);
 });
 
 test('结构化诊断摘要保留 replayability 和关联字段但不复制快照私密内容', () => {

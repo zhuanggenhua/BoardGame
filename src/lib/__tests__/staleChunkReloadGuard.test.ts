@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     isStaleChunkError,
+    installVitePreloadRecovery,
+    reloadForStaleChunkOnce,
     reloadForStaleChunkOnceWithDeps,
 } from '../staleChunkReloadGuard';
 import { requireLazyModuleExport } from '../lazyModuleExport';
@@ -59,6 +61,25 @@ describe('staleChunkReloadGuard', () => {
         expect(warn).toHaveBeenCalledTimes(1);
     });
 
+    it('浏览器拒绝读取或写入会话存储时不会进入无限刷新', () => {
+        for (const failingOperation of ['read', 'write'] as const) {
+            const reload = vi.fn();
+            const reloaded = reloadForStaleChunkOnceWithDeps('vite:preloadError', {
+                currentLocation: '/',
+                getStoredLocation: () => {
+                    if (failingOperation === 'read') throw new DOMException('blocked', 'SecurityError');
+                    return null;
+                },
+                setStoredLocation: () => {
+                    if (failingOperation === 'write') throw new DOMException('blocked', 'SecurityError');
+                },
+                reload,
+            });
+            expect(reloaded).toBe(false);
+            expect(reload).not.toHaveBeenCalled();
+        }
+    });
+
     it('allows a second reload on the same route for a different stale chunk reason', () => {
         let stored: string | null = null;
         const reload = vi.fn();
@@ -102,25 +123,42 @@ describe('staleChunkReloadGuard', () => {
         expect(warn).toHaveBeenCalledTimes(2);
     });
 
-    it('still reloads when storage is unavailable', () => {
+    it('同一预加载错误不重复刷新，独立错误仍可恢复', () => {
+        let stored: string | null = null;
         const reload = vi.fn();
-        const warn = vi.fn();
-
-        const reloaded = reloadForStaleChunkOnceWithDeps('unhandledrejection', {
-            currentLocation: '/room/abc',
-            getStoredLocation: () => {
-                throw new Error('storage blocked');
+        const win = Object.assign(new EventTarget(), {
+            location: { pathname: '/play/smashup', search: '', hash: '', reload },
+            sessionStorage: {
+                getItem: () => stored,
+                setItem: (_key: string, value: string) => { stored = value; },
             },
-            setStoredLocation: () => {
-                throw new Error('storage blocked');
-            },
-            reload,
-            warn,
-        });
+        }) as unknown as Window;
+        const failure = new Error('Failed to fetch dynamically imported module');
+        installVitePreloadRecovery(win, () => true);
+        const event = Object.assign(new Event('vite:preloadError', { cancelable: true }), { payload: failure });
+        win.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(reloadForStaleChunkOnce('react-error-boundary', win, { failure })).toBe(false);
+        expect(reloadForStaleChunkOnce('game-runtime-load-failed:smashup', win, { failure })).toBe(false);
+        expect(reloadForStaleChunkOnce('react-error-boundary', win, { failure: new Error('another failure') })).toBe(true);
+        expect(reload).toHaveBeenCalledTimes(2);
+    });
 
-        expect(reloaded).toBe(true);
+    it('预加载不允许自动刷新时，后续错误处理仍可决定恢复', () => {
+        const reload = vi.fn();
+        const prepare = vi.fn();
+        const win = Object.assign(new EventTarget(), {
+            location: { pathname: '/play/cardia', search: '', hash: '', reload },
+            sessionStorage: { getItem: () => null, setItem: vi.fn() },
+            __BG_MODULE_PRELOAD_RECOVERY__: { prepare, getGuard: () => null, setGuard: vi.fn() },
+        }) as unknown as Window;
+        const failure = new Error('Failed to fetch dynamically imported module');
+        installVitePreloadRecovery(win, () => false);
+        win.dispatchEvent(Object.assign(new Event('vite:preloadError'), { payload: failure }));
+        expect(reload).not.toHaveBeenCalled();
+        expect(prepare).toHaveBeenCalledOnce();
+        expect(reloadForStaleChunkOnce('react-error-boundary', win, { failure })).toBe(true);
         expect(reload).toHaveBeenCalledTimes(1);
-        expect(warn).toHaveBeenCalledTimes(1);
     });
 
     it('skips auto reload after bootstrap window closes', () => {

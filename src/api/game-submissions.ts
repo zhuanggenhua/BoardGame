@@ -14,6 +14,7 @@ export interface GameSubmissionDraft {
     rules: string;
 }
 export interface GameSubmissionRecord extends GameSubmissionDraft {
+    webZipName?: string;
     rulesDocument?: GameRulesDocument;
     submissionId: string;
     coverUrl: string;
@@ -39,6 +40,14 @@ async function request<T>(token: string, path: string, method = 'GET', data?: Ga
 }
 export const listGameSubmissions = (token: string) => request<{ items: GameSubmissionRecord[] }>(token, '');
 export const saveGameSubmission = (token: string, data: GameSubmissionDraft, id?: string) => request<GameSubmissionRecord>(token, id ? `/${encodeURIComponent(id)}` : '', id ? 'PUT' : 'POST', data);
+export const saveWebZipSubmission = (token: string, data: Omit<GameSubmissionDraft, 'url'>, file: File, id?: string) => {
+    const form = new FormData();
+    form.append('data', JSON.stringify(data));
+    form.append('name', file.name);
+    form.append('file', file);
+    if (id) form.append('submissionId', id);
+    return request<GameSubmissionRecord>(token, '/web-zip', 'POST', form);
+};
 export const submitGameSubmission = (token: string, id: string) => request<GameSubmissionRecord>(token, `/${encodeURIComponent(id)}/submit`, 'POST');
 export const withdrawGameSubmission = (token: string, id: string) => request<GameSubmissionRecord>(token, `/${encodeURIComponent(id)}/withdraw`, 'POST');
 export const uploadSubmissionCover = (token: string, id: string, file: File) => {

@@ -368,7 +368,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
                     const hostAccentHighlightActive = isSelected || isActivatable;
                     const hostAccessoryChromeClass = getAccessoryChromeClass(hostAccentHighlightActive, 'border border-white shadow-md');
-                    const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
+                    const showTitanInspectButton = showDesktopTitanInspectButton;
                     const timeBoxCounterLabel = getTimeBoxCounterLabel(titan);
                     return (
                         <div

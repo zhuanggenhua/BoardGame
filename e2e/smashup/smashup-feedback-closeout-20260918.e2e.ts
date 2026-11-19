@@ -600,7 +600,7 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
         }],
         ongoingActions: [{ uid: 'demon-dogs-live', defId: 'wraithrustlers_demon_dogs', ownerId: '0' }],
       }, { defId: 'base_the_factory', minions: [], ongoingActions: [] }],
-      extra: { core: { players: { '0': { storedCards: [{ uid: 'stored-minion-live', defId: 'trickster_gremlin', type: 'minion', owner: '0', storedByPlayerId: '0', storedUnderUid: 'demon-dogs-live', storedUnderDefId: 'wraithrustlers_demon_dogs' }] } } } },
+      extra: { core: { players: { '0': { storedCards: [{ uid: 'stored-minion-live', defId: 'trickster_gremlin', type: 'minion', owner: '0', storedByPlayerId: '0', storedUnderUid: 'demon-dogs-live', storedUnderDefId: 'wraithrustlers_demon_dogs', reason: 'wraithrustlers_demon_dogs' }] } } } },
     });
 
     await page.evaluate(async () => {
@@ -613,7 +613,9 @@ test.describe('Smash Up 线上反馈真实入口复现', () => {
     await game.waitForInteraction('wraithrustlers_unlicensed_nuclear_accelerator_destroy_action', 15000);
     await game.selectInteractionOptionBy(option => option.value?.cardUid === 'demon-dogs-live', '选择摧毁恶魔犬');
     await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
-    await game.selectInteractionOptionBy(option => option.value?.cardUid === 'stored-minion-live', '选择牌下暂存随从');
+    const storedOption = page.locator('[data-option-id][data-card-def-id="trickster_gremlin"]');
+    await expect(storedOption).toBeVisible();
+    await storedOption.click();
     await game.waitForInteraction('smashup_immediate_extra_minion_base', 15000);
     const baseOption = await game.getInteractionOptions() as InteractionOption[];
     const baseOptionId = baseOption.find(option => option.value?.baseIndex === 0)?.id ?? null;

@@ -146,18 +146,18 @@
         }
         function showFriendlyFallback() {
           var current = document.getElementById('initial-loader');
-          if (!current || !isGame) return;
+          if (!current || current.getAttribute('data-bg-friendly-screen') === 'true') return;
           current.setAttribute('data-bg-friendly-screen', 'true');
           current.style.cssText = 'position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at top, rgba(214,173,96,0.14), transparent 36%),linear-gradient(180deg,#0d0905 0%,#130d07 46%,#060403 100%);display:flex;align-items:center;justify-content:center;padding:20px;color:#f8e7bf;font-family:system-ui,sans-serif';
           current.innerHTML = ''
             + '<div style="width:min(100%,400px);border:1px solid rgba(255,231,191,0.14);background:rgba(22,16,8,0.94);border-radius:20px;padding:24px;text-align:center;box-shadow:0 30px 100px rgba(0,0,0,0.55);backdrop-filter:blur(12px)">'
             +   '<div style="width:64px;height:64px;margin:0 auto;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,231,191,0.18);background:rgba(255,231,191,0.05);font-size:28px">!</div>'
-            +   '<div style="margin-top:20px;font-size:11px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:rgba(248,231,191,0.72)">游戏页保护</div>'
+            +   '<div style="margin-top:20px;font-size:11px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:rgba(248,231,191,0.72)">' + (isGame ? '游戏页保护' : '加载失败') + '</div>'
             +   '<div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.3;color:#fff7dd">页面没有正常显示</div>'
-            +   '<div style="margin-top:12px;font-size:14px;line-height:1.8;color:rgba(248,231,191,0.78)">为了避免一直停留在黑屏，这里先切到友好提示。你可以刷新重试，或先返回大厅再重新进入。</div>'
+            +   '<div style="margin-top:12px;font-size:14px;line-height:1.8;color:rgba(248,231,191,0.78)">' + (isGame ? '为了避免一直停留在黑屏，这里先切到友好提示。你可以刷新重试，或先返回大厅再重新进入。' : '页面加载未完成，请刷新重试；如果问题持续，请关闭当前标签页后重新打开。') + '</div>'
             +   '<div style="margin-top:20px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px">'
             +     '<button type="button" data-action="reload" style="min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,231,191,0.18);background:rgba(255,231,191,0.1);color:#fff7dd;font-weight:700">刷新重试</button>'
-            +     '<button type="button" data-action="home" style="min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.88);font-weight:700">返回大厅</button>'
+            +     (isGame ? '<button type="button" data-action="home" style="min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.88);font-weight:700">返回大厅</button>' : '')
             +   '</div>'
             + '</div>';
           var reloadButton = current.querySelector('[data-action="reload"]');
@@ -173,6 +173,7 @@
             });
           }
         }
+        window.addEventListener('bg:bootstrap-failed', showFriendlyFallback);
         if (isGame) {
           confirmMissingOnlineMatchBeforeAppBoot();
           el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center';

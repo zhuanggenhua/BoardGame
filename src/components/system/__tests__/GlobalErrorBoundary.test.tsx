@@ -7,6 +7,7 @@ import { GlobalErrorBoundary } from '../GlobalErrorBoundary';
 import {
     GAME_PAGE_RESCUE_GRACE_MS,
     detectGamePageRescueSignal,
+    hasMeaningfulVisibleDescendant,
 } from '../GamePageRescueGate';
 import { ViewportDebugProbe } from '../ViewportDebugProbe';
 import {
@@ -172,7 +173,7 @@ describe('GlobalErrorBoundary', () => {
             boundary.componentDidCatch(error, errorInfo);
 
             expect(staleChunkReloadGuard.isStaleChunkError).toHaveBeenCalledWith(error);
-            expect(staleChunkReloadGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('react-error-boundary', window);
+            expect(staleChunkReloadGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('react-error-boundary', window, { failure: error });
             expect(consoleErrorSpy).not.toHaveBeenCalled();
         } finally {
             consoleErrorSpy.mockRestore();
@@ -235,6 +236,23 @@ describe('BoardErrorBoundary helpers', () => {
 });
 
 describe('GamePageRescueGate helpers', () => {
+    it('找到可见内容后停止测量，且空内容仍会被识别', () => {
+        const container = document.createElement('div');
+        const hidden = document.createElement('div');
+        const visible = document.createElement('div');
+        const later = document.createElement('div');
+        container.append(hidden, visible, later);
+        const rect = (width: number, height: number) => ({ width, height } as DOMRect);
+        vi.spyOn(hidden, 'getBoundingClientRect').mockReturnValue(rect(0, 0));
+        const visibleMeasure = vi.spyOn(visible, 'getBoundingClientRect').mockReturnValue(rect(100, 100));
+        const laterMeasure = vi.spyOn(later, 'getBoundingClientRect').mockReturnValue(rect(100, 100));
+        expect(hasMeaningfulVisibleDescendant(container)).toBe(true);
+        expect(laterMeasure).not.toHaveBeenCalled();
+        visibleMeasure.mockReturnValue(rect(0, 0));
+        laterMeasure.mockReturnValue(rect(0, 0));
+        expect(hasMeaningfulVisibleDescendant(container)).toBe(false);
+    });
+
     it('在宽限期后检测到画布塌缩时切换到友好提示', () => {
         expect(detectGamePageRescueSignal({
             pathname: '/play/smashup/local',

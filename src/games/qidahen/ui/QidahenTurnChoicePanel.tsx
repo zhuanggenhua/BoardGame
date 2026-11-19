@@ -14,6 +14,7 @@ export function QidahenTurnChoicePanel({ input, dock, inline = false, locale, on
     const buttonOptions = input.options.filter(option => !input.mapCandidateIds.includes(option.id) && !input.cardIds.includes(option.id) && !input.pieceIds.includes(option.id));
     const showConfirm = input.options.some(option => !input.isDirectChoice(option.id))
         && (!buttonOptions.some(option => input.isDirectChoice(option.id)) || input.selectedIds.length > 0);
+    if (input.step === 'dispatch-source' && spatial && buttonOptions.length === 0 && !showConfirm) return null;
     return <section className={`pointer-events-auto z-[85] max-h-[660px] overflow-y-auto rounded border-[3px] border-[#c7a26b] bg-[#6d291deF] text-[#fff0d2] shadow-xl ${inline ? 'relative p-2' : 'absolute p-4'}`}
         data-testid="qidahen-turn-choice" data-turn-step={input.step}
         style={inline ? { width: '100%' } : { left: `calc(${dock.left}px + var(--qidahen-mobile-edge-pull, 0px))`, top: dock.top, width: dock.width }}>

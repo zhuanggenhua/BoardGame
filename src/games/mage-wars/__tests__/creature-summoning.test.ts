@@ -31,6 +31,38 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars creature summoning', () => {
+    it('does not overwrite the surviving second wolf when summoning the third copy', () => {
+        const spellCardId = 2819;
+        const initial = setupState('creatureAction');
+        const survivor = makeArenaObject('mwobj-0-2819-2', '0', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId: spellCardId,
+            damage: 3,
+        });
+        const core = withArenaObject(
+            withPreparedPlayerMage(initial.core, '0', MAGE_IDS.BEASTMASTER_APPRENTICE, [spellCardId]),
+            survivor,
+        );
+        const result = runCommand({
+            ...initial,
+            core: {
+                ...core,
+                players: {
+                    ...core.players,
+                    '0': { ...core.players['0'], discardSpellCardIds: [spellCardId] },
+                },
+            },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId, manaCost: 9, targetZoneId: PLAYER_ZERO_START_ZONE },
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.objects[survivor.id]).toMatchObject({ damage: 3 });
+        expect(Object.values(result.state.core.objects).filter((object) => object.sourceSpellCardId === spellCardId))
+            .toHaveLength(2);
+    });
+
     it('summons creature spells as arena objects that can be damaged by attack spells', () => {
         const creatureSpellId = 2906;
         const attackSpellId = 1710;
@@ -558,7 +590,7 @@ describe('mage-wars creature summoning', () => {
             actionReady: false,
             quickcastReady: true,
             preparedSpellCardIds: [],
-            discardSpellCardIds: [creatureSpellId],
+            discardSpellCardIds: [],
         });
     });
 

@@ -8,7 +8,7 @@
   },
   "round": "Round",
   "ui": {
-    "investigationChoice": {"label":"Investigate hand","prompt":"{{name}}'s hand: return a card and you cannot investigate next round","empty":"{{name}} has no cards in hand","card":"Return {{name}} to the top of the deck","keep":"Leave unchanged","done":"Done","target":"Investigate {{name}}","chooseTarget":"Choose a player to investigate","choosingCard":"Investigating"},
+    "investigationChoice": {"label":"Investigate hand","prompt":"You may return one card from {{name}}'s hand to the top of their deck. If you do, you cannot investigate next round.","empty":"{{name}} has no cards in hand","card":"Return {{name}} to the top of the deck","keep":"Leave unchanged","done":"Done","target":"Investigate {{name}}","chooseTarget":"Choose a player to investigate","choosingCard":"Investigating"},
     "chariotChoice": {"label":"Choose Gordius Wheel event","prompt":"Choose an event for the battlefield","card":"Choose event {{name}}"},
     "board": {
       "cancelDeployment": "Cancel deployment",
@@ -130,7 +130,9 @@
       "viewFront": "View front"
     },
     "map": {
-      "reset": "Reset view"
+      "reset": "Reset view",
+      "shintoEvents": "Shinto events",
+      "miyamaEvents": "Miyama events"
     },
     "masterAbilities": {
       "label": "Master abilities"
@@ -148,7 +150,6 @@
       "knownClass": "Known class",
       "mana": "Mana",
       "master": "Master",
-      "masterAbilityDescription": "Master ability descriptions",
       "player": "Player {{number}}",
       "playerFallback": "Player",
       "remainingSeals": "{{count}} Command Seals remaining",
@@ -166,7 +167,6 @@
       "forcedRevealSection": "Hand revealed because cards cannot be played face down",
       "forcedRevealText": "These cards could not be played face down and were revealed",
       "inspectCard": "Inspect {{name}}",
-      "noAttacksPlayed": "No attack cards played",
       "playedCards": "{{name}} played cards",
       "playerSeats": "Player seats",
       "playerStats": "Victory points {{victoryPoints}} · Mana {{mana}} · Hand {{hand}}",

@@ -30,7 +30,7 @@ const HUD_PROTECTION = ['[data-testid="qidahen-faction-actions"]', '[data-testid
     '[data-testid="qidahen-draw-anchor"]', '[data-testid="qidahen-discard-anchor"]', '[data-testid="qidahen-tactic-card-selection-panel"]'];
 // 仅保留正式UI已标记的当前来源、目标、全部候选、交战与维护上下文。
 const CURRENT_MAP_TASK_PROTECTION = ['[data-qidahen-map-protected-token="true"]', '[data-qidahen-map-protected-population="true"]',
-    '[data-pending-committed-selectable="true"]', '[data-pending-committed-selectable="true"] [data-testid^="qidahen-unit-level-"]',
+    '[data-pending-committed-selectable="true"] [data-qidahen-dispatch-group-controls="true"]',
     '[data-testid="qidahen-map-tutorial-recommendation"]', '[data-qidahen-army-group-region]', '[data-testid="qidahen-map-region-focus-name"]', '[data-qidahen-map-context-space]', '[data-qidahen-fortification-context]'];
 const PROTECTED_UI = [...HUD_PROTECTION, ...CURRENT_MAP_TASK_PROTECTION];
 
@@ -93,7 +93,7 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         action('upgrade-confirm', 'EXECUTE_SELECTED_ACTION', 'SELECTED_ACTION_EXECUTED', 'qidahen-action-payment-confirm', { actionId: 'upgrade-armament' }),
         wheelChoice('dispatch-action', 'dispatch'),
         payChoice('dispatch-payment', 'dispatch-payment', ['deck-ming-11']),
-        mapChoice('dispatch-source', 'dispatch-source', ['city-region-15']),
+        { ...mapChoice('dispatch-source', 'dispatch-source', ['city-region-15']), position: 'bottom', tooltipMaxWidth: 220, tooltipArrow: 'anchor' },
         { ...mapChoice('dispatch-troops', 'dispatch-troops', [...sourceInfantry, sourceArtillery], 'city-region-15'),
             position: 'top', tooltipMaxWidth: 380,
             avoidOverlapSelectors: [...PROTECTED_UI, '[data-testid="qidahen-map-population-city-region-7"]', '[data-testid="qidahen-map-population-city-region-9"]'],

@@ -1659,6 +1659,7 @@ const emitMinionPlayedFollowupEventsThenContinueProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
+    matchState: context.matchState,
     continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         random: context.random,
@@ -1746,7 +1747,7 @@ export function fireMinionPlayedTriggers(
                 ? { ...result.matchState, core }
                 : result.matchState;
         }
-        if (result.events.length === 0 && result.matchState && result.suspended && result.continuationId) {
+        if (result.matchState && result.suspended && result.continuationId) {
             const suspendedState = appendMinionPlayedFollowupsToSuspendedOnPlayPrompt({
                 state: result.matchState,
                 continuationId: result.continuationId,

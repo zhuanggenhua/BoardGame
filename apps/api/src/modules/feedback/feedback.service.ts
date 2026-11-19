@@ -12,7 +12,8 @@ import {
     projectFeedbackReasonCode,
     projectFeedbackSnapshotText,
 } from '../../../../../src/lib/feedback/diagnosticPacket';
-import { projectFeedbackDiagnosticMetadata } from '../../../../../src/lib/feedback/diagnosticPacketProjectionPolicy.mjs';
+import { projectFailedFeedbackAsset, projectFeedbackDiagnosticMetadata } from '../../../../../src/lib/feedback/diagnosticPacketProjectionPolicy.mjs';
+import { normalizeFeedbackOrigin, PUBLIC_AUTO_FEEDBACK_SOURCES } from '../../../../../src/lib/feedback/feedbackOrigin.mjs';
 import {
     Feedback,
     FeedbackDiagnosticPacket,
@@ -32,15 +33,6 @@ type FeedbackManagerScope = {
 
 const DEFAULT_USER_SOURCE = 'feedback-modal';
 const CONFIG_REVIEW_SOURCE = 'config-review';
-const PUBLIC_AUTO_FEEDBACK_SOURCES = new Set([
-    'client-auto-report',
-    'client-runtime-guard',
-    'client-window-error',
-    'client-unhandled-rejection',
-    'react-error-boundary',
-    'board-render-error',
-    'home-modal-error-boundary',
-]);
 const PUBLIC_AUTO_FEEDBACK_SOURCE_LIST = Array.from(PUBLIC_AUTO_FEEDBACK_SOURCES);
 const ALLOWED_USER_SOURCES = new Set([
     DEFAULT_USER_SOURCE,
@@ -143,6 +135,7 @@ const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] |
     if (Object.keys(raw).length === 0) return undefined;
     const rawSource = safeContextString(raw.source, 128);
     const rawName = safeContextString(raw.name, 120);
+    const rawCauseName = safeContextString(raw.causeName, 120);
     const source = rawSource && SAFE_FEEDBACK_ERROR_SOURCES.has(rawSource) ? rawSource : undefined;
     const reasonName = projectFeedbackReasonCode(raw.name);
     const name = rawName && SAFE_ERROR_NAMES.has(rawName)
@@ -150,9 +143,12 @@ const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] |
         : reasonName;
     const message = projectFeedbackReasonCode(raw.message);
     const location = projectSafeErrorLocation(raw.source, raw.location);
+    const causeLocation = projectSafeErrorLocation(raw.causeSource, raw.causeLocation);
     const result = {
         ...(source ? { source } : {}),
         ...(name ? { name } : {}),
+        ...(rawCauseName && SAFE_ERROR_NAMES.has(rawCauseName) ? { causeName: rawCauseName } : {}),
+        ...(causeLocation ? { causeLocation } : {}),
         ...(message ? { message } : {}),
         ...(location ? { location } : {}),
     };
@@ -162,10 +158,8 @@ const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] |
 const projectFeedbackClientContext = (value: unknown): Feedback['clientContext'] | undefined => {
     const raw = asRecord(value);
     if (Object.keys(raw).length === 0) return undefined;
-    const failedAsset = asRecord(raw.failedAsset);
+    const failedAsset = projectFailedFeedbackAsset(raw.failedAsset);
     const boardPlayers = asRecord(raw.boardPlayers);
-    const assetPath = safeContextString(failedAsset.path, 256);
-    const assetObservedAt = safeContextString(failedAsset.observedAt, 40);
     const route = safeContextString(raw.route, 512);
     const safeRoute = route
         ? /^\/play\/[^/?#]+\/match(?:\/[^/?#]+)?(?:[?#].*)?$/i.test(route)
@@ -185,7 +179,7 @@ const projectFeedbackClientContext = (value: unknown): Feedback['clientContext']
             .flatMap((key) => safeContextNumber(longTasks[key]) !== undefined ? [[key, safeContextNumber(longTasks[key])]] : []),
     );
     const projectedNetwork = Object.fromEntries(
-        ['connectionRttMs', 'effectiveType', 'downlinkMbps', 'requestCount', 'averageDurationMs', 'maxDurationMs', 'averageTtfbMs']
+        ['connectionRttMs', 'effectiveType', 'downlinkMbps', 'requestCount', 'averageDurationMs', 'maxDurationMs', 'averageTtfbMs', 'invalidTtfbSampleCount']
             .flatMap((key) => {
                 const candidate = key === 'effectiveType'
                     ? safeContextString(network[key], 32)
@@ -211,16 +205,7 @@ const projectFeedbackClientContext = (value: unknown): Feedback['clientContext']
             count: Number(boardPlayers.count), playerIdPresent: boardPlayers.playerIdPresent,
             ...(boardPlayers.playerIdPresent && typeof boardPlayers.playerExists === 'boolean' ? { playerExists: boardPlayers.playerExists } : {}),
         } } : {}),
-        ...(assetPath && /^\/assets\/[A-Za-z0-9_.-]+\.css$/.test(assetPath) && assetObservedAt ? { failedAsset: {
-            path: assetPath, observedAt: assetObservedAt,
-            ...(safeContextNumber(failedAsset.responseStatus) !== undefined && Number(failedAsset.responseStatus) >= 100 && Number(failedAsset.responseStatus) <= 599 ? { responseStatus: Number(failedAsset.responseStatus) } : {}),
-            ...(safeContextNumber(failedAsset.durationMs) !== undefined ? { durationMs: safeContextNumber(failedAsset.durationMs) } : {}),
-            ...(safeContextNumber(failedAsset.transferSize) !== undefined ? { transferSize: safeContextNumber(failedAsset.transferSize) } : {}),
-            ...(safeContextNumber(failedAsset.encodedBodySize) !== undefined ? { encodedBodySize: safeContextNumber(failedAsset.encodedBodySize) } : {}),
-            ...(safeContextNumber(failedAsset.decodedBodySize) !== undefined ? { decodedBodySize: safeContextNumber(failedAsset.decodedBodySize) } : {}),
-            ...(typeof failedAsset.timingResponseStartPresent === 'boolean' ? { timingResponseStartPresent: failedAsset.timingResponseStartPresent } : {}),
-            ...(typeof failedAsset.online === 'boolean' ? { online: failedAsset.online } : {}),
-        } } : {}),
+        ...(failedAsset ? { failedAsset } : {}),
         ...(safeRoute ? { route: safeRoute } : {}),
         ...(safeContextString(raw.mode, 32) && ['online', 'local', 'spectator', 'tutorial'].includes(String(raw.mode).toLowerCase())
             ? { mode: String(raw.mode).toLowerCase() }
@@ -327,6 +312,7 @@ const updatePrivateReplayDiagnosticPacket = (
     packet: FeedbackDiagnosticPacket | undefined,
     captured: boolean,
     triggerCaptured = false,
+    stateSnapshotPartial = false,
 ): FeedbackDiagnosticPacket | undefined => {
     if (!packet) return undefined;
     const missingFields = new Set(packet.missingFields ?? []);
@@ -336,6 +322,7 @@ const updatePrivateReplayDiagnosticPacket = (
         missingFields.delete('privateReplay');
         missingFields.delete('snapshots.privateStateRedacted');
         if (triggerCaptured) missingFields.delete('privateReplay.trigger');
+        if (stateSnapshotPartial) missingFields.add('privateReplay.stateSnapshot');
     } else {
         missingFields.add('privateReplay');
         collectionErrors.push('private_replay_attachment_failed');
@@ -667,6 +654,7 @@ export class FeedbackService {
                 existing.diagnosticPacket,
                 true,
                 dto.privateReplayTriggerCaptured === true,
+                dto.privateReplayStateSnapshotPartial === true,
             );
             const updated = await this.feedbackModel.updateOne(updateFilter, {
                 $set: {
@@ -1684,12 +1672,15 @@ export class FeedbackService {
                         averageDurationMs: '$clientContext.performance.network.averageDurationMs',
                         maxDurationMs: '$clientContext.performance.network.maxDurationMs',
                         averageTtfbMs: '$clientContext.performance.network.averageTtfbMs',
+                        invalidTtfbSampleCount: '$clientContext.performance.network.invalidTtfbSampleCount',
                     },
                 },
             },
             errorContext: {
                 source: '$errorContext.source',
                 name: '$errorContext.name',
+                causeName: '$errorContext.causeName',
+                causeLocation: '$errorContext.causeLocation',
                 message: '$errorContext.message',
                 location: '$errorContext.location',
             },
@@ -1871,29 +1862,7 @@ export class FeedbackService {
 
     private decorateLegacyOrigin(item: FeedbackDocument | Feedback): Feedback {
         const raw = this.toFeedbackObject(item);
-        const isLegacyPublicAuto = this.isPublicAutoFeedbackSource(raw.source)
-            && raw.reporterType !== FeedbackReporterType.SYSTEM;
-        if (isLegacyPublicAuto) {
-            return {
-                ...raw,
-                reporterType: FeedbackReporterType.SYSTEM,
-            };
-        }
-        const isLegacyWatchdog = raw.contactInfo === 'system:online-ai-watchdog'
-            || raw.errorContext?.source === LEGACY_WATCHDOG_SOURCE
-            || /^\[system\]\[online-ai-watchdog\]\s+/.test(raw.content);
-        if (!isLegacyWatchdog) {
-            if (raw.reporterType && raw.source) {
-                return raw;
-            }
-            return raw;
-        }
-        return {
-            ...raw,
-            reporterType: FeedbackReporterType.SYSTEM,
-            source: LEGACY_WATCHDOG_SOURCE,
-            autoReportKind: raw.errorContext?.name || raw.autoReportKind,
-        };
+        return normalizeFeedbackOrigin(raw);
     }
 
     private toFeedbackObject(item: FeedbackDocument | Feedback): Feedback {

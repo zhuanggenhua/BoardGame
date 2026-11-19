@@ -1,4 +1,14 @@
 export const MAX_RULES_FILE_BYTES = 10 * 1024 * 1024;
+export const MAX_WEB_ZIP_BYTES = 32 * 1024 * 1024;
+export const SANDBOXED_WEB_GAME_PATH = '/ugc/web-game-packages';
+export const WEB_GAME_SANDBOX = 'allow-scripts allow-forms';
+
+export function hasControlCharacters(value: string) {
+    for (let index = 0; index < value.length; index += 1) {
+        if (value.charCodeAt(index) <= 0x1f) return true;
+    }
+    return false;
+}
 /** 文件描述由上传服务生成，不属于普通表单可编辑字段。 */
 export interface GameRulesDocument { url: string; name: string; size: number; }
 
@@ -17,6 +27,7 @@ export interface ExternalGameFields {
 }
 export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
 export interface ExternalGame extends ExternalGameFields {
+    webZipName?: string;
     rulesDocument?: GameRulesDocument;
     gameId: string;
     coverUrl: string;
@@ -63,11 +74,17 @@ export function isExternalGameId(id: string) {
     return id.startsWith('external-');
 }
 
-export function resolveExternalEmbed(item: Pick<ExternalGame, 'url' | 'published' | 'embedStatus' | 'embedCheckedUrl'>, origin: string, protocol: string) {
+export function isSandboxedWebGame(item: Pick<ExternalGame, 'url' | 'webZipName'>) {
+    if (!item.webZipName) return false;
+    try { return new URL(item.url).pathname.startsWith(`${SANDBOXED_WEB_GAME_PATH}/`); }
+    catch { return false; }
+}
+
+export function resolveExternalEmbed(item: Pick<ExternalGame, 'url' | 'published' | 'embedStatus' | 'embedCheckedUrl' | 'webZipName'>, origin: string, protocol: string) {
     const restricted = item.embedStatus === 'blocked' && item.embedCheckedUrl === item.url;
     const safeHttps = protocol !== 'https:' || item.url.startsWith('https:');
     let sameOrigin = true;
-    try { sameOrigin = new URL(item.url).origin === origin; } catch { sameOrigin = true; }
+    try { sameOrigin = new URL(item.url).origin === origin && !isSandboxedWebGame(item); } catch { sameOrigin = true; }
     return { restricted, safeHttps, sameOrigin, canEmbed: Boolean(item.published && !restricted && safeHttps && !sameOrigin) };
 }
 

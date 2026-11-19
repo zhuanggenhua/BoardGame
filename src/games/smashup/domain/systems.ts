@@ -238,6 +238,10 @@ function reconcilePendingBodyShopDistributions(
         remaining.push(item);
     }
 
+    if (remaining.length === pending.length) {
+        return { state, events: [] };
+    }
+
     return {
         state: setPendingBodyShopDistributions(nextState, remaining),
         events: emitted,

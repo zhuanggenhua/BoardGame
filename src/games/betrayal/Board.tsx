@@ -2088,6 +2088,7 @@ export default function BetrayalBoard({
   const canStartExploreSelection = Boolean(
     (core.phase === "preHaunt" || core.phase === "haunt") &&
     !core.turnEndedByDiscovery &&
+    !(isTutorialActive && tutorialStep?.id === "end-turn-from-upper-landing") &&
     core.currentPlayer === viewerPlayerId &&
     !isExclusiveMonsterTurnForCurrentPlayer &&
     !isBetrayalPlayerControllingMonster(core, core.currentPlayer) &&
@@ -3410,6 +3411,8 @@ export default function BetrayalBoard({
         hauntRevealDiscoveryKey ?? "current-reveal",
       ].join(":")
     : null;
+  const isTutorialHauntReaderEntry =
+    isTutorialActive && tutorialStep?.id === "haunt-hero-reader";
   React.useEffect(() => {
     const previousAutoOpenKey = previousHauntRevealAutoOpenKeyRef.current;
     const hasObservedAutoOpenState =
@@ -3427,7 +3430,7 @@ export default function BetrayalBoard({
     const didEnterNewHauntReveal =
       hasObservedAutoOpenState &&
       previousAutoOpenKey !== hauntRevealAutoOpenKey;
-    if (!didEnterNewHauntReveal) {
+    if (!didEnterNewHauntReveal && !isTutorialHauntReaderEntry) {
       return;
     }
     if (scenarioReaderOpen) {
@@ -3474,6 +3477,7 @@ export default function BetrayalBoard({
     coreRecentRollDisplayKey,
     hauntRevealAutoOpenKey,
     hauntRevealDiscoveryKey,
+    isTutorialHauntReaderEntry,
     referenceOpen,
     referenceScenarioBookSpreadCount,
     referenceScenarioOpeningSection,
@@ -4009,7 +4013,7 @@ export default function BetrayalBoard({
   React.useEffect(() => {
     const pendingResolution = core.pendingEventRollResolution;
     const recentRollIsDeferredDamage = core.recentRoll?.kind === "eventRolledDamage";
-    if (!pendingResolution && (recentRollIsDeferredDamage || pendingDamageAllocation)) {
+    if (!pendingResolution && recentRollIsDeferredDamage) {
       latestDiscoveryPendingEventRollSeenRef.current = null;
       return;
     }
@@ -4027,7 +4031,8 @@ export default function BetrayalBoard({
     ) {
       return;
     }
-    if (latestDiscoveryPendingCardResolution) {
+    // 分配伤害时保留事件来源，分配结束后再关闭同一次发现。
+    if (latestDiscoveryPendingCardResolution || pendingDamageAllocation) {
       return;
     }
     latestDiscoveryPendingEventRollSeenRef.current = null;

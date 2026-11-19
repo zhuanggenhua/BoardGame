@@ -22,6 +22,65 @@ import {
 } from './helpers/serverTestHarness';
 
 describe('GameTransportServer（command feedback reporting）', () => {
+    it('交互生成函数导致的部分命令快照不会被标为完整回放', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const initialState = createStoredState();
+        (initialState.G.sys as any).diagnosticFunction = () => [];
+        await storage.createMatch('match-partial-replay', { initialState, metadata: createMetadata('cred-0') });
+        const server = new GameTransportServer({
+            io: io as unknown as any, storage, games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => metadata.players[playerID]?.credentials === credentials,
+        });
+        server.start();
+        const socket = new MockSocket('socket-partial-replay');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-partial-replay', '0', 'cred-0');
+        await socket.clientEmit('command', 'match-partial-replay', 'PLAYER_ACTION', {}, 'cred-0', { expectedStateID: 0 });
+        const ack = vi.fn();
+        await socket.clientEmit('feedback:capture', 'match-partial-replay', {
+            phase: 'prepare', trigger: { commandType: 'PLAYER_ACTION', playerId: '0', stateIdBefore: 0 },
+        }, 'cred-0', ack);
+        expect(ack).toHaveBeenCalledWith(expect.objectContaining({ accepted: true, triggerCaptured: true, stateSnapshotPartial: true }));
+        const entry = (server as unknown as { feedbackReplayStaging: { getEntry: (id: string, matchId: string, playerId: string) => { data: string } | undefined } }).feedbackReplayStaging.getEntry(ack.mock.calls[0][0].captureId, 'match-partial-replay', '0');
+        const replay = JSON.parse(gunzipSync(Buffer.from(entry!.data, 'base64')).toString('utf8'));
+        expect(replay.stateSnapshotPartial).toBe(true);
+        expect(replay.trigger.commandType).toBe('PLAYER_ACTION');
+    });
+
+    it('旧命令已过期时保留提交时权威现场并标明未捕获触发命令', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-stale-trigger', {
+            initialState: createStoredState(), metadata: createMetadata('cred-0'),
+        });
+        const server = new GameTransportServer({
+            io: io as unknown as any, storage, games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => metadata.players[playerID]?.credentials === credentials,
+        });
+        server.start();
+        const socket = new MockSocket('socket-stale-trigger');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-stale-trigger', '0', 'cred-0');
+        for (let index = 0; index < 4; index++) {
+            await socket.clientEmit('command', 'match-stale-trigger', 'PLAYER_ACTION', {}, 'cred-0', { expectedStateID: index });
+        }
+        const ack = vi.fn();
+        await socket.clientEmit('feedback:capture', 'match-stale-trigger', {
+            phase: 'prepare', trigger: { commandType: 'PLAYER_ACTION', playerId: '0', stateIdBefore: 0 },
+        }, 'cred-0', ack);
+        expect(ack).toHaveBeenCalledWith(expect.objectContaining({ accepted: true, triggerCaptured: false }));
+        const captureId = ack.mock.calls[0][0].captureId;
+        const entry = (server as unknown as { feedbackReplayStaging: { getEntry: (id: string, matchId: string, playerId: string) => { data: string; triggerCaptured: boolean } | undefined } }).feedbackReplayStaging.getEntry(captureId, 'match-stale-trigger', '0');
+        expect(entry?.triggerCaptured).toBe(false);
+        const replay = JSON.parse(gunzipSync(Buffer.from(entry!.data, 'base64')).toString('utf8'));
+        expect(replay.stateId).toBe(4);
+        expect(replay.trigger).toBeUndefined();
+        const withoutTrigger = vi.fn();
+        await socket.clientEmit('feedback:capture', 'match-stale-trigger', { phase: 'prepare' }, 'cred-0', withoutTrigger);
+        expect(withoutTrigger).toHaveBeenCalledWith(expect.objectContaining({ accepted: true, triggerCaptured: false }));
+    });
+
     it('首次反馈触发可从服务端最近权威命令生成完整前后态回放', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

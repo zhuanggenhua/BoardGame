@@ -1,4 +1,5 @@
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent, MageWarsPlayerState } from './types';
+import { getMageWarsSpellCardFromConfig } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from './events';
 import {
     addArenaObject,
@@ -378,10 +379,9 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 }));
             }
             return updatePlayer(core, event.payload.playerId, (player) => {
-                const preparedSpellCardIds = removePreparedSpell(
-                    player.preparedSpellCardIds,
-                    event.payload.spellCardId,
-                );
+                const preparedSpellCardIds = event.payload.boundSourceObjectId
+                    ? player.preparedSpellCardIds
+                    : removePreparedSpell(player.preparedSpellCardIds, event.payload.spellCardId);
                 return {
                     ...player,
                     mana: Math.max(0, player.mana - (event.payload.playerManaCost ?? event.payload.manaCost)),
@@ -393,13 +393,14 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 };
             });
 
-        case MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED:
+        case MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED: {
+            const spellType = getMageWarsSpellCardFromConfig(event.payload.spellCardId)?.spellType;
+            const discardAfterCast = spellType === '攻击' || spellType === '咒语';
             if (event.payload.paymentAlreadyApplied === true) {
-                return updatePlayer(core, event.payload.playerId, (player) => ({
+                if (!discardAfterCast || event.payload.boundSourceObjectId) return core;
+                return updatePlayer(core, event.payload.cardOwnerId ?? event.payload.playerId, (player) => ({
                     ...player,
-                    discardSpellCardIds: player.discardSpellCardIds.includes(event.payload.spellCardId)
-                        ? player.discardSpellCardIds
-                        : [event.payload.spellCardId, ...(player.discardSpellCardIds ?? [])],
+                    discardSpellCardIds: [event.payload.spellCardId, ...player.discardSpellCardIds],
                 }));
             }
             if (event.payload.boundSourceObjectId) {
@@ -425,7 +426,7 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 return updatePlayer(paidObject, event.payload.playerId, (player) => ({
                     ...player,
                     mana: Math.max(0, player.mana - playerManaCost),
-                    discardSpellCardIds: [event.payload.spellCardId, ...(player.discardSpellCardIds ?? [])],
+                    ...(discardAfterCast ? { discardSpellCardIds: [event.payload.spellCardId, ...player.discardSpellCardIds] } : {}),
                 }));
             }
             return updatePlayer(core, event.payload.playerId, (player) => {
@@ -438,12 +439,13 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                     mana: Math.max(0, player.mana - (event.payload.playerManaCost ?? event.payload.manaCost)),
                     preparedSpellCardIds,
                     preparedSpellSlots: preparedSpellCardIds.length,
-                    discardSpellCardIds: [event.payload.spellCardId, ...(player.discardSpellCardIds ?? [])],
+                    ...(discardAfterCast ? { discardSpellCardIds: [event.payload.spellCardId, ...player.discardSpellCardIds] } : {}),
                     quickcastReady: event.payload.castMode === 'quickcast' ? false : player.quickcastReady,
                     actionReady: event.payload.castMode === 'action' ? false : player.actionReady,
                     guarding: event.payload.castMode === 'action' ? false : player.guarding,
                 };
             });
+        }
 
         case MAGE_WARS_EVENTS.SPELL_COST_REDUCTION_USED:
             return updateArenaObject(core, event.payload.sourceObjectId, (object) => (
@@ -451,11 +453,10 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
             ));
 
         case MAGE_WARS_EVENTS.SPELL_DISCARDED:
+            if (event.payload.reason === 'enchantment-destroyed') return core;
             return updatePlayer(core, event.payload.playerId, (player) => ({
                 ...player,
-                discardSpellCardIds: player.discardSpellCardIds.includes(event.payload.spellCardId)
-                    ? player.discardSpellCardIds
-                : [event.payload.spellCardId, ...(player.discardSpellCardIds ?? [])],
+                discardSpellCardIds: [event.payload.spellCardId, ...player.discardSpellCardIds],
             }));
 
         case MAGE_WARS_EVENTS.DEFEATED_CREATURE_CARD_CONSUMED:
@@ -490,10 +491,9 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 }));
             }
             return updatePlayer(core, event.payload.spellOwnerId, (player) => {
-                const preparedSpellCardIds = [event.payload.spellCardId, ...removePreparedSpell(
-                    player.preparedSpellCardIds,
-                    event.payload.spellCardId,
-                )];
+                const preparedSpellCardIds = event.payload.boundSourceObjectId
+                    ? player.preparedSpellCardIds
+                    : [event.payload.spellCardId, ...player.preparedSpellCardIds];
                 return {
                     ...player,
                     mana: player.mana + event.payload.manaCost,
@@ -795,6 +795,7 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 ...updateArenaObject(moved, event.payload.objectId, (object) => ({
                     ...object,
                     ownerId: event.payload.ownerId,
+                    ...(object.ownerId === event.payload.ownerId ? {} : { cardOwnerId: object.cardOwnerId ?? object.ownerId }),
                     zoneId: event.payload.toZoneId,
                     anchoredToPlayerId: event.payload.targetPlayerId,
                     anchoredToObjectId: event.payload.targetObjectId,
@@ -1055,22 +1056,28 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
         }
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED: {
-            const defeated = core.objects[event.payload.objectId];
-            const removed = removeArenaObject(core, event.payload.objectId);
-            if (!defeated) return removed;
-            if (defeated.sourceSpellCardId !== 1811 && !isMageWarsLivingArenaObject(defeated)) return removed;
-            return updatePlayer(removed, defeated.ownerId, (player) => ({
-                ...player,
-                ...(defeated.sourceSpellCardId === 1811 ? { mana: player.mana + 2 } : {}),
-                ...(isMageWarsLivingArenaObject(defeated)
-                    ? {
-                        defeatedLivingCreatureCardIds: [
-                            ...(player.defeatedLivingCreatureCardIds ?? []),
-                            defeated.sourceSpellCardId,
-                        ],
-                    }
-                    : {}),
-            }));
+            if (!core.objects[event.payload.objectId]) return core;
+            const defeatedIds = collectAttachedArenaObjectIds(core, event.payload.objectId);
+            let next = removeArenaObject(core, event.payload.objectId);
+            for (const id of defeatedIds) {
+                const defeated = core.objects[id];
+                const ownerId = defeated.cardOwnerId ?? defeated.ownerId;
+                next = updatePlayer(next, ownerId, (player) => ({
+                    ...player,
+                    discardSpellCardIds: [
+                        defeated.sourceSpellCardId,
+                        ...(defeated.boundSpellCardId === undefined ? [] : [defeated.boundSpellCardId]),
+                        ...player.discardSpellCardIds,
+                    ],
+                    ...(isMageWarsLivingArenaObject(defeated) ? {
+                        defeatedLivingCreatureCardIds: [...(player.defeatedLivingCreatureCardIds ?? []), defeated.sourceSpellCardId],
+                    } : {}),
+                }));
+                if (defeated.sourceSpellCardId === 1811) {
+                    next = updatePlayer(next, defeated.ownerId, (player) => ({ ...player, mana: player.mana + 2 }));
+                }
+            }
+            return next;
         }
 
         case MAGE_WARS_EVENTS.MAGE_DEFEATED:
@@ -1094,7 +1101,6 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 ...player,
                 actionReady: true,
                 quickcastReady: true,
-                guarding: false,
             }));
             const resetActions = (event.payload.objectIds ?? []).reduce((nextCore, objectId) => (
                 updateArenaObject(nextCore, objectId, (object) => {
@@ -1103,7 +1109,6 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                         : {
                             ...object,
                             actionReady: true,
-                            guarding: false,
                         };
                     const {
                         movementActionsUsedThisTurn: _movementActionsUsedThisTurn,

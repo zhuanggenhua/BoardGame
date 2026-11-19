@@ -75,4 +75,21 @@ describe('MagnifyOverlay', () => {
         fireEvent.click(screen.getByTestId('shared-card-magnify-overlay-close'));
         expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    it('keeps a long-press preview open on release and lets the next backdrop tap close it', () => {
+        const onClose = vi.fn();
+        render(
+            <MagnifyOverlay isOpen onClose={onClose} overlayTestId="magnify">
+                <div>卡牌</div>
+            </MagnifyOverlay>,
+        );
+
+        const backdrop = screen.getByTestId('magnify');
+        fireEvent.click(backdrop, { detail: 1 });
+        expect(onClose).not.toHaveBeenCalled();
+
+        fireEvent.pointerDown(backdrop, { pointerType: 'touch' });
+        fireEvent.click(backdrop, { detail: 1 });
+        expect(onClose).toHaveBeenCalledOnce();
+    });
 });

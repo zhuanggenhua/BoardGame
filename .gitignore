@@ -298,6 +298,8 @@ src/games/**/*.png
 src/games/**/*.jpg
 src/games/**/*.jpeg
 src/games/**/*.webp
+# 七大恨地图印刷轮盘的坐标遮补与前端几何同步版本化。
+!src/games/qidahen/data/map-printed-wheel-terrain.webp
 src/games/**/*.gif
 src/games/**/*.avif
 src/games/**/*.tiff

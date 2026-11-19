@@ -461,10 +461,7 @@ export const BaseZone: React.FC<{
         );
         const ongoingAccessoryChromeClass = getAccessoryChromeClass(ongoingAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
         const ongoingPowerCounterSurfaceClass = getAccessorySurfaceClass(ongoingAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
-        const showOngoingInspectButton = !isSelectableOngoing && (
-            showDesktopInspectButton
-            || (isCoarsePointer && isOngoingActivationArmed && !canUseOngoingTalent)
-        );
+        const showOngoingInspectButton = !isSelectableOngoing && showDesktopInspectButton;
         const ongoingPowerContribution = getOngoingCardPowerContribution({
             ...base,
             ongoingActions: [oa],
@@ -645,7 +642,7 @@ export const BaseZone: React.FC<{
         const titanName = resolveCardName(titanDef, t) || titan.defId;
         const titanText = resolveCardText(titanDef, t);
         const titanTitle = titanText ? `${titanName}\n${titanText}` : titanName;
-        const showTitanInspectButton = showDesktopInspectButton || isCoarsePointer;
+        const showTitanInspectButton = showDesktopInspectButton;
         const pConf = PLAYER_CONFIG[parseInt(titan.controllerId) % PLAYER_CONFIG.length];
         const canUseTitanTalent = !!usableTitanTalentUids?.has(titan.uid);
         const canUseTitanOngoing = !!usableTitanOngoingUids?.has(titan.uid);

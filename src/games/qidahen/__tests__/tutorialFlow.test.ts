@@ -27,15 +27,28 @@ function harness() {
     for (const action of QIDAHEN_ANNUAL_TUTORIAL.steps[0].aiActions!) send(action.commandType, action.payload as object, action.playerId, true);
     send(TUTORIAL_COMMANDS.AI_CONSUMED, { stepId: 'opening-opponents' });
     send(TUTORIAL_COMMANDS.NEXT, { reason: 'manual' });
-    return { get state() { return state; }, replace: (next: MatchState<QidahenCore>) => { state = next; }, send };
+    send(TUTORIAL_COMMANDS.NEXT, { reason: 'manual' });
+    const respond = (optionId: string) => {
+        const prompt = getCurrentInteractionSummary(state);
+        if (!prompt.playerId) throw new Error('Expected an active tutorial prompt');
+        const command = createRespondToPromptCommand(state, { playerId: prompt.playerId, optionId });
+        send(command.type, command.payload, command.playerId);
+    };
+    return { get state() { return state; }, replace: (next: MatchState<QidahenCore>) => { state = next; }, send, respond };
 }
 
 describe('连续年度教程生命周期', () => {
     it('支付与多选弃牌说明显式贴近当前教学手牌', () => {
-        for (const [id, cardId] of [['recruit-payment', 'hand-3'], ['hand-limit', 'hand-1'], ['upgrade-payment', 'deck-ming-10']]) {
+        for (const [id, cardId] of [['hand-limit', 'hand-1'], ['upgrade-payment', 'deck-ming-10']]) {
             const step = QIDAHEN_ANNUAL_TUTORIAL.steps.find(candidate => candidate.id === id);
-            expect(step?.tooltipAnchorTarget).toBe(`qidahen-hand-card-${cardId}`);
+            expect(step?.tooltipAnchorTarget).toBe(`qidahen-hand-guide-${cardId}`);
         }
+        const h = harness();
+        h.send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
+        h.respond('hand-action:recruit');
+        const cardId = h.state.sys.tutorial.step?.recommendedTargets?.[0];
+        expect(h.state.core.handCards.some(card => card.id === cardId && card.faction === 'ming' && card.status !== 'disabled')).toBe(true);
+        expect(h.state.sys.tutorial.step?.tooltipAnchorTarget).toBe(`qidahen-hand-guide-${cardId}`);
     });
     it('序列化恢复并重新绑定当前manifest，保留同一正式回合与下一输入', () => {
         const h = harness();
@@ -45,7 +58,7 @@ describe('连续年度教程生命周期', () => {
         expect(h.state.sys.tutorial.step?.id).toBe('opening-move');
         expect(h.state.core).toEqual(before);
         h.send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-        expect(h.state.sys.tutorial.step?.id).toBe('farm-action');
+        expect(h.state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
         expect(getCurrentInteractionSummary(h.state).playerId).toBe('0');
     });
     it('回到移动前检查点后重做，移动和抽牌不会重复累加', () => {
@@ -66,17 +79,11 @@ describe('连续年度教程生命周期', () => {
         h.send(TUTORIAL_COMMANDS.CLOSE);
         expect(h.state.sys.tutorial).toMatchObject({ active: false, step: null });
         expect(h.state.core).toEqual(before);
-        const respond = (optionId: string) => {
-            const prompt = getCurrentInteractionSummary(h.state);
-            if (!prompt.playerId) throw new Error('Expected an active tutorial prompt');
-            const command = createRespondToPromptCommand(h.state, { playerId: prompt.playerId, optionId });
-            h.send(command.type, command.payload, command.playerId);
-        };
-        respond('hand-action:recruit');
+        h.respond('hand-action:recruit');
         h.send('CANCEL_PREVIEW_ACTION');
         expect(h.state.core.factionActionUsed).toBe(false);
         expect(getCurrentInteractionSummary(h.state).id).toBeDefined();
-        respond('finish-slot'); respond('skip-hand');
+        h.respond('finish-slot'); h.respond('skip-hand');
         expect(h.state.core.currentPlayer).toBe('1');
         expect(h.state.sys.resolution).toBeUndefined();
         h.send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' }, '1');

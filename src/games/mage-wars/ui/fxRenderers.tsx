@@ -64,6 +64,8 @@ function isMageId(value: unknown): value is MageId {
 
 type ViewportBox = { left: number; top: number; width: number; height: number };
 
+type AttackDiceGroup = { results: number[]; critical?: boolean[] };
+
 function AttackDiceFeedback({
     diceResults,
     diceCritical,
@@ -71,7 +73,7 @@ function AttackDiceFeedback({
     rawEffectDieResult,
     visibleDurationMs,
     kind,
-    resultAmount,
+    wallRolls,
 }: {
     diceResults: number[];
     diceCritical?: boolean[];
@@ -79,21 +81,17 @@ function AttackDiceFeedback({
     rawEffectDieResult?: number;
     visibleDurationMs: number;
     kind: 'melee' | 'ranged' | 'heal';
-    resultAmount: number;
+    wallRolls?: AttackDiceGroup[];
 }) {
     const { t } = useTranslation('game-mage-wars');
     if (diceResults.length === 0 && effectDieResult === undefined) return null;
 
-    const titleKey = kind === 'heal'
+    const titleKey = wallRolls ? 'diceResult.wallPassage' : kind === 'heal'
         ? 'diceResult.heal'
         : kind === 'ranged'
             ? 'diceResult.rangedAttack'
             : 'diceResult.meleeAttack';
-    const resultText = kind === 'heal'
-        ? String(resultAmount)
-        : resultAmount > 0
-            ? t('diceResult.damage', { count: resultAmount })
-            : t('diceResult.miss');
+    const resultAmount = diceResults.reduce((sum, result) => sum + result, 0);
     // Cobblestone stills captured mid-tumble; SW `text-red-400` + 0.8s fade
     // reads as translucent. Keep the sum fully opaque with a dark outline.
     const resultColor = kind === 'heal'
@@ -120,6 +118,26 @@ function AttackDiceFeedback({
             transition={{ duration: 0.3, ease: 'easeOut' }}
         >
             <div className="flex flex-col items-center gap-[0.8vw]">
+                {wallRolls ? (
+                    <div className="flex max-w-[90vw] flex-wrap justify-center gap-3" data-testid="mage-wars-wall-attack-rolls">
+                        {wallRolls.map((roll, index) => (
+                            <div
+                                key={index}
+                                className="grid justify-items-center gap-2 rounded border border-amber-200/45 bg-stone-950/90 px-3 py-2 text-amber-100"
+                                data-testid="mage-wars-wall-attack-roll"
+                            >
+                                <div className="flex gap-2">
+                                    {roll.results.map((result, dieIndex) => (
+                                        <AttackDie key={dieIndex} result={result} index={dieIndex} critical={roll.critical?.[dieIndex]} />
+                                    ))}
+                                </div>
+                                <div className="text-lg font-black" data-testid="mage-wars-wall-attack-roll-total">
+                                    {roll.results.reduce((sum, result) => sum + result, 0)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : <>
                 <div
                     className="text-center text-[1.3vw] font-black tracking-wider text-white"
                     style={{ textShadow: '0 0 1vw rgba(255,255,255,0.3)' }}
@@ -153,8 +171,9 @@ function AttackDiceFeedback({
                     data-testid="mage-wars-fx-attack-dice-summary"
                     data-contrast="opaque"
                 >
-                    {resultText}
+                    {resultAmount}
                 </motion.div>
+                </>}
             </div>
         </motion.div>
     );
@@ -948,7 +967,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId ?? event.params?.defenderId);
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
-    const rangeKind = event.params?.rangeKind === 'melee' ? 'melee' : 'ranged';
+    const wallRolls = event.params?.wallRolls as AttackDiceGroup[] | undefined;
+    const rangeKind = event.params?.rangeKind === 'melee' || wallRolls ? 'melee' : 'ranged';
 
     useTimedImpactAndComplete(
         rangeKind === 'melee' ? cell : undefined,
@@ -1059,7 +1079,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                     rawEffectDieResult={rawEffectDieResult}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
                     kind="melee"
-                    resultAmount={damage}
+                    wallRolls={wallRolls}
                 />
             </>
         );
@@ -1116,7 +1136,6 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 rawEffectDieResult={rawEffectDieResult}
                 visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
                 kind="ranged"
-                resultAmount={damage}
             />
         </>
     );
@@ -1177,7 +1196,6 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
                     diceResults={diceResults}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
                     kind="heal"
-                    resultAmount={diceResults.reduce((sum, result) => sum + result, 0)}
                 />
             ) : null}
         </>

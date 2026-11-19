@@ -2,20 +2,33 @@ import { Body, Controller, Delete, Get, Inject, Param, Post, Put, UploadedFile, 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
-import { GameSubmissionDto } from './dtos/game-submission.dto';
+import { GameSubmissionDetailsDto, GameSubmissionDto } from './dtos/game-submission.dto';
 import { GameSubmissionsService } from './game-submissions.service';
-import { MAX_RULES_FILE_BYTES } from '../../../../../src/shared/externalGames';
+import { hasControlCharacters, MAX_RULES_FILE_BYTES, MAX_WEB_ZIP_BYTES } from '../../../../../src/shared/externalGames';
 import type { GameRulesUpload } from './game-rules-file';
 
 @Controller('ugc/submissions')
 @UseGuards(JwtAuthGuard)
 export class GameSubmissionsController {
+    private readonly zipDetails = new ValidationPipe({ whitelist: true, transform: true, expectedType: GameSubmissionDetailsDto });
     constructor(@Inject(GameSubmissionsService) private readonly submissions: GameSubmissionsService) {}
     @Get()
     async list(@CurrentUser() user: { userId: string }) { return { items: await this.submissions.list(user.userId) }; }
     @Post()
     @UsePipes(new ValidationPipe({ whitelist: true, transform: true, expectedType: GameSubmissionDto }))
     create(@CurrentUser() user: { userId: string }, @Body() body: GameSubmissionDto) { return this.submissions.create(user.userId, body); }
+    @Post('web-zip')
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_WEB_ZIP_BYTES + 1, fields: 3, fieldSize: 512 * 1024 } }))
+    async webZip(@CurrentUser() user: { userId: string }, @Body('data') data: string, @Body('submissionId') id: string | undefined,
+        @Body('name') name: string, @UploadedFile() file?: { buffer: Buffer }) {
+        if (!file || typeof name !== 'string' || !/^[^/\\]{1,196}\.zip$/i.test(name) || hasControlCharacters(name)) throw new BadRequestException('请选择网页 ZIP');
+        if (id !== undefined && typeof id !== 'string') throw new BadRequestException('投稿编号无效');
+        let fields: unknown;
+        try { fields = JSON.parse(data); } catch { throw new BadRequestException('投稿资料无效'); }
+        if (!fields || typeof fields !== 'object' || Array.isArray(fields)) throw new BadRequestException('投稿资料无效');
+        const body = await this.zipDetails.transform(fields, { type: 'body' }) as GameSubmissionDetailsDto;
+        return this.submissions.saveWebZip(user.userId, body, { name, buffer: file.buffer }, id);
+    }
     @Put(':id')
     update(
         @CurrentUser() user: { userId: string },

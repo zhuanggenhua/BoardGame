@@ -1,7 +1,7 @@
 import React from 'react';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './mapRegions';
 import { buildQidahenPopulationSites, layoutQidahenPopulation, QIDAHEN_POPULATION_SIZE, type PopulationSite, type PopulationPlacement } from './populationLayout';
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, QIDAHEN_MAP_NAMEPLATE_OBSTACLES } from './mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, QIDAHEN_MAP_NAMEPLATE_OBSTACLES, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS } from './mapGraph';
 
 export const QIDAHEN_MAP_REGION_GEOMETRY = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
     id: region.id, x: region.center!.x / QIDAHEN_MAP_WIDTH, y: region.center!.y / QIDAHEN_MAP_HEIGHT,
@@ -23,7 +23,8 @@ export type QidahenMapPopulationRegion = {
 
 export function getQidahenPopulationPlacements(regions: readonly QidahenMapPopulationRegion[], ownership: readonly (string | null)[] | null,
     tokens: readonly { x: number; y: number; size?: number }[], interiorSites?: ReadonlyMap<string, PopulationSite>,
-    reservedAreas: readonly { left: number; top: number; width: number; height: number }[] = []): PopulationPlacement[] {
+    reservedAreas: readonly { left: number; top: number; width: number; height: number }[] = [],
+    jointSites?: ReadonlyMap<string, { x: number; y: number }>): PopulationPlacement[] {
     const result = interiorSites ? new Map(interiorSites) : ownership
         ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_GEOMETRY)
         : new Map<string, PopulationSite>();
@@ -43,7 +44,8 @@ export function getQidahenPopulationPlacements(regions: readonly QidahenMapPopul
             anchor: { x: definition.markerBounds.left, y: definition.markerBounds.top + definition.markerBounds.height / 2 },
         });
     }
-    return layoutQidahenPopulation(result, regions, [...tokens, ...nameplateObstacles], QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, reservedAreas);
+    return layoutQidahenPopulation(result, regions, [...tokens, ...nameplateObstacles], QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
+        [...reservedAreas, ...QIDAHEN_PRINTED_NAMEPLATE_BOUNDS], jointSites);
 }
 
 export const QidahenMapPopulationLayer: React.FC<{

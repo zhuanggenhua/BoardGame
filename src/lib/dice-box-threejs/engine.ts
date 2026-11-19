@@ -197,6 +197,7 @@ type DiceBoxSurfaceObject = {
 };
 
 type DiceBoxHighlightMaterial = ShaderMaterial & {
+    onBuild: () => void;
     uniforms: {
         uColor: { value: Color };
         uOpacity: { value: number };
@@ -2263,6 +2264,9 @@ export class DiceBoxThreeEngine {
             blending: AdditiveBlending,
             toneMapped: false,
         }) as DiceBoxHighlightMaterial;
+        // DiceBox 0.0.12 内置的 Three r143 在编译前调用 onBuild。
+        // 旧版 ShaderMaterial 在此阶段也不做处理，着色器和 uniforms 已在构造时提供。
+        material.onBuild = () => {};
         material.opacity = opacity;
         return material;
     }

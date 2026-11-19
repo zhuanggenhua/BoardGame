@@ -1,0 +1,34 @@
+/* 教程提示沿用本牌桌阶段提示的石色与琥珀色。定位、尺寸和导航仍由共用组件负责。 */
+body:has([data-game-page][data-game-id="mage-wars"]) [data-testid="tutorial-overlay-card"] {
+    background-color: rgb(28 25 23 / 96%);
+    border-color: rgb(251 191 36 / 44%);
+    box-shadow: 0 8px 28px rgb(0 0 0 / 44%);
+}
+
+body:has([data-game-page][data-game-id="mage-wars"]) [data-testid="tutorial-overlay-content"] {
+    color: #fef3c7;
+}
+
+body:has([data-game-page][data-game-id="mage-wars"]) [data-testid="tutorial-action-hint"] {
+    color: #fcd34d;
+    background-color: rgb(251 191 36 / 9%);
+    border-color: rgb(251 191 36 / 26%);
+}
+
+body:has([data-game-page][data-game-id="mage-wars"]) [data-testid="tutorial-previous-button"] {
+    color: #fde68a;
+    background-color: #292524;
+    border-color: rgb(251 191 36 / 32%);
+}
+
+body:has([data-game-page][data-game-id="mage-wars"]) [data-testid="tutorial-next-button"] {
+    color: #1c1917;
+    background-color: #fde68a;
+}
+
+body:has([data-game-page][data-game-id="mage-wars"]) [data-tutorial-overlay-arrow] {
+    background-color: #1c1917;
+    border-color: rgb(251 191 36 / 44%);
+    fill: #1c1917;
+    stroke: rgb(251 191 36 / 44%);
+}

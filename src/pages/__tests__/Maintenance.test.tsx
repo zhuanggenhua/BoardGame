@@ -1117,7 +1117,7 @@ describe('loadGameImplementation stale chunk recovery', () => {
 
         expect(loadRuntime).toHaveBeenCalledTimes(1);
         expect(reloadForStaleChunkOnce).toHaveBeenCalledTimes(1);
-        expect(reloadForStaleChunkOnce).toHaveBeenCalledWith('game-runtime-load-failed:smashup', window);
+        expect(reloadForStaleChunkOnce).toHaveBeenCalledWith('game-runtime-load-failed:smashup', window, { failure: staleError });
     });
 });
 

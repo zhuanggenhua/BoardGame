@@ -320,6 +320,10 @@ describe('OnlineAiRecoverySequenceRunner', () => {
             seatControllers,
         });
 
+        const recoveryTrace = vi.mocked(harness.hooks.logExecutionTrace).mock.calls[0][0];
+        expect(recoveryTrace).toHaveProperty('recoveryElapsedMs');
+        expect(recoveryTrace).not.toHaveProperty('decisionMs');
+        expect(recoveryTrace).not.toHaveProperty('executionMs');
         expect(harness.hooks.clearTracker).toHaveBeenCalledWith(match.matchID);
         expect(harness.hooks.reportRecoverySuccessFeedback).toHaveBeenCalledWith(expect.objectContaining({
             match,

@@ -106,6 +106,7 @@ const deriveStepState = (manifest: TutorialManifest, stepIndex: number, currentC
         step,
         manifestAllowManualSkip: manifest.allowManualSkip,
         manifestRandomPolicy: manifest.randomPolicy,
+        manifestContinueWithLocalAiAfterCompletion: manifest.continueWithLocalAiAfterCompletion,
         manifestCloseOnGameOver: manifest.closeOnGameOver ?? false,
         randomPolicy,
         aiActions: step.aiActions ? [...step.aiActions] : undefined,
@@ -347,6 +348,8 @@ const buildManifestFromState = (
         revision: tutorial.manifestRevision,
         steps: tutorial.steps,
         allowManualSkip: tutorial.manifestAllowManualSkip,
+        closeOnGameOver: tutorial.manifestCloseOnGameOver,
+        continueWithLocalAiAfterCompletion: tutorial.manifestContinueWithLocalAiAfterCompletion,
         randomPolicy: tutorial.manifestRandomPolicy,
         ...(fallbackManifest?.id === tutorial.manifestId ? { resolveStep: fallbackManifest.resolveStep } : {}),
     };
@@ -446,6 +449,25 @@ const transitionTutorialStep = <TCore>(
     }
 
     if (!manifest.steps[nextIndex]) {
+        if (manifest.continueWithLocalAiAfterCompletion && !state.sys.gameover) {
+            const completed = applyTutorialState(state, {
+                ...DEFAULT_TUTORIAL_STATE,
+                manifestId: tutorial.manifestId,
+                manifestRevision: tutorial.manifestRevision,
+                stepIndex: tutorial.stepIndex,
+                manifestContinueWithLocalAiAfterCompletion: true,
+            });
+            return {
+                state: {
+                    ...completed,
+                    sys: {
+                        ...completed.sys,
+                        undo: { ...completed.sys.undo, snapshots: [], snapshotCursors: [], pendingRequest: undefined },
+                    },
+                },
+                events: [...events, createClosedEvent(tutorial.manifestId, timestamp)],
+            };
+        }
         return {
             state: applyTutorialState(state, { ...DEFAULT_TUTORIAL_STATE }),
             events: [...events, createClosedEvent(tutorial.manifestId, timestamp)],

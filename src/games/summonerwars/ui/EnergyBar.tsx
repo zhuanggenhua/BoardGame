@@ -19,13 +19,13 @@ interface EnergyBarSizing {
 
 const ENERGY_BAR_SIZES: Record<EnergyBarSize, EnergyBarSizing> = {
   normal: {
-    rootGap: 'clamp(0.4rem, 0.8vw, 0.55rem)',
-    iconSize: 'clamp(1rem, 2vw, 1.25rem)',
-    segmentGap: 'clamp(1px, 0.18vw, 2px)',
-    segmentWidth: 'clamp(0.38rem, 0.78vw, 0.75rem)',
-    segmentHeight: 'clamp(0.58rem, 1vw, 1rem)',
-    textSize: 'clamp(0.82rem, 1.2vw, 1rem)',
-    valueWidth: 'clamp(1.35rem, 2vw, 1.75rem)',
+    rootGap: 'clamp(6.4px, calc(var(--sw-energy-design-inline-unit, 1vw) * 0.8), 8.8px)',
+    iconSize: 'clamp(16px, calc(var(--sw-energy-design-inline-unit, 1vw) * 2), 20px)',
+    segmentGap: 'clamp(1px, calc(var(--sw-energy-design-inline-unit, 1vw) * 0.18), 2px)',
+    segmentWidth: 'clamp(6.08px, calc(var(--sw-energy-design-inline-unit, 1vw) * 0.78), 12px)',
+    segmentHeight: 'clamp(9.28px, var(--sw-energy-design-inline-unit, 1vw), 16px)',
+    textSize: 'clamp(13.12px, calc(var(--sw-energy-design-inline-unit, 1vw) * 1.2), 16px)',
+    valueWidth: 'clamp(21.6px, calc(var(--sw-energy-design-inline-unit, 1vw) * 2), 28px)',
   },
   compact: {
     rootGap: 'clamp(0.3rem, 0.65vw, 0.45rem)',

@@ -8,8 +8,8 @@ import { Cardia } from '../game';
 import CardiaDomain from '../domain';
 import type { CardiaCore } from '../domain/core-types';
 import { CARDIA_COMMANDS } from '../domain/commands';
-import { ABILITY_IDS } from '../domain/ids';
-import { createTestCard } from './test-helpers';
+import { ABILITY_IDS, ABILITY_IDS_DECK_II } from '../domain/ids';
+import { createTestCard, createTestPlayedCard } from './test-helpers';
 
 function createRunner() {
   return new GameTestRunner({
@@ -57,6 +57,47 @@ function seedHands(
 }
 
 describe('FlowSystem Auto-Advance', () => {
+  it('第五枚印戒出现后，毒师仍可改成平局并进入下一回合', () => {
+    const runner = createRunner();
+    seedHands(runner,
+      createTestCard({ uid: 'winner', defId: 'deck_ii_card_07', ownerId: '0', baseInfluence: 7, abilityIds: [] }),
+      createTestCard({ uid: 'poisoner', defId: 'deck_ii_card_01', ownerId: '1', baseInfluence: 1, abilityIds: [ABILITY_IDS_DECK_II.POISONER] }),
+    );
+    const state = runner.getState();
+    runner.setState({ ...state, core: { ...state.core, players: { ...state.core.players,
+      '0': { ...state.core.players['0'], playedCards: [createTestPlayedCard({ uid: 'old', owner: '0', defId: 'deck_i_card_02', baseInfluence: 2, signets: 4, encounterIndex: 0 })] },
+    } } });
+    expect(runner.dispatch(CARDIA_COMMANDS.PLAY_CARD, { playerId: '0', cardUid: 'winner', slotIndex: 0 }).success).toBe(true);
+    const play = runner.dispatch(CARDIA_COMMANDS.PLAY_CARD, { playerId: '1', cardUid: 'poisoner', slotIndex: 0 });
+    expect(play.success).toBe(true);
+    expect(play.finalState.sys.phase).toBe('ability');
+    expect(play.finalState.sys.gameover).toBeUndefined();
+    const ability = runner.dispatch(CARDIA_COMMANDS.ACTIVATE_ABILITY, { playerId: '1', abilityId: ABILITY_IDS_DECK_II.POISONER, sourceCardUid: 'poisoner' });
+    expect(ability.success).toBe(true);
+    expect(ability.finalState.sys.phase).toBe('play');
+    expect(ability.finalState.sys.gameover).toBeUndefined();
+    expect(ability.finalState.core.players['0'].playedCards.reduce((sum, card) => sum + card.signets, 0)).toBe(4);
+  });
+
+  it('第五枚印戒在遭遇结算完成后触发正常胜利', () => {
+    const runner = createRunner();
+    seedHands(runner,
+      createTestCard({ uid: 'winner', defId: 'deck_i_card_07', ownerId: '0', baseInfluence: 7, abilityIds: [] }),
+      createTestCard({ uid: 'loser', defId: 'deck_i_card_01', ownerId: '1', baseInfluence: 1, abilityIds: [] }),
+    );
+    const state = runner.getState();
+    runner.setState({ ...state, core: { ...state.core, players: { ...state.core.players,
+      '0': { ...state.core.players['0'], playedCards: [createTestPlayedCard({ uid: 'old', owner: '0', defId: 'deck_i_card_02', baseInfluence: 2, signets: 4, encounterIndex: 0 })] },
+    } } });
+    expect(runner.dispatch(CARDIA_COMMANDS.PLAY_CARD, { playerId: '0', cardUid: 'winner', slotIndex: 0 }).success).toBe(true);
+    const result = runner.dispatch(CARDIA_COMMANDS.PLAY_CARD, { playerId: '1', cardUid: 'loser', slotIndex: 0 });
+    expect(result.success).toBe(true);
+    expect(result.finalState.sys.phase).toBe('ability');
+    const completed = runner.dispatch(CARDIA_COMMANDS.SKIP_ABILITY, { playerId: '1' });
+    expect(completed.success).toBe(true);
+    expect(completed.finalState.sys.gameover?.winner).toBe('0');
+  });
+
   it('遭遇战解析后有失败者时，应自动推进到 ability 阶段', () => {
     const runner = createRunner();
 

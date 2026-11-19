@@ -428,6 +428,7 @@ export interface MageWarsArenaObjectAttackVampiricHealingAvailableEvent extends 
 export interface MageWarsSpellCastResolvedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED> {
     payload: {
         playerId: PlayerId;
+        cardOwnerId?: PlayerId;
         caster: MageWarsSpellCasterRef;
         spellCardId: number;
         manaCost: number;
@@ -463,6 +464,7 @@ export interface MageWarsSpellCastStartedEvent extends GameEvent<typeof MAGE_WAR
         castMode: 'quickcast' | 'action' | 'deployment';
         objectManaCost?: number;
         playerManaCost?: number;
+        boundSourceObjectId?: string;
     };
 }
 
@@ -623,6 +625,7 @@ export interface MageWarsArenaObjectRestrainedEvent extends GameEvent<typeof MAG
 
 export interface MageWarsSpellAttackRolledEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED> {
     payload: {
+        wallPassageId?: string;
         playerId: PlayerId;
         spellCardId: number;
         sourceAbilityId: string;
@@ -1108,6 +1111,7 @@ export interface MageWarsSpellCounteredEvent extends GameEvent<typeof MAGE_WARS_
         caster?: MageWarsSpellCasterRef;
         objectManaCost?: number;
         playerManaCost?: number;
+        boundSourceObjectId?: string;
     };
 }
 

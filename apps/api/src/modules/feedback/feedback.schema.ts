@@ -79,6 +79,7 @@ export interface FeedbackPerformanceContext {
         averageDurationMs?: number;
         maxDurationMs?: number;
         averageTtfbMs?: number;
+        invalidTtfbSampleCount?: number;
         recentRequests?: Array<{
             path: string;
             initiatorType?: string;
@@ -90,6 +91,8 @@ export interface FeedbackPerformanceContext {
 }
 
 export interface FeedbackErrorContext {
+    causeName?: string;
+    causeLocation?: { bundle: string; line: number; column: number };
     location?: { bundle: string; line: number; column: number };
     message?: string;
     name?: string;

@@ -95,7 +95,68 @@ async function getRequiredOption(game: any, predicate: (option: any) => boolean,
     return option;
 }
 
+async function clickVisibleMinion(page: Page, uid: string): Promise<void> {
+    const minion = page.locator(`[data-minion-uid="${uid}"]`).first();
+    await expect(minion).toBeVisible();
+    const point = await minion.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        for (const y of [0.5, 0.25, 0.75]) {
+            for (const x of [0.5, 0.25, 0.75]) {
+                const point = { x: rect.left + rect.width * x, y: rect.top + rect.height * y };
+                const hit = document.elementFromPoint(point.x, point.y);
+                if (hit && (hit === element || element.contains(hit))) return point;
+            }
+        }
+        return null;
+    });
+    expect(point, `${uid} 必须有未遮挡的点击位置`).not.toBeNull();
+    await page.mouse.click(point!.x, point!.y);
+}
+
 test.describe('SmashUp - 尸体商店', () => {
+    for (const prevent of [true, false]) {
+        test(`预置场景：雄蜂${prevent ? '防止' : '不防止'}消灭后尸体商店仍可分配指示物`, async ({ page, game }, testInfo) => {
+            test.setTimeout(90000);
+            const pageErrors: string[] = [];
+            page.on('pageerror', error => pageErrors.push(error.message));
+            await game.openTestGame('smashup', { skipInitialization: true, playerID: '0', disableLocalAiAutomation: true }, 45000);
+            await game.setupScene({
+                gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+                player0: { factions: ['frankenstein_pod', 'giant_ants_pod'], hand: ['frankenstein_body_shop_pod'], deck: [], discard: [], actionsPlayed: 0, actionLimit: 1, minionsPlayed: 0, minionLimit: 1 },
+                player1: { factions: ['pirates', 'robots'], hand: [], deck: [], discard: [] },
+                bases: [
+                    { defId: 'base_tortuga', minions: [{ uid: 'body-shop-target', defId: 'frankenstein_herr_doktor_pod', owner: '0', controller: '0', basePower: 2, powerCounters: 0 }], ongoingActions: [] },
+                    { defId: 'base_the_mothership', minions: [
+                        { uid: 'body-shop-monster', defId: 'frankenstein_the_monster_pod', owner: '0', controller: '0', basePower: 4, powerCounters: 0 },
+                        { uid: 'body-shop-drone', defId: 'giant_ant_drone_pod', owner: '0', controller: '0', basePower: 3, powerCounters: 1 },
+                    ], ongoingActions: [] },
+                ],
+            });
+            await game.playCard('frankenstein_body_shop_pod');
+            await game.waitForInteraction('frankenstein_body_shop', 10000);
+            await clickVisibleMinion(page, 'body-shop-target');
+            await game.waitForInteraction('giant_ant_drone_prevent_destroy', 10000);
+            await saveEvidenceScreenshot(page, testInfo, '雄蜂与尸体商店', `预置场景-${prevent ? '防止' : '跳过'}-雄蜂选择.png`);
+            if (prevent) {
+                await clickVisibleMinion(page, 'body-shop-drone');
+            } else {
+                await page.getByRole('button', { name: /不防止消灭|Do not prevent/i }).click();
+            }
+            await game.waitForInteraction('frankenstein_body_shop_distribute', 10000);
+            const monster = page.locator('[data-minion-uid="body-shop-monster"]').first();
+            await expect(monster).toBeVisible();
+            await saveEvidenceScreenshot(page, testInfo, '雄蜂与尸体商店', `预置场景-${prevent ? '防止' : '跳过'}-分配指示物.png`);
+            await clickVisibleMinion(page, 'body-shop-monster');
+            await game.waitForInteraction('frankenstein_body_shop_distribute', 10000);
+            await clickVisibleMinion(page, 'body-shop-monster');
+            await waitForNoInteraction(game);
+            const finalState = await game.getState();
+            expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'body-shop-target')).toBe(prevent);
+            expect(finalState.core.bases[1].minions.find((minion: any) => minion.uid === 'body-shop-monster')?.powerCounters).toBe(2);
+            expect(pageErrors).toEqual([]);
+        });
+    }
+
     test('尸体商店以海盗派系 4 力量随从为目标时，应先触发移动并继续完成 4 次指示物分配', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 

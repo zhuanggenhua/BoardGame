@@ -15,17 +15,23 @@ export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose, recomme
     const { t: tutorialText } = useTranslation('tutorial');
     const progress = core.wheelRecruitTrainProgress;
     if (!progress || progress.phase === 'payment') return null;
+    const choosingTrainingTarget = progress.phase === 'choose-training-target' || progress.phase === 'extra-training-target';
+    const standardProgress = t('board.wheelRecruitTrain.standardProgress', { completed: progress.actionsCompleted });
+    const extraProgress = t('board.wheelRecruitTrain.extraProgress', { extra: progress.extraTrainingsCompleted });
     const controls = getQidahenWheelRecruitTrainChoices(core).filter(choice => choice.kind !== 'recruit-target' && choice.kind !== 'training-target');
     const label = (id: string) => t(id === 'action:recruit' ? 'board.wheelRecruitTrain.recruitAction'
         : id === 'action:train' ? 'board.wheelRecruitTrain.trainingAction'
             : id === 'extra-training' ? 'board.wheelRecruitTrain.extraTraining' : 'board.wheelRecruitTrain.finish');
-    return <section className="mb-3 w-full rounded border border-[#9a7d4f] p-3 text-[16px] leading-6 shadow-lg"
+    return <section className={`mb-3 ${choosingTrainingTarget ? 'w-max max-w-full self-end' : 'w-full'} rounded border border-[#9a7d4f] p-3 text-[16px] leading-6 shadow-lg`}
         data-testid="qidahen-wheel-recruit-train-selection" data-tutorial-id="qidahen-wheel-recruit-train-selection"
         style={{ background: UI_SURFACE.paper, color: UI_STYLE.ink }}>
         <h2 className="font-bold" data-testid="qidahen-wheel-recruit-train-header">{t(progress.phase === 'choose-recruit-target' ? 'board.wheelRecruitTrain.recruitTargetTitle'
-            : progress.phase === 'choose-training-target' || progress.phase === 'extra-training-target' ? 'board.wheelRecruitTrain.trainingTargetTitle'
+            : choosingTrainingTarget ? 'board.wheelRecruitTrain.trainingTargetTitle'
                 : progress.source === 'khan-edict' ? 'board.wheelRecruitTrain.khanTitle' : 'board.wheelRecruitTrain.title')}</h2>
-        <div className="text-[15px]" data-testid="qidahen-wheel-recruit-train-progress">{t('board.wheelRecruitTrain.progress', { completed: progress.actionsCompleted, extra: progress.extraTrainingsCompleted })}</div>
+        <div className="text-[15px]" data-testid="qidahen-wheel-recruit-train-progress">{choosingTrainingTarget ? <>
+            <div>{standardProgress}</div>
+            {(progress.extraTrainingsCompleted > 0 || progress.phase === 'extra-training-target') && <div>{extraProgress}</div>}
+        </> : t('board.wheelRecruitTrain.progress', { standard: standardProgress, extra: extraProgress })}</div>
         {onTutorialPrevious ? <button type="button" data-testid="tutorial-previous-button" onClick={onTutorialPrevious}
             className="mt-2 min-h-11 rounded border border-[#9a7d4f] px-3 text-sm font-bold"
             style={{ background: UI_STYLE.paperLight, color: UI_STYLE.ink }}>{tutorialText('overlay.previous')}</button> : null}

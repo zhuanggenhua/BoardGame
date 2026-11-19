@@ -4,7 +4,7 @@ import { buildQidahenPopulationSites } from '../ui/populationLayout';
 import { getArmyScreenScale, layoutQidahenFieldArmies, packExpandedArmiesWithinRegions } from '../ui/fieldArmyLayout';
 import { getQidahenPopulationPlacements, QIDAHEN_MAP_REGION_GEOMETRY } from '../ui/QidahenMapPopulationLayer';
 import { layoutQidahenControlMarkers } from '../ui/controlMarkerLayout';
-import { compactCrowdedArmies, groupCrowdedArmies, layoutOverflowArmyStacks } from '../ui/armyGroupLayout';
+import { stackFieldArmies, groupCrowdedArmies, layoutOverflowArmyStacks } from '../ui/armyGroupLayout';
 import { routeArmyGroupConnector } from '../ui/armyGroupConnector';
 import sharp from 'sharp';
 import { createInitialCore } from '../domain/initialCoreSetup';
@@ -150,14 +150,14 @@ it('辽北不规则边界内十支展开兵牌在真实选择缩放下保持紧�
     expect(getQidahenPopulationPlacements(regions, owners, result.tokens, sites).find(item => item.regionId === regionId)?.callout).toBe(false);
 });
 
-it('拥挤地区兵堆保留阵营与数量，展开后仍可逐枚选择原始兵牌', () => {
+it('野战兵牌默认按阵营合堆，逐枚操作时保留原始兵牌', () => {
     const troops = [army('a'), army('b'), army('c'), { ...army('d'), faction: 'jin' as const }, { ...army('e'), faction: 'jin' as const }];
     const before = structuredClone(troops);
-    const compact = compactCrowdedArmies(troops, new Set([regionId]), new Set(), () => null);
+    const compact = stackFieldArmies(troops, () => null, new Set(), new Set());
     expect(compact.tokens.map(token => token.id)).toEqual(['a', 'd']);
     expect([...compact.stackSizes.values()]).toEqual([3, 2]);
     expect(troops).toEqual(before);
-    const expanded = compactCrowdedArmies(troops, new Set([regionId]), new Set([regionId]), () => null);
+    const expanded = stackFieldArmies(troops, () => null, new Set(troops.map(token => token.id)), new Set());
     expect(expanded.tokens).toEqual(troops);
     expect(expanded.tokens.map(token => token.pieceId)).toEqual(['a', 'b', 'c', 'd', 'e']);
     expect(expanded.tokens.every(token => token.size === 26)).toBe(true);
@@ -174,31 +174,28 @@ it('公开兵牌按兵种和等级分堆，隐藏对手兵种等级不泄露，�
     ];
     const face = (token: QidahenMapToken) => token.faction === 'ming'
         ? JSON.stringify([token.troopKind, token.rotationDeg]) : null;
-    const compact = compactCrowdedArmies(troops, new Set([regionId]), new Set(), face);
+    const compact = stackFieldArmies(troops, face, new Set(), new Set());
     expect(compact.tokens.map(token => token.id)).toEqual(['infantry-lv2-a', 'infantry-lv3', 'artillery-lv2', 'hidden-infantry']);
     expect(compact.stackSizes.get('infantry-lv2-a')).toBe(2);
     expect(compact.stackSizes.get('hidden-infantry')).toBe(2);
-    expect([...compact.mixedStacks]).toEqual([]);
     const changedHidden = troops.map(token => token.faction === 'jin' ? { ...token, troopKind: 'cavalry' as const, rotationDeg: 180 } : token);
-    const hiddenAgain = compactCrowdedArmies(changedHidden, new Set([regionId]), new Set(), face);
+    const hiddenAgain = stackFieldArmies(changedHidden, face, new Set(), new Set(['hidden-artillery']));
     expect(hiddenAgain.tokens.map(token => token.id)).toEqual(compact.tokens.map(token => token.id));
     expect([...hiddenAgain.stackSizes]).toEqual([...compact.stackSizes]);
-    expect([...hiddenAgain.mixedStacks]).toEqual([...compact.mixedStacks]);
-    const mixedVisibility = compactCrowdedArmies(troops, new Set([regionId]), new Set(), token => token.id === 'infantry-lv2-a' ? null : face(token));
-    expect(mixedVisibility.mixedStacks.has('infantry-lv2-a')).toBe(false);
-    const expanded = compactCrowdedArmies(troops, new Set([regionId]), new Set([regionId]), face);
+    const mixedVisibility = stackFieldArmies(troops, token => token.id === 'infantry-lv2-a' ? null : face(token), new Set(), new Set());
+    expect(mixedVisibility.stackSizes.has('infantry-lv2-a')).toBe(false);
+    const expanded = stackFieldArmies(troops, face, new Set(troops.map(token => token.id)), new Set());
     expect(expanded.tokens.map(token => token.id)).toEqual(troops.map(token => token.id));
 });
 
-it('已选部队保持本体，未参战部队合堆；显式检视仍能展开全部', () => {
+it('已选与留守分别合堆，独立候选保留本体', () => {
     const troops = Array.from({ length: 10 }, (_, index) => army(`unit-${index}`));
     const selected = new Set(['unit-1', 'unit-2', 'unit-9']);
-    const result = compactCrowdedArmies(troops, new Set([regionId]), new Set([regionId]), () => 'visible',
-        new Set([regionId]), selected);
-    expect(result.tokens.map(token => token.pieceId)).toEqual(['unit-0', 'unit-1', 'unit-2', 'unit-9']);
+    const result = stackFieldArmies(troops, () => 'visible', new Set(['unit-9']), selected);
+    expect(result.tokens.map(token => token.pieceId)).toEqual(['unit-0', 'unit-1', 'unit-9']);
     expect(result.stackSizes.get('unit-0')).toBe(7);
-    const inspected = compactCrowdedArmies(troops, new Set([regionId]), new Set([regionId]), () => 'visible');
-    expect(inspected.tokens.map(token => token.pieceId)).toEqual(troops.map(token => token.pieceId));
+    expect(result.stackSizes.get('unit-1')).toBe(2);
+    expect(result.stackSizes.has('unit-9')).toBe(false);
 });
 
 it('真实地图地区的不同阵营兵堆稳定、独立地位于区内', async () => {

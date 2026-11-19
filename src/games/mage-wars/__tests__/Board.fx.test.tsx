@@ -1566,8 +1566,9 @@ describe('MageWarsBoard FX wiring', () => {
             params: {
                 source,
                 rangeKind,
-                damageAmount: 4,
-                diceResults: [2, 5],
+                damageAmount: 2,
+                diceResults: [2, 1],
+                diceCritical: [true, true],
                 rawEffectDieResult,
                 effectDieResult,
             },
@@ -1593,7 +1594,7 @@ describe('MageWarsBoard FX wiring', () => {
             );
             const summary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
             expect(summary).toHaveAttribute('data-contrast', 'opaque');
-            expect(summary).toHaveTextContent('4 点伤害');
+            expect(summary.textContent).toBe('3');
             expect(summary.className).not.toMatch(/text-red-400|text-emerald-300|text-slate-500/);
             expect((summary as HTMLElement).style.opacity).toBe('1');
             expect((summary as HTMLElement).style.color).toBe('rgb(255, 45, 45)');
@@ -1716,7 +1717,7 @@ describe('MageWarsBoard FX wiring', () => {
                 source: { row: 1, col: 0 },
                 rangeKind: 'melee',
                 damageAmount: 4,
-                diceResults: [3, 3],
+                diceResults: [2, 2],
             },
         };
 
@@ -1733,7 +1734,7 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.queryByTestId('mage-wars-fx-effect-die-face')).toBeNull();
         const summary = screen.getByTestId('mage-wars-fx-attack-dice-summary');
         expect(summary).toHaveAttribute('data-contrast', 'opaque');
-        expect(summary).toHaveTextContent('4 点伤害');
+        expect(summary.textContent).toBe('4');
         expect(summary.className).not.toMatch(/text-red-400|text-emerald-300|text-slate-500/);
         expect((summary as HTMLElement).style.opacity).toBe('1');
         expect((summary as HTMLElement).style.color).toBe('rgb(255, 45, 45)');
@@ -4340,7 +4341,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
 
         const skippedClickRender = renderBoardWithProviders(
             <MageWarsBoard
-                {...boardProps(undefined, '0', tutorialSysOverride('plan-open-creature-category'))}
+                {...boardProps(undefined, '0', tutorialSysOverride('plan-summon'))}
             />,
             'tutorial',
         );
@@ -4356,8 +4357,8 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(firstVisibleCard).not.toBeDisabled();
         expect(screen.getByTestId('mage-wars-desktop-spellbook-shelf').getAttribute('data-planning-enabled')).toBe('false');
         expect(screen.getByTestId('mage-wars-spellbook-category-creature')).toBeEnabled();
-        expect(screen.getByTestId('mage-wars-spellbook-category-all')).toBeDisabled();
-        expect(screen.getByTestId('mage-wars-spellbook-next-page')).toBeDisabled();
+        expect(screen.getByTestId('mage-wars-spellbook-category-all')).toBeEnabled();
+        expect(screen.getByTestId('mage-wars-spellbook-next-page')).toBeEnabled();
 
         fireEvent.click(firstVisibleCard!);
         await waitFor(() => {
@@ -4373,23 +4374,14 @@ describe('MageWarsBoard spellbook planning UI', () => {
         skippedClickRender.unmount();
         window.localStorage.clear();
 
-        const { container, rerender } = renderBoardWithProviders(
+        const { container } = renderBoardWithProviders(
             <MageWarsBoard
-                {...boardProps(undefined, '0', tutorialSysOverride('plan-open-creature-category'))}
+                {...boardProps(undefined, '0', tutorialSysOverride('plan-summon'))}
             />,
             'tutorial',
         );
 
         fireEvent.click(screen.getByTestId('mage-wars-spellbook-category-creature'));
-        rerender(withBoardProviders(
-            <MageWarsBoard {...boardProps(undefined, '0', tutorialSysOverride('plan-creature-next-page'))} />,
-            'tutorial',
-        ));
-        fireEvent.click(screen.getByTestId('mage-wars-spellbook-next-page'));
-        rerender(withBoardProviders(
-            <MageWarsBoard {...boardProps(undefined, '0', tutorialSysOverride('plan-select-wolf'))} />,
-            'tutorial',
-        ));
 
         let wolfCard = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2819"]',

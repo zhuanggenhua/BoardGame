@@ -46,6 +46,7 @@ import {
     resolveMageWarsSleepSpellManaCostForTarget,
     resolveMageWarsSpellRawCostTotal,
     resolveMageWarsSpellCost,
+    resolveMageWarsManaFailureCosts,
     resolveMageWarsForcePushExtraManaCost,
     resolveMageWarsStealEnchantmentManaCost,
     resolveMageWarsStealEnchantmentNewTargetZoneId,
@@ -102,6 +103,7 @@ export interface MageWarsSpellCastChoiceValue {
     playerId: string;
     spellCardId: number;
     manaCost: number;
+    casterObjectId?: string;
     targetSpellCardId?: number;
     targetPlayerId?: string;
     targetObjectId?: string;
@@ -206,6 +208,7 @@ export function resolveMageWarsRedirectedSpellManaCost(
 function createMageWarsSpellCastCommand(args: {
     playerId: string;
     spellCardId: number;
+    casterObjectId?: string;
     manaCost: number;
     targetSpellCardId?: number;
     targetPlayerId?: string;
@@ -229,6 +232,7 @@ function createMageWarsSpellCastCommand(args: {
         payload: {
             spellCardId: args.spellCardId,
             manaCost: args.manaCost,
+            ...(args.casterObjectId ? { casterObjectId: args.casterObjectId } : {}),
             ...(args.targetSpellCardId !== undefined ? { targetSpellCardId: args.targetSpellCardId } : {}),
             ...(args.targetPlayerId ? { targetPlayerId: args.targetPlayerId } : {}),
             ...(args.targetObjectId ? { targetObjectId: args.targetObjectId } : {}),
@@ -296,6 +300,7 @@ function buildMageWarsSpellCastTiming(args: {
     player: MageWarsPlayerState;
     spell: MageWarsConfigSpellCard;
     family: MageWarsSpellCastChoiceFamily;
+    casterObject?: MageWarsArenaObjectState;
     timestamp?: number;
 }) {
     const phase = args.state.sys.phase as MageWarsPhase;
@@ -303,6 +308,7 @@ function buildMageWarsSpellCastTiming(args: {
         playerId: args.player.id,
         spellCardId: args.spell.spellCardId,
         manaCost: 0,
+        casterObjectId: args.casterObject?.id,
         timestamp: args.timestamp,
     });
     const targetMode = resolveMageWarsSpellCastBaseTargetMode(args.family);
@@ -317,7 +323,7 @@ function buildMageWarsSpellCastTiming(args: {
             id: `spell:${args.spell.spellCardId}`,
             ownerId: args.player.id,
             controllerId: args.player.id,
-            zoneId: args.player.mageZoneId,
+            zoneId: args.casterObject?.zoneId ?? args.player.mageZoneId,
             metadata: {
                 spellCardId: args.spell.spellCardId,
                 spellType: args.spell.spellType,
@@ -340,6 +346,7 @@ function buildMageWarsSpellCastCandidates(args: {
     spell: MageWarsConfigSpellCard;
     family: MageWarsSpellCastChoiceFamily;
     phase: MageWarsPhase;
+    casterObject?: MageWarsArenaObjectState;
     timestamp?: number;
 }) {
     const buildCandidate = (candidateArgs: {
@@ -393,6 +400,7 @@ function buildMageWarsSpellCastCandidates(args: {
             playerId: args.player.id,
             spellCardId: args.spell.spellCardId,
             manaCost: candidateArgs.manaCost,
+            casterObjectId: args.casterObject?.id,
             targetPlayerId: candidateArgs.targetPlayer?.id,
             targetObjectId: candidateArgs.targetObject?.id,
             targetZoneId: candidateArgs.targetZoneId,
@@ -461,6 +469,7 @@ function buildMageWarsSpellCastCandidates(args: {
                 playerId: args.player.id,
                 spellCardId: args.spell.spellCardId,
                 manaCost: candidateArgs.manaCost,
+                ...(args.casterObject ? { casterObjectId: args.casterObject.id } : {}),
                 ...(targetPlayerId ? { targetPlayerId } : {}),
                 ...(targetObjectId ? { targetObjectId } : {}),
                 ...(candidateArgs.targetZoneId ? { targetZoneId: candidateArgs.targetZoneId } : {}),
@@ -514,6 +523,7 @@ function buildMageWarsSpellCastCandidates(args: {
                 'cast',
                 args.player.id,
                 args.spell.spellCardId,
+                ...(args.casterObject ? ['caster-object', args.casterObject.id] : []),
                 targetObjectId
                     ? 'target'
                     : targetPlayerId
@@ -567,8 +577,11 @@ function buildMageWarsSpellCastCandidates(args: {
     const candidates = (() => {
         if (args.family === 'wall') {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
+            const origin = args.casterObject
+                ? { ...args.player, mageZoneId: args.casterObject.zoneId }
+                : args.player;
             return wallEdgeIds
-                .filter((edgeId) => isMageWarsWallEdgeTargetInRange(args.state.core, args.player, args.spell, edgeId))
+                .filter((edgeId) => isMageWarsWallEdgeTargetInRange(args.state.core, origin, args.spell, edgeId))
                 .map((edgeId) => buildCandidate({
                     manaCost,
                     id: `target-wall-edge:${edgeId}`,
@@ -670,7 +683,8 @@ function buildMageWarsSpellCastCandidates(args: {
             ];
         }
         if (args.family === 'hidden-response-enchantment') {
-            const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
+            const manaCost = resolveMageWarsManaFailureCosts(args.spell)?.cast
+                ?? args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
             return [
                 ...targetObjects.flatMap((targetObject) => (
                     isMageWarsLegalHiddenResponseEnchantmentTarget(args.state.core, args.spell, {
@@ -806,7 +820,10 @@ function buildMageWarsSpellCastCandidates(args: {
         }
         if (args.family === 'force-push') {
             const manaCost = resolveMageWarsSpellCost(args.spell.spellCardId, 0, {
-                core: args.state.core, playerId: args.player.id, timing: 'cast',
+                core: args.state.core,
+                playerId: args.player.id,
+                timing: 'cast',
+                allowEquipmentReduction: args.casterObject === undefined,
             })?.manaCost ?? 0;
             const objectCandidates = targetObjects.flatMap((targetObject) => args.state.core.arena
                 .filter((zone) => areAdjacentZones(args.state.core, targetObject.zoneId, zone.id))
@@ -995,11 +1012,14 @@ export function buildMageWarsSpellCastOpportunity(args: {
     state: MatchState<MageWarsCore>;
     playerId: string;
     spellCardId: number;
+    casterObjectId?: string;
     timestamp?: number;
 }): Opportunity<MageWarsSpellCastChoiceValue> | null {
     const player = args.state.core.players[args.playerId];
     const spell = getMageWarsSpellCardFromConfig(args.spellCardId);
     if (!player || !spell) return null;
+    const casterObject = args.casterObjectId ? args.state.core.objects[args.casterObjectId] : undefined;
+    if (args.casterObjectId && !casterObject) return null;
     const family = resolveMageWarsSpellCastChoiceFamily(spell);
     if (!family) return null;
 
@@ -1035,6 +1055,7 @@ export function buildMageWarsSpellCastOpportunity(args: {
         player,
         spell,
         family,
+        casterObject,
         timestamp: args.timestamp,
     });
     const targetRequest = {
@@ -1065,6 +1086,7 @@ export function buildMageWarsSpellCastOpportunity(args: {
         spell,
         family,
         phase,
+        casterObject,
         timestamp: args.timestamp,
     });
 

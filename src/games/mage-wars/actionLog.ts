@@ -3,11 +3,16 @@ import type {
     ActionLogSegment,
     Command,
     GameEvent,
+    MatchState,
     PlayerId,
 } from '../../engine/types';
 import { FLOW_COMMANDS, FLOW_EVENTS } from '../../engine/systems/FlowSystem';
+import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
+import { getMageWarsSpellCardFromConfig, getPresetMageSetupFromConfig } from './data/configPackage';
 import { MAGE_WARS_COMMANDS } from './domain/commands';
 import { MAGE_WARS_EVENTS } from './domain/events';
+import { isMageWarsHiddenEnchantmentSpell, isMageWarsHiddenResponseEnchantmentSpell } from './domain/spellRules';
+import type { MageWarsCore } from './domain/types';
 import type {
     MageWarsActionReadinessResetEvent,
     MageWarsArenaObjectAbilityResolvedEvent,
@@ -33,6 +38,7 @@ import type {
     MageWarsManaDrainedEvent,
     MageWarsSpellAttackRolledEvent,
     MageWarsSpellCastResolvedEvent,
+    MageWarsSpellCounteredEvent,
     MageWarsSpellDirectDamageRolledEvent,
     MageWarsSpellHealingRolledEvent,
     MageWarsObjectSpellPlannedEvent,
@@ -58,6 +64,7 @@ export const ACTION_ALLOWLIST = [
     MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
     MAGE_WARS_COMMANDS.DECLARE_EQUIPMENT_ATTACK,
     MAGE_WARS_COMMANDS.ROLL_ARENA_OBJECT_DEFENSE,
+    INTERACTION_COMMANDS.RESPOND,
     FLOW_COMMANDS.ADVANCE_PHASE,
 ] as const;
 
@@ -158,12 +165,45 @@ function formatPhaseChangedEvent(event: GameEvent, fallbackTimestamp: number): A
     };
 }
 
+const identityParams = new Set([
+    'objectId', 'targetId', 'targetObjectId', 'attackerObjectId',
+    'defenderObjectId', 'defenderId', 'winnerId',
+]);
+
+function resolvePublicLogEntry(entry: ActionLogEntry, core: MageWarsCore, commandPlayerId: PlayerId): ActionLogEntry {
+    return {
+        ...entry,
+        actorId: core.players[entry.actorId] ? entry.actorId : core.objects[entry.actorId]?.ownerId ?? commandPlayerId,
+        segments: entry.segments.map((segment) => {
+            if (segment.type !== 'i18n' || !segment.params) return segment;
+            const params = { ...segment.params };
+            const paramI18nKeys = [...(segment.paramI18nKeys ?? [])];
+            for (const [key, id] of Object.entries(params)) {
+                if (!identityParams.has(key) || typeof id !== 'string') continue;
+                const player = core.players[id];
+                const object = core.objects[id];
+                if (player) {
+                    params[key] = getPresetMageSetupFromConfig(player.mageId).displayName;
+                } else if (object && (object.kind !== 'enchantment' || object.revealed !== false)) {
+                    params[key] = object.name;
+                } else {
+                    params[key] = object ? 'actionLog.faceDownEnchantment' : 'actionLog.unknownObject';
+                    paramI18nKeys.push(key);
+                }
+            }
+            return { ...segment, params, ...(paramI18nKeys.length ? { paramI18nKeys } : {}) };
+        }),
+    };
+}
+
 export function formatMageWarsActionEntry({
     command,
     events,
+    state,
 }: {
     command: Command;
     events: GameEvent[];
+    state: MatchState<unknown>;
 }): ActionLogEntry | ActionLogEntry[] | null {
     const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
     const entries: ActionLogEntry[] = [];
@@ -178,14 +218,9 @@ export function formatMageWarsActionEntry({
             }
             case MAGE_WARS_EVENTS.SPELLS_PLANNED: {
                 const payload = (event as MageWarsSpellsPlannedEvent).payload;
-                const segments: ActionLogSegment[] = [
+                pushEntry(entries, event.type, payload.playerId, entryTimestamp, [
                     i18nSeg('actionLog.spellsPlanned', { count: payload.spellCardIds.length }),
-                ];
-                payload.spellCardIds.forEach((spellCardId, spellIndex) => {
-                    if (spellIndex > 0) segments.push(i18nSeg('actionLog.separator.card'));
-                    segments.push(buildSpellCardSegment(spellCardId));
-                });
-                pushEntry(entries, event.type, payload.playerId, entryTimestamp, segments, index);
+                ], index);
                 break;
             }
             case MAGE_WARS_EVENTS.OBJECT_SPELL_PLANNED: {
@@ -197,13 +232,25 @@ export function formatMageWarsActionEntry({
             }
             case MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED: {
                 const payload = (event as MageWarsSpellCastResolvedEvent).payload;
+                const spell = getMageWarsSpellCardFromConfig(payload.spellCardId);
+                const faceDown = spell && (isMageWarsHiddenEnchantmentSpell(spell) || isMageWarsHiddenResponseEnchantmentSpell(spell));
                 const segments: ActionLogSegment[] = [
-                    i18nSeg('actionLog.spellCast'),
-                    buildSpellCardSegment(payload.spellCardId),
+                    ...(faceDown
+                        ? [i18nSeg('actionLog.placeFaceDownEnchantment')]
+                        : [i18nSeg('actionLog.spellCast'), buildSpellCardSegment(payload.spellCardId)]),
                     i18nSeg('actionLog.spellCastCost', { manaCost: payload.manaCost }),
                 ];
                 appendTargetSegments(segments, payload);
                 pushEntry(entries, event.type, payload.playerId, entryTimestamp, segments, index);
+                break;
+            }
+            case MAGE_WARS_EVENTS.SPELL_COUNTERED: {
+                const payload = (event as MageWarsSpellCounteredEvent).payload;
+                pushEntry(entries, event.type, payload.spellOwnerId, entryTimestamp, [
+                    buildSpellCardSegment(payload.spellCardId),
+                    i18nSeg('actionLog.spellCountered'),
+                    buildSpellCardSegment(payload.responseCardId),
+                ], index);
                 break;
             }
             case MAGE_WARS_EVENTS.MAGE_ABILITY_RESOLVED: {
@@ -242,6 +289,7 @@ export function formatMageWarsActionEntry({
             }
             case MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED: {
                 const payload = (event as MageWarsArenaObjectSummonedEvent).payload;
+                if (payload.object.kind === 'enchantment' && payload.object.revealed === false) break;
                 pushEntry(entries, event.type, payload.object.ownerId, entryTimestamp, [
                     i18nSeg('actionLog.arenaObjectSummoned', {
                         objectName: payload.object.name,
@@ -533,6 +581,6 @@ export function formatMageWarsActionEntry({
     });
 
     if (entries.length === 0) return null;
-    if (entries.length === 1) return entries[0];
-    return entries;
+    const visibleEntries = entries.map((entry) => resolvePublicLogEntry(entry, state.core as MageWarsCore, command.playerId));
+    return visibleEntries.length === 1 ? visibleEntries[0] : visibleEntries;
 }

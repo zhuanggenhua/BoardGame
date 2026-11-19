@@ -5,6 +5,7 @@ import {
     DEFAULT_BOARD_PATH,
     feedbackIdsForGroup,
     normalizeStringArray,
+    readOptionalBoard,
     syncBoardFromSummaryFile,
     updateBoardItems,
     writeBoard,
@@ -113,6 +114,16 @@ async function main() {
 
     if (!group) {
         throw new Error(`summary.json 中找不到代表项: ${options.feedbackId}`);
+    }
+
+    if (options.updateDuplicates && group.duplicateIds?.length) {
+        const board = await readOptionalBoard(path.resolve(options.boardPath));
+        const memberIds = feedbackIdsForGroup(group, true);
+        const conflicts = board?.items?.filter((item) => memberIds.includes(item.feedbackId || item.id)
+            && item.groupPrimaryId && item.groupPrimaryId !== group.primaryId) || [];
+        if (conflicts.length) {
+            throw new Error('分诊摘要与状态板的分组不一致，请先重新分诊并同步状态板；未执行远端回写');
+        }
     }
 
     const details = {

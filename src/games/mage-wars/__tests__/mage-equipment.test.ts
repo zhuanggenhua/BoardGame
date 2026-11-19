@@ -19,6 +19,7 @@ import {
 import {
     actionLogKinds,
     fixedRandom,
+    finishCreatureAction,
     makeArenaObject,
     makeVisibleEnchantmentObject,
     planCommand,
@@ -123,9 +124,9 @@ describe('mage-wars mage equipment', () => {
             equipment,
         );
 
-        const resolution = resolveMageWarsSpellCost(1901, 4, { core, playerId: '0' });
+        const resolution = resolveMageWarsSpellCost(1901, 2, { core, playerId: '0', timing: 'cast' });
 
-        expect(resolution?.manaCost).toBe(4);
+        expect(resolution?.manaCost).toBe(2);
         expect(resolution?.costReductionSourceObjectId).toBeUndefined();
     });
 
@@ -313,7 +314,7 @@ describe('mage-wars mage equipment', () => {
             actionReady: true,
         });
         expect(equipped.state.core.players['0'].preparedSpellCardIds).toEqual([]);
-        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([equipmentSpellId]);
+        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([]);
     });
 
     it('casts Dragon Scale Hauberk as mage-attached passive armor equipment with fire resistance text', () => {
@@ -382,7 +383,7 @@ describe('mage-wars mage equipment', () => {
             actionReady: true,
         });
         expect(equipped.state.core.players['0'].preparedSpellCardIds).toEqual([]);
-        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([equipmentSpellId]);
+        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([]);
     });
 
     it('casts Regrowth Belt as mage-attached passive equipment with regeneration text', () => {
@@ -451,7 +452,7 @@ describe('mage-wars mage equipment', () => {
             actionReady: true,
         });
         expect(equipped.state.core.players['0'].preparedSpellCardIds).toEqual([]);
-        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([equipmentSpellId]);
+        expect(equipped.state.core.players['0'].discardSpellCardIds).toEqual([]);
     });
 
     it('keeps mage-attached passive armor equipment with the mage and reduces incoming attack damage', () => {
@@ -478,7 +479,7 @@ describe('mage-wars mage equipment', () => {
         expect(equipmentId).toBeDefined();
 
         const moved = runCommand({
-            core: equipped.state.core,
+            core: { ...equipped.state.core, phaseReadyPlayerIds: [] },
             sys: { ...equipped.state.sys, phase: 'creatureAction' },
         }, {
             type: MAGE_WARS_COMMANDS.MOVE_MAGE,
@@ -494,9 +495,10 @@ describe('mage-wars mage equipment', () => {
         expect(moved.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(equipmentId);
         expect(moved.state.core.arena.find((zone) => zone.id === ARENA_ZONE_IDS.A2)?.objectIds).toContain(equipmentId);
 
+        const afterMove = finishCreatureAction(moved.state, '0');
         const attackState: MatchState<MageWarsCore> = {
-            core: withCurrentPlayer(withPlayerInZone(moved.state.core, '1', ARENA_ZONE_IDS.A2), '1'),
-            sys: { ...moved.state.sys, phase: 'creatureAction' },
+            core: withPlayerInZone(afterMove.core, '1', ARENA_ZONE_IDS.A2),
+            sys: afterMove.sys,
         };
         const attacked = runCommand(attackState, {
             type: MAGE_WARS_COMMANDS.DECLARE_ATTACK,

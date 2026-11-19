@@ -20,6 +20,8 @@ import {
     resolveMageWarsSpellbookEntriesForSeat,
 } from './roomSetup';
 import { MageWarsMageSelectionGate } from './ui/MageSelectionGate';
+import { MageWarsRulesReference } from './ui/RulesReference';
+import { buildMageWarsTutorialSetupData } from './tutorialStart';
 
 function buildSetupDataFromSearchParams(searchParams: URLSearchParams): Record<string, unknown> {
     const setupData: Record<string, unknown> = {};
@@ -42,7 +44,9 @@ function buildSetupDataFromSearchParams(searchParams: URLSearchParams): Record<s
 
 export function resolveMageWarsLocalSetup(args: {
     searchParams: URLSearchParams;
+    tutorialMode?: boolean;
 }): GameRuntimeLocalSetupResult {
+    if (args.tutorialMode) return { numPlayers: 2, setupData: buildMageWarsTutorialSetupData() };
     const setupDataFromSearch = buildSetupDataFromSearchParams(args.searchParams);
     const seatMageIds = [
         resolveMageWarsSelectedMageIdForSeat(setupDataFromSearch, 0),
@@ -92,6 +96,7 @@ export function resolveMageWarsCreateRoomSetup({
 }
 
 export const mageWarsGameRuntimeAdapter: GameRuntimeAdapter = {
+    HudSettingsSection: MageWarsRulesReference,
     hudFabLayout: {
         position: 'top-left',
         storageKey: MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,

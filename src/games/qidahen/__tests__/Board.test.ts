@@ -668,8 +668,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("'data-map-zoom': viewport.zoom,");
         expect(boardSource).toContain("'data-map-pan-x': viewport.panX,");
         expect(boardSource).toContain("'data-map-pan-y': viewport.panY,");
-        expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-in"');
-        expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-out"');
+        expect(viewportControlsSource).not.toContain('data-testid="qidahen-map-zoom-in"');
+        expect(viewportControlsSource).not.toContain('data-testid="qidahen-map-zoom-out"');
+        expect(viewportControlsSource).not.toContain('data-testid="qidahen-map-locate-wheel"');
         expect(viewportControlsSource).toContain('data-testid="qidahen-map-zoom-reset"');
         expect(boardSource).toContain('wheelZoomFactor={1.14}');
         expect(boardSource).toContain('controlledViewport={controlledMapViewport}');
@@ -1253,12 +1254,12 @@ describe('Qidahen Board 结构门禁', () => {
         });
     }
 
-    it('兵牌保留等级标识且不重复显示选中勾，战斗仍用正式骰子表现', () => {
+    it('等级由兵牌朝向表达，地图不追加等级角标或选中勾，战斗仍用正式骰子表现', () => {
         expect(boardSource).not.toContain('data-testid="qidahen-committed-troop-check"');
-        expect(boardSource).toContain('isArmyToken && revealFront && unitLevel != null');
-        expect(boardSource).toContain('data-testid={`qidahen-unit-level-${token.id}`}');
-        expect(boardSource).toContain('rotate(${-(token.rotationDeg ?? 0)}deg)');
-        expect(boardSource).toContain('<QidahenBattleRollOverlay');
+        expect(boardSource).not.toContain('data-testid={`qidahen-unit-level-${token.id}`}');
+        expect(boardSource).not.toContain('unitLevelShort');
+        expect(boardSource).toContain('rotate(${token.rotationDeg ?? 0}deg)');
+        expect(boardSource).toContain('<QidahenBattleArena');
         expect(boardSource).toContain('onComplete={() => {');
     });
 

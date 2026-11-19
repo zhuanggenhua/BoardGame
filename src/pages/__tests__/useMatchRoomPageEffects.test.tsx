@@ -1,6 +1,7 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMatchRoomPageEffects } from '../useMatchRoomPageEffects';
+import { useMatchRoomPageIdentity } from '../useMatchRoomPageIdentity';
 
 vi.mock('../../lib/matchLoadTrace', () => ({ appendMatchLoadTrace: vi.fn() }));
 vi.mock('../../lib/mobile/androidRuntime', () => ({ isNativeAndroidRuntime: () => false }));
@@ -45,5 +46,25 @@ describe('房间页面的全局布局属性生命周期', () => {
         unmount();
         expect(document.documentElement.hasAttribute('data-game-id')).toBe(false);
         expect(document.body.hasAttribute('data-game-id')).toBe(false);
+    });
+
+    it('房间其他状态刷新时不反复撤销和重设游戏页面属性', async () => {
+        const tLobby = ((key: string) => key) as never;
+        const { rerender, unmount } = renderHook(({ tick }) => {
+            void tick;
+            const identity = useMatchRoomPageIdentity({ gameId: 'smashup', matchId: 'match-1', pathname: '/play/smashup/match/match-1', tLobby });
+            useMatchRoomPageEffects({ ...args('smashup'), gamePageDataAttributes: identity.gamePageDataAttributes });
+        }, { initialProps: { tick: 0 } });
+        const changes: MutationRecord[] = [];
+        const observer = new MutationObserver((records) => changes.push(...records));
+        observer.observe(document.body, { attributes: true, attributeFilter: ['data-game-id', 'data-mobile-board-shell-design-width'] });
+        try {
+            await act(async () => { rerender({ tick: 1 }); await Promise.resolve(); });
+            expect(changes).toHaveLength(0);
+            expect(document.body.dataset.gameId).toBe('smashup');
+        } finally {
+            observer.disconnect();
+            unmount();
+        }
     });
 });

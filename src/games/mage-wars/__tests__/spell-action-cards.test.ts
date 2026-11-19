@@ -717,7 +717,7 @@ describe('mage-wars spell action cards', () => {
             actionReady: false,
             quickcastReady: false,
         });
-        expect(roused.state.core.players['0'].discardSpellCardIds).toEqual([rouseSpellId, creatureSpellId]);
+        expect(roused.state.core.players['0'].discardSpellCardIds).toEqual([rouseSpellId]);
     });
 
     it('requires Rouse the Beast to target a fresh living creature and pay its level', () => {

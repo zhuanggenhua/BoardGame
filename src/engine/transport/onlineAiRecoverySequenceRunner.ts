@@ -67,21 +67,22 @@ export type OnlineAiRecoverySequenceRoomRuntime = {
     drainCommandQueueIfLoaded: () => Promise<void>;
 };
 
+export type OnlineAiExecutionTiming =
+    | { decisionMs: number; delayMs?: number; executionMs?: number; recoveryElapsedMs?: never }
+    | { recoveryElapsedMs: number; decisionMs?: never; delayMs?: never; executionMs?: never };
+
 export type OnlineAiRecoverySequenceExecutionTrace = {
     matchId: string;
     gameId: string;
     playerId: string;
     stateIdBefore: number;
     candidateReason: ForceEndTurnStalledAiResolution['reason'] | 'immediate-ai';
-    decisionMs: number;
-    delayMs?: number;
-    executionMs: number;
     actionKind: string | null;
     commandTypes: string[];
     outcome: string;
     blockedReason?: string | null;
     commandFailureReason?: string | null;
-};
+} & OnlineAiExecutionTiming;
 
 export type OnlineAiRecoverySequenceRunnerHooks<TMatch extends OnlineAiRecoverySequenceMatch> = {
     createRoomRuntime: (match: TMatch) => OnlineAiRecoverySequenceRoomRuntime;
@@ -535,8 +536,7 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                     playerId: currentCandidate.playerId,
                     stateIdBefore: stepStateIdBefore,
                     candidateReason: currentCandidate.reason,
-                    decisionMs: Date.now() - stepStartedAt,
-                    executionMs: 0,
+                    recoveryElapsedMs: Date.now() - stepStartedAt,
                     actionKind: actionRecovery.reportedAction?.actionKind ?? null,
                     commandTypes: actionRecovery.executedCommandTypes,
                     outcome: actionRecovery.outcome,

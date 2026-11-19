@@ -724,6 +724,7 @@ export const StatusEffectBadge = ({
     characterId,
     visualDefinitions,
     onClick,
+    onUnavailableClick,
     clickable = false,
     dataTestId,
 }: {
@@ -735,6 +736,7 @@ export const StatusEffectBadge = ({
     characterId?: string;
     visualDefinitions?: TokenDef[];
     onClick?: () => void;
+    onUnavailableClick?: () => void;
     clickable?: boolean;
     dataTestId?: string;
 }) => {
@@ -771,7 +773,16 @@ export const StatusEffectBadge = ({
             className={`relative group ${isClickable ? 'cursor-pointer' : ''}`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={isClickable ? onClick : undefined}
+            onClick={isClickable ? onClick : onUnavailableClick}
+            role={!isClickable && onUnavailableClick ? 'button' : undefined}
+            aria-label={!isClickable && onUnavailableClick ? info.name : undefined}
+            tabIndex={!isClickable && onUnavailableClick ? 0 : undefined}
+            onKeyDown={!isClickable && onUnavailableClick ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onUnavailableClick();
+                }
+            } : undefined}
             data-testid={dataTestId}
             data-status-id={effectId}
             data-status-stacks={stacks}
@@ -895,6 +906,7 @@ export const StatusEffectsContainer = ({
     visualDefinitions,
     onEffectClick,
     clickableEffects,
+    unavailableEffectActions,
     testIdPrefix,
 }: {
     effects: Record<string, number>;
@@ -910,6 +922,7 @@ export const StatusEffectsContainer = ({
     onEffectClick?: (effectId: string) => void;
     /** 可点击的状态效果 ID 列表 */
     clickableEffects?: string[];
+    unavailableEffectActions?: Record<string, () => void>;
     /** E2E 可见性断言前缀，例如 dt-player-0-status */
     testIdPrefix?: string;
 }) => {
@@ -934,6 +947,7 @@ export const StatusEffectsContainer = ({
                         characterId={characterId}
                         visualDefinitions={visualDefinitions}
                         onClick={isClickable ? () => onEffectClick?.(effectId) : undefined}
+                        onUnavailableClick={isClickable ? undefined : unavailableEffectActions?.[effectId]}
                         clickable={isClickable}
                         dataTestId={testIdPrefix ? `${testIdPrefix}-${effectId}` : undefined}
                     />
@@ -954,6 +968,7 @@ export const TokenBadge = ({
     characterId,
     visualDefinitions,
     onClick,
+    onUnavailableClick,
     clickable = false,
     suppressTooltip = false,
     tooltipPosition,
@@ -970,6 +985,7 @@ export const TokenBadge = ({
     characterId?: string;
     visualDefinitions?: TokenDef[];
     onClick?: () => void;
+    onUnavailableClick?: () => void;
     clickable?: boolean;
     /** 需要持续露出临近操作条时，避免 hover 说明遮住该操作。 */
     suppressTooltip?: boolean;
@@ -1016,7 +1032,16 @@ export const TokenBadge = ({
             className={`relative group ${isClickable ? 'cursor-pointer' : ''}`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={isClickable ? onClick : undefined}
+            onClick={isClickable ? onClick : onUnavailableClick}
+            role={!isClickable && onUnavailableClick ? 'button' : undefined}
+            aria-label={!isClickable && onUnavailableClick ? info.name : undefined}
+            tabIndex={!isClickable && onUnavailableClick ? 0 : undefined}
+            onKeyDown={!isClickable && onUnavailableClick ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onUnavailableClick();
+                }
+            } : undefined}
             data-testid={dataTestId}
             data-token-id={tokenId}
             data-token-amount={amount}
@@ -1117,6 +1142,8 @@ export const TokensContainer = ({
     characterId,
     visualDefinitions,
     onTokenClick,
+    onUnavailableTokenClick,
+    unavailableTokens,
     clickableTokens,
     tokenDefinitions,
     tokenStackLimits,
@@ -1136,6 +1163,8 @@ export const TokensContainer = ({
     visualDefinitions?: TokenDef[];
     /** 点击 Token 的回调 */
     onTokenClick?: (tokenId: string) => void;
+    onUnavailableTokenClick?: (tokenId: string) => void;
+    unavailableTokens?: string[];
     /** 可点击的 Token ID 列表 */
     clickableTokens?: string[];
     /** Token 定义列表（用于获取 stackLimit） */
@@ -1184,6 +1213,8 @@ export const TokensContainer = ({
                         characterId={characterId}
                         visualDefinitions={visualDefinitions}
                         onClick={isClickable ? () => onTokenClick?.(tokenId) : undefined}
+                        onUnavailableClick={!isClickable && unavailableTokens?.includes(tokenId) && onUnavailableTokenClick
+                            ? () => onUnavailableTokenClick(tokenId) : undefined}
                         clickable={isClickable}
                         suppressTooltip={suppressTooltips}
                         tooltipPosition={tooltipPosition}

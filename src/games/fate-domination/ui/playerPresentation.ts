@@ -1,5 +1,5 @@
 import { projectFateHand } from '../domain/handView';
-import { visibleFatePower, visibleFateServantClass } from '../domain/playerView';
+import { projectFatePlayedCards, projectFateSkillCards, visibleFatePower, visibleFateServantClass } from '../domain/playerView';
 import type { FateDominationCore, PlayerState } from '../domain/types';
 import { FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID } from '../data';
 
@@ -24,7 +24,17 @@ export function projectFatePlayer(core: FateDominationCore, playerId: string, vi
     };
 }
 
-/** Only the registered servant's skill cards belong to the card row; master abilities stay in details. */
+/** Resolve cards the opponent can inspect directly from the seat rail. */
+export function projectFateOpponentCards(player: PlayerState | undefined, viewerId: string | null) {
+    if (!player || player.id === viewerId) return null;
+    const attacks = player.publicView?.playedCards ?? projectFatePlayedCards(player, viewerId);
+    const skills = player.publicView?.playedSkills ?? projectFateSkillCards(player, viewerId)
+        .filter((card): card is NonNullable<typeof card> => card !== null && player.activeSkills.includes(card.id));
+    const revealedHand = player.forcedRevealedHand ?? [];
+    return attacks.length || skills.length || revealedHand.length ? { attacks, skills, revealedHand } : null;
+}
+
+/** Resolve the registered servant's skill cards for the hand and identity views. */
 export function servantSkillsFor(player: PlayerState) {
     const servant = FATE_SERVANT_BY_ID[player.servantId];
     return (servant?.skillCards ?? []).flatMap((definition, index) => {

@@ -3417,3 +3417,58 @@ test('阵营选择已清空但 phase 残留时，仍应显示起手重抽交互'
 
     await saveEvidenceScreenshot(page, testInfo, 'stuck-faction-select-mulligan-visible');
 });
+
+test('线上反馈回归：AI 完成巨蚁指示物分配并继续', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const setup = await setupSmashUpOnlineAiRoom(browser, testInfo.project.use.baseURL as string | undefined, {
+        seatControllers: { '1': { type: 'local-ai', difficulty: 'expert', minimumActionDelayMs: 400 } },
+    });
+    expect(setup, '需要真实在线 AI 房间').not.toBeNull();
+    if (!setup) return;
+    const { hostPage, hostContext, matchId } = setup;
+    try {
+        await waitForAiSeatCredential(hostPage, matchId, '1');
+        const baseState = await getMatchState(matchId, hostPage);
+        const prepared = await hostPage.evaluate(async (baseState) => {
+            const state = JSON.parse(JSON.stringify(baseState));
+            state.core = {
+                ...state.core, currentPlayerIndex: 1, phase: 'playCards', turnNumber: 8,
+                turnOrder: ['0', '1'], factionSelection: undefined,
+                seatControllers: { '0': { type: 'human' }, '1': { type: 'local-ai', difficulty: 'expert', minimumActionDelayMs: 400 } },
+                players: {
+                    ...state.core.players,
+                    '0': { ...state.core.players['0'], hand: [], factions: ['ninjas', 'aliens'] },
+                    '1': { ...state.core.players['1'], factions: ['giant_ants', 'aliens'], hand: [{ uid: 'ai-magic', defId: 'giant_ant_a_kind_of_magic', type: 'action', owner: '1' }], deck: Array.from({ length: 6 }, (_, i) => ({ uid: `ai-deck-${i}`, defId: 'giant_ant_worker', type: 'minion', owner: '1' })), minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1 },
+                },
+                bases: ['base_the_homeworld', 'base_cave_of_shinies', 'base_the_factory'].map((defId, baseIndex) => ({ defId, minions: Array.from({ length: 2 }, (_, i) => ({ uid: `ai-ant-${baseIndex}-${i}`, defId: 'giant_ant_worker', controller: '1', owner: '1', basePower: 1, powerCounters: baseIndex === 0 && i === 0 ? 7 : 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, playedThisTurn: false, attachedActions: [] })), ongoingActions: [] })),
+            };
+            state.sys = { ...state.sys, phase: 'playCards', turnOrder: ['0', '1'], currentPlayerIndex: 1, flowHalted: false, interaction: { current: undefined, queue: [], isBlocked: false }, responseWindow: { current: null, history: [] } };
+            const abilitiesPath = '/src/games/smashup/abilities/index.ts';
+            const runnerPath = '/src/games/smashup/__tests__/testRunner.ts';
+            const { initAllAbilities } = await import(abilitiesPath);
+            const { runCommand } = await import(runnerPath);
+            initAllAbilities();
+            const result = runCommand(state, { type: 'su:play_action', playerId: '1', payload: { cardUid: 'ai-magic' } });
+            if (!result.success) throw new Error(result.error);
+            return result.finalState;
+        }, baseState);
+        expect(prepared.sys.interaction.current?.data?.sourceId).toBe('giant_ant_a_kind_of_magic_distribute');
+        const hostCredentials = await hostPage.evaluate((id) => {
+            const raw = localStorage.getItem(`match_creds_${id}`);
+            return raw ? JSON.parse(raw).credentials as string : '';
+        }, matchId);
+        await injectMatchState(matchId, prepared, undefined, { playerId: '0', credentials: hostCredentials });
+        await hostPage.reload({ waitUntil: 'domcontentloaded' });
+        await waitForSmashUpUI(hostPage);
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                prompt: state.sys?.interaction?.current?.data?.sourceId === 'giant_ant_a_kind_of_magic_distribute',
+                counters: (state.core?.bases ?? []).flatMap((base: any) => base.minions).reduce((sum: number, m: any) => sum + (m.powerCounters ?? 0), 0),
+                returned: (state.core?.players?.['1']?.hand ?? []).some((card: any) => card.uid === 'ai-magic'),
+            };
+        }, { timeout: 30000, message: 'AI 应分配完全部指示物且不撤回行动牌' }).toEqual({ prompt: false, counters: 7, returned: false });
+    } finally {
+        await hostContext.close();
+    }
+});

@@ -1,5 +1,5 @@
 import type { QidahenMapToken } from '../domain/types';
-import type { QidahenArmyCallout } from './fieldArmyLayout';
+import { armyMapBoundsSeparate, getArmyMapBounds, getArmyStackExtension, type QidahenArmyCallout } from './fieldArmyLayout';
 import type { PopulationSite } from './populationLayout';
 import { QIDAHEN_MAP_NAMEPLATE_OBSTACLES, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS } from './mapGraph';
 
@@ -17,29 +17,32 @@ export type ArmyGroupView = { visible: Rect; overlays: readonly Rect[]; preciseO
 /** 分阵营稳定放置地区内的超容量兵堆，找不到位置时显式返回未解决地区。 */
 export function layoutOverflowArmyStacks(
     tokens: readonly QidahenMapToken[], stackTokenIds: ReadonlySet<string>, sites: ReadonlyMap<string, PopulationSite>, width: number, height: number,
+    stackAccessoryTokenIds: ReadonlySet<string> = stackTokenIds,
 ): { tokens: QidahenMapToken[]; unresolvedRegionIds: string[] } {
     const stacks = tokens.filter(token => stackTokenIds.has(token.id)).slice().sort((a, b) =>
         (a.regionId ?? '').localeCompare(b.regionId ?? '') || a.faction.localeCompare(b.faction) || a.id.localeCompare(b.id));
-    const occupied = tokens.filter(token => !stackTokenIds.has(token.id)).map(token => ({ x: token.x * width,
-        y: token.y * height, half: (token.size ?? 30) / 2 }));
-    occupied.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(item => ({ x: item.x, y: item.y, half: item.size / 2 })));
+    const tokenBounds = (token: QidahenMapToken, point = { x: token.x * width, y: token.y * height }) => {
+        const size = token.size ?? 26;
+        return getArmyMapBounds(point, size / 2, stackAccessoryTokenIds.has(token.id) ? getArmyStackExtension(size) : 0);
+    };
+    const occupied = tokens.filter(token => !stackTokenIds.has(token.id)).map(token => tokenBounds(token));
+    occupied.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(item => getArmyMapBounds(item, item.size / 2)),
+        ...QIDAHEN_PRINTED_NAMEPLATE_BOUNDS);
     const positions = new Map<string, { x: number; y: number }>();
     const unresolved = new Set<string>();
     for (const token of stacks) {
         const site = token.regionId ? sites.get(token.regionId) : undefined;
         if (!site) { if (token.regionId) unresolved.add(token.regionId); continue; }
-        const half = (token.size ?? 26) / 2;
         let best: { x: number; y: number } | undefined;
         let bestScore = Infinity;
         for (const point of site.candidates) {
-            if (occupied.some(box => Math.abs(point.x - box.x) < half + box.half + 4
-                && Math.abs(point.y - box.y) < half + box.half + 4)) continue;
+            if (occupied.some(box => !armyMapBoundsSeparate(tokenBounds(token, point), box, 4))) continue;
             const score = (point.x - site.anchor.x) ** 2 + (point.y - site.anchor.y) ** 2;
             if (score < bestScore) { best = point; bestScore = score; }
         }
-        if (!best) { unresolved.add(token.regionId!); positions.set(token.id, site.anchor); continue; }
+        if (!best) { unresolved.add(token.regionId!); occupied.push(tokenBounds(token)); continue; }
         positions.set(token.id, best);
-        occupied.push({ ...best, half });
+        occupied.push(tokenBounds(token, best));
     }
     return { tokens: tokens.map(token => {
         const point = positions.get(token.id);
@@ -47,47 +50,34 @@ export function layoutOverflowArmyStacks(
     }), unresolvedRegionIds: [...unresolved] };
 }
 
-/** 同一地区和阵营的部队形成一个堆；只有玩家看得见的不同面值才标为混编。 */
-export function compactCrowdedArmies(
-    tokens: readonly QidahenMapToken[], crowdedRegionIds: ReadonlySet<string>, expandedRegionIds: ReadonlySet<string>,
-    visibleFaceKey: (token: QidahenMapToken) => string | null,
-    selectiveRegionIds: ReadonlySet<string> = new Set(), preservedPieceIds: ReadonlySet<string> = new Set(),
-): { tokens: QidahenMapToken[]; stackSizes: ReadonlyMap<string, number>; mixedStacks: ReadonlySet<string> } {
+/** 同区同侧的可互换野战兵牌合堆，保留必须逐枚操作的兵牌及出兵与留守之别。 */
+export function stackFieldArmies(
+    tokens: readonly QidahenMapToken[], visibleFaceKey: (token: QidahenMapToken) => string | null,
+    individuallyOperable: ReadonlySet<string>, committedPieces: ReadonlySet<string>,
+): { tokens: QidahenMapToken[]; stackSizes: ReadonlyMap<string, number> } {
     const representatives = new Map<string, QidahenMapToken>();
     const stackSizes = new Map<string, number>();
-    const visibleFaces = new Map<string, Set<string>>();
-    const hiddenStacks = new Set<string>();
     const visible = tokens.filter(token => {
-        if (token.type !== 'army' || token.location !== 'field' || !token.regionId || !crowdedRegionIds.has(token.regionId)) return true;
-        if (selectiveRegionIds.has(token.regionId)) {
-            if (token.pieceId && preservedPieceIds.has(token.pieceId)) return true;
-        } else if (expandedRegionIds.has(token.regionId)) return true;
+        if (token.type !== 'army' || token.location !== 'field' || !token.regionId || individuallyOperable.has(token.id)) return true;
         const face = visibleFaceKey(token);
-        const key = JSON.stringify([token.regionId, token.faction, face]);
+        const committed = face != null && token.pieceId != null && committedPieces.has(token.pieceId);
+        const key = JSON.stringify([token.regionId, token.faction, face, committed]);
         const representative = representatives.get(key);
-        const representativeId = representative?.id ?? token.id;
-        if (face == null) hiddenStacks.add(representativeId);
-        else {
-            const faces = visibleFaces.get(representativeId) ?? new Set<string>();
-            faces.add(face);
-            visibleFaces.set(representativeId, faces);
-        }
         if (!representative) {
             representatives.set(key, token);
-            stackSizes.set(token.id, 1);
             return true;
         }
-        stackSizes.set(representative.id, (stackSizes.get(representative.id) ?? 0) + 1);
+        stackSizes.set(representative.id, (stackSizes.get(representative.id) ?? 1) + 1);
         return false;
     });
-    const mixedStacks = new Set([...visibleFaces].filter(([id, faces]) => !hiddenStacks.has(id) && faces.size > 1).map(([id]) => id));
-    return { tokens: visible, stackSizes, mixedStacks };
+    return { tokens: visible, stackSizes };
 }
 
 /** 将拥挤地区的真实兵牌一起排列，避免散落到其他地区而丢失归属。 */
 export function groupCrowdedArmies(
     tokens: readonly QidahenMapToken[], callouts: readonly QidahenArmyCallout[],
     sites: ReadonlyMap<string, PopulationSite>, width: number, height: number, view?: ArmyGroupView | null,
+    stackAccessoryTokenIds: ReadonlySet<string> = new Set(),
 ): { tokens: readonly QidahenMapToken[]; callouts: readonly QidahenArmyCallout[]; groups: ArmyGroup[] } {
     const groupedIds = new Set<string>();
     const positions = new Map<string, { x: number; y: number }>();
@@ -96,6 +86,8 @@ export function groupCrowdedArmies(
     for (const regionId of regionIds) {
         const pieces = tokens.filter(token => token.type === 'army' && token.location === 'field' && token.regionId === regionId);
         if (pieces.length < 3 || callouts.filter(callout => pieces.some(token => token.id === callout.tokenId)).length < 2) continue;
+        // 兵堆在地图上已有本体与归属。狭窄时沿各自短引线留在区边，不把整队挪到别的区域。
+        if (pieces.some(token => stackAccessoryTokenIds.has(token.id))) continue;
         const control = tokens.find(token => token.type === 'control' && token.regionId === regionId);
         const anchor = control ? { x: control.x * width, y: control.y * height } : sites.get(regionId)!.anchor;
         const defaultColumns = Math.min(pieces.length > 6 ? 5 : 3, pieces.length);

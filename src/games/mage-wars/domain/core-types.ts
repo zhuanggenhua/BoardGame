@@ -68,6 +68,8 @@ export interface MageWarsArenaObjectState {
     id: string;
     kind: MageWarsArenaObjectKind;
     ownerId: PlayerId;
+    /** 只有控制权改变时才需要另记卡牌原拥有者。 */
+    cardOwnerId?: PlayerId;
     sourceSpellCardId: number;
     sourceObjectId: string;
     /** 领域内按对象效果开始生效顺序分配的稳定序号。 */

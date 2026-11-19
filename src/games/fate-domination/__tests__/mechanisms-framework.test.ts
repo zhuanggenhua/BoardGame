@@ -171,6 +171,23 @@ describe('Fate mechanism framework', () => {
     expect(result.events.map((event) => event.type)).toEqual(['FATE_COPY_PROXY_CREATED']);
   });
 
+  it('在线能力入口拒绝尚未接入结算的复制效果，保留魔力及使用次数', () => {
+    const initial = adapter.setup(['0', '1', '2']);
+    const core = deployedCore();
+    const skill = FATE_SERVANTS.find(servant => servant.id === 'servant-berserker')!.skillCards!.find(card => card.id === 'sc_lance_1')!;
+    const skillId = 'sc_lance_1:0';
+    const actor = {...core.players['0'], mana: 8, skills: [{...skill, id: skillId}], activeSkills: [skillId]};
+    const state = {...initial, core: {...core, phase: 'battle' as const, currentPlayerId: '0', players: {...core.players, '0': actor}}};
+    const activation = command('PLAY_SKILL', '0', {skillId});
+    expect(FateDominationDomain.validate(state, activation)).toEqual({valid: false, error: 'abilityNotImplemented'});
+    const result = executePipeline(
+      {domain: FateDominationDomain, systems: engineConfig.systems},
+      state, activation, createSeededRandom('fate-copy-guard'), ['0', '1', '2'],
+    );
+    expect(result.success).toBe(false);
+    expect(result.state.core.players['0']).toMatchObject({mana: 8, usedAbilityIds: actor.usedAbilityIds});
+  });
+
   it('旧快照缺少机制字段时由 domain 入口归一化', () => {
     const state = adapter.setup(['0', '1', '2']);
     const legacy = {

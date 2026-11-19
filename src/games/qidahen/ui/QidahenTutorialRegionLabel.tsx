@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { UI_Z_INDEX } from '../../../core';
 import type { QidahenMapViewport } from './mapRegionFocus';
-import { getQidahenRuntimeRegionAnchorTargetPoint, QIDAHEN_MAP_NAMEPLATE_BOUNDS } from './mapGraph';
+import { getQidahenRuntimeRegionAnchorTargetPoint, QIDAHEN_MAP_NAMEPLATE_BOUNDS, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS } from './mapGraph';
 import { QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT } from './mapRegions';
 
 interface Props {
@@ -41,10 +41,10 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
             const mapObjects = [...(mapContent?.querySelectorAll('[data-qidahen-map-token-type="army"], [data-qidahen-map-token-type="control"]') ?? [])];
             const regionObjects = mapObjects.filter(element => element.getAttribute('data-qidahen-map-token-region') === regionId)
                 .map(element => element.getBoundingClientRect());
-            const quantityControls = [...(mapContent?.querySelectorAll('[data-qidahen-dispatch-group-controls="true"]') ?? [])];
+            const readouts = [...(mapContent?.querySelectorAll('[data-qidahen-dispatch-group-controls="true"], [data-testid^="qidahen-army-stack-count-"], [data-qidahen-map-population-region]') ?? [])];
             const obstacles = [...mapObjects.map(element => element.getBoundingClientRect()),
-                ...quantityControls.map(element => element.getBoundingClientRect()),
-                ...QIDAHEN_MAP_NAMEPLATE_BOUNDS.flatMap(bounds => map ? [{
+                ...readouts.map(element => element.getBoundingClientRect()),
+                ...[...QIDAHEN_MAP_NAMEPLATE_BOUNDS, ...QIDAHEN_PRINTED_NAMEPLATE_BOUNDS].flatMap(bounds => map ? [{
                     left: map.left + bounds.left / QIDAHEN_MAP_WIDTH * map.width,
                     right: map.left + (bounds.left + bounds.width) / QIDAHEN_MAP_WIDTH * map.width,
                     top: map.top + bounds.top / QIDAHEN_MAP_HEIGHT * map.height,

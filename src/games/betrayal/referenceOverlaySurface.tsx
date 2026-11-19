@@ -89,7 +89,7 @@ export function BetrayalReferenceOverlaySurface({
       }
       overlayClassName={
         scenarioReaderOpen && isReferenceScenarioOpeningStage
-          ? "bg-[rgba(0,0,0,0.58)] p-0 backdrop-blur-[1px]"
+          ? "bg-[rgba(0,0,0,0.58)] !p-0 backdrop-blur-[1px]"
           : "bg-[rgba(3,6,5,0.82)] p-6"
       }
       containerClassName="rounded-none overflow-visible bg-transparent"

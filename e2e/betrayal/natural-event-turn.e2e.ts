@@ -217,6 +217,7 @@ test("自然开局探索事件后 AI 自主行动并交回真人", async ({ page
     .not.toBe(endingPlayerId);
   const nextTurnCore = await readCore(page);
   expect(nextTurnCore.currentPlayer).not.toBe(beforeEndTurn.currentPlayer);
+  await expect(turnIntro).toHaveCount(0);
   await saveScreenshot(page, "evidence/betrayal-natural-event-turn/05-next-turn.png");
 
   // 记录 AI 探索者的实际位置，防止只凭回合计数增长误认为 AI 已行动。
@@ -256,7 +257,16 @@ test("自然开局探索事件后 AI 自主行动并交回真人", async ({ page
       acknowledgedPlayerIds: handoffCore.recentRoll.acknowledgedPlayerIds,
     },
   })).toBe(endingPlayerId);
-  await expect(page.getByTestId("betrayal-action-endTurn")).toBeEnabled({ timeout: 30000 });
+
+  // 回到真人席时展示片头，玩家可以点击横幅外的区域跳过。
+  await expect(page.getByTestId("betrayal-turn-intro-title")).toHaveText("你的回合");
+  await expect(turnIntro).toHaveCSS("opacity", "1");
+  await saveScreenshot(page, "evidence/betrayal-natural-event-turn/06-player-turn-intro.png", { prepare: false, waitMs: 0 });
+  await turnIntro.click({ position: { x: 24, y: 24 } });
+  await expect(turnIntro).toHaveCount(0);
+  await expect(endTurn).toBeEnabled({ timeout: 30000 });
+  expect((await readCore(page)).currentPlayer).toBe(endingPlayerId);
+  await saveScreenshot(page, "evidence/betrayal-natural-event-turn/07-player-turn-after-skip.png");
 
   assertNoFatalFrontendErrors([
     { label: "betrayal-natural-event-turn", diagnostics },

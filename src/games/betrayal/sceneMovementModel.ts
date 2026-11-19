@@ -36,6 +36,13 @@ export function resolveSceneMovementFacts(
             fromRoomId = event.payload.fromRoomId;
             toRoomId = event.payload.toRoomId;
             teleport = event.type === 'MONSTER_MOVED' && event.payload.teleportMove;
+        } else if (event.type === 'TURN_ENDED' && event.payload.roomEndTurnEffect?.kind === 'moveToBasementLanding') {
+            const effect = event.payload.roomEndTurnEffect;
+            if (!effect.destinationRoomId) continue;
+            entityId = `player:${effect.playerId}`;
+            fromRoomId = effect.roomId;
+            toRoomId = effect.destinationRoomId;
+            teleport = true;
         } else continue;
         positions.set(entityId, toRoomId);
         if (!fromRoomId || fromRoomId === toRoomId) continue;

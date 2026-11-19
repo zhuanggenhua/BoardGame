@@ -702,8 +702,6 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-room-floor-basement')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByTestId('betrayal-room-basement-east')).toHaveAccessibleName(/密道楼梯/);
 
-        await page.getByTestId('betrayal-action-move').click();
-
         await expect(page.getByTestId('betrayal-room-floor-switcher')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-floor-up')).toBeEnabled();
         await saveScreenshot(page, FIXED_LINK_CROSS_FLOOR_HINT_SCREENSHOT);
@@ -729,10 +727,9 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-room-floor-basement')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByTestId('betrayal-room-occupant-basement-landing-0')).toBeVisible();
-        await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await saveScreenshot(page, LAUNDRY_CHUTE_READY_SCREENSHOT);
 
-        await page.getByTestId('betrayal-action-explore').click();
         await expect(page.getByTestId('betrayal-room-explore-target-basement-east')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-basement-east')).toBeEnabled();
         await saveScreenshot(page, LAUNDRY_CHUTE_TARGET_SCREENSHOT);
@@ -752,7 +749,13 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await saveScreenshot(page, LAUNDRY_CHUTE_STATUS_SCREENSHOT);
 
-        await page.getByTestId('betrayal-action-endTurn').click();
+        const board = page.getByTestId('betrayal-board');
+        await expect(board).toHaveAttribute('data-betrayal-visual-busy', 'false');
+        await Promise.all([
+            expect(board).toHaveAttribute('data-betrayal-visual-busy', 'true'),
+            page.getByTestId('betrayal-action-endTurn').click(),
+        ]);
+        await expect(board).toHaveAttribute('data-betrayal-visual-busy', 'false');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('洗衣滑槽');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('地下室起始点');
         await switchRoomMapToFloor(page, 'basement');

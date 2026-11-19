@@ -25,6 +25,23 @@ vi.mock('../../../../components/common/overlays/InfoTooltip', () => ({
 }));
 
 describe('LeftSidebar 飞行 Token 入口', () => {
+    it('不可用的主动 Token 点击和键盘操作均交给提示入口，且不显示可用高亮', () => {
+        const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
+        player.tokens[TOKEN_IDS.FLIGHT] = 1;
+        const onUnavailableTokenClick = vi.fn();
+        const onFlightClick = vi.fn();
+        render(<LeftSidebar currentPhase="main1" viewPlayer={player} playerId="0" locale="zh-CN"
+            tokenDefinitions={TIANSHI_TOKENS} onActiveTokenClick={onFlightClick}
+            onUnavailableTokenClick={onUnavailableTokenClick} />);
+
+        const token = screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+        expect(token).toHaveAttribute('data-token-clickable', 'false');
+        fireEvent.click(token);
+        fireEvent.keyDown(token, { key: 'Enter' });
+        expect(onUnavailableTokenClick).toHaveBeenCalledTimes(2);
+        expect(onUnavailableTokenClick).toHaveBeenCalledWith(TOKEN_IDS.FLIGHT);
+        expect(onFlightClick).not.toHaveBeenCalled();
+    });
     it('阶段牌恢复可读尺寸后仍保留左侧 Token 两排容量', () => {
         const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
         player.tokens = {
@@ -117,14 +134,14 @@ describe('LeftSidebar 飞行 Token 入口', () => {
                 playerId="0"
                 locale="zh-CN"
                 tokenDefinitions={TIANSHI_TOKENS}
-                canUseFlight
-                onFlightClick={onFlightClick}
+                activeTokenIds={[TOKEN_IDS.FLIGHT]}
+                onActiveTokenClick={onFlightClick}
             />,
         );
 
         fireEvent.click(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`));
 
-        expect(onFlightClick).toHaveBeenCalledTimes(1);
+        expect(onFlightClick).toHaveBeenCalledExactlyOnceWith(TOKEN_IDS.FLIGHT);
     });
 
     it('响应阶段直接点击 Token 本体，左侧不再渲染独立提示框且仍保留悬浮说明', () => {

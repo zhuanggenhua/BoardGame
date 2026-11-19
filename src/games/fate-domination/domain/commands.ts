@@ -98,7 +98,8 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             const {skill}=source;
             if(fateNoblePhantasmsForbidden(core.situation)&&skill.type?.includes('宝具'))return fail('noblePhantasmForbidden');
             const definition=resolveFatePlayerAbility(core,player.id,skill.id);
-            if(!definition)return fail('abilityNotImplemented');
+            // 复制注册项目前只描述候选合同，正式对局尚未执行复制及费用规则。
+            if(!definition || definition.effects.some(effect => effect.type === 'copy-proxy'))return fail('abilityNotImplemented');
             if(!source.active)return fail('skillNotActive');
             if(definition.masterForm && fateKireiForm(player)!==definition.masterForm)return fail('wrongMasterForm');
             if(player.mana < (definition.activationCost??0))return fail('notEnoughMana');

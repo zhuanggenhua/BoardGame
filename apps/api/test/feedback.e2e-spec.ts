@@ -445,6 +445,30 @@ describe('Feedback Module (e2e)', () => {
         expect(JSON.stringify((await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`).expect(404)).body)).not.toContain('private-data');
     });
 
+    it('保留已捕获触发命令并独立标记不完整的状态快照', async () => {
+        const { adminToken } = await seedUsers();
+        const created = await request(app.getHttpServer()).post('/feedback').send({
+            content: '部分现场', gameName: 'smashup',
+            clientContext: { matchId: 'partial-match', playerId: '0', gameId: 'smashup' },
+            diagnosticPacket: {
+                schemaVersion: 1, captureId: 'capture-partial-state', capturedAt: '2026-11-08T00:00:00.000Z',
+                source: 'user', collectionStatus: 'partial', replayability: 'partial',
+                missingFields: ['privateReplay', 'privateReplay.trigger', 'snapshots.privateStateRedacted'],
+                collectionErrors: ['private_replay_pending_attachment'],
+            },
+        }).expect(201);
+        const id = created.body._id as string;
+        await request(app.getHttpServer()).post(`/internal/feedback/${id}/private-replay`)
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ matchId: 'partial-match', playerId: '0', privateReplay: 'private-data',
+                privateReplayTriggerCaptured: true, privateReplayStateSnapshotPartial: true }).expect(201);
+        const detail = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        expect(detail.body.diagnosticPacket.replayability).toBe('partial');
+        expect(detail.body.diagnosticPacket.missingFields).toContain('privateReplay.stateSnapshot');
+        expect(detail.body.diagnosticPacket.missingFields).not.toContain('privateReplay.trigger');
+    });
+
     it('私有现场附件失败时从等待状态写回准确缺项', async () => {
         const { adminToken } = await seedUsers();
         const created = await request(app.getHttpServer()).post('/feedback').send({
@@ -876,6 +900,7 @@ describe('Feedback Module (e2e)', () => {
                             averageDurationMs: 480,
                             maxDurationMs: 900,
                             averageTtfbMs: 210,
+                            invalidTtfbSampleCount: 1,
                             recentRequests: [{
                                 path: '/api/feedback',
                                 initiatorType: 'fetch',
@@ -920,6 +945,7 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/:game/match');
         expect(summaryItem.clientContext?.performance?.network?.connectionRttMs).toBe(160);
+        expect(summaryItem.clientContext?.performance?.network?.invalidTtfbSampleCount).toBe(1);
         expect(summaryItem.clientContext?.failedAsset).toEqual({ path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0, timingResponseStartPresent: false, online: true });
         expect(summaryItem.clientContext?.boardPlayers).toEqual({ count: 2, playerIdPresent: true, playerExists: false });
         expect(summaryItem.errorContext?.name).toBe('TypeError');
@@ -945,6 +971,7 @@ describe('Feedback Module (e2e)', () => {
         expect(JSON.stringify(detailRes.body)).not.toContain('secret-board-canary');
         expect(detailRes.body.clientContext?.lastUserAction?.target).toBeUndefined();
         expect(detailRes.body.clientContext?.performance?.frame?.minFps).toBe(12.1);
+        expect(detailRes.body.clientContext?.performance?.network?.invalidTtfbSampleCount).toBe(1);
         expect(detailRes.body.errorContext?.message).toBe('pipeline_error');
         expect(detailRes.body.errorContext?.jsStack).toBeUndefined();
         expect(detailRes.body.canManage).toBe(true);
@@ -1289,21 +1316,30 @@ describe('Feedback Module (e2e)', () => {
             .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
             .send({
                 content: '[auto][window.error] error', source: 'client-window-error', type: 'bug', severity: 'high',
-                errorContext: { name: 'TypeError', source: 'https://easyboardgame.top/assets/index-AbCd1234.js:12:345', stack: 'private-stack-canary' },
+                errorContext: { name: 'Error', causeName: 'TypeError', causeSource: 'http://8.148.71.102/assets/inner-XyZ98765.js:42:67', source: 'https://easyboardgame.top/assets/index-AbCd1234.js:12:345', stack: 'private-stack-canary' },
             }).expect(201);
         expect(response.body.errorContext.location).toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+        expect(response.body.errorContext.causeName).toBe('TypeError');
+        expect(response.body.errorContext.causeLocation).toEqual({ bundle: 'XyZ98765', line: 42, column: 67 });
         const stored = await feedbackModel.findById(response.body._id).lean();
         expect(JSON.stringify(stored)).not.toContain('private-stack-canary');
         expect(JSON.stringify(stored)).not.toContain('easyboardgame.top/assets');
+        expect(JSON.stringify(stored)).not.toContain('8.148.71.102');
         const detail = await request(app.getHttpServer())
             .get('/admin-api/feedback/' + response.body._id)
             .set('Authorization', 'Bearer ' + adminToken).expect(200);
         expect(detail.body.errorContext.location).toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+        expect(detail.body.errorContext.causeName).toBe('TypeError');
+        expect(detail.body.errorContext.causeLocation).toEqual({ bundle: 'XyZ98765', line: 42, column: 67 });
         const list = await request(app.getHttpServer())
             .get('/admin-api/feedback?limit=20')
             .set('Authorization', 'Bearer ' + adminToken).expect(200);
         expect(list.body.items.find((item: { _id: string }) => item._id === response.body._id).errorContext.location)
             .toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+        expect(list.body.items.find((item: { _id: string }) => item._id === response.body._id).errorContext.causeName)
+            .toBe('TypeError');
+        expect(list.body.items.find((item: { _id: string }) => item._id === response.body._id).errorContext.causeLocation)
+            .toEqual({ bundle: 'XyZ98765', line: 42, column: 67 });
     });
 
     it('普通反馈和系统反馈写入时都把兼容诊断字段投影为安全摘要', async () => {
@@ -1313,7 +1349,7 @@ describe('Feedback Module (e2e)', () => {
             actionLog: JSON.stringify([{ id: canary, kind: 'attack', event: { type: 'ATTACK_RESOLVED', payload: { option: canary } } }]),
             stateSnapshot: JSON.stringify({ phase: 'defensiveRoll', hidden: { option: canary } }),
             clientContext: { route: `/play/dicethrone/match/${canary}`, gameId: 'dicethrone', activeElement: { testId: canary } },
-            errorContext: { name: canary, source: canary, message: canary, stack: canary, jsStack: canary },
+            errorContext: { name: canary, causeName: canary, causeSource: canary, source: canary, message: canary, stack: canary, jsStack: canary },
         };
         const userResponse = await request(app.getHttpServer())
             .post('/feedback')

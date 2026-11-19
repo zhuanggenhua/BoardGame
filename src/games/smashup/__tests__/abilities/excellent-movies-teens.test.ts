@@ -1,3 +1,5 @@
+import { resolveSmashUpHandPromptUiMode } from '../../ui/interactionMode';
+import { refreshInteractionOptions, stripNonSerializableFromData } from '../../../../engine/systems/InteractionSystem';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { postProcessSystemEvents } from '../../domain';
@@ -590,6 +592,15 @@ describe('动作英雄代表性玩法行为', () => {
             'stored-action',
             'skip',
         ]);
+
+        const actionPrompt = chosen.finalState.sys.interaction.current!;
+        const serializedActionState = { ...chosen.finalState, sys: { ...chosen.finalState.sys,
+            interaction: { ...chosen.finalState.sys.interaction, current: { ...actionPrompt,
+                data: stripNonSerializableFromData(actionPrompt.data) as typeof actionPrompt.data,
+            } },
+        } };
+        const refreshedAction = refreshInteractionOptions(serializedActionState);
+        expect(getPromptOptions(refreshedAction.sys.interaction.current).some(option => option.value?.cardUid === 'stored-action')).toBe(true);
 
         const selectedStored = respondToPromptOption(
             chosen.finalState,
@@ -3038,12 +3049,7 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
-                    storedCards: [{
-                        ...makeCard('stored-minion', 'teens_prep', 'minion', '0'),
-                        storedByPlayerId: '0',
-                        storedUnderUid: 'dogs',
-                        storedUnderDefId: 'wraithrustlers_demon_dogs',
-                    }] as any,
+                    hand: [makeCard('stored-minion', 'teens_prep', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
@@ -3060,10 +3066,21 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
             })],
         });
 
+        const store = invokeRegisteredAbilityContract(
+            'wraithrustlers_demon_dogs',
+            'onPlay',
+            makeAbilityContext(core, 'wraithrustlers_demon_dogs', 'dogs', 0),
+        );
+        const stored = respondToPromptOption(
+            store.matchState!, option => option.value?.cardUid === 'stored-minion',
+            '恶魔犬暂存随从', '0', FIXED_RANDOM,
+        );
+        expect(stored.success, stored.error).toBe(true);
+
         const talent = invokeRegisteredAbilityContract(
             'wraithrustlers_unlicensed_nuclear_accelerator',
             'talent',
-            makeAbilityContext(core, 'wraithrustlers_unlicensed_nuclear_accelerator', 'accelerator'),
+            makeAbilityContext(stored.finalState.core, 'wraithrustlers_unlicensed_nuclear_accelerator', 'accelerator'),
         );
         const actionPrompt = getSimpleChoicePrompt(
             talent.matchState!,
@@ -3087,6 +3104,31 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         );
         expect(getPromptOptions(extraPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined)))
             .toEqual(['stored-minion', 'skip']);
+        // 在线传输会移除候选生成函数，刷新后仍须保留暂存区的合法牌。
+        const livePrompt = destroyed.finalState.sys.interaction.current!;
+        const serializedState = { ...destroyed.finalState, sys: { ...destroyed.finalState.sys,
+            interaction: { ...destroyed.finalState.sys.interaction, current: { ...livePrompt,
+                data: stripNonSerializableFromData(livePrompt.data) as typeof livePrompt.data,
+            } },
+        } };
+        const refreshed = refreshInteractionOptions(serializedState);
+        expect(getPromptOptions(refreshed.sys.interaction.current).some(option => option.value?.cardUid === 'stored-minion')).toBe(true);
+        expect(resolveSmashUpHandPromptUiMode({ currentPrompt: { ...refreshed.sys.interaction.current!.data, playerId: '0' } as any, playerID: '0', targetType: 'hand', hand: refreshed.core.players['0'].hand })).toBe('overlay');
+        const staleServerState = { ...destroyed.finalState, core: { ...destroyed.finalState.core, players: { ...destroyed.finalState.core.players,
+            '0': { ...destroyed.finalState.core.players['0'], storedCards: [] },
+        } } };
+        const staleServerOptions = refreshInteractionOptions(staleServerState);
+        expect(getPromptOptions(staleServerOptions.sys.interaction.current).some(option => option.value?.cardUid === 'stored-minion')).toBe(false);
+        const selected = respondToPromptOption(destroyed.finalState,
+            option => option.value?.cardUid === 'stored-minion', '选择暂存随从', '0', FIXED_RANDOM);
+        expect(selected.success, selected.error).toBe(true);
+        const placement = respondToPromptOption(selected.finalState,
+            option => option.value?.baseIndex === 0, '选择恶魔犬原基地', '0', FIXED_RANDOM);
+        expect(placement.success, placement.error).toBe(true);
+        expect(placement.finalState.core.bases[0].minions.some(minion => minion.uid === 'stored-minion')).toBe(true);
+        expect((placement.finalState.core.players['0'].storedCards ?? []).some(card => card.uid === 'stored-minion')).toBe(false);
+        expect(placement.finalState.sys.interaction?.current?.data?.sourceId).not.toBe('smashup_immediate_extra_minion');
+        expect((placement.finalState.sys.interaction?.queue ?? []).some(prompt => prompt.data?.sourceId === 'smashup_immediate_extra_minion')).toBe(false);
     });
 
     it('已归约的恶魔犬摧毁事件仍能恢复暂存随从的额外出牌机会', () => {
@@ -3533,6 +3575,7 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
                         storedByPlayerId: '0',
                         storedUnderUid: 'god',
                         storedUnderDefId: 'wraithrustlers_ancient_sumerian_god',
+                        reason: 'wraithrustlers_ancient_sumerian_god',
                     }] as any,
                 }),
                 '1': makePlayer('1'),

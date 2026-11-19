@@ -9,15 +9,15 @@
 let fallbackCounter = 0;
 
 // 尝试从 sessionStorage 恢复计数器（防止页面刷新后重置）
-if (typeof sessionStorage !== 'undefined') {
-    try {
+try {
+    if (typeof sessionStorage !== 'undefined') {
         const stored = sessionStorage.getItem('uuid-fallback-counter');
         if (stored) {
             fallbackCounter = parseInt(stored, 10) || 0;
         }
-    } catch (_e) {
-        // sessionStorage 不可用时忽略
     }
+} catch {
+    // sessionStorage 属性本身也可能因浏览器设置而抛错。
 }
 
 /**
@@ -49,18 +49,18 @@ export function generateUUID(): string {
     
     // 递增计数器并持久化到 sessionStorage
     fallbackCounter = (fallbackCounter + 1) % 0xFFFF;
-    if (typeof sessionStorage !== 'undefined') {
-        try {
+    try {
+        if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('uuid-fallback-counter', fallbackCounter.toString());
-        } catch (_e) {
-            // sessionStorage 不可用时忽略
         }
+    } catch {
+        // sessionStorage 不可用时忽略
     }
     
     const timestamp = Date.now().toString(16).padStart(12, '0');
     const counter = fallbackCounter.toString(16).padStart(4, '0');
     const random1 = Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, '0');
-    const random2 = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');
+    const random2 = Math.floor(Math.random() * 0x1000000000000).toString(16).padStart(12, '0');
     // 格式: timestamp(12)-counter(4)-4xxx-yxxx-random(12)
     return `${timestamp.substring(0, 8)}-${timestamp.substring(8, 12)}-4${counter.substring(1, 4)}-${((parseInt(random1.substring(0, 1), 16) & 0x3) | 0x8).toString(16)}${random1.substring(1, 4)}-${random2}`;
 }

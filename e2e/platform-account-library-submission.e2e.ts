@@ -498,6 +498,7 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             if (mobileSubmission) await page.getByRole('button', { name: '菜单', exact: true }).tap();
             await page.getByRole('button', { name: '上传', exact: true }).click();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
+            await page.getByRole('radio', { name: '游戏链接', exact: true }).check();
             await expect(page.getByRole('heading', { name: '基本资料', exact: true })).toBeVisible();
             await expect(page.getByRole('heading', { name: '介绍与规则', exact: true })).toBeVisible();
             await expect(page.getByRole('button', { name: '添加封面', exact: true })).toBeVisible();

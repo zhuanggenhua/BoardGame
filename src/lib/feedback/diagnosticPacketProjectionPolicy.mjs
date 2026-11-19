@@ -11,6 +11,7 @@ const SAFE_MISSING_FIELDS = new Set([
     'randomCursor',
     'privateReplay',
     'privateReplay.trigger',
+    'privateReplay.stateSnapshot',
     'snapshots.at',
     'snapshots.privateStateRedacted',
     'snapshots.before',

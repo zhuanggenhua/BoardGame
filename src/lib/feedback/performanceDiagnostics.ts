@@ -153,6 +153,14 @@ function getResourcePath(name: string): string {
     }
 }
 
+function getValidTtfbMs(entry: PerformanceResourceTiming): number | undefined {
+    if (!(entry.responseStart > 0 && entry.requestStart > 0)) return undefined;
+    const ttfb = positive(entry.responseStart - entry.requestStart);
+    const duration = positive(entry.duration);
+    // 某些浏览器或抓取器会返回不一致的时序；允许 1ms 精度误差，但不能把它当作有效延迟。
+    return ttfb !== undefined && duration !== undefined && ttfb <= duration + 1 ? ttfb : undefined;
+}
+
 function getNetworkDiagnostics(now: number): FeedbackPerformanceContext['network'] {
     const entries = typeof performance.getEntriesByType === 'function'
         ? performance.getEntriesByType('resource')
@@ -163,9 +171,7 @@ function getNetworkDiagnostics(now: number): FeedbackPerformanceContext['network
             ))
         : [];
     const requests = entries.map((entry) => {
-        const ttfbMs = entry.responseStart > 0 && entry.requestStart > 0
-            ? positive(entry.responseStart - entry.requestStart)
-            : undefined;
+        const ttfbMs = getValidTtfbMs(entry);
         const connectMs = entry.connectEnd > 0 && entry.connectStart > 0
             ? positive(entry.connectEnd - entry.connectStart)
             : undefined;
@@ -181,9 +187,11 @@ function getNetworkDiagnostics(now: number): FeedbackPerformanceContext['network
         ? (navigator as Navigator & { connection?: ConnectionLike }).connection
         : undefined;
     const durations = entries.map((entry) => entry.duration).filter(Number.isFinite);
-    const ttfbs = entries
-        .map((entry) => entry.responseStart > 0 && entry.requestStart > 0 ? entry.responseStart - entry.requestStart : undefined)
-        .filter((value): value is number => value !== undefined && Number.isFinite(value) && value >= 0);
+    const ttfbCandidates = entries.filter((entry) => entry.responseStart > 0 && entry.requestStart > 0);
+    const ttfbs = ttfbCandidates
+        .map(getValidTtfbMs)
+        .filter((value): value is number => value !== undefined);
+    const invalidTtfbSampleCount = ttfbCandidates.length - ttfbs.length;
 
     if (!connection && !requests.length) return undefined;
     return {
@@ -194,6 +202,7 @@ function getNetworkDiagnostics(now: number): FeedbackPerformanceContext['network
         averageDurationMs: durations.length ? round(durations.reduce((sum, value) => sum + value, 0) / durations.length) : undefined,
         maxDurationMs: durations.length ? round(Math.max(...durations)) : undefined,
         averageTtfbMs: ttfbs.length ? round(ttfbs.reduce((sum, value) => sum + value, 0) / ttfbs.length) : undefined,
+        ...(invalidTtfbSampleCount > 0 ? { invalidTtfbSampleCount } : {}),
         recentRequests: requests.slice(-MAX_RECENT_REQUESTS),
     };
 }

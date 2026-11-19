@@ -30,6 +30,25 @@ export function drawRoomLightingMask(
         context.restore();
     }
     context.filter = 'none';
+
+    // 在棋盘外的留白区淡到透明，避免相机移动时显露遮罩的矩形边缘。
+    const maskWidth = width + padding * 2;
+    const maskHeight = height + padding * 2;
+    const axes = [
+        { endX: width + padding, endY: -padding, length: maskWidth },
+        { endX: -padding, endY: height + padding, length: maskHeight },
+    ];
+    context.globalCompositeOperation = 'destination-in';
+    for (const { endX, endY, length } of axes) {
+        const edgeFade = context.createLinearGradient(-padding, -padding, endX, endY);
+        const fadeFraction = padding / length;
+        edgeFade.addColorStop(0, 'transparent');
+        edgeFade.addColorStop(fadeFraction, '#000');
+        edgeFade.addColorStop(1 - fadeFraction, '#000');
+        edgeFade.addColorStop(1, 'transparent');
+        context.fillStyle = edgeFade;
+        context.fillRect(-padding, -padding, maskWidth, maskHeight);
+    }
     context.globalCompositeOperation = 'source-over';
 }
 

@@ -193,33 +193,35 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceReg
                 const from = label.getBoundingClientRect();
                 const cx = (from.left + from.right) / 2, cy = (from.top + from.bottom) / 2;
                 const kinds = new Set<string>((targetSide === 'attacker' ? stage?.attackerRolls : stage?.defenderRolls)?.map(roll => roll.troopKind) ?? []);
-                const pieces = [...document.querySelectorAll('[data-qidahen-map-piece-id]')]
+                const mapPieces = [...document.querySelectorAll('[data-qidahen-map-token-type="army"]')];
+                const pieces = mapPieces
                     .filter(element => pieceIds.has(element.getAttribute('data-qidahen-map-piece-id') ?? ''));
                 const phasePieces = pieces.filter(element => kinds.has(element.getAttribute('data-qidahen-map-token-troop-kind') ?? ''));
-                const levelLabels = [...document.querySelectorAll('[data-testid^="qidahen-unit-level-"]')]
+                const mapObstacles = [...mapPieces, ...document.querySelectorAll('[data-qidahen-map-population-region], [data-testid^="qidahen-army-stack-count-"]')]
                     .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
                 const targets = (phasePieces.length ? phasePieces : pieces)
                     .map(element => ({ rect: element.getBoundingClientRect(), pieceId: element.getAttribute('data-qidahen-map-piece-id')! }))
                     .filter(({ rect }) => rect.width > 0 && rect.height > 0)
                     .flatMap(({ rect, pieceId }) => [
-                        { x: rect.left, y: (rect.top + rect.bottom) / 2, pieceId },
-                        { x: rect.right, y: (rect.top + rect.bottom) / 2, pieceId },
-                        { x: (rect.left + rect.right) / 2, y: rect.top, pieceId },
-                        { x: (rect.left + rect.right) / 2, y: rect.bottom, pieceId },
-                    ].filter(point => levelLabels.every(label => point.x < label.left - 7 || point.x > label.right + 7
-                        || point.y < label.top - 7 || point.y > label.bottom + 7)))
+                        { x: rect.left, y: (rect.top + rect.bottom) / 2, dx: -8, dy: 0, pieceId },
+                        { x: rect.right, y: (rect.top + rect.bottom) / 2, dx: 8, dy: 0, pieceId },
+                        { x: (rect.left + rect.right) / 2, y: rect.top, dx: 0, dy: -8, pieceId },
+                        { x: (rect.left + rect.right) / 2, y: rect.bottom, dx: 0, dy: 8, pieceId },
+                    ])
                     .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
-                const target = targets[0];
-                if (!target) return [];
-                const dx = target.x - cx, dy = target.y - cy;
-                const edge = Math.min(dx === 0 ? Infinity : from.width / 2 / Math.abs(dx), dy === 0 ? Infinity : from.height / 2 / Math.abs(dy), 1);
-                const start = { x: cx + dx * edge, y: cy + dy * edge };
                 const obstacles = [...(root?.querySelectorAll('[data-qidahen-battle-label], [data-testid^="qidahen-battle-result-"]') ?? [])]
                     .filter(element => element !== label && !label.contains(element) && !element.contains(label))
                     .filter(element => { const style = getComputedStyle(element); return style.visibility !== 'hidden' && style.display !== 'none'; })
                     .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
-                const points = routeArmyGroupConnector(start, target, [...obstacles, ...levelLabels]);
-                return points ? [{ side: targetSide, pieceId: target.pieceId, points }] : [];
+                for (const target of targets) {
+                    const approach = { x: target.x + target.dx, y: target.y + target.dy };
+                    const dx = approach.x - cx, dy = approach.y - cy;
+                    const edge = Math.min(dx === 0 ? Infinity : from.width / 2 / Math.abs(dx), dy === 0 ? Infinity : from.height / 2 / Math.abs(dy), 1);
+                    const start = { x: cx + dx * edge, y: cy + dy * edge };
+                    const points = routeArmyGroupConnector(start, approach, [...obstacles, ...mapObstacles]);
+                    if (points) return [{ side: targetSide, pieceId: target.pieceId, points: [...points, { x: target.x, y: target.y }] }];
+                }
+                return [];
             });
             setLinks(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
         };

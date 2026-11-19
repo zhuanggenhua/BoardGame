@@ -463,10 +463,13 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 ): MatchState<TCore> {
     const { domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random, maxRounds } = params;
     let currentState = ctx.state;
+    const initialState = currentState;
+    const progressKeys = new Set<string>();
+    let roundBudget = maxRounds;
 
 
 
-    for (let round = 0; round < maxRounds; round++) {
+    for (let round = 0; round < roundBudget; round++) {
         ctx.afterEventsRound = round;
         ctx.pendingAfterEventsToReduceCount = 0;
         let hasNewEvents = false;
@@ -539,6 +542,12 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             }
             ctx.eventCommitEvidence = reduced.eventCommitEvidence;
             if (reduced.appliedEvents.length > 0) {
+                for (const key of domain.getAfterEventsProgressKeys?.(initialState, reduced.appliedEvents) ?? []) {
+                    if (!progressKeys.has(key)) {
+                        progressKeys.add(key);
+                        roundBudget += maxRounds;
+                    }
+                }
                 allEvents.push(...reduced.appliedEvents);
                 systemEventsToReduce.push(...reduced.appliedEvents);
                 ctx.events = reduced.appliedEvents;
@@ -564,6 +573,10 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
         ctx.pendingAfterEventsToReduceCount = 0;
 
         if (!hasNewEvents && !hasStateChange) break;
+
+        if (domain.getAfterEventsProgressKeys && round + 1 === roundBudget) {
+            throw new Error(`afterEvents 未能在 ${roundBudget} 轮内收敛`);
+        }
 
         // 下一轮只看本轮产生的新事件（已应用拦截/替换）
     }

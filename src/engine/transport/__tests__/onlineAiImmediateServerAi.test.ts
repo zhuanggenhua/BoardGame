@@ -5,6 +5,7 @@ import {
     vi,
 } from 'vitest';
 import { GameTransportServer } from '../server';
+import logger from '../../../../server/logger.js';
 import { createInitialSystemState, executePipeline } from '../../pipeline';
 import * as aiModule from '../../ai';
 import diceThroneEngineConfig from '../../../games/dicethrone/game';
@@ -21,6 +22,27 @@ import {
 } from './helpers/serverTestHarness';
 
 describe('online AI immediate server-side execution', () => {
+    it('慢恢复和慢决策分别告警，不丢失任何一类诊断信息', () => {
+        const server = new GameTransportServer({
+            io: new MockIO() as unknown as any,
+            storage: new InMemoryStorage(),
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+        });
+        const logTrace = (server as unknown as { logOnlineAiExecutionTrace: (trace: object) => void }).logOnlineAiExecutionTrace.bind(server);
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
+        try {
+            const context = { matchId: 'match-1', gameId: 'test-game', playerId: '1', stateIdBefore: 1,
+                candidateReason: 'active-turn', actionKind: null, commandTypes: [], outcome: 'applied' };
+            logTrace({ ...context, recoveryElapsedMs: 3200 });
+            logTrace({ ...context, decisionMs: 1200, executionMs: 0 });
+            expect(warn).toHaveBeenCalledWith('[GameTransport] online-ai-slow-recovery', expect.objectContaining({ recoveryElapsedMs: 3200 }));
+            expect(warn).toHaveBeenCalledWith('[GameTransport] online-ai-slow-decision', expect.objectContaining({ decisionMs: 1200 }));
+        } finally {
+            warn.mockRestore();
+        }
+    });
+
     it('online AI watchdog 在 factionSelect 阶段应走 legal-action recovery，而不是 fallback ADVANCE_PHASE', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

@@ -178,6 +178,48 @@ describe('圆桌骑士能力', () => {
         }));
     });
 
+    it('渔夫王：通过基地能力移动己方随从后抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-1', 'robot_zapbot', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_camelot', minions: [makeMinion('mover', 'robot_zapbot', '0', 2)] }),
+                makeBase({ defId: 'base_round_table', ongoingActions: [{ uid: 'fisher', defId: 'round_table_knights_the_fisher_king', ownerId: '0' }] }),
+            ],
+        });
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_BASE_ABILITY,
+            playerId: '0',
+            payload: { baseIndex: 0, targetMinionUid: 'mover', targetBaseIndex: 1 },
+        } as any, defaultTestRandom);
+        expect(result.success, result.error).toBe(true);
+        expect(result.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('mover');
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toContain('draw-1');
+    });
+
+    it('渔夫王：其他玩家移动随从到这里不抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-1', 'robot_zapbot', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_camelot', minions: [makeMinion('mover', 'robot_zapbot', '0', 2)] }),
+                makeBase({ defId: 'base_round_table', ongoingActions: [{ uid: 'fisher', defId: 'round_table_knights_the_fisher_king', ownerId: '1' }] }),
+            ],
+        });
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_BASE_ABILITY,
+            playerId: '0',
+            payload: { baseIndex: 0, targetMinionUid: 'mover', targetBaseIndex: 1 },
+        } as any, defaultTestRandom);
+        expect(result.success, result.error).toBe(true);
+        expect(result.finalState.core.players['0'].hand).toHaveLength(0);
+        expect(result.finalState.core.players['1'].hand).toHaveLength(0);
+    });
+
     it('圣杯：3 个己方 4+ 战力随从在场时移入触发移出游戏并给 2 VP', () => {
         const moved = makeMinion('moved-1', 'round_table_knights_lancelot', '0', 4);
         const state = makeState({

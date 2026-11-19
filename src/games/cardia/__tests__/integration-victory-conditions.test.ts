@@ -307,7 +307,7 @@ describe('胜利条件集成测试', () => {
   });
 
   describe('双方同时达到5枚印戒', () => {
-    it('应该在双方同时达到5枚印戒时判定为平局', () => {
+    it('双方同时达到5枚且数量相同时继续游戏', () => {
       // 构造场景：p1 和 p2 都有 5 枚印戒，处于回合结束阶段
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
@@ -366,8 +366,7 @@ describe('胜利条件集成测试', () => {
       // 检查胜利条件
       const gameOver = CardiaDomain.isGameOver(state.core);
 
-      expect(gameOver).toBeDefined();
-      expect(gameOver?.draw).toBe(true);
+      expect(gameOver).toBeUndefined();
     });
 
     it('应该在一方印戒更多时判定该方获胜', () => {
@@ -529,14 +528,15 @@ describe('胜利条件集成测试', () => {
       // 实际的游戏胜利逻辑在 isGameOver 中检查
     });
 
-    it('应该在精灵持续标记存在且印戒>=5时触发游戏胜利', () => {
-      // 构造场景：p1 有精灵持续标记，且印戒数达到5，处于能力阶段
+    it('精灵能力产生直接胜利标记后立即获胜', () => {
+      // 构造场景：精灵能力已在能力阶段产生直接胜利标记
       const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
       const state: MatchState<CardiaCore> = {
         ...initialState,
         core: {
           ...core,
-          phase: 'ability', // ⚠️ 修复：特殊胜利条件只在阶段2（能力阶段）检查
+          phase: 'ability',
+          gameWonBy: 'p1',
           ongoingAbilities: [
             {
               id: 'ongoing1',
@@ -568,7 +568,7 @@ describe('胜利条件集成测试', () => {
       };
 
       // 检查胜利条件
-      // 精灵的直接胜利：如果有精灵持续标记且印戒>=5，则获胜
+      // 精灵执行器产生的直接胜利标记优先判定
       const gameOver = CardiaDomain.isGameOver(state.core);
 
       expect(gameOver).toBeDefined();

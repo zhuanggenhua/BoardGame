@@ -170,7 +170,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 layoutId={`fate-card-${card.id}`}
                 key={card.id}
                 type="button"
-                className={`fd-runtime-card${isStaged ? ' is-staged' : ridingSelected ? ' is-riding-selected' : selectable || (!ridingChoice && abilityAvailable) ? ' is-available' : ''}`}
+                className={`fd-runtime-card${requestedCardId === card.id ? ' is-requested' : ''}${isStaged ? ' is-staged' : ridingSelected ? ' is-riding-selected' : selectable || (!ridingChoice && abilityAvailable) ? ' is-available' : ''}`}
                 initial={{opacity: 0, y: 14}}
                 animate={{opacity: 1, y: 0}}
                 exit={{opacity: 0, y: -28}}

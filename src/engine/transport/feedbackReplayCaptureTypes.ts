@@ -14,4 +14,5 @@ export type FeedbackReplayCaptureResult = {
     accepted: boolean;
     captureId?: string;
     triggerCaptured?: boolean;
+    stateSnapshotPartial?: boolean;
 };

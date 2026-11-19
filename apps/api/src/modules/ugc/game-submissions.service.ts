@@ -5,11 +5,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { createUGCStorageService } from '../../../../../src/server/storage/UGCStorageService';
 import { GameSubmission, type GameSubmissionDocument } from './schemas/game-submission.schema';
-import type { GameSubmissionDto } from './dtos/game-submission.dto';
+import type { GameSubmissionDetailsDto, GameSubmissionDto } from './dtos/game-submission.dto';
 import type { ReviewSubmissionDto } from './dtos/external-game.dto';
 import { ExternalGamesService } from './external-games.service';
 import { editableGameFields, gameFieldsUpdate, validateExternalFields } from './external-game-fields';
 import { validateGameRulesFile, type GameRulesUpload } from './game-rules-file';
+import { storeWebGameZip } from './external-web-game-host';
 
 @Injectable()
 export class GameSubmissionsService {
@@ -31,13 +32,32 @@ export class GameSubmissionsService {
         return this.records.create({ ...editableGameFields(data), ownerId, submissionId: randomUUID(), status: 'draft' });
     }
     async update(ownerId: string, id: string, data: GameSubmissionDto) {
-        this.validate(data);
+        const record = await this.editable(ownerId, id);
+        return this.updateDraft(record, data, record.url === data.url.trim() ? record.webZipName : undefined);
+    }
+    async saveWebZip(ownerId: string, details: GameSubmissionDetailsDto, file: { name: string; buffer: Buffer }, id?: string) {
+        const record = id ? await this.editable(ownerId, id) : null;
+        const submissionId = record?.submissionId ?? randomUUID();
+        this.validate({ ...details, url: '' });
+        const url = await storeWebGameZip(submissionId, file.buffer);
+        const data = { ...details, url };
+        if (record) return this.updateDraft(record, data, file.name);
+        return this.records.create({ ...editableGameFields(data), ownerId, submissionId, webZipName: file.name, status: 'draft' });
+    }
+    private async editable(ownerId: string, id: string) {
         const record = await this.owned(ownerId, id);
         await this.games.assertSubmissionEditable(ownerId, record.gameId);
+        if (record.status === 'pending') throw new ConflictException('投稿正在审核，请先撤回再编辑');
         if (record.status === 'approved' && !record.gameId) throw new ConflictException('投稿正在收录，请稍后再编辑');
+        return record;
+    }
+    private async updateDraft(record: GameSubmissionDocument, data: GameSubmissionDto, webZipName?: string) {
         const fields = gameFieldsUpdate(data);
-        const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
-            { $set: { ...fields.$set, status: 'draft', reviewComment: '' }, $unset: { ...fields.$unset, reviewRevision: 1, reviewerId: 1 } }, { new: true });
+        const updated = await this.records.findOneAndUpdate({ _id: record._id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
+            {
+                $set: { ...fields.$set, ...(webZipName ? { webZipName } : {}), status: 'draft', reviewComment: '' },
+                $unset: { ...fields.$unset, ...(!webZipName ? { webZipName: 1 } : {}), reviewRevision: 1, reviewerId: 1 },
+            }, { new: true });
         if (!updated) throw new ConflictException('投稿正在审核或已发生变化，请刷新后操作');
         return updated;
     }
@@ -81,8 +101,7 @@ export class GameSubmissionsService {
         return { removed: true };
     }
     async submit(ownerId: string, id: string) {
-        const record = await this.owned(ownerId, id);
-        await this.games.assertSubmissionEditable(ownerId, record.gameId);
+        const record = await this.editable(ownerId, id);
         this.validate(record);
         if (!record.coverUrl) throw new BadRequestException('请先上传封面');
         const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
@@ -113,10 +132,14 @@ export class GameSubmissionsService {
             if (!record.coverUrl) throw new BadRequestException('请先上传封面');
         }
         const reviewed = retry ?? await this.records.findOneAndUpdate({ submissionId: id, status: 'pending', updatedAt: record.updatedAt },
-            { $set: { status: data.decision, reviewComment: data.comment, reviewRevision: data.revision, reviewerId } }, { new: true });
+            {
+                $set: { status: data.decision, reviewComment: data.comment, reviewRevision: data.revision, reviewerId },
+                // 新收录和版本更新都能沿用待发布审核记录重试。公开游戏记录保留原入口，直到发布成功。
+                ...(data.decision === 'approved' ? { $unset: { gameId: 1 } } : {}),
+            }, { new: true });
         if (!reviewed) throw new ConflictException('投稿审核时发生变化，请刷新');
         if (data.decision === 'approved') {
-            const gameId = await this.games.publishSubmission(reviewed.submissionId, reviewed.ownerId, reviewed, reviewed.coverUrl, reviewed.rulesDocument);
+            const gameId = await this.games.publishSubmission(reviewed.submissionId, reviewed.ownerId, reviewed, reviewed.coverUrl, reviewed.rulesDocument, reviewed.webZipName);
             await this.records.updateOne({ submissionId: id, status: 'approved', updatedAt: reviewed.updatedAt }, { $set: { gameId } });
             reviewed.gameId = gameId;
         }

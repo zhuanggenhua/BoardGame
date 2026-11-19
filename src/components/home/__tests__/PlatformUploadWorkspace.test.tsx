@@ -36,6 +36,27 @@ vi.mock('react-i18next', async () => {
 });
 
 describe('投稿字段与规则文件', () => {
+    it('新投稿先选择类型，每次只显示对应的游戏入口', () => {
+        render(<GameSubmissionForm onSaved={() => {}} />);
+        const link = screen.getByRole('radio', { name: '游戏链接', exact: true });
+        const zip = screen.getByRole('radio', { name: '网页 ZIP', exact: true });
+        expect(link).toBeVisible();
+        expect(zip).toBeVisible();
+        expect(link).not.toBeChecked();
+        expect(zip).not.toBeChecked();
+        expect(screen.queryByRole('textbox', { name: '游戏链接', exact: true })).toBeNull();
+        expect(screen.queryByLabelText('网页 ZIP', { selector: 'input[type=file]' })).toBeNull();
+
+        fireEvent.click(link);
+        expect(screen.getByRole('textbox', { name: '游戏链接', exact: true })).toBeRequired();
+        expect(screen.queryByLabelText('网页 ZIP', { selector: 'input[type=file]' })).toBeNull();
+
+        fireEvent.click(zip);
+        expect(zip).toBeChecked();
+        expect(link).not.toBeChecked();
+        expect(screen.getByLabelText('网页 ZIP', { selector: 'input[type=file]' })).toBeRequired();
+        expect(screen.queryByRole('textbox', { name: '游戏链接', exact: true })).toBeNull();
+    });
     it('迟到的旧列表响应不能冲掉已保存草稿或卸载失败后的编辑器', async () => {
         let releaseList!: (value: { items: never[] }) => void;
         api.listGameSubmissions.mockImplementationOnce(() => new Promise(resolve => { releaseList = resolve; }));
@@ -67,6 +88,7 @@ describe('投稿字段与规则文件', () => {
         expect(screen.getByRole('button', { name: '重试', exact: true })).toBeTruthy();
     });
     const fillRequired = () => {
+        fireEvent.click(screen.getByRole('radio', { name: '游戏链接', exact: true }));
         fireEvent.change(screen.getByRole('textbox', { name: '游戏名称' }), { target: { value: '林间探险' } });
         fireEvent.change(screen.getByRole('textbox', { name: '游戏链接', exact: true }), { target: { value: 'https://example.com/game' } });
         fireEvent.change(screen.getByRole('textbox', { name: '介绍' }), { target: { value: '与朋友一起探索森林。' } });
@@ -142,6 +164,7 @@ describe('投稿封面选择', () => {
     it('网址输入框名称不会混入实时校验提示，提示仍可被辅助工具读取', async () => {
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(<QueryClientProvider client={client}><PlatformUploadWorkspace onLogin={() => {}} onSelectSubmission={() => {}} /></QueryClientProvider>);
+        fireEvent.click(screen.getByRole('radio', { name: '游戏链接', exact: true }));
         const input = screen.getByRole('textbox', { name: '游戏链接', exact: true });
         expect(input).toHaveAccessibleDescription('填写可访问的游戏链接');
         fireEvent.change(input, { target: { value: 'https://example.com/' } });
@@ -167,6 +190,7 @@ describe('投稿封面选择', () => {
         api.uploadSubmissionCover.mockResolvedValue({ coverUrl: '/cover.webp' });
         api.submitGameSubmission.mockResolvedValue({});
         render(<GameSubmissionForm onSaved={saved} />);
+        fireEvent.click(screen.getByRole('radio', { name: '游戏链接', exact: true }));
         fireEvent.change(screen.getByRole('textbox', { name: '游戏名称' }), { target: { value: '林间探险' } });
         fireEvent.change(screen.getByRole('textbox', { name: '游戏链接', exact: true }), { target: { value: 'https://example.com/game' } });
         fireEvent.change(screen.getByRole('textbox', { name: '介绍' }), { target: { value: '与朋友一起探索森林。' } });

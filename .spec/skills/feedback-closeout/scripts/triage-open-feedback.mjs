@@ -14,6 +14,7 @@ import {
     summarizeLegacyFeedbackDiagnostics,
     summarizePrivateFeedbackReplay,
 } from './lib/private-replay-diagnostic.mjs';
+import { readProductionFeedback } from './lib/production-feedback-reader.mjs';
 
 const EMBEDDED_IMG_RE = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
@@ -259,7 +260,7 @@ function deriveModuleKey(item) {
 }
 
 function deriveGameId(item) {
-    return normalizeInline(item?.clientContext?.gameId || item?.gameName || 'unknown');
+    return normalizeInline(item?.clientContext?.gameId || item?.gameId || item?.gameName || 'unknown');
 }
 
 function buildErrorSignature(item) {
@@ -275,6 +276,10 @@ function buildErrorSignature(item) {
 }
 
 function buildDedupeKey(item) {
+    // 系统记录可能来自不同时间和现场，相同错误签名不足以证明同一次事故。
+    if (item.reporterType === 'system') {
+        return crypto.createHash('sha1').update(`system-record:${item._id}`).digest('hex').slice(0, 16);
+    }
     const gameId = deriveGameId(item);
     const content = normalizeInline(extractText(item.content));
     const errorSignature = buildErrorSignature(item);
@@ -332,10 +337,6 @@ function buildConflictKey(item) {
     return `${deriveGameId(item)}::${deriveModuleKey(item)}`;
 }
 
-function isOnlineAiWatchdogFeedback(item) {
-    return item?.source === 'online-ai-watchdog' && item?.reporterType === 'system';
-}
-
 function makeRunDir(inputDir) {
     if (inputDir) {
         return inputDir;
@@ -353,7 +354,6 @@ function buildPacket(group) {
     const diagnosticPacket = summarizeFeedbackDiagnosticPacket(item.diagnosticPacket);
     const privateReplayDiagnostic = item.privateReplayDiagnostic || { status: 'not-checked' };
     const privateReplayMemberDiagnostics = group.members
-        .filter(isOnlineAiWatchdogFeedback)
         .map((member) => ({
             feedbackId: String(member._id),
             diagnostic: member.privateReplayDiagnostic || { status: 'not-checked' },
@@ -477,7 +477,16 @@ async function main() {
 
     const fetchedByStatus = {};
     let merged = [];
-    if (options.ids.length > 0) {
+    const readFromProductionMongo = isProductionFeedbackBaseUrl(baseUrl) && !options.token.trim();
+    if (readFromProductionMongo) {
+        merged = readProductionFeedback(options.statuses, options.ids);
+        for (const status of options.statuses) {
+            fetchedByStatus[status] = merged.filter((item) => item.status === status).length;
+        }
+        const foundIds = new Set(merged.map((item) => String(item._id).toLowerCase()));
+        const missingIds = options.ids.filter((id) => !foundIds.has(id));
+        if (missingIds.length) throw new Error(`指定反馈不在当前状态筛选范围内或不存在: ${missingIds.join(', ')}`);
+    } else if (options.ids.length > 0) {
         const details = [];
         for (const id of options.ids) {
             details.push(await fetchDetail(baseUrl, options.token, id));
@@ -500,9 +509,13 @@ async function main() {
         }
     }
 
+    if (merged.some((item) => typeof item.content !== 'string')) {
+        throw new Error('反馈读取缺少原文，不能进行分诊或回写；请使用有完整读取权限的入口');
+    }
+
     for (let index = 0; index < merged.length; index += 1) {
         const item = merged[index];
-        if (item.type !== 'suggestion' || item.configProposal || item.configProposals?.length) {
+        if (readFromProductionMongo || item.type !== 'suggestion' || item.configProposal || item.configProposals?.length) {
             continue;
         }
         const detail = await fetchDetail(baseUrl, options.token, item._id);
@@ -532,39 +545,33 @@ async function main() {
     }
 
     const groups = sortGroups([...dedupeMap.values()]);
-    const privateReplayCandidates = groups
-        .flatMap((group) => group.members)
-        .filter(isOnlineAiWatchdogFeedback);
+    const privateReplayCandidates = groups.flatMap((group) => group.members);
     if (privateReplayCandidates.length > 0) {
         if (!isProductionFeedbackBaseUrl(baseUrl)) {
             for (const item of privateReplayCandidates) {
                 item.privateReplayDiagnostic = { status: 'not-read-non-production' };
             }
         } else {
-            let privateReplays = null;
-            let privateReplayReadError = false;
-            try {
-                privateReplays = readPrivateFeedbackReplaysViaMongoSsh(
-                    privateReplayCandidates.map((item) => item._id),
-                );
-            } catch {
-                privateReplayReadError = true;
-            }
-            for (const item of privateReplayCandidates) {
-                if (privateReplayReadError) {
-                    item.privateReplayDiagnostic = { status: 'read-failed' };
+            for (let offset = 0; offset < privateReplayCandidates.length; offset += MAX_TARGETED_FEEDBACK_IDS) {
+                const batch = privateReplayCandidates.slice(offset, offset + MAX_TARGETED_FEEDBACK_IDS);
+                let privateReplays;
+                try {
+                    privateReplays = readPrivateFeedbackReplaysViaMongoSsh(batch.map((item) => item._id));
+                } catch {
+                    for (const item of batch) item.privateReplayDiagnostic = { status: 'read-failed' };
                     continue;
                 }
-                const replay = privateReplays.get(String(item._id));
-                item.privateReplayDiagnostic = replay
-                    ? summarizePrivateFeedbackReplay(replay.privateReplay, replay.privateReplayError)
-                    : { status: 'record-not-found' };
+                for (const item of batch) {
+                    const replay = privateReplays.get(String(item._id));
+                    item.privateReplayDiagnostic = replay
+                        ? summarizePrivateFeedbackReplay(replay.privateReplay, replay.privateReplayError)
+                        : { status: 'record-not-found' };
+                }
             }
         }
     }
     for (const group of groups) {
         group.privateReplayMemberDiagnostics = group.members
-            .filter(isOnlineAiWatchdogFeedback)
             .map((member) => ({
                 feedbackId: String(member._id),
                 diagnostic: member.privateReplayDiagnostic || { status: 'not-checked' },
@@ -601,6 +608,7 @@ async function main() {
     }
     const summary = {
         baseUrl,
+        readSource: readFromProductionMongo ? 'mongo-ssh' : 'http',
         fetchedByStatus,
         totalFetched: merged.length,
         uniqueGroups: groups.length,
@@ -609,7 +617,6 @@ async function main() {
         markInProgress: options.markInProgress,
         privateReplayStatusCounts: groups
             .flatMap((group) => group.members)
-            .filter(isOnlineAiWatchdogFeedback)
             .reduce((counts, item) => {
                 const status = item.privateReplayDiagnostic?.status;
                 if (status) counts[status] = (counts[status] || 0) + 1;

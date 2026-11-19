@@ -28,12 +28,11 @@ export const LeftSidebar = ({
     drawDeckRef,
     onPurifyClick,
     canUsePurify,
-    onFlightClick,
-    canUseFlight,
     onNyraBondHealClick,
     canUseNyraBondHeal,
     tokenDefinitions,
     onKnockdownClick,
+    onUnavailableKnockdownClick,
     canRemoveKnockdown,
     isSelfShaking,
     isSelfCpShaking,
@@ -45,6 +44,7 @@ export const LeftSidebar = ({
     onResponseTokenClick,
     activeTokenIds,
     onActiveTokenClick,
+    onUnavailableTokenClick,
     isHandHidden,
     onToggleHandHidden,
 }: {
@@ -63,10 +63,6 @@ export const LeftSidebar = ({
     onPurifyClick?: () => void;
     /** 是否可以使用净化（有净化 Token 且有负面状态） */
     canUsePurify?: boolean;
-    /** 点击飞行 Token 的回调 */
-    onFlightClick?: () => void;
-    /** 是否可以使用飞行（进攻/防御掷骰阶段且有待处理攻击） */
-    canUseFlight?: boolean;
     /** 点击妮拉之系 Token 主动治疗妮拉的回调 */
     onNyraBondHealClick?: () => void;
     /** 是否可以主动消耗妮拉之系治疗妮拉 */
@@ -75,6 +71,7 @@ export const LeftSidebar = ({
     tokenDefinitions?: TokenDef[];
     /** 点击击倒状态的回调 */
     onKnockdownClick?: () => void;
+    onUnavailableKnockdownClick?: () => void;
     /** 是否可以移除击倒（有击倒状态且 CP >= 2 且在正确阶段） */
     canRemoveKnockdown?: boolean;
     /** 自己是否正在震动（受击） */
@@ -95,6 +92,7 @@ export const LeftSidebar = ({
     /** 当前非响应窗口中可从 Token 本体主动点击使用的 Token。 */
     activeTokenIds?: string[];
     onActiveTokenClick?: (tokenId: string) => void;
+    onUnavailableTokenClick?: (tokenId: string) => void;
     /** 手牌层是否临时隐藏，仅影响本地 UI。 */
     isHandHidden?: boolean;
     onToggleHandHidden?: () => void;
@@ -111,11 +109,9 @@ export const LeftSidebar = ({
         ...(canUsePurify
             ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
             : []),
-        ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
         ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
     ])), [
         activeTokenIds,
-        canUseFlight,
         canUseNyraBondHeal,
         canUsePurify,
         responseTokenIds,
@@ -176,10 +172,6 @@ export const LeftSidebar = ({
                                 onActiveTokenClick?.(tokenId);
                                 return;
                             }
-                            if (tokenId === TOKEN_IDS.FLIGHT && onFlightClick) {
-                                onFlightClick();
-                                return;
-                            }
                             if (tokenId === TOKEN_IDS.NYRAS_BOND && canUseNyraBondHeal && onNyraBondHealClick) {
                                 onNyraBondHealClick();
                                 return;
@@ -191,6 +183,11 @@ export const LeftSidebar = ({
                             }
                         }}
                         clickableTokens={clickableTokenIds}
+                        unavailableTokens={onUnavailableTokenClick ? [
+                            ...(tokenDefinitions ?? []).filter(def => def.activeUse).map(def => def.id),
+                            TOKEN_IDS.DEJA_VU, TOKEN_IDS.NYRAS_BOND,
+                        ] : []}
+                        onUnavailableTokenClick={onUnavailableTokenClick}
                     />
                     <StatusEffectsContainer
                         effects={viewPlayer.statusEffects ?? {}}
@@ -208,6 +205,8 @@ export const LeftSidebar = ({
                             }
                         }}
                         clickableEffects={canRemoveKnockdown ? [STATUS_IDS.KNOCKDOWN] : []}
+                        unavailableEffectActions={onUnavailableKnockdownClick
+                            ? { [STATUS_IDS.KNOCKDOWN]: onUnavailableKnockdownClick } : undefined}
                     />
                 </div>
                 {/* 血条和自动响应开关容器 */}

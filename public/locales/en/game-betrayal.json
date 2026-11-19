@@ -1166,7 +1166,7 @@
         "discoveryCardType": "This room has an Event symbol, so it revealed an Event card. Item symbols reveal Item cards, and Omen symbols reveal Omen cards. Read the card kind and face before resolving its instruction.",
         "rollEvent": "The Event card is public. Click Roll Event to make the Might check on this card; the dice and event result stay on the table for every player to read.",
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
-        "rabbitFootResult": "Rabbit's Foot has finished the reroll. Read the new dice faces and total, then choose Confirm to acknowledge the result; if the check still fails, the game moves into damage allocation after confirmation.",
+        "rabbitFootResult": "The Rabbit's Foot reroll is complete. Check the new dice faces and total, then select Back to Board. If the check still fails, you'll need to allocate damage.",
         "finish": "Choose the trait that takes 1 physical damage, then confirm the allocation.",
         "returnToTableAfterDamage": "The damage is now applied to the trait track. Discovering the Event room has ended your turn; choose End Turn to pass play to the next explorer."
       }

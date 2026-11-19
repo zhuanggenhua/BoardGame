@@ -23,6 +23,8 @@ import {
 import type { MageWarsCore } from '../domain/types';
 import {
     castObjectSpellCommand,
+    finishCreatureAction,
+    takeNoCreatureAction,
     fixedRandom,
     getPromptInteractionId,
     getPromptOptions,
@@ -381,10 +383,13 @@ describe('mage-wars object enchantments', () => {
             life: 50,
             attackOrTraitLine: '利爪：快速近战 2 骰',
         });
-        const firstAttacker = makeArenaObject('death-mark-attacker-a-0', '0', PLAYER_ZERO_START_ZONE);
+        const base = setupState('creatureAction');
+        const firstAttacker = makeArenaObject('death-mark-attacker-a-0', '0', PLAYER_ZERO_START_ZONE, {
+            temporaryTraits: { battleFuryRoundNumber: base.core.turnNumber },
+        });
         const secondAttacker = makeArenaObject('death-mark-attacker-b-0', '0', PLAYER_ZERO_START_ZONE);
         const baseCore = withPreparedPlayerMage(
-            setupState('creatureAction').core,
+            { ...base.core, phaseReadyPlayerIds: [] },
             '0',
             MAGE_IDS.WARLOCK_APPRENTICE,
             [deathMarkSpellId],
@@ -394,7 +399,7 @@ describe('mage-wars object enchantments', () => {
                 (core, object) => withArenaObject(core, object),
                 baseCore,
             ),
-            sys: setupState('creatureAction').sys,
+            sys: base.sys,
         };
         const cast = runCommand(state, castObjectSpellCommand(deathMarkSpellId, 4, target.id));
         const enchantment = Object.values(cast.state.core.objects)
@@ -421,10 +426,25 @@ describe('mage-wars object enchantments', () => {
             event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
         ));
 
-        const secondAttack = runCommand({
-            core: firstAttack.state.core,
-            sys: { ...firstAttack.state.sys, phase: 'creatureAction' },
-        }, {
+        const repeatOption = getPromptOptions(firstAttack.state).find((option) => {
+            const value = option.value as { action?: string; targetObjectId?: string } | undefined;
+            return value?.action === 'attack' && value.targetObjectId === target.id;
+        });
+        expect(repeatOption).toBeDefined();
+        const repeatAttack = runCommand(firstAttack.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                interactionId: getPromptInteractionId(firstAttack.state, 'mw.battle-fury.choice'),
+                optionId: repeatOption!.id,
+            },
+        } as Command);
+        const repeatAttackEvent = repeatAttack.events.find((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
+        ));
+
+        const afterOpponent = takeNoCreatureAction(finishCreatureAction(repeatAttack.state, '0'), '1', target.id);
+        const secondAttack = runCommand(afterOpponent, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '0',
             payload: {
@@ -434,26 +454,6 @@ describe('mage-wars object enchantments', () => {
             },
         });
         const secondAttackEvent = secondAttack.events.find((event) => (
-            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
-        ));
-
-        const repeatAttackCore = withArenaObject(secondAttack.state.core, {
-            ...secondAttack.state.core.objects[firstAttacker.id],
-            actionReady: true,
-        });
-        const repeatAttack = runCommand({
-            core: repeatAttackCore,
-            sys: { ...secondAttack.state.sys, phase: 'creatureAction' },
-        }, {
-            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
-            playerId: '0',
-            payload: {
-                attackerObjectId: firstAttacker.id,
-                attackProfileId: 'attack-0',
-                targetObjectId: target.id,
-            },
-        });
-        const repeatAttackEvent = repeatAttack.events.find((event) => (
             event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
         ));
 
@@ -476,8 +476,8 @@ describe('mage-wars object enchantments', () => {
         });
         expect(repeatAttackEvent?.payload.diceResults).toEqual([1, 1]);
         expect(repeatAttackEvent?.payload).not.toHaveProperty('deathMarkDiceModifier');
-        expect(repeatAttack.state.core.objects[enchantment!.id]).toMatchObject({
-            deathMarkRoundNumber: repeatAttack.state.core.turnNumber,
+        expect(secondAttack.state.core.objects[enchantment!.id]).toMatchObject({
+            deathMarkRoundNumber: secondAttack.state.core.turnNumber,
             deathMarkAttackerObjectIdsThisRound: [firstAttacker.id, secondAttacker.id],
         });
 
@@ -725,7 +725,10 @@ describe('mage-wars object enchantments', () => {
         expect(paid.state.core.objects[enchantment!.id]).toBeDefined();
     });
 
-    it('forces Essence Drain destruction when the creature controller cannot pay', () => {
+    it.each([
+        { mana: 1, canPay: false },
+        { mana: 10, canPay: true },
+    ])('destroys the creature and its Essence Drain when upkeep is unpaid (mana $mana)', ({ mana, canPay }) => {
         const essenceDrainSpellId = 1815;
         const target = makeArenaObject('essence-drain-insufficient-target-1', '1', ARENA_ZONE_IDS.A2, {
             life: 20,
@@ -738,7 +741,7 @@ describe('mage-wars object enchantments', () => {
                     ...base.core,
                     players: {
                         ...base.core.players,
-                        '1': { ...base.core.players['1'], mana: 1 },
+                        '1': { ...base.core.players['1'], mana },
                     },
                 }, '0', MAGE_IDS.WIZARD_APPRENTICE, [essenceDrainSpellId]),
                 target,
@@ -759,38 +762,28 @@ describe('mage-wars object enchantments', () => {
 
         expect(upkeep.success).toBe(true);
         expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.UPKEEP_COST_AVAILABLE);
-        expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE);
-        expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
-        expect(upkeep.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.MANA_SPENT);
-        expect(upkeep.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
-                payload: expect.objectContaining({
-                    sourceObjectId: enchantment!.id,
-                    sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
-                }),
+        const resolved = canPay ? runCommand(upkeep.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '1',
+            payload: {
+                interactionId: getPromptInteractionId(upkeep.state, 'mw.upkeep-cost.choice'),
+                optionId: 'destroy',
+            },
+        } as Command) : upkeep;
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+            payload: expect.objectContaining({
+                objectId: target.id,
+                sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
             }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: expect.objectContaining({
-                    objectId: enchantment!.id,
-                    sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
-                }),
-            }),
-        ]));
-        const consumeAvailableIndex = upkeep.events.findIndex((event) => (
-            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
-            && event.payload.sourceObjectId === enchantment!.id
-        ));
-        const sourceDefeatedIndex = upkeep.events.findIndex((event) => (
-            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
-            && event.payload.objectId === enchantment!.id
-        ));
-        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
-        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
-        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
-        expect(upkeep.state.core.players['1'].mana).toBe(1);
-        expect(upkeep.state.core.objects[enchantment!.id]).toBeUndefined();
+        }));
+        expect(resolved.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.MANA_SPENT);
+        expect(resolved.state.core.players['1'].mana).toBe(mana);
+        expect(resolved.state.core.objects[target.id]).toBeUndefined();
+        expect(resolved.state.core.objects[enchantment!.id]).toBeUndefined();
+        expect(resolved.state.core.players['0'].discardSpellCardIds).toContain(essenceDrainSpellId);
+        expect(resolved.state.core.players['1'].discardSpellCardIds).toContain(target.sourceSpellCardId);
     });
 
     it('ignores a stale Essence Drain upkeep response after the source was removed', () => {

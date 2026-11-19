@@ -8,28 +8,23 @@ import { ExternalGameText } from '../components/external/ExternalGameText';
 import { GameRulesDocumentLink } from '../components/external/GameRulesDocumentLink';
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
-import { resolveExternalEmbed } from '../shared/externalGames';
+import { hasControlCharacters, isSandboxedWebGame, resolveExternalEmbed, type ExternalGame } from '../shared/externalGames';
+import { SandboxedWebGameFrame } from '../components/external/SandboxedWebGameFrame';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import './external-game-page.css';
 
-function hasControlCharacters(value: string) {
-    for (let index = 0; index < value.length; index += 1) {
-        if (value.charCodeAt(index) <= 0x1f) return true;
-    }
-    return false;
-}
 function safeReturnPath(value: string | null) {
     if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || hasControlCharacters(value)) return '/';
     try { return new URL(value, window.location.origin).origin === window.location.origin ? value : '/'; }
     catch { return '/'; }
 }
 // 已核验的游戏依赖原站来源；网址改变后不再授予额外权限。
-function externalFrame(gameId: string, url: string) {
+function externalFrame({ gameId, url, webZipName }: ExternalGame) {
     const verifiedAlice = gameId === 'external-queen-alice' && url === 'https://queen-alice.onwardtool.com/';
     const verifiedMageKnight = gameId === 'external-mage-knight-web' && url === 'http://e7-auto.7skyun.com:41956/';
     return {
         src: verifiedAlice ? 'https://onwardtool.com/queen-alice/' : url,
-        sandbox: `allow-scripts allow-forms allow-popups${verifiedAlice || verifiedMageKnight ? ' allow-same-origin' : ''}`,
+        sandbox: `allow-scripts allow-forms allow-popups${verifiedAlice || verifiedMageKnight || webZipName ? ' allow-same-origin' : ''}`,
     };
 }
 export default function ExternalGamePage() {
@@ -40,31 +35,36 @@ export default function ExternalGamePage() {
     const { token, user, isLoading: authLoading } = useAuth();
     const [playingGameId, setPlayingGameId] = useState<string | null>(null);
     const preview = search.get('preview') === '1';
+    const [session, setSession] = useState<{ item: ExternalGame; preview: boolean }>();
     const game = useQuery({ queryKey: ['external-game', gameId, preview ? token : null],
-        queryFn: () => preview && token ? getOwnedGame(token, gameId) : getExternalGame(gameId), enabled: Boolean(gameId) && !authLoading });
-    const item = game.data;
+        queryFn: () => preview && token ? getOwnedGame(token, gameId) : getExternalGame(gameId),
+        enabled: Boolean(gameId) && !authLoading, refetchOnMount: 'always' });
+    const liveSession = session?.item.gameId === gameId && session.preview === preview ? session.item : undefined;
+    const item = liveSession ?? game.data;
     const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
     const restricted = Boolean(embed?.restricted);
     const safeHttps = embed?.safeHttps ?? true;
     const sameOrigin = embed?.sameOrigin ?? false;
     const canEmbed = Boolean(embed?.canEmbed);
     const autoPlay = Boolean(item && canEmbed && !preview && game.isSuccess);
-    const playing = playingGameId === gameId || autoPlay;
-    useExternalPlay(gameId, token ?? null, playing && !authLoading && game.isSuccess && canEmbed);
+    const playing = Boolean(liveSession) || playingGameId === gameId || autoPlay;
+    const ready = Boolean(liveSession || (game.isSuccess && (!item?.webZipName || game.isFetchedAfterMount)));
+    useExternalPlay(gameId, token ?? null, playing && !authLoading && ready && canEmbed);
     const returnPath = safeReturnPath(search.get('from'));
-    useEffect(() => {
-        if (playing && (game.isError || (game.isSuccess && !canEmbed))) setPlayingGameId(null);
-    }, [canEmbed, game.isError, game.isSuccess, playing]);
+    // 后台刷新收录详情时，已打开的网页包继续使用进场时的地址。
+    if (!liveSession && playing && ready && canEmbed && item?.webZipName) setSession({ item, preview });
+    if (!liveSession && playingGameId === gameId && (game.isError || (game.isSuccess && !canEmbed))) setPlayingGameId(null);
     useEffect(() => {
         if (preview || !game.isSuccess || !item || canEmbed) return;
         navigate(`/?game=${encodeURIComponent(gameId)}`, { replace: true });
     }, [canEmbed, game.isSuccess, gameId, item, navigate, preview]);
     const leave = () => {
+        setSession(undefined);
         setPlayingGameId(null);
         navigate(returnPath);
     };
-    if (game.isPending) return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
-    if (game.isError || !item) return <main className="external-game-message"><p role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}</p><button onClick={() => void game.refetch()}>{t('platform.retry')}</button><button onClick={leave}>{t('platform.externalGamePage.back')}</button></main>;
+    if (!liveSession && (game.isPending || (item?.webZipName && game.isSuccess && !ready))) return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
+    if ((!liveSession && game.isError) || !item) return <main className="external-game-message"><p role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}</p><button onClick={() => void game.refetch()}>{t('platform.retry')}</button><button onClick={leave}>{t('platform.externalGamePage.back')}</button></main>;
     if (!preview && !canEmbed) return <main className="external-game-message" role="status">{t('platform.externalGamePage.openingDetails')}</main>;
     return <main className="external-page">
         {!playing && <div className="external-details">
@@ -90,7 +90,9 @@ export default function ExternalGamePage() {
             </div>
         </div>}
         {playing && canEmbed && <div className="external-player">
-            <iframe title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item.gameId, item.url)} referrerPolicy="no-referrer" />
+            {isSandboxedWebGame(item)
+                ? <SandboxedWebGameFrame key={gameId} gameId={gameId} entry={item.url} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} />
+                : <iframe key={gameId} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item)} referrerPolicy="no-referrer" />}
             <GameHUD mode="external" gameId={gameId} onLeave={leave} />
         </div>}
     </main>;

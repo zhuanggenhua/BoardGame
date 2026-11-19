@@ -21,7 +21,7 @@ import type {
 } from './domain/types';
 import { MAGE_WARS_MAX_PREPARED_SPELLS } from './domain/constants';
 import { getMageWarsSpellCardFromConfig } from './data/configPackage';
-import { getMageWarsPlayerSpellbookCardIds } from './domain/spellbook';
+import { getMageWarsAvailableSpellbookCardIds } from './domain/spellbook';
 import { resolveMageWarsMageEquipmentArmor } from './domain/damageRules';
 import {
     getMageWarsObjectAttackProfiles,
@@ -32,6 +32,7 @@ import {
     getMageWarsZoneDistance,
     resolveMageWarsObjectEffectiveArmor,
     resolveMageWarsSpellRawCostTotal,
+    resolveMageWarsManaFailureCosts,
 } from './domain/spellRules';
 import { buildMageWarsSpellCastOpportunity } from './domain/spellCastRuntime';
 import {
@@ -263,9 +264,7 @@ function buildCurrentInteractionActions(state: MageWarsState, playerId: PlayerId
 }
 
 function getDistinctSpellbookCardIds(state: MageWarsState, playerId: PlayerId): number[] {
-    const player = state.core.players[playerId];
-    if (!player) return [];
-    return [...new Set(getMageWarsPlayerSpellbookCardIds(player))];
+    return [...new Set(getMageWarsAvailableSpellbookCardIds(state.core, playerId))];
 }
 
 function buildPlanObjectSpellActions(state: MageWarsState, playerId: PlayerId): AiLegalAction[] {
@@ -305,7 +304,7 @@ function buildSpellPlanCandidates(state: MageWarsState, playerId: PlayerId): num
     const player = state.core.players[playerId];
     if (!player) return [[]];
 
-    const spellCardIds = getMageWarsPlayerSpellbookCardIds(player);
+    const spellCardIds = getMageWarsAvailableSpellbookCardIds(state.core, playerId, { replaceMagePlan: true });
     const current = spellCardIds.slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
     const strategic = [...spellCardIds]
         .sort((left, right) => (
@@ -370,6 +369,8 @@ function buildPlanningActions(state: MageWarsState, playerId: PlayerId): AiLegal
 function resolveSpellManaCost(spellCardId: number, availableMana: number): number {
     const spell = getMageWarsSpellCardFromConfig(spellCardId);
     if (!spell) return 0;
+    const manaFailureCast = resolveMageWarsManaFailureCosts(spell)?.cast;
+    if (manaFailureCast !== undefined) return manaFailureCast;
     if (typeof spell.manaCost === 'number') return spell.manaCost;
     return Math.min(availableMana, resolveMageWarsSpellRawCostTotal(spell) ?? availableMana);
 }
@@ -422,7 +423,7 @@ function appendCastActions(
         spellCardId,
         spellName: spell.name,
         spellType: spell.spellType,
-        spellManaCost: spell.manaCost ?? resolveMageWarsSpellRawCostTotal(spell) ?? 0,
+        spellManaCost: resolveMageWarsManaFailureCosts(spell)?.cast ?? spell.manaCost ?? resolveMageWarsSpellRawCostTotal(spell) ?? 0,
         isAttackSpell: isMageWarsAttackSpell(spell),
         isCreatureSpell: isMageWarsCreatureSpell(spell),
         isConjurationSpell: isMageWarsConjurationSpell(spell),
@@ -459,6 +460,7 @@ function appendCastActions(
                 keyParts: [spellCardId, candidate.id],
                 metadata: {
                     ...spellMetadata,
+                    ...(typeof payload.manaCost === 'number' ? { spellManaCost: payload.manaCost } : {}),
                     ...(candidate.metadata ?? {}),
                     ...(targetObjectId ? {
                         targetObjectId,

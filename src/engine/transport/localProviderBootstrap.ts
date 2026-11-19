@@ -95,15 +95,18 @@ export function createLocalProviderRandom(seed: string, initialCursor = 0): Loca
     };
 }
 
-export function createInitialLocalProviderState(args: {
+type LocalProviderSetup = {
     config: GameEngineConfig;
-    persistedState: MatchState<unknown> | null | undefined;
     aiSeatIds: string[];
     initialRandom: LocalProviderRandom;
     setupData: unknown;
     setupPlayerIds: string[];
     setupContext: DomainSetupContext;
-}): MatchState<unknown> {
+};
+
+export function createInitialLocalProviderState(
+    args: LocalProviderSetup & { persistedState: MatchState<unknown> | null | undefined },
+): MatchState<unknown> {
     const {
         config,
         persistedState,
@@ -111,7 +114,6 @@ export function createInitialLocalProviderState(args: {
         initialRandom,
         setupData,
         setupPlayerIds,
-        setupContext,
     } = args;
     if (persistedState && isPersistedLocalStateCompatible({
         state: persistedState,
@@ -140,13 +142,23 @@ export function createInitialLocalProviderState(args: {
         }
     }
 
+    return createFreshLocalProviderState(args);
+}
+
+export function createFreshLocalProviderState({
+    config, aiSeatIds, initialRandom, setupData, setupPlayerIds, setupContext,
+}: LocalProviderSetup): MatchState<unknown> {
     const core = config.domain.setup(setupPlayerIds, initialRandom, setupData, setupContext);
     const sys = createInitialSystemState(
         setupPlayerIds,
         config.systems as EngineSystem[],
     );
+    const initial = { sys, core };
+    const state = setupContext.mode === 'tutorial' && config.prepareLocalTutorialMatch
+        ? config.prepareLocalTutorialMatch(initial, setupPlayerIds)
+        : initial;
     return setUndoAiSeatIds(
-        normalizeStateForConfig(config, { sys, core }),
+        normalizeStateForConfig(config, state),
         aiSeatIds,
     );
 }

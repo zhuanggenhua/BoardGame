@@ -1705,6 +1705,11 @@ export function executeCommand(
             const playerManaCost = caster.kind === 'arena-object'
                 ? actualCastManaCost - (objectManaCost ?? 0)
                 : actualCastManaCost;
+            const boundSourceObjectId = caster.kind === 'mage'
+                && !isSpellPrepared(player, command.payload.spellCardId)
+                ? resolveMageWarsBoundSpellSource(state.core, command.playerId, command.payload.spellCardId)?.id
+                : undefined;
+            const boundSource = boundSourceObjectId ? { boundSourceObjectId } : {};
 
             const targetObject = command.payload.targetObjectId
                 ? getArenaObject(state.core, command.payload.targetObjectId)
@@ -1740,6 +1745,7 @@ export function executeCommand(
                             castMode,
                             ...(objectManaCost === undefined ? {} : { objectManaCost }),
                             playerManaCost,
+                            ...boundSource,
                         },
                         sourceCommandType: command.type,
                         timestamp,
@@ -1768,6 +1774,7 @@ export function executeCommand(
                                 ...(objectManaCost === undefined ? {} : { originalObjectManaCost: objectManaCost }),
                                 originalPlayerManaCost: playerManaCost,
                                 originalCastMode: castMode,
+                                ...boundSource,
                                 originalPayload: {
                                     ...command.payload,
                                     ...(command.payload.statusTokenIds === undefined ? {} : { statusTokenIds: [...command.payload.statusTokenIds] }),
@@ -1798,6 +1805,7 @@ export function executeCommand(
                         castMode,
                         ...(objectManaCost === undefined ? {} : { objectManaCost }),
                         playerManaCost,
+                        ...boundSource,
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -1821,21 +1829,23 @@ export function executeCommand(
                             responseOwnerId: responseObject.ownerId,
                             triggeringPlayerId: command.playerId,
                             caster,
-                             spellCardId: command.payload.spellCardId,
-                             manaCost: actualCastManaCost,
-                             ...(objectManaCost === undefined ? {} : { objectManaCost }),
-                             playerManaCost,
-                             castMode,
-                             sourceCommandType: command.type,
-                             ...(command.payload.targetSpellCardId === undefined ? {} : { targetSpellCardId: command.payload.targetSpellCardId }),
-                             ...(targetSpellCounter && targetObject ? { targetObjectId: targetObject.id } : {}),
-                             ...(command.payload.targetPlayerId === undefined ? {} : { targetPlayerId: command.payload.targetPlayerId }),
-                             ...(command.payload.targetZoneId === undefined ? {} : { targetZoneId: command.payload.targetZoneId }),
-                             ...(command.payload.targetWallEdgeId === undefined ? {} : { targetWallEdgeId: command.payload.targetWallEdgeId }),
-                             ...(command.payload.statusTokenIds === undefined ? {} : { statusTokenIds: [...command.payload.statusTokenIds] }),
-                             ...(command.payload.statusTokenAmounts === undefined ? {} : { statusTokenAmounts: { ...command.payload.statusTokenAmounts } }),
-                             ...(command.payload.selectedEnchantmentObjectIds === undefined ? {} : { selectedEnchantmentObjectIds: [...command.payload.selectedEnchantmentObjectIds] }),
-                         },
+                            spellCardId: command.payload.spellCardId,
+                            manaCost: actualCastManaCost,
+                            ...(objectManaCost === undefined ? {} : { objectManaCost }),
+                            playerManaCost,
+                            castMode,
+                            ...boundSource,
+                            originalPayload: command.payload,
+                            sourceCommandType: command.type,
+                            ...(command.payload.targetSpellCardId === undefined ? {} : { targetSpellCardId: command.payload.targetSpellCardId }),
+                            ...(targetSpellCounter && targetObject ? { targetObjectId: targetObject.id } : {}),
+                            ...(command.payload.targetPlayerId === undefined ? {} : { targetPlayerId: command.payload.targetPlayerId }),
+                            ...(command.payload.targetZoneId === undefined ? {} : { targetZoneId: command.payload.targetZoneId }),
+                            ...(command.payload.targetWallEdgeId === undefined ? {} : { targetWallEdgeId: command.payload.targetWallEdgeId }),
+                            ...(command.payload.statusTokenIds === undefined ? {} : { statusTokenIds: [...command.payload.statusTokenIds] }),
+                            ...(command.payload.statusTokenAmounts === undefined ? {} : { statusTokenAmounts: { ...command.payload.statusTokenAmounts } }),
+                            ...(command.payload.selectedEnchantmentObjectIds === undefined ? {} : { selectedEnchantmentObjectIds: [...command.payload.selectedEnchantmentObjectIds] }),
+                        },
                         interactionId: `${responseId}-reveal`,
                         windowType: 'spell-counter',
                     },
@@ -1844,10 +1854,6 @@ export function executeCommand(
                 }];
             }
 
-            const boundSourceObjectId = caster.kind === 'mage'
-                && !isSpellPrepared(player, command.payload.spellCardId)
-                ? resolveMageWarsBoundSpellSource(state.core, command.playerId, command.payload.spellCardId)?.id
-                : undefined;
             const castEvent: MageWarsEvent = {
                 type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
                 payload: {
@@ -1858,7 +1864,7 @@ export function executeCommand(
                     castMode,
                     ...(objectManaCost === undefined ? {} : { objectManaCost }),
                     playerManaCost,
-                    ...(boundSourceObjectId ? { boundSourceObjectId } : {}),
+                    ...boundSource,
                     targetPlayerId: command.payload.targetPlayerId,
                     targetObjectId: command.payload.targetObjectId,
                     targetZoneId: command.payload.targetZoneId,

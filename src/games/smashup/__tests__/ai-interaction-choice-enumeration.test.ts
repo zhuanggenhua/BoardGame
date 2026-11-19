@@ -780,3 +780,42 @@ describe('Smash Up AI 交互候选枚举', () => {
         expect(legalActions).toEqual([]);
     });
 });
+
+describe('巨蚁 AI 分配指示物', () => {
+    beforeEach(() => {
+        resetAbilityInit();
+        initAllAbilities();
+        registerGameAiRuntime(smashUpAiRuntime);
+    });
+
+    it('打出如同魔法后连续分配全部指示物，不撤回并重复打出', async () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('magic', 'giant_ant_a_kind_of_magic', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [
+                makeMinion('ant-0', 'giant_ant_worker', '0', 3, { powerCounters: 7 }),
+                ...Array.from({ length: 5 }, (_, i) => makeMinion(`ant-${i + 1}`, 'giant_ant_worker', '0', 3)),
+            ])],
+        });
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'magic' },
+        } as any, FIXED_RANDOM);
+        expect(played.success, played.error).toBe(true);
+        let state = played.finalState;
+        for (let i = 0; i < 7; i++) {
+            const context = buildRegisteredAiContext(state);
+            const decision = await smashUpAiRuntime.localPolicies!.baseline.decide(context);
+            const action = context.legalActions.find(candidate => candidate.actionId === decision?.actionId);
+            expect(action).toBeDefined();
+            expect(getRespondOptionId(action!)).not.toBe('cancel');
+            const result = runAiRespondAction(state, action!);
+            expect(result.success, result.error).toBe(true);
+            state = result.finalState;
+        }
+        expect(state.sys.interaction.current).toBeFalsy();
+        expect(state.core.bases.flatMap(base => base.minions).reduce((sum, minion) => sum + minion.powerCounters, 0)).toBe(7);
+        expect(state.core.players['0'].hand.some(card => card.uid === 'magic')).toBe(false);
+    });
+});

@@ -20,6 +20,33 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars setup and phase flow', () => {
+    it('only plans the copies that are still in the spellbook', () => {
+        const base = setupState('planning');
+        const wolf = makeArenaObject('wolf-in-arena', '0', PLAYER_ZERO_START_ZONE, { sourceSpellCardId: 2819 });
+        const unicorn = makeArenaObject('unicorn-in-arena', '1', PLAYER_ONE_START_ZONE, { sourceSpellCardId: 2814 });
+        const inArena = {
+            ...base,
+            core: withArenaObject(withArenaObject(base.core, wolf), unicorn),
+        };
+        // 这本书有 3 张灰狼和 2 张次级治疗，其中一张灰狼已摧毁、两张治疗已用。
+        const state = {
+            ...inArena,
+            core: {
+                ...inArena.core,
+                players: {
+                    ...inArena.core.players,
+                    '0': { ...inArena.core.players['0'], discardSpellCardIds: [2819, 3402, 3402] },
+                },
+            },
+        };
+        const duplicateUnicorn = runCommand(state, planCommand([2814], '1'));
+        expect(duplicateUnicorn.success).toBe(false);
+        expect(duplicateUnicorn.state.core.players['1'].preparedSpellCardIds).toEqual([]);
+        expect(runCommand(state, planCommand([2819, 2819])).success).toBe(false);
+        expect(runCommand(state, planCommand([3402])).success).toBe(false);
+        expect(runCommand(state, planCommand([2819])).success).toBe(true);
+    });
+
     it('sets up mages in config-backed formal 4x3 diagonal starting zones', () => {
         const state = setupState();
 
@@ -51,10 +78,9 @@ describe('mage-wars setup and phase flow', () => {
         expect(planned.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.SPELLS_PLANNED);
         expect(planned.state.sys.undo.snapshots).toHaveLength(1);
         expect(actionLogKinds(planned.state)).toContain(MAGE_WARS_EVENTS.SPELLS_PLANNED);
-        expect(planned.state.sys.actionLog.entries[0]?.segments).toEqual(expect.arrayContaining([
-            expect.objectContaining({ type: 'card', cardId: String(spellIds[0]) }),
-            expect.objectContaining({ type: 'card', cardId: String(spellIds[1]) }),
-        ]));
+        expect(planned.state.sys.actionLog.entries[0]?.segments).toEqual([
+            expect.objectContaining({ type: 'i18n', key: 'actionLog.spellsPlanned', params: { count: 2 } }),
+        ]);
 
         const duplicateWall = runCommand(state, planCommand([25700, 25700]));
         expect(duplicateWall.success).toBe(true);
@@ -188,20 +214,20 @@ describe('mage-wars setup and phase flow', () => {
         expect(nextTurn.state.core.players['0']).toMatchObject({
             actionReady: true,
             quickcastReady: true,
-            guarding: false,
+            guarding: true,
         });
         expect(nextTurn.state.core.players['1']).toMatchObject({
             actionReady: true,
             quickcastReady: true,
-            guarding: false,
+            guarding: true,
         });
         expect(nextTurn.state.core.objects[playerZeroResetCreature.id]).toMatchObject({
             actionReady: true,
-            guarding: false,
+            guarding: true,
         });
         expect(nextTurn.state.core.objects[playerOneResetCreature.id]).toMatchObject({
             actionReady: true,
-            guarding: false,
+            guarding: true,
         });
         expect(nextTurn.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.TURN_ADVANCED,
@@ -227,6 +253,26 @@ describe('mage-wars setup and phase flow', () => {
             MAGE_WARS_EVENTS.TURN_ADVANCED,
             MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
         ]));
+        let afterPlanning = nextTurn.state;
+        for (const playerId of ['0', '1']) {
+            const planned = runCommand(afterPlanning, planCommand([], playerId));
+            expect(planned.success).toBe(true);
+            afterPlanning = planned.state;
+        }
+        for (const playerId of ['1', '0', '1', '0']) {
+            const advanced = runCommand(afterPlanning, { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId, payload: {} });
+            expect(advanced.success).toBe(true);
+            afterPlanning = advanced.state;
+        }
+        const activated = runCommand(afterPlanning, {
+            type: MAGE_WARS_COMMANDS.CREATURE_NO_ACTION,
+            playerId: '1',
+            payload: { objectId: playerOneResetCreature.id },
+        });
+        expect(activated.success).toBe(true);
+        expect(activated.state.core.objects[playerOneResetCreature.id].guarding).toBe(false);
+        expect(activated.state.core.objects[playerZeroResetCreature.id].guarding).toBe(true);
+        expect(activated.state.core.players['1'].guarding).toBe(true);
     });
 
     it('rejects Rouse the Beast on a creature summoned in the previous round after initiative changes', () => {

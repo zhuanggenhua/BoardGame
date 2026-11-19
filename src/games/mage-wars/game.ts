@@ -8,6 +8,7 @@ import {
 import { registerCriticalImageResolver } from '../../core';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from './domain';
 import type { MageWarsCommand, MageWarsCore, MageWarsEvent } from './domain';
+import type { MatchState } from '../../engine/types';
 import { mageWarsFlowHooks } from './domain/flowHooks';
 import { mageWarsCriticalImageResolver } from './criticalImageResolver';
 import { MAGE_WARS_AUDIO_CONFIG } from './audio.config';
@@ -18,6 +19,7 @@ import { getMageWarsCardPreviewRef } from './ui/cardAtlas';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatMageWarsActionEntry } from './actionLog';
 import { createMageWarsInteractionSystem } from './domain/systems';
 import { createMageWarsTimingOpportunitySystemConfig } from './domain/timingOpportunities';
+import { prepareMageWarsTutorialMatch } from './tutorialStart';
 
 const systems = [
     createFlowSystem<MageWarsCore>({ hooks: mageWarsFlowHooks }),
@@ -35,7 +37,7 @@ const systems = [
     createMageWarsInteractionSystem(),
 ];
 
-export const engineConfig = createGameEngine<MageWarsCore, MageWarsCommand, MageWarsEvent>({
+const standardEngineConfig = createGameEngine<MageWarsCore, MageWarsCommand, MageWarsEvent>({
     domain: MageWarsDomain,
     systems,
     minPlayers: 2,
@@ -45,6 +47,12 @@ export const engineConfig = createGameEngine<MageWarsCore, MageWarsCommand, Mage
         maxRounds: 10,
     },
 });
+
+export const engineConfig = {
+    ...standardEngineConfig,
+    prepareLocalTutorialMatch: (state: MatchState<MageWarsCore>, playerIds: string[]) =>
+        prepareMageWarsTutorialMatch(standardEngineConfig, state, playerIds),
+};
 
 registerCriticalImageResolver('mage-wars', mageWarsCriticalImageResolver);
 registerCardPreviewGetter('mage-wars', getMageWarsCardPreviewRef, { maxDim: 220 });

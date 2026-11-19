@@ -5,12 +5,10 @@ import {
     useRef,
     useState,
 } from 'react';
-import { createInitialSystemState } from '../pipeline';
 import type { DomainSetupContext, MatchState } from '../types';
-import type { EngineSystem } from '../systems/types';
-import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import type { GameEngineConfig } from './engineConfig';
 import {
+    createFreshLocalProviderState,
     createInitialLocalProviderState,
     createLocalProviderRandom,
     type LocalProviderRandom,
@@ -21,7 +19,6 @@ import {
     persistLocalMatchSnapshot,
     readLocalMatchSnapshot,
 } from './localSession';
-import { normalizeStateForConfig } from './stateNormalization';
 
 export function useLocalProviderSession(args: {
     config: GameEngineConfig;
@@ -100,16 +97,14 @@ export function useLocalProviderSession(args: {
 
     const reset = useCallback(() => {
         randomRef.current = createLocalProviderRandom(randomSeed);
-        const random = randomRef.current;
-        const core = config.domain.setup(setupPlayerIds, random, setupData, setupContext);
-        const sys = createInitialSystemState(
-            setupPlayerIds,
-            config.systems as EngineSystem[],
-        );
-        const nextState = setUndoAiSeatIds(
-            normalizeStateForConfig(config, { sys, core }),
+        const nextState = createFreshLocalProviderState({
+            config,
             aiSeatIds,
-        );
+            initialRandom: randomRef.current,
+            setupData,
+            setupPlayerIds,
+            setupContext,
+        });
         stateRef.current = nextState;
         setState(nextState);
     }, [aiSeatIds, config, randomSeed, setupData, setupPlayerIds, setupContext]);

@@ -63,6 +63,8 @@ export interface GameEngineConfig<
     postSetupAutoFlow?: {
         maxRounds?: number;
     };
+    /** Fresh local tutorial only. Prepare the exercise before the board mounts. */
+    prepareLocalTutorialMatch?: (state: MatchState<TCore>, playerIds: string[]) => MatchState<TCore>;
     /** 本地模式开局阶段由游戏声明是否需要代控某个 seat */
     resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
     /** 本地热座运行中由游戏声明实际操作者；在线命令不会使用此解析。 */

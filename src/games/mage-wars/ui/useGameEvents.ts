@@ -25,6 +25,7 @@ interface UseMageWarsGameEventsResult {
     meleeAttack: MageWarsMeleeAttackVisual | null;
     onEffectImpact: (id: string) => void;
     onEffectComplete: (id: string) => void;
+    hasPendingEffects: () => boolean;
     debug: {
         eventCount: number;
         latestEntryId: number;
@@ -407,7 +408,8 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
     const { consumeNew, getCursor } = useVisualEventStream({
         entries,
         strategy: 'requiredSequence',
-        consumeInitialEntries: true,
+        // 恢复教程时棋盘已经就位，保存前结算的事件留给记录查看。
+        consumeInitialEntries: !G.sys.tutorial.active,
         consumeOnReconcile: true,
     });
     const latestEntryId = entries[entries.length - 1]?.id ?? 0;
@@ -476,6 +478,22 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         const visualCore = addHeldObjectCandidatesToCore(G.core, heldObjectCandidates);
         const previousAnchorSnapshots = anchorSnapshotCacheRef.current;
         damageBuffer.freezeBatch(damageTargets.entries);
+        const wallRollsByPassage = new Map<string, Array<{ results: number[]; critical?: boolean[] }>>();
+        const wallPassageKey = (event: MageWarsEvent) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED && event.payload.wallPassageId
+                ? JSON.stringify([event.payload.wallPassageId, event.payload.targetPlayerId ?? event.payload.targetObjectId, event.timestamp])
+                : undefined
+        );
+        for (const event of events) {
+            if (event.type !== MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED) continue;
+            const key = wallPassageKey(event);
+            if (!key) continue;
+            const rolls = wallRollsByPassage.get(key) ?? [];
+            rolls.push({ results: event.payload.diceResults, critical: event.payload.diceCritical });
+            wallRollsByPassage.set(key, rolls);
+        }
+        const presentedWallPassages = new Set<string>();
+        const damageByTarget = wallRollsByPassage.size > 0 ? collectDamageByTarget(events) : undefined;
 
         const pushFxInstruction = (
             instruction: ReturnType<typeof mapMageWarsEventToFx>,
@@ -582,6 +600,8 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             if (event.type === 'DAMAGE_DEALT' && drivenDamageTargetIds.has(event.payload.targetId)) {
                 continue;
             }
+            const wallKey = wallPassageKey(event);
+            if (wallKey && presentedWallPassages.has(wallKey)) continue;
             const instruction = attachRelocationSourceSnapshot(
                 event,
                 mapMageWarsEventToFx(entry, visualCore),
@@ -589,6 +609,15 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             );
             if (!instruction) {
                 continue;
+            }
+            if (wallKey && event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED) {
+                presentedWallPassages.add(wallKey);
+                const targetId = event.payload.targetPlayerId ?? event.payload.targetObjectId;
+                instruction.params = {
+                    ...instruction.params,
+                    wallRolls: wallRollsByPassage.get(wallKey),
+                    damageAmount: targetId ? damageByTarget?.get(targetId) ?? 0 : 0,
+                };
             }
             fxCues.push(instruction.cue);
             const releaseKeys = getDamageReleaseKeysForEvent(event, damageTargets.targetKeys, drivenDamageTargetIds);
@@ -672,6 +701,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         meleeAttack,
         onEffectImpact,
         onEffectComplete,
+        hasPendingEffects: () => scheduledHeldFxRef.current.size > 0 || fxBusRef.current.activeEffects.length > 0,
         debug,
     };
 }

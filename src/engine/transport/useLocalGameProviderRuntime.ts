@@ -10,6 +10,7 @@ import type { AiSeatController } from '../ai/types';
 import type { GameClientContextValue } from './reactContext';
 import type { GameEngineConfig } from './engineConfig';
 import type { DomainSetupContext } from '../types';
+import { isTutorialFreePlay } from '../tutorialStepPlan';
 import type { LocalMatchSnapshot } from './localSession';
 import { resolveLocalPregameControlledPlayerId } from './followCurrentTurnPlayer';
 import { useLocalAiRuntime } from './useLocalAiRuntime';
@@ -103,7 +104,8 @@ export function useLocalGameProviderRuntime(args: {
         randomRef,
         setupPlayerIds,
         onCommandRejectedRef,
-        automationDisabled: args.disableLocalAiAutomation,
+        automationDisabled: args.disableLocalAiAutomation
+            && !(args.setupContext.mode === 'tutorial' && isTutorialFreePlay(state.sys.tutorial)),
     });
 
     const value = useLocalProviderViewModel({

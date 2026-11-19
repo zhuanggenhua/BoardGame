@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
 import type { FeedbackReplayability } from './feedback.schema';
 
@@ -215,6 +215,11 @@ export class FeedbackPerformanceNetworkDto {
     @IsOptional()
     averageTtfbMs?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
+    invalidTtfbSampleCount?: number;
+
     @IsArray()
     @ArrayMaxSize(8)
     @ValidateNested({ each: true })
@@ -354,6 +359,16 @@ export class FeedbackClientContextDto {
 }
 
 export class FeedbackErrorContextDto {
+    @IsString()
+    @IsOptional()
+    @MaxLength(120)
+    causeName?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(256)
+    causeSource?: string;
+
     @IsString()
     @IsOptional()
     @MaxLength(300)
@@ -662,6 +677,10 @@ export class AttachPrivateReplayDto {
     @IsBoolean()
     @IsOptional()
     privateReplayTriggerCaptured?: boolean;
+
+    @IsBoolean()
+    @IsOptional()
+    privateReplayStateSnapshotPartial?: boolean;
 
     @IsIn(['private_replay_attachment_failed'])
     @IsOptional()

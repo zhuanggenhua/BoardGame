@@ -40,7 +40,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             componentStack,
         });
         if (isStaleChunkError(error)) {
-            const reloaded = reloadForStaleChunkOnce('react-error-boundary', window);
+            const reloaded = reloadForStaleChunkOnce('react-error-boundary', window, { failure: error });
             if (reloaded) {
                 return;
             }

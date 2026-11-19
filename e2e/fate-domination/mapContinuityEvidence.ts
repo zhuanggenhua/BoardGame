@@ -1,5 +1,15 @@
 import { writeFile } from 'node:fs/promises';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+
+export function fateMapCardHitAreasAreClear(cards: Locator) {
+    return cards.evaluateAll(nodes => nodes.length > 0 && nodes.every(card => {
+        const rect = card.getBoundingClientRect();
+        return [.12, .5, .88].every(x => [.12, .5, .88].every(y => {
+            const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y);
+            return card.contains(hit) || hit?.closest('.fd-map-target-shell,.fd-map-exposed-event') === card.parentElement;
+        }));
+    }));
+}
 
 /** Capture Chromium's composited board frames, with original capture timestamps. */
 export async function sampleFateMapMotion(page: Page, destination: string, action: () => Promise<void>) {

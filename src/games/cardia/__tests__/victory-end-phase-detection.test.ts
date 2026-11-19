@@ -65,7 +65,7 @@ describe('End 阶段印戒胜利条件检测', () => {
         console.log('✅ 测试通过：end 阶段印戒胜利条件被正确检测');
     });
     
-    it('应该在 end 阶段检测到双方都达到 5 个印戒时的平局', () => {
+    it('双方印戒达标且数量相同时继续游戏', () => {
         // 构造场景：双方都有 5 个印戒，阶段为 end
         const core: CardiaCore = {
             players: {
@@ -118,14 +118,13 @@ describe('End 阶段印戒胜利条件检测', () => {
         // 调用 isGameOver
         const result = CardiaDomain.isGameOver!(core);
         
-        // 验证：应该检测到平局
-        expect(result).toBeDefined();
-        expect(result?.draw).toBe(true);
+        // 规则要求相同印戒数时继续遭遇。
+        expect(result).toBeUndefined();
         
-        console.log('✅ 测试通过：end 阶段双方达到 5 个印戒时正确判定为平局');
+        console.log('✅ 测试通过：双方印戒相同时继续游戏');
     });
     
-    it('应该在 play 阶段也触发印戒胜利条件（现规则，即使有 5 个印戒）', () => {
+    it('play 阶段不提前判定印戒胜利', () => {
         // 构造场景：玩家 0 有 5 个印戒，但阶段为 play，且双方都有手牌（不触发"无牌可打"胜利条件）
         const core: CardiaCore = {
             players: {
@@ -172,10 +171,9 @@ describe('End 阶段印戒胜利条件检测', () => {
         // 调用 isGameOver
         const result = CardiaDomain.isGameOver!(core);
         
-        // 现规则：标准印戒胜利条件在任意阶段立即生效
-        expect(result).toBeDefined();
-        expect(result?.winner).toBe('0');
+        // 印戒胜利在回合结束时判定。
+        expect(result).toBeUndefined();
         
-        console.log('✅ 测试通过：play 阶段也会触发印戒胜利条件');
+        console.log('✅ 测试通过：play 阶段不会提前判定印戒胜利');
     });
 });

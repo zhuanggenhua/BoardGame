@@ -9,6 +9,18 @@ import {
 
 const SUMMARY_PATH = 'temp/feedback-closeout/test-summary.json';
 
+test('旧摘要不能把状态板中已拆开的独立事件重新合并', () => {
+    const summary = {
+        generatedAt: '2026-11-17T16:12:53.674Z',
+        groups: [{ primaryId: 'a', duplicateIds: ['b'], status: 'open' }],
+    };
+    const board = { items: [
+        { id: 'a', groupPrimaryId: 'a', updatedAt: '2026-11-19T00:00:00.000Z' },
+        { id: 'b', groupPrimaryId: 'b', updatedAt: '2026-11-19T00:00:00.000Z' },
+    ] };
+    assert.throws(() => buildBoardFromSummary(summary, SUMMARY_PATH, board), /旧分诊摘要.*未更新状态板/);
+});
+
 function makeResolvedSummary() {
     return {
         baseUrl: 'https://api.easyboardgame.top',

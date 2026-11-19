@@ -43,6 +43,7 @@ import { getObjectAbilityUseCountInRound, hasObjectAbilityUseInRound } from './o
 import { hasTemporarySwift, hasTemporaryTeleportMovement } from './temporaryTraits';
 import { createMageWarsArenaObjectSourceConsumeAvailableEvent } from './sourceConsumeEvents';
 import {
+    getMageWarsAvailableSpellbookCopyCount,
     getMageWarsPlayerSpellbookCardIds,
     hasMageWarsPlayerSpellbookCard,
 } from './spellbook';
@@ -141,6 +142,10 @@ function validateElementalStaffBind(ctx: MageWarsObjectAbilityValidationContext)
         ctx.command.payload.boundSpellCardId,
     )) {
         return invalid('invalidBoundSpell');
+    }
+    if (ctx.command.payload.boundSpellCardId !== undefined
+        && getMageWarsAvailableSpellbookCopyCount(ctx.state.core, ctx.player.id, ctx.command.payload.boundSpellCardId) === 0) {
+        return invalid('tooManyPreparedSpellCopies');
     }
     if (ctx.command.payload.manaCost !== 3) return invalid('manaCostMismatch');
     if (ctx.player.mana < 3) return invalid('insufficientMana');

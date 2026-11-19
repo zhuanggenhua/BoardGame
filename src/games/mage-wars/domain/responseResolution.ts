@@ -29,6 +29,8 @@ export type MageWarsSpellResponseContext = {
     objectManaCost?: number;
     playerManaCost?: number;
     castMode: 'quickcast' | 'action' | 'deployment';
+    boundSourceObjectId?: string;
+    originalPayload?: MageWarsCastSpellCommand['payload'];
     targetSpellCardId?: number;
     targetPlayerId?: string;
     targetObjectId?: string;
@@ -71,6 +73,7 @@ export type MageWarsSpellRedirectResponseContext = {
     originalObjectManaCost?: number;
     originalPlayerManaCost?: number;
     originalCastMode: 'quickcast' | 'action' | 'deployment';
+    boundSourceObjectId?: string;
     originalPayload: MageWarsCastSpellCommand['payload'];
     sourceCommandType: string;
 };

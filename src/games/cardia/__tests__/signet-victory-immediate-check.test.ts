@@ -1,33 +1,20 @@
-/**
- * 印戒胜利条件立即检查测试
- * 
- * 验证修复：游戏应该在任何玩家达到 5 个印戒时立即结束，而不是继续到 7+ 印戒
- * 
- * Bug 描述：
- * - 之前 isGameOver 只在 end 阶段检查印戒胜利条件
- * - 印戒在 play 阶段授予（遭遇解析时）
- * - 导致游戏继续多个回合，玩家可以达到 7+ 印戒
- * 
- * 修复：
- * - isGameOver 现在在所有阶段都检查印戒胜利条件
- * - 一旦任何玩家达到 5 个印戒，游戏立即结束
- */
+/** 标准印戒胜利在回合结束时检查，能力阶段仍可改变结果。 */
 
 import { describe, it, expect } from 'vitest';
 import { CardiaDomain } from '../domain';
 import type { CardiaCore } from '../domain/types';
 
-describe('Cardia - Signet Victory Immediate Check', () => {
+describe('Cardia - Signet Victory Timing', () => {
     /**
-     * 测试1：play 阶段达到 5 印戒应立即触发胜利
+     * 测试1：play 阶段不提前触发印戒胜利
      */
-    it('should end game immediately when player reaches 5 signets in play phase', () => {
+    it('should defer signet victory during play phase', () => {
         // 创建一个玩家有 5 个印戒的状态（play 阶段）
         const core: CardiaCore = {
             players: {
                 '0': {
                     id: '0',
-                    hand: [],
+                    hand: [{ uid: 'available', cardId: 'available', playerId: '0', baseInfluence: 1, signets: 0 }],
                     deck: [],
                     playedCards: [
                         { uid: 'card1', cardId: 'card1', playerId: '0', baseInfluence: 5, signets: 2 },
@@ -39,7 +26,7 @@ describe('Cardia - Signet Victory Immediate Check', () => {
                 },
                 '1': {
                     id: '1',
-                    hand: [],
+                    hand: [{ uid: 'available-1', cardId: 'available-1', playerId: '1', baseInfluence: 1, signets: 0 }],
                     deck: [],
                     playedCards: [
                         { uid: 'card3', cardId: 'card3', playerId: '1', baseInfluence: 5, signets: 1 },
@@ -66,14 +53,13 @@ describe('Cardia - Signet Victory Immediate Check', () => {
         
         const result = CardiaDomain.isGameOver(core);
         
-        expect(result).toBeDefined();
-        expect(result?.winner).toBe('0');
+        expect(result).toBeUndefined();
     });
     
     /**
-     * 测试2：ability 阶段达到 5 印戒应立即触发胜利
+     * 测试2：ability 阶段不提前触发印戒胜利
      */
-    it('should end game immediately when player reaches 5 signets in ability phase', () => {
+    it('should defer signet victory during ability phase', () => {
         const core: CardiaCore = {
             players: {
                 '0': {
@@ -116,8 +102,7 @@ describe('Cardia - Signet Victory Immediate Check', () => {
         
         const result = CardiaDomain.isGameOver(core);
         
-        expect(result).toBeDefined();
-        expect(result?.winner).toBe('1');
+        expect(result).toBeUndefined();
     });
     
     /**
@@ -251,7 +236,7 @@ describe('Cardia - Signet Victory Immediate Check', () => {
             playerOrder: ['0', '1'],
             currentPlayerId: '0',
             turnNumber: 1,
-            phase: 'play',
+            phase: 'end',
             encounterHistory: [],
             deckVariant: 'I',
             targetSignets: 5,
@@ -270,9 +255,9 @@ describe('Cardia - Signet Victory Immediate Check', () => {
     });
     
     /**
-     * 测试6：双方同时达到相同印戒数（≥5），判定为平局
+     * 测试6：双方达到相同印戒数时继续游戏
      */
-    it('should declare draw when both players have same signets (≥5)', () => {
+    it('should continue when both players have same signets (≥5)', () => {
         const core: CardiaCore = {
             players: {
                 '0': {
@@ -301,7 +286,7 @@ describe('Cardia - Signet Victory Immediate Check', () => {
             playerOrder: ['0', '1'],
             currentPlayerId: '0',
             turnNumber: 1,
-            phase: 'play',
+            phase: 'end',
             encounterHistory: [],
             deckVariant: 'I',
             targetSignets: 5,
@@ -315,7 +300,6 @@ describe('Cardia - Signet Victory Immediate Check', () => {
         
         const result = CardiaDomain.isGameOver(core);
         
-        expect(result).toBeDefined();
-        expect(result?.draw).toBe(true);
+        expect(result).toBeUndefined();
     });
 });

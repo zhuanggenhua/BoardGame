@@ -44,6 +44,8 @@ const isRabbitFootAlreadyUsed = (core: Partial<BetrayalCore> | undefined): boole
 const isWaitingForEventRollConfirmation = (core: Partial<BetrayalCore> | undefined): boolean =>
     Boolean(core?.pendingEventRollResolution);
 
+const eventRollReadingRegions = ['[data-testid="betrayal-discovery-panel-main"]'];
+
 const stepHandlesPendingEventRoll = (step: TutorialStepSnapshot): boolean =>
     Boolean(
         step.allowedCommands?.includes(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL)
@@ -240,6 +242,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'view-book',
             content: 'game-betrayal:tutorial.basicSetup.steps.viewBook',
             highlightTarget: 'betrayal-inventory-omen-book',
+            avoidOverlapSelectors: eventRollReadingRegions,
+            tooltipMaxWidth: 320,
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -248,6 +252,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'use-book',
             content: 'game-betrayal:tutorial.basicSetup.steps.useBook',
             highlightTarget: 'betrayal-inventory-omen-book',
+            avoidOverlapSelectors: eventRollReadingRegions,
+            tooltipMaxWidth: 320,
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.USE_POSSESSION],
@@ -260,6 +266,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'use-rabbit-foot',
             content: 'game-betrayal:tutorial.basicSetup.steps.useRabbitFoot',
             highlightTarget: 'betrayal-inventory-rope',
+            avoidOverlapSelectors: eventRollReadingRegions,
+            tooltipMaxWidth: 320,
             position: 'top',
             requireAction: true,
             allowedCommands: [
@@ -275,6 +283,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'rabbit-foot-result',
             content: 'game-betrayal:tutorial.basicSetup.steps.rabbitFootResult',
             highlightTarget: 'betrayal-discovery-continue',
+            avoidOverlapSelectors: eventRollReadingRegions,
+            tooltipMaxWidth: 320,
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL],
@@ -373,7 +383,7 @@ const createBetrayalHeroReaderAndFirstObjectiveSteps = (
     {
         id: 'haunt-hero-reader',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderOpened',
-        position: 'top',
+        position: 'left',
         infoStep: true,
         viewAs: '0',
     },
@@ -389,11 +399,11 @@ const createBetrayalHeroReaderAndFirstObjectiveSteps = (
     {
         id: 'haunt-hero-reader-goal',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderGoal',
-        highlightTarget: 'betrayal-scenario-book-section-special',
+        highlightTarget: 'betrayal-scenario-book-section-title-special',
         avoidOverlapSelectors: [
             '[data-tutorial-protected-region="scenario-book"]',
         ],
-        tooltipMaxWidth: 280,
+        tooltipMaxWidth: 216,
         position: 'right',
         infoStep: true,
         viewAs: '0',
@@ -405,7 +415,7 @@ const createBetrayalHeroReaderAndFirstObjectiveSteps = (
         avoidOverlapSelectors: [
             '[data-tutorial-protected-region="scenario-book"]',
         ],
-        tooltipMaxWidth: 280,
+        tooltipMaxWidth: 216,
         position: 'right',
         requireAction: true,
         allowedCommands: [],

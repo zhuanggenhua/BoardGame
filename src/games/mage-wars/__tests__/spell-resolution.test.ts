@@ -106,7 +106,8 @@ describe('mage-wars spell resolution', () => {
             MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
             'DAMAGE_DEALT',
         ]));
-        expect(quickcast.state.sys.actionLog.entries[0]?.segments).toEqual(expect.arrayContaining([
+        const spellLog = quickcast.state.sys.actionLog.entries.find((entry) => entry.kind === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED);
+        expect(spellLog?.segments).toEqual(expect.arrayContaining([
             expect.objectContaining({ type: 'card', cardId: String(quickSpellId) }),
         ]));
 
@@ -147,7 +148,7 @@ describe('mage-wars spell resolution', () => {
             quickcastReady: false,
         });
         expect(actionCast.state.core.players['0'].preparedSpellCardIds).toEqual([]);
-        expect(actionCast.state.core.players['0'].discardSpellCardIds).toEqual([standardSpellId, quickSpellId]);
+        expect(actionCast.state.core.players['0'].discardSpellCardIds).toEqual([quickSpellId]);
         expect(Object.values(actionCast.state.core.objects)).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 ownerId: '0',

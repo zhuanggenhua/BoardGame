@@ -20,6 +20,19 @@ describe('confirmed scene movement facts', () => {
         const result = resolveSceneMovementFacts([move(12, 'upper-landing')], new Map([['player:0', 'grand-staircase']]), rooms);
         expect(result[0].kind).toBe('fade');
     });
+    it('feeds the laundry chute transfer into the movement queue when the turn ends', () => {
+        const entry: EventStreamEntry = {
+            id: 20,
+            event: {
+                type: 'TURN_ENDED',
+                payload: { roomEndTurnEffect: { kind: 'moveToBasementLanding', playerId: '0', roomId: 'basement-east', destinationRoomId: 'basement-landing' } },
+                timestamp: 1,
+            },
+        };
+        expect(resolveSceneMovementFacts([entry], new Map(), rooms)).toEqual([{
+            id: '20', eventType: 'TURN_ENDED', entityId: 'player:0', fromRoomId: 'basement-east', toRoomId: 'basement-landing', kind: 'fade',
+        }]);
+    });
     it.each([{skeletonKeyCardId:'skeleton-key'}, {usedActionId:'stalk-the-prey'}])('does not turn special movement %j into an ordinary hop', (special) => {
         const entry=move(16,'hallway');
         entry.event.payload={...entry.event.payload as object,...special};

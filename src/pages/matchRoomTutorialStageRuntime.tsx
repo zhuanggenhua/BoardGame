@@ -12,6 +12,7 @@ import { TutorialDispatchBridge } from './matchRoomBridges';
 import { useSearchParams } from 'react-router-dom';
 import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
+import { isTutorialFreePlay } from '../engine/tutorialStepPlan';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
 import { buildTutorialSessionScope } from '../contexts/tutorialSessionScope';
@@ -100,10 +101,14 @@ const TutorialLocalGameRuntime = ({
         () => Object.fromEntries(
             Array.from({ length: numPlayers }, (_, index) => {
                 const playerId = String(index);
+                const manifest = runtime.tutorialManifest;
+                if (manifest?.continueWithLocalAiAfterCompletion && manifest.playerId !== undefined && playerId !== manifest.playerId) {
+                    return [playerId, { type: 'local-ai' as const }];
+                }
                 return [playerId, runtime.seatControllers?.[playerId] ?? { type: 'human' as const }];
             }),
         ),
-        [numPlayers, runtime.seatControllers],
+        [numPlayers, runtime.seatControllers, runtime.tutorialManifest],
     );
 
     useEffect(() => {
@@ -114,6 +119,7 @@ const TutorialLocalGameRuntime = ({
             return;
         }
 
+        const freePlay = isTutorialFreePlay(restorableProgress.snapshot.state.sys.tutorial);
         const modalId = openModal({
             closeOnBackdrop: false,
             closeOnEsc: false,
@@ -124,8 +130,8 @@ const TutorialLocalGameRuntime = ({
             },
             render: ({ close, closeOnBackdrop }) => (
                 <ConfirmModal
-                    title={tLobby('matchRoom.tutorialProgress.title')}
-                    description={tLobby('matchRoom.tutorialProgress.description', {
+                    title={tLobby(freePlay ? 'matchRoom.tutorialProgress.freePlayTitle' : 'matchRoom.tutorialProgress.title')}
+                    description={tLobby(freePlay ? 'matchRoom.tutorialProgress.freePlayDescription' : 'matchRoom.tutorialProgress.description', {
                         current: restorableProgress.stepIndex + 1,
                         total: restorableProgress.totalSteps,
                     })}

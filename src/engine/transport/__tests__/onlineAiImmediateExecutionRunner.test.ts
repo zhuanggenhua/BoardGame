@@ -121,6 +121,22 @@ function createHarness(options?: {
 }
 
 describe('OnlineAiImmediateExecutionRunner', () => {
+    it('耗时较长但没有执行动作时仍保留对局和失败原因，且不改变恢复选择', async () => {
+        const { runner, hooks, match } = createHarness();
+        vi.mocked(hooks.executeImmediateAction).mockResolvedValue({
+            ...createImmediateMiss(), playerId: '1', decisionMs: 1250,
+            actionKind: 'play-card', executedCommandTypes: ['PLAY_CARD'], commandFailureReason: 'command-rejected',
+        });
+        await runner.run(match, 'sync');
+        expect(hooks.logExecutionTrace).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: match.matchID, playerId: '1', stateIdBefore: 1, decisionMs: 1250,
+            outcome: 'miss:sync', commandTypes: ['PLAY_CARD'], commandFailureReason: 'command-rejected',
+        }));
+        expect(vi.mocked(hooks.logExecutionTrace).mock.calls[0][0]).not.toHaveProperty('executionMs');
+        expect(hooks.resolveRecoveryCandidate).toHaveBeenCalledTimes(1);
+        expect(hooks.runRecoverySequence).not.toHaveBeenCalled();
+    });
+
     it('没有 AI seat 时清理恢复进度和 circuit 状态，不占用房间执行锁', async () => {
         const { runner, hooks, roomRuntime, match } = createHarness({
             seatControllers: { '0': { type: 'human' } },
@@ -149,6 +165,11 @@ describe('OnlineAiImmediateExecutionRunner', () => {
             candidateReason: 'visible-interaction',
             outcome: 'fallback:command-succeeded:no-legal-action',
         }));
+        expect(hooks.logExecutionTrace).toHaveBeenCalledTimes(1);
+        const recoveryTrace = vi.mocked(hooks.logExecutionTrace).mock.calls[0][0];
+        expect(recoveryTrace).toHaveProperty('recoveryElapsedMs');
+        expect(recoveryTrace).not.toHaveProperty('decisionMs');
+        expect(recoveryTrace).not.toHaveProperty('executionMs');
         expect(hooks.runRecoverySequence).toHaveBeenCalledWith(expect.objectContaining({
             match,
             candidate,

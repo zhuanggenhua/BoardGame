@@ -5,5 +5,8 @@
 .fd-investigation-card { position:relative; flex:0 0 var(--fd-investigation-width); }
 .fd-investigation-card + .fd-investigation-card { margin-left:min(6px, calc((100cqw - var(--fd-investigation-count) * var(--fd-investigation-width)) / max(1, var(--fd-investigation-count) - 1))); }
 .fd-investigation-card:hover,.fd-investigation-card:focus-within { z-index:1; }
-.fd-investigation-card > button:first-child { width:100%; padding:0; border:0; background:transparent; cursor:pointer; outline:2px solid #e5cc86; outline-offset:1px; }
+.fd-investigation-card > button:first-child { width:100%; padding:0; border:0; background:transparent; cursor:pointer; }
+.fd-investigation-card > button:first-child[aria-disabled="false"] { outline:2px solid #e5cc86; outline-offset:1px; }
+.fd-investigation-choice button[aria-disabled="true"] { cursor:not-allowed; }
+.fd-investigation-prompt button[aria-disabled="true"] { border-color:#797d70; color:#b6b6a4; }
 .fd-investigation-card > button:first-child:hover,.fd-investigation-card > button:first-child:focus-visible { outline-color:#fff0b5; outline-offset:2px; }

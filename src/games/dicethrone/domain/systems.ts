@@ -376,6 +376,20 @@ function queueDiceThroneInteraction(
         };
     };
     const current = state.sys.interaction.current;
+    const currentCardChoice = current?.kind === 'dt:card-interaction'
+        ? current.data as { type?: string; sourceCardId?: string } | undefined
+        : undefined;
+    const nextChoiceSource = interaction.kind === 'multistep-choice'
+        ? (interaction.data as { sourceId?: string } | undefined)?.sourceId
+        : undefined;
+    if (currentCardChoice?.type === 'selectPlayer'
+        && current?.playerId === interaction.playerId
+        && currentCardChoice.sourceCardId
+        && currentCardChoice.sourceCardId === nextChoiceSource
+        && state.sys.interaction.queue.some(queued => queued.kind === 'dt:bonus-dice')) {
+        // 选玩家产生的后续选骰必须先于被中断的奖励骰恢复。
+        return queueInteraction(bindResponseWindowInteractionId(state), interaction, { urgent: true });
+    }
     if (
         (
             (

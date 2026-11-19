@@ -355,7 +355,7 @@ const HandCard: React.FC<HandCardProps> = ({
             {!isOpponentView && (
                 <button
                     data-testid={`su-hand-card-inspect-${card.uid}`}
-                    className={`absolute flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${(showTouchInspectButton || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    className={`absolute flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${((showTouchInspectButton && interactionMode === 'drag') || (!showTouchInspectButton && isHovered)) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                     style={{
                         top: inspectButtonInset,
                         right: inspectButtonInset,

@@ -77,12 +77,10 @@ const isMeaningfullyVisible = (element: Element) => {
     return true;
 };
 
-const countMeaningfulVisibleDescendants = (container: Element | null) => {
-    if (!container) return 0;
+export const hasMeaningfulVisibleDescendant = (container: Element | null) => {
+    if (!container) return false;
 
     const elements = Array.from(container.querySelectorAll('*')).slice(0, MAX_VISIBLE_ELEMENT_SCAN);
-    let count = 0;
-
     for (const element of elements) {
         if (
             element instanceof HTMLElement
@@ -95,11 +93,11 @@ const countMeaningfulVisibleDescendants = (container: Element | null) => {
         }
 
         if (isMeaningfullyVisible(element)) {
-            count += 1;
+            return true;
         }
     }
 
-    return count;
+    return false;
 };
 
 export const detectGamePageRescueSignal = ({
@@ -159,7 +157,8 @@ const readRescueSnapshot = (pathname: string, enteredAt: number): Omit<RescueSna
     const shell = document.querySelector('.mobile-board-shell');
     const content = document.querySelector('.mobile-board-shell__content') ?? viewport;
     const elapsedMs = Date.now() - enteredAt;
-    const meaningfulContentCount = countMeaningfulVisibleDescendants(content);
+    // 检测只依赖是否存在可见内容，找到第一个后停止测量，避免周期性扫描整张牌桌。
+    const meaningfulContentCount = Number(hasMeaningfulVisibleDescendant(content));
 
     return {
         elapsedMs,
@@ -271,7 +270,7 @@ export const GamePageRescueGate = () => {
             `viewport=${snapshot.viewportRect ? `${snapshot.viewportRect.width}x${snapshot.viewportRect.height}` : 'missing'}`,
             `shell=${snapshot.shellRect ? `${snapshot.shellRect.width}x${snapshot.shellRect.height}` : 'missing'}`,
             `content=${snapshot.contentRect ? `${snapshot.contentRect.width}x${snapshot.contentRect.height}` : 'missing'}`,
-            `meaningfulContentCount=${snapshot.meaningfulContentCount}`,
+            `meaningfulContentDetected=${snapshot.meaningfulContentCount > 0}`,
             `userAgent=${navigator.userAgent}`,
         ];
 

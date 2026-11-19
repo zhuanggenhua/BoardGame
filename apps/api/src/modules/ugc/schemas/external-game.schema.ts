@@ -10,6 +10,7 @@ export class ExternalGameRecord {
     @Prop({ type: String }) submissionId?: string;
     @Prop({ type: String, required: true }) name!: string;
     @Prop({ type: String, required: true }) url!: string;
+    @Prop({ type: String }) webZipName?: string;
     @Prop({ type: String, default: 'uncategorized' }) category!: string;
     @Prop({ type: Number }) minPlayers?: number;
     @Prop({ type: Number }) maxPlayers?: number;

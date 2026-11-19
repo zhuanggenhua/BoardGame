@@ -830,13 +830,19 @@ export const HandArea = ({
         canClickDiscard: boolean;
         canClickPlay: boolean;
         canPreviewCard: boolean;
+        blockedReason?: string;
     }) => {
-        const { canClickDiscard, canClickPlay, canPreviewCard } = options;
+        const { canClickDiscard, canClickPlay, canPreviewCard, blockedReason } = options;
         if (draggedCardClickBlockRef.current === entry.key) {
             draggedCardClickBlockRef.current = null;
             return;
         }
         if (shouldBlockLongPressClick(entry.key)) return;
+
+        if (blockedReason) {
+            onError?.(t(blockedReason));
+            return;
+        }
 
         if (canClickDiscard && (handDiscardInteraction || onDiscardCard)) {
             pendingDiscardRef.current = {
@@ -872,9 +878,11 @@ export const HandArea = ({
         handDiscardInteraction,
         handEntries,
         onDiscardCard,
+        onError,
         onMagnifyCard,
         onPlayCard,
         shouldBlockLongPressClick,
+        t,
     ]);
 
     React.useEffect(() => {
@@ -966,6 +974,10 @@ export const HandArea = ({
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning && tutorialCardAllowed && handDiscardCandidateAllowed;
                         const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode && tutorialCardAllowed;
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning && tutorialCardAllowed;
+                        const blockedReason = isFlipped && !isReturning
+                            ? !tutorialCardAllowed ? 'error.tutorialCardUnavailable'
+                                : isDiscardMode && !handDiscardCandidateAllowed ? 'error.discardCardUnavailable' : undefined
+                            : undefined;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
                             && !disableCardPointerEvents;
                         // 动画期间（dealing/returning）统一禁用 hover
@@ -1037,7 +1049,7 @@ export const HandArea = ({
                                 onDragStart={() => handleCardDragStart(entry, canDrag, dragValues)}
                                 onDrag={(_, info) => canDrag && handleDrag(cardKey, info)}
                                 onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
-                                onClick={() => handleCardClick(entry, { canClickDiscard, canClickPlay, canPreviewCard })}
+                                onClick={() => handleCardClick(entry, { canClickDiscard, canClickPlay, canPreviewCard, blockedReason })}
                                 onHoverStart={() => undefined}
                                 onHoverEnd={() => {
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);

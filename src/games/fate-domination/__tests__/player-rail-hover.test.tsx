@@ -57,7 +57,9 @@ it('头像移到牌排途中有宽限，悬浮牌排暂停收起，点击可放�
 
 it('移到另一头像取消旧收起计时，键盘进入牌排同样保持展开', () => {
     vi.useFakeTimers();
-    const { avatar } = mount();
+    const { avatar, core, refresh } = mount();
+    core.players['2'].publicView = core.players['1'].publicView;
+    refresh();
     fireEvent.pointerEnter(avatar);
     fireEvent.pointerLeave(avatar.closest('section')!);
     fireEvent.focus(screen.getByRole('button', { name: '查看玩家2详情' }));
@@ -66,4 +68,12 @@ it('移到另一头像取消旧收起计时，键盘进入牌排同样保持展�
     expect(screen.queryByLabelText('玩家1已打出')).toBeNull();
     fireEvent.keyDown(screen.getByLabelText('玩家2已打出'), { key: 'Escape' });
     expect(screen.queryByLabelText('玩家2已打出')).toBeNull();
+});
+
+it('没有任何可展示的牌时，悬浮头像不打开空面板', () => {
+    mount();
+    const avatar = screen.getByRole('button', { name: '查看玩家2详情' });
+    fireEvent.pointerEnter(avatar);
+    expect(screen.queryByLabelText('玩家2已打出')).toBeNull();
+    expect(avatar.parentElement?.querySelector('[aria-expanded="false"]')).toBeInTheDocument();
 });

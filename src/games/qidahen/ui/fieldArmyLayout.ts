@@ -1,22 +1,87 @@
 import type { QidahenMapToken } from '../domain/types';
-import { QIDAHEN_RUNTIME_REGION_BY_ID, QIDAHEN_MAP_NAMEPLATE_OBSTACLES } from './mapGraph';
+import { QIDAHEN_RUNTIME_REGION_BY_ID, QIDAHEN_MAP_NAMEPLATE_OBSTACLES, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS } from './mapGraph';
 import { placeQidahenMapObject } from './mapObjectPlacement';
-import type { PopulationSite } from './populationLayout';
+import { QIDAHEN_POPULATION_SIZE, type PopulationSite } from './populationLayout';
 import type { QidahenRuntimeRegionPoint as Point } from './runtimeRegionOwnership';
 
 export interface QidahenArmyCallout { tokenId: string; point: Point; anchor: Point }
 
+export const getArmyStackExtension = (size: number) => 16 * Math.min(1, size / 26);
+
+export const getArmyMapBounds = (point: Point, half: number, extension = 0) => ({
+    left: point.x - half, top: point.y - half, width: half * 2, height: half * 2 + extension,
+});
+
+export const armyMapBoundsSeparate = (a: ReturnType<typeof getArmyMapBounds>, b: ReturnType<typeof getArmyMapBounds>, gap: number) => (
+    a.left + a.width + gap <= b.left || b.left + b.width + gap <= a.left
+    || a.top + a.height + gap <= b.top || b.top + b.height + gap <= a.top
+);
+
 /** 逐兵选择后放大地图时，兵牌屏幕尺寸不低于进入选择前的尺寸。 */
 export const getArmyScreenScale = (zoom: number, entryZoom: number) => Math.min(1, entryZoom / zoom);
+
+function placeStackedArmyRegion(
+    pieces: readonly QidahenMapToken[], site: PopulationSite, obstacles: readonly ReturnType<typeof getArmyMapBounds>[],
+    stackTokenIds: ReadonlySet<string>, includePopulation: boolean,
+) {
+    const shapes = pieces.map(token => ({ size: token.size ?? 26, stack: stackTokenIds.has(token.id) }));
+    if (includePopulation) shapes.push({ size: QIDAHEN_POPULATION_SIZE, stack: false });
+    const choices = shapes.map(({ size, stack }) => {
+        const extension = stack ? getArmyStackExtension(size) : 0;
+        return site.candidates.flatMap(point => {
+            const bounds = getArmyMapBounds(point, size / 2, extension);
+            return obstacles.every(box => armyMapBoundsSeparate(bounds, box, 4))
+                && QIDAHEN_PRINTED_NAMEPLATE_BOUNDS.every(box => armyMapBoundsSeparate(bounds, box, 2)) ? [{ point, bounds }] : [];
+        }).sort((a, b) => Math.hypot(a.point.x - site.anchor.x, a.point.y - site.anchor.y)
+            - Math.hypot(b.point.x - site.anchor.x, b.point.y - site.anchor.y));
+    });
+    const order = choices.map((list, index) => ({ index, available: list.length })).sort((a, b) => Number(a.index === pieces.length) - Number(b.index === pieces.length) || a.available - b.available);
+    const placed: Array<typeof choices[number][number]> = [];
+    let checks = 0;
+    const solve = (index: number): boolean => {
+        if (index >= order.length) return true;
+        const current = order[index].index;
+        const allies = placed.filter((_, pieceIndex) => pieceIndex < pieces.length);
+        // 人口单独定位。兵牌先找已有队列的行列，再比较间距，避免逐枚贴到地形尖角。
+        const population = current === pieces.length;
+        const formationCost = (point: Point) => Math.min(...allies.map(({ point: other }) => {
+            const dx = Math.abs(point.x - other.x);
+            const dy = Math.abs(point.y - other.y);
+            return Math.hypot(dx, dy) + Math.min(dx, dy) * 2;
+        }));
+        const populationCost = (option: typeof choices[number][number]) => {
+            const left = Math.min(...allies.map(ally => ally.bounds.left));
+            const top = Math.min(...allies.map(ally => ally.bounds.top));
+            const right = Math.max(...allies.map(ally => ally.bounds.left + ally.bounds.width));
+            const bottom = Math.max(...allies.map(ally => ally.bounds.top + ally.bounds.height));
+            const inFormation = !armyMapBoundsSeparate(option.bounds, { left, top, width: right - left, height: bottom - top }, 4);
+            return (inFormation ? 1000 : 0) + Math.hypot(option.point.x - site.anchor.x, option.point.y - site.anchor.y);
+        };
+        const options = allies.length
+            ? choices[current].map(option => ({ option, cost: population ? populationCost(option) : formationCost(option.point) }))
+                .sort((a, b) => a.cost - b.cost).map(({ option }) => option)
+            : choices[current];
+        for (const option of options) {
+            if (++checks > 30_000) return false;
+            if (!placed.every(other => armyMapBoundsSeparate(option.bounds, other.bounds, 4))) continue;
+            placed[current] = option;
+            if (solve(index + 1)) return true;
+            delete placed[current];
+        }
+        return false;
+    };
+    return solve(0) ? placed.map(option => option.point) : null;
+}
 
 /** 对需要逐枚操作的拥挤地区，联合为兵牌与人口寻找区内位置。 */
 export function packExpandedArmiesWithinRegions(
     tokens: readonly QidahenMapToken[], callouts: readonly QidahenArmyCallout[], sites: ReadonlyMap<string, PopulationSite>,
     width: number, height: number, expandedRegionIds: ReadonlySet<string>, populationRegionIds: ReadonlySet<string>,
     selectedOnlyRegions: ReadonlySet<string> = new Set(), selectedPieceIds: ReadonlySet<string> = new Set(),
-    quantityControlRegions: ReadonlySet<string> = new Set(),
-): { tokens: readonly QidahenMapToken[]; callouts: QidahenArmyCallout[]; unresolvedRegionIds: string[] } {
+    stackAccessoryTokenIds: ReadonlySet<string> = new Set(),
+): { tokens: readonly QidahenMapToken[]; callouts: QidahenArmyCallout[]; unresolvedRegionIds: string[]; populationSites: ReadonlyMap<string, Point> } {
     const positions = new Map<string, Point>();
+    const populationSites = new Map<string, Point>();
     const packedIds = new Set<string>();
     const unresolvedRegionIds: string[] = [];
     for (const regionId of expandedRegionIds) {
@@ -29,17 +94,31 @@ export function packExpandedArmiesWithinRegions(
         const site = sites.get(regionId);
         if (!site) { if (hasCallouts) unresolvedRegionIds.push(regionId); continue; }
         const half = Math.max(...pieces.map(piece => (piece.size ?? 26) / 2));
-        const obstacles = tokens.filter(token => !pieces.includes(token)).map(token => ({
-            ...(positions.get(token.id) ?? { x: token.x * width, y: token.y * height }), half: (token.size ?? 30) / 2,
-        }));
-        obstacles.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(item => ({ x: item.x, y: item.y, half: item.size / 2 })));
-        let points = site.candidates.filter(point => obstacles.every(box => Math.abs(point.x - box.x) >= half + box.half + 4
-            || Math.abs(point.y - box.y) >= half + box.half + 4));
+        const extension = pieces.some(token => stackAccessoryTokenIds.has(token.id)) ? getArmyStackExtension(half * 2) : 0;
+        const obstacles = tokens.filter(token => !pieces.includes(token)).map(token => {
+            const size = token.size ?? 30;
+            return getArmyMapBounds(positions.get(token.id) ?? { x: token.x * width, y: token.y * height }, size / 2,
+                stackAccessoryTokenIds.has(token.id) ? getArmyStackExtension(size) : 0);
+        });
+        obstacles.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(item => getArmyMapBounds(item, item.size / 2)));
+        if (extension) {
+            const joint = placeStackedArmyRegion(pieces, site, obstacles, stackAccessoryTokenIds, populationRegionIds.has(regionId));
+            if (joint) {
+                pieces.forEach((piece, index) => { positions.set(piece.id, joint[index]); packedIds.add(piece.id); });
+                if (joint[pieces.length]) populationSites.set(regionId, joint[pieces.length]);
+                continue;
+            }
+        }
+        let points = site.candidates.filter(point => {
+            const bounds = getArmyMapBounds(point, half, extension);
+            return obstacles.every(box => armyMapBoundsSeparate(bounds, box, 4))
+                && (!extension || QIDAHEN_PRINTED_NAMEPLATE_BOUNDS.every(box => armyMapBoundsSeparate(bounds, box, 2)));
+        });
         if (points.length < pieces.length) { if (hasCallouts) unresolvedRegionIds.push(regionId); continue; }
         const separate = (a: Point, b: Point, gap: number, verticalGap = gap) => Math.abs(a.x - b.x) >= gap || Math.abs(a.y - b.y) >= verticalGap;
         const distance = half * 2 + 3 * (half * 2 / 26);
-        const verticalDistance = half * 2 + (quantityControlRegions.has(regionId) ? 11 : 3) * (half * 2 / 26);
-        // 出兵后的剩余兵堆带顶部数量标签，需要与已出兵牌额外留距。
+        const verticalDistance = distance + extension;
+        // 出兵与留守分组，给兵堆底部的数量留出空间。
         const stackDistance = half * 2 + 24 * (half * 2 / 26);
         const selectedCount = selectedOnlyRegions.has(regionId)
             ? pieces.filter(piece => selectedPieceIds.has(piece.pieceId ?? '')).length : 0;
@@ -165,29 +244,36 @@ export function packExpandedArmiesWithinRegions(
     }
     return {
         tokens: tokens.map(token => { const point = positions.get(token.id); return point ? { ...token, x: point.x / width, y: point.y / height } : token; }),
-        callouts: callouts.filter(callout => !packedIds.has(callout.tokenId)), unresolvedRegionIds,
+        callouts: callouts.filter(callout => !packedIds.has(callout.tokenId)), unresolvedRegionIds, populationSites,
     };
 }
 
 /** 只投影野战兵牌的显示位置，身份、等级和规则坐标均由正式状态保留。 */
 export function layoutQidahenFieldArmies(
     tokens: readonly QidahenMapToken[], sites: ReadonlyMap<string, PopulationSite>, width: number, height: number,
+    stackAccessoryTokenIds: ReadonlySet<string> = new Set(),
 ): { tokens: readonly QidahenMapToken[]; callouts: QidahenArmyCallout[] } {
     const isLandArmy = (token: QidahenMapToken) => token.type === 'army' && token.location === 'field'
         && Boolean(token.regionId && sites.has(token.regionId) && QIDAHEN_RUNTIME_REGION_BY_ID.get(token.regionId)?.mapRole === 'land');
     const armies = tokens.filter(isLandArmy).sort((a, b) => sites.get(a.regionId!)!.clearance - sites.get(b.regionId!)!.clearance || a.id.localeCompare(b.id));
-    const obstacles = tokens.filter(token => !isLandArmy(token)).map(token => ({ x: token.x * width, y: token.y * height, half: (token.size ?? 30) / 2 }));
-    obstacles.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(obstacle => ({ x: obstacle.x, y: obstacle.y, half: obstacle.size / 2 })));
+    const obstacles = tokens.filter(token => !isLandArmy(token)).map(token =>
+        getArmyMapBounds({ x: token.x * width, y: token.y * height }, (token.size ?? 30) / 2));
+    obstacles.push(...QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(obstacle => getArmyMapBounds(obstacle, obstacle.size / 2)),
+        ...QIDAHEN_PRINTED_NAMEPLATE_BOUNDS);
     const placements = new Map<string, Point>();
     const callouts: QidahenArmyCallout[] = [];
     for (const token of armies) {
         const half = (token.size ?? 26) / 2;
-        const free = (point: Point) => point.x >= half + 2 && point.x < width - half - 2 && point.y >= half + 2 && point.y < height - half - 2
-            && obstacles.every(box => Math.abs(point.x - box.x) >= half + box.half + 10 || Math.abs(point.y - box.y) >= half + box.half + 10);
+        const extension = stackAccessoryTokenIds.has(token.id) ? getArmyStackExtension(half * 2) : 0;
+        const free = (point: Point) => {
+            if (point.x < half + 2 || point.x >= width - half - 2 || point.y < half + 2 || point.y >= height - half - extension - 2) return false;
+            const bounds = getArmyMapBounds(point, half, extension);
+            return obstacles.every(box => armyMapBoundsSeparate(bounds, box, 10));
+        };
         const placement = placeQidahenMapObject(sites.get(token.regionId!)!, { x: token.x * width, y: token.y * height }, free, half + 9);
         if (!placement) throw new Error(`兵牌没有可用显示位置：${token.id}`);
         placements.set(token.id, placement.point);
-        obstacles.push({ ...placement.point, half });
+        obstacles.push(getArmyMapBounds(placement.point, half, extension));
         if (placement.callout) callouts.push({ tokenId: token.id, point: placement.point, anchor: placement.anchor });
     }
     return { tokens: tokens.map(token => {

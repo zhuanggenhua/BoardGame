@@ -8,7 +8,7 @@ import {
 } from '../contexts/tutorialSessionScope';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
-import { getEffectiveTutorialSteps } from '../engine/tutorialStepPlan';
+import { getEffectiveTutorialSteps, isTutorialFreePlay } from '../engine/tutorialStepPlan';
 import type { LocalMatchSnapshot } from '../engine/transport/localSession';
 import {
     clearLocalMatchSnapshot,
@@ -84,7 +84,7 @@ export const isRestorableTutorialProgressSnapshot = (args: {
 }): boolean => {
     const { snapshot, manifest } = args;
     const tutorial = snapshot.state.sys.tutorial;
-    if (!tutorial?.active) {
+    if (!tutorial) {
         return false;
     }
     if (tutorial.manifestId !== manifest.id) {
@@ -100,6 +100,10 @@ export const isRestorableTutorialProgressSnapshot = (args: {
     const step = getEffectiveTutorialSteps(manifest, tutorial)[tutorial.stepIndex];
     if (!step) {
         return false;
+    }
+    if (!tutorial.active) {
+        return manifest.continueWithLocalAiAfterCompletion === true
+            && isTutorialFreePlay(tutorial);
     }
     if (tutorial.step?.id && tutorial.step.id !== step.id) {
         return false;
@@ -628,7 +632,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                     && lastTutorialProgressRef.current.manifestId === currentManifestId
                     && lastTutorialProgressRef.current.stepId === currentManifestLastStepId
                 ) {
-                    if (gameId) {
+                    if (gameId && !resolvedTutorialManifest?.continueWithLocalAiAfterCompletion) {
                         clearTutorialProgress({
                             gameId,
                             tutorialId,

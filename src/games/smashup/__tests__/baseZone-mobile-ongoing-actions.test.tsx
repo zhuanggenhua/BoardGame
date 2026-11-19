@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -200,7 +200,8 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
     });
 
-    it('基地上的普通持续行动卡在移动端应先选中，再显示放大镜用于放大预览', () => {
+    it('基地上的普通持续行动卡在移动端长按检视，不显示放大镜', () => {
+        vi.useFakeTimers();
         const { onViewAction } = renderBaseZone({
             ongoingActions: [
                 { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
@@ -214,11 +215,13 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         fireEvent.click(ongoingCard as Element);
         expect(onViewAction).not.toHaveBeenCalled();
 
-        const magnifyButton = document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]');
-        expect(magnifyButton).not.toBeNull();
-
-        fireEvent.click(magnifyButton as Element);
+        expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
+        const down = new Event('pointerdown', { bubbles: true });
+        Object.defineProperties(down, { pointerType: { value: 'touch' }, clientX: { value: 0 }, clientY: { value: 0 } });
+        fireEvent(ongoingCard as Element, down);
+        act(() => vi.advanceTimersByTime(480));
         expect(onViewAction).toHaveBeenCalledWith('miskatonic_lost_knowledge');
+        vi.useRealTimers();
     });
 
     it('移动端普通随从在没有可发动效果时应直接打开放大预览', () => {

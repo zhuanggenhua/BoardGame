@@ -16,6 +16,7 @@ import { MsgpackIoAdapter } from './adapters/msgpack-io.adapter';
 import { createAdminTestLatencyMiddleware } from './modules/admin/admin-test-latency.middleware';
 import { AdminTestLatencyService } from './modules/admin/admin-test-latency.service';
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
+import { mountSandboxedWebGames, startWebGameHost } from './modules/ugc/external-web-game-host';
 import logger from '../../../server/logger';
 import { createRetainedWebAssetsMiddleware } from './retained-web-assets';
 import { isNoCacheSpaEntryPath, shouldProxyGameServerRequest, shouldServeSpaFallback } from './spa-fallback';
@@ -209,6 +210,7 @@ async function bootstrap() {
     app.useWebSocketAdapter(new MsgpackIoAdapter(app));
 
     const expressApp = app.getHttpAdapter().getInstance();
+    mountSandboxedWebGames(expressApp);
     expressApp.use(express.json({ limit: '2mb' }));
     expressApp.use(express.urlencoded({ extended: true, limit: '2mb' }));
     expressApp.use('/admin-api', createAdminTestLatencyMiddleware(app.get(AdminTestLatencyService)));
@@ -348,6 +350,7 @@ async function bootstrap() {
     app.useGlobalFilters(new GlobalHttpExceptionFilter());
 
     const port = Number(process.env.API_SERVER_PORT) || 18001;
+    const webGameHost = await startWebGameHost();
     const server = await app.listen(port);
     server.on('upgrade', (req: IncomingMessage, socket: Socket, head: Buffer) => {
         const url = req.url || '';
@@ -365,6 +368,7 @@ async function bootstrap() {
 
     const shutdown = async (signal: string) => {
         try {
+            webGameHost?.close();
             await app.close();
             await stopTestMongoIfNeeded();
         } catch (error) {
