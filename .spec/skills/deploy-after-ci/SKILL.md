@@ -127,5 +127,5 @@ pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\check-remote-ci.ps1
 - 指定 tag 时，不要在未确认 OTA git ref 与该 tag 对齐的情况下顺手发 OTA。
 - 不要为没有玩家可感知内容的完整部署生成玩家日志；不要把部署用的共享日志回退成另一份自动提交摘要。
 - 不要把服务器热更新绑到 `package.json.version` 自增；商业产品版本、OTA 包版本和原生壳版本是三类不同版本。
-- 按改动风险和用户要求执行必要校验；只部署已验证的目标版本，不机械增加无关检查。
+- 按 [`git-operations`](../git-operations/SKILL.md) 的检查范围和用户要求执行必要校验，并核对目标版本及其 CI；不机械增加无关检查。
 - 部署失败时只报告：执行了哪个脚本、远端脚本失败位置、下一步最小补救。

@@ -12,6 +12,8 @@ import { FGO_SERVANTS, loadedFgoCharacter, loadedFgoNoble, preloadFgoCharacter, 
 import { createFgoBattleRuntime } from '../fgo-runtime/fgoCharacterRuntime';
 import { createFgoSceneRuntime } from '../fgo-runtime/fgoSceneRuntime';
 import { fateFgoSequencesFor, type FgoSequence } from './fgoSequence';
+import { playSound } from '../../../lib/audio/useGameAudio';
+import { FATE_BATTLE_IMPACT } from '../audio.config';
 import './fgo-effects.css';
 
 const reportPreloadFailure = (label: string) => (error: unknown) => {
@@ -23,6 +25,7 @@ function BattleMotion({ sequence, anchor, onComplete }: { sequence: Extract<FgoS
   const layer = useRef<HTMLDivElement>(null);
   const [impact, setImpact] = useState<{ x: number; y: number; id: number }>();
   const showImpact = useCallback((point: { x: number; y: number }) => {
+    playSound(FATE_BATTLE_IMPACT);
     setImpact(previous => ({ ...point, id: (previous?.id ?? 0) + 1 }));
   }, []);
   React.useLayoutEffect(() => {

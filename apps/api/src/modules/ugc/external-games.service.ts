@@ -116,6 +116,9 @@ export class ExternalGamesService implements OnModuleInit {
         if (!updated.matchedCount) throw new NotFoundException('游戏不存在');
         return { removed: true };
     }
+    async unpublishSubmission(submissionId: string, gameId: string) {
+        await this.games.updateOne({ submissionId, gameId }, { $set: { published: false } });
+    }
     async publishSubmission(submissionId: string, submitterId: string, fields: ExternalGameFields, coverUrl: string, rulesDocument?: GameRulesDocument, webZipName?: string) {
         const existing = await this.games.findOne({ submissionId });
         await this.assertSubmissionEditable(submitterId, existing?.gameId);

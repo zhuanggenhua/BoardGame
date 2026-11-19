@@ -1251,16 +1251,17 @@
     },
     "traitorPath": {
       "title": "Traitor View: Goal and Mummy Actions",
-      "description": "Read the Traitor goal, then control the Mummy through the monster turn: movement, attack, and stealing. The final Girl plus Holy Symbol or Ring handoff needs a separate near-victory position.",
+      "description": "Read the Traitor's goal, control the Mummy's movement and attack, then practice handing over the Girl and Holy Symbol to win.",
       "victoryTitle": "Traitor Topic: Girl and Holy Symbol Victory Chain",
       "victoryDescription": "Start from the legal traitor victory-chain position: the traitor, Girl, Mummy, Sarcophagus, and Holy Symbol are already in the same room, then hand over the Girl and Holy Symbol by the rules.",
       "steps": {
         "setupTraitorTurn": "This section starts from the legal traitor victory-chain position: the traitor, Girl, Mummy, Sarcophagus, and Holy Symbol are already in the same room. Read the goal first, then make the handoffs.",
+        "setupAttackAndWedding": "The next exercise starts in the Sarcophagus room. The Girl is here and you hold the Holy Symbol. Have the Mummy attack the hero in the room, then hand over the Girl and Holy Symbol.",
         "traitorObjective": "Open the Traitor's Tome and read the victory condition involving the Girl, Holy Symbol or Ring, and Sarcophagus, plus the Mummy's rules.",
-        "pickUpGirl": "Entering the room with the Girl token lets you take the Girl Omen; choose Pick Up Girl.",
+        "pickUpGirl": "You're in the same room as the Girl. Choose Pick Up Girl so you can give her to the Mummy.",
         "giveGirlToMummy": "While carrying the Girl in the Mummy's room, you may give her to the Mummy; choose Give Girl.",
         "giveOmenToMummy": "The Mummy carries the Girl; give the Holy Symbol or Ring to the Mummy in the same room. Choose Give Holy Symbol.",
-        "traitorFinish": "The Mummy carries the Girl and the Holy Symbol or Ring back to the Sarcophagus. The traitor wins."
+        "traitorFinish": "The Mummy holds the Girl and the Holy Symbol in the Sarcophagus room. The Traitor wins. The Ring can also satisfy the Omen requirement."
       }
     },
     "mummyMonsterActions": {
@@ -1271,7 +1272,7 @@
         "monsterTurnStart": "Choose Start Mummy.",
         "monsterRoll": "Choose Mummy Movement. The result determines the Mummy's movement; on 0 or 1, it can teleport to any room in the house.",
         "monsterRollReview": "Read the Mummy's movement result, then choose Back to Board.",
-        "monsterMoveTarget": "On 0 or 1, the Mummy can teleport to any room in the house. Choose Move Mummy, then click the Mummy and the discovered room with the Girl.",
+        "monsterMoveTarget": "On a movement roll of 0 or 1, the Mummy can teleport to any discovered room. Select the Mummy on the board, then click the highlighted room with the Girl.",
         "monsterMoveResult": "After entering the Girl's room, the Mummy carries the Girl; the Girl token stays beside the Mummy.",
         "setupAttack": "When the Mummy shares a room with a hero, it must make a same-room attack if possible; choose Mummy Attack.",
         "attackForced": "When the Mummy shares a room with a hero, it must attack the hero first.",

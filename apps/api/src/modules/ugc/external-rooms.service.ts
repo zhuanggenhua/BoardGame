@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Model } from 'mongoose';
+import { hasControlCharacters } from '../../../../../src/shared/externalGames';
 import { externalRoomPlayerLimits, externalRoomRosterKey, MAX_EXTERNAL_SIGNAL_LENGTH, type ExternalRoomListing, type ExternalRoomView } from '../../../../../src/shared/externalRoom';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import { ExternalGamesService } from './external-games.service';
@@ -21,8 +22,7 @@ export class ExternalRoomsService {
     async create(userId: string, gameId: string, capacity: unknown, nativeName?: unknown, expectedEntry?: unknown) {
         const game = await this.games.get(gameId);
         const native = nativeName !== undefined;
-        if (!native && userId.startsWith('guest:')) throw new ForbiddenException('旧版房间需要登录');
-        if (native ? game.roomAdapter !== 'vale-webrtc' : (!game.roomProtocol || game.roomAdapter)) {
+        if (native ? game.roomAdapter !== 'vale-webrtc' : !game.roomProtocol) {
             throw new BadRequestException('此游戏不支持此房间入口');
         }
         if (native && expectedEntry !== game.url) throw new ConflictException('游戏已更新，请重新打开游戏。');
@@ -32,23 +32,22 @@ export class ExternalRoomsService {
         }
         const member = await this.newMember(userId, nativeName);
         const room = await this.records.create({ roomId: randomUUID(), gameId, title: game.name, entry: game.url,
-            capacity, native, members: [member], expiresAt: native ? liveRoomExpiry() : expiry() });
+            capacity, native, members: [member], expiresAt: liveRoomExpiry() });
         return this.view(room, userId);
     }
 
     async list(gameId: string): Promise<{ rooms: ExternalRoomListing[] }> {
         if (!await this.games.canListNativeRooms(gameId)) return { rooms: [] };
-        const rooms = await this.records.find({ gameId, native: true, started: false, expiresAt: { $gt: new Date() } })
-            .select('roomId members.displayName capacity').sort({ _id: -1 }).limit(40).lean();
-        return { rooms: rooms.map(({ roomId, members, capacity }) => ({
-            roomId, hostName: members[0].displayName, occupied: members.length, capacity,
+        const rooms = await this.records.find({ gameId, started: false, expiresAt: { $gt: new Date() } })
+            .select('roomId members.displayName capacity native').sort({ _id: -1 }).limit(40).lean();
+        return { rooms: rooms.map(({ roomId, members, capacity, native }) => ({
+            roomId, hostName: members[0].displayName, occupied: members.length, capacity, native,
         })) };
     }
 
     async join(roomId: string, userId: string, native: boolean) {
         const initial = await this.read(roomId);
         if (Boolean(initial.native) !== native) throw new NotFoundException('房间入口已变更');
-        if (!native && userId.startsWith('guest:')) throw new ForbiddenException('旧版房间需要登录');
         if (!initial.members.some(player => player.userId === userId) && !await this.games.canListNativeRooms(initial.gameId)) {
             throw new NotFoundException('游戏尚未公开');
         }
@@ -65,7 +64,7 @@ export class ExternalRoomsService {
     async get(roomId: string, userId: string) {
         const room = await this.read(roomId);
         const view = this.view(room, userId);
-        if (room.native && !room.started && view.room.seatId === view.room.hostSeatId && room.expiresAt.getTime() < Date.now() + 40_000) {
+        if (!room.started && view.room.seatId === view.room.hostSeatId && room.expiresAt.getTime() < Date.now() + 40_000) {
             await this.records.updateOne({ roomId, version: room.version }, { $set: { expiresAt: liveRoomExpiry() } });
         }
         return view;
@@ -127,7 +126,7 @@ export class ExternalRoomsService {
 
     private async newMember(userId: string, nativeName?: unknown) {
         if (nativeName !== undefined) {
-            if (typeof nativeName !== 'string' || !nativeName.trim() || nativeName.length > 8 || /[\x00-\x1f]/.test(nativeName)) {
+            if (typeof nativeName !== 'string' || !nativeName.trim() || nativeName.length > 8 || hasControlCharacters(nativeName)) {
                 throw new BadRequestException('请填写游戏昵称');
             }
             return { userId, seatId: randomUUID(), displayName: nativeName.trim(), ready: false };

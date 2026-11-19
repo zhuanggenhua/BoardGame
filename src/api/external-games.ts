@@ -30,18 +30,21 @@ async function request<T>(path: string, options: { token?: string | null; guestK
     return body as T;
 }
 const id = (value: string) => encodeURIComponent(value);
-export const joinExternalRoom = (token: string, roomId: string) =>
-    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { token, method: 'POST' });
-export const readExternalRoom = (token: string, roomId: string) =>
-    request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, { token });
-export const externalRoomAction = (token: string, roomId: string, data: Record<string, unknown>) =>
-    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/action`, { token, method: 'POST', data, keepalive: data.type === 'ready' });
-export const leaveExternalRoom = (token: string, roomId: string) =>
-    request<{ left: true }>(`/external-rooms/${id(roomId)}`, { token, method: 'DELETE', keepalive: true });
+export type ExternalRoomIdentity = { token?: string | null; guestKey?: string };
+export const createExternalRoom = (identity: ExternalRoomIdentity, gameId: string, capacity: number) =>
+    request<ExternalRoomView>('/external-rooms', { ...identity, method: 'POST', data: { gameId, capacity } });
+export const joinExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { ...identity, method: 'POST' });
+export const readExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, identity);
+export const externalRoomAction = (identity: ExternalRoomIdentity, roomId: string, data: Record<string, unknown>) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/action`, { ...identity, method: 'POST', data, keepalive: data.type === 'ready' });
+export const leaveExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
+    request<{ left: true }>(`/external-rooms/${id(roomId)}`, { ...identity, method: 'DELETE', keepalive: true });
 const upload = (file: File) => { const data = new FormData(); data.append('file', file); return data; };
 export const listExternalGames = () => request<{ items: ExternalGame[] }>('/external-games');
-type NativeRoomIdentity = { token?: string | null; guestKey?: string };
-export const listNativeExternalRooms = (gameId: string) =>
+type NativeRoomIdentity = ExternalRoomIdentity;
+export const listExternalRooms = (gameId: string) =>
     request<{ rooms: ExternalRoomListing[] }>(`/external-rooms?gameId=${id(gameId)}`);
 export const publishNativeExternalRoom = (identity: NativeRoomIdentity, gameId: string, capacity: number, nativeName: string, expectedEntry: string) =>
     request<ExternalRoomView>('/external-rooms', { ...identity, method: 'POST', data: { gameId, capacity, nativeName, expectedEntry } });

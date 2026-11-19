@@ -1,5 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {GameTransportClient} from '../../src/engine/transport/client';
 import {initContext, getGameServerBaseURL, joinMatchViaAPI, seedMatchCredentials} from '../helpers/common';
@@ -7,8 +8,23 @@ import {getMatchState} from '../helpers/state-injection';
 import {chooseFateIdentity} from './identitySelection';
 import {captureEvidenceSourceIdentity,releaseSourceSession,startSourceSession} from '../framework/sourceIdentity';
 import {FATE_ATTACK_BY_ID} from '../../src/games/fate-domination/data';
+import type { ActionLogEntry } from '../../src/engine/types';
+import i18next from 'i18next';
 
 test.use({trace:'retain-on-failure',video:'retain-on-failure',viewport:{width:1366,height:768}});
+
+const logLocale = i18next.createInstance();
+const fateMessages = JSON.parse(readFileSync(new URL('../../public/locales/zh-CN/game-fate-domination.json', import.meta.url), 'utf8'));
+const logLocaleReady = logLocale.init({ lng: 'zh-CN', resources: { 'zh-CN': { 'game-fate-domination': fateMessages } }, interpolation: { escapeValue: false } });
+function expectedLogText(entry: ActionLogEntry): string {
+ return entry.segments.map(segment => {
+  if (segment.type === 'text') return segment.text;
+  if (segment.type !== 'i18n') return '';
+  const params = { ...segment.params };
+  for (const key of segment.paramI18nKeys ?? []) params[key] = logLocale.t(String(params[key]), { ns: segment.ns });
+  return logLocale.t(segment.key, { ns: segment.ns, ...params });
+ }).join(' ');
+}
 
 async function openPanel(page:Page,id:string){
  const panel=page.getByTestId(`fab-panel-${id}`);
@@ -23,6 +39,7 @@ async function openPanel(page:Page,id:string){
 
 test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',async({browser,page,context,baseURL})=>{
  test.setTimeout(240000);
+ await logLocaleReady;
  await initContext(context,{skipImageGate:false});
  const secondContext=await browser.newContext({viewport:{width:1366,height:768}});
  const evidenceDir=path.resolve('evidence/fate-domination/online-undo-log-runs',`${Date.now()}-${process.pid}`);
@@ -73,7 +90,7 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   expect(actor.sendCommand('INSPECT_CARD',{cardId:privateCard})).toBe(true);
   await expect.poll(()=>actor.lastReceivedStateID,{timeout:15000}).toBeGreaterThan(version!);
   await expect.poll(async()=>(await read()).sys.actionLog.entries.some((entry:any)=>entry.kind==='INSPECT_CARD'),{timeout:15000}).toBe(true);
-  await expect.poll(()=>second.evaluate(()=>JSON.stringify((window as any).__BG_TEST_HARNESS__?.state?.get()?.sys?.actionLog??{})),{timeout:15000}).toContain('查看卡牌');
+  await expect.poll(()=>second.evaluate(()=>JSON.stringify((window as any).__BG_TEST_HARNESS__?.state?.get()?.sys?.actionLog??{})),{timeout:15000}).toContain('"key":"log.inspect"');
   const otherView=await second.evaluate(()=>{const state=(window as any).__BG_TEST_HARNESS__.state.get();return JSON.stringify({log:state.sys.actionLog,events:state.sys.eventStream});});
   expect(otherView).not.toContain(privateCard);
   await page.getByRole('button',{name:'部署到魔术工房第1点位'}).click();
@@ -89,7 +106,7 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   for(const id of ['0','1','2'])expect(entries.filter((entry:any)=>entry.kind==='ADVANCE_PHASE' && entry.actorId===id)).toHaveLength(1);
   expect(text).toHaveLength(entries.length);
   for(let index=0;index<entries.length;index++){
-   const content=(entries[index].segments??[]).filter((segment:any)=>segment.type==='text').map((segment:any)=>segment.text).join(' ');
+   const content=expectedLogText(entries[index]);
    if(content)expect(text[index]).toContain(content);
   }
   const ownCard=before.core.players['0'].hand.find((card:any)=>card.id===privateCard);
@@ -151,7 +168,7 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   await expect(afterRows).toHaveCount(afterEntries.length);
   const afterText=await afterRows.allInnerTexts();
   for(let index=0;index<afterEntries.length;index++){
-   const content=(afterEntries[index].segments??[]).filter((segment:any)=>segment.type==='text').map((segment:any)=>segment.text).join(' ');
+   const content=expectedLogText(afterEntries[index]);
    if(content)expect(afterText[index]).toContain(content);
   }
   for(const player of Object.values(after.core.players) as any[])for(const card of player.hand??[])expect(afterText.join('\n')).not.toContain(card.id);

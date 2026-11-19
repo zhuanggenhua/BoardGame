@@ -27,6 +27,7 @@ export class GameSubmission {
     @Prop({ type: String, default: '' }) coverUrl!: string;
     @Prop({ type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' }) status!: 'draft' | 'pending' | 'approved' | 'rejected';
     @Prop({ type: String, default: '' }) reviewComment!: string;
+    @Prop({ type: Date }) deletedAt?: Date;
     createdAt!: Date;
     updatedAt!: Date;
 }

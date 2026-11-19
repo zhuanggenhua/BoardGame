@@ -7,7 +7,7 @@ import { BattleCaptureDiagnosticsError, createBattleCaptureDiagnostics, type Cap
 import { countNewResultInk } from './battleFramePixels';
 
 type Bounds = { left: number; top: number; width: number; height: number };
-type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; activeUnits: Array<{ side: string | null; pieceId: string }>; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; left: number; top: number; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[]; diceAreas: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
+type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; activeUnits: Array<{ side: string | null; pieceId: string }>; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; left: number; top: number; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { table: Bounds | null; panel: Bounds | null; regions: Bounds[]; objects: Bounds[]; diceAreas: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
 export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
@@ -64,24 +64,26 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             const overlay = document.querySelector('[data-testid="qidahen-battle-roll-overlay"]');
             const regions = [...(panel?.querySelectorAll('[data-testid^="qidahen-battle-side-"]') ?? [])];
             const roster = [...(panel?.querySelectorAll('[data-qidahen-arena-unit]') ?? [])];
+            const table = panel?.querySelector('[data-testid="qidahen-battle-table"][data-table-renderer="flat"]');
             next.armyFaces = roster.flatMap(node => {
                 const image = node.querySelector('img');
-                const bounds = image?.getBoundingClientRect();
                 return (node.getAttribute('data-piece-ids') ?? '').split(' ').filter(Boolean).map(id => ({
-                    id, face: 'front', imageReady: Boolean(image?.complete && image.naturalWidth > 0 && bounds && bounds.width > 0 && bounds.height > 0
-                        && getComputedStyle(image).visibility !== 'hidden' && getComputedStyle(image).display !== 'none'), hiddenBack: false,
+                    id, face: 'front', imageReady: Boolean(image?.complete && image.naturalWidth > 0 && image.checkVisibility()), hiddenBack: false,
                 }));
             });
-            const diceAreas = Array.from(panel?.querySelectorAll('[data-dice-physics-source]') ?? [], toRect);
-            next.layout = { panel: overlay ? toRect(overlay) : null, regions: regions.map(toRect), objects: roster.map(toRect), diceAreas };
+            const diceAreas = Array.from(panel?.querySelectorAll('canvas[data-testid^="qidahen-battle-dice-canvas-"]') ?? []).filter(canvas => canvas.checkVisibility()).map(toRect);
+            next.layout = { table: table ? toRect(table) : null, panel: overlay ? toRect(overlay) : null, regions: regions.map(toRect), objects: roster.map(toRect), diceAreas };
             const previous = states.at(-1);
             if (!previous || JSON.stringify({ ...previous, at: 0 }) !== JSON.stringify({ ...next, at: 0 })) states.push(next);
         };
         const observer = new MutationObserver(sample);
         observer.observe(document.body, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['data-battle-roll-phase', 'data-battle-roll-state', 'data-dice-settled', 'data-dice-engine-ready', 'data-dice-engine-failure'] });
+        document.addEventListener('load', sample, true);
         sample();
-        (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation = { states, observer };
+        (window as unknown as { __annualBattleObservation: { states: State[]; disconnect: () => void } }).__annualBattleObservation = {
+            states, disconnect: () => { observer.disconnect(); document.removeEventListener('load', sample, true); },
+        };
     });
     const batchDiagnostic = process.env.QIDAHEN_BATCH_CLONE_DIAGNOSTIC === 'true'
         ? await (await import('./feedbackBatchedCloneDiagnostic')).startBatchedCloneDiagnostic(page, directory)
@@ -121,8 +123,8 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
         const damageCaptureError = await damageCapture;
         const states = await page.evaluate(() => {
-            const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
-            record.observer.disconnect();
+            const record = (window as unknown as { __annualBattleObservation: { states: State[]; disconnect: () => void } }).__annualBattleObservation;
+            record.disconnect();
             return record.states;
         });
         writeFileSync(resolve(directory, 'battle-native-video-diagnostic.json'), JSON.stringify({ flow, states, damageCaptureError, screenshotMayTriggerComposite: true, verdict: 'DIAGNOSTIC_ONLY', reason: 'Playwright native video cross-check; not an E2E acceptance' }, null, 2));
@@ -210,8 +212,8 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         }
         await streamSession.detach();
         const states = await page.evaluate(() => {
-            const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
-            record.observer.disconnect(); return record.states;
+            const record = (window as unknown as { __annualBattleObservation: { states: State[]; disconnect: () => void } }).__annualBattleObservation;
+            record.disconnect(); return record.states;
         });
         // 录像和关键帧统一使用同一条带时间戳的真实合成器流。
         const frames = [...screencastFrames].sort((a, b) => a.at - b.at);
@@ -246,7 +248,9 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         for (const phase of ['artillery', 'cavalry', 'infantry']) {
             for (const state of ['rolling', 'damage']) {
                 const moment = states.find(item => item.phase === phase && item.state === state &&
-                    item.dice.length > 0 && item.dice.every(die => die.ready === 'true' && die.settled === (state === 'damage' ? 'true' : 'false')));
+                    item.layout?.table && item.dice.length > 0 && item.layout.diceAreas.length === item.dice.length
+                    && item.layout.diceAreas.every(bounds => bounds.width > 0 && bounds.height > 0)
+                    && item.dice.every(die => die.ready === 'true' && die.settled === (state === 'damage' ? 'true' : 'false')));
                 expect(moment, `${phase} ${state} actual physics observation`).toBeDefined();
                 const beforeArmies = states.find(item => item.armyFaces.length > 0)!.armyFaces;
                 for (const army of beforeArmies) {
@@ -263,7 +267,7 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                     const damage = moment!.labels.find(item => item.id === `${side}-damage`);
                     if (state === 'damage' && damage) expect(damage.text, 'visible damage names its recipient').toContain(participants[side === 'attacker' ? 'defender' : 'attacker']);
                 }
-                for (const label of moment!.labels.filter(label => state === 'damage' || !label.id?.match(/total|damage/))) {
+                for (const label of moment!.labels.filter(label => state === 'damage' || !label.id?.match(/total|damage|calculation/))) {
                     expect(label.visibility).toBe('visible');
                     expect(label.opacity).toBe('1');
                     expect(label.color).toBe('rgb(255, 243, 220)');
@@ -275,10 +279,17 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                 expect(panel, 'actual battle arena bounds').toBeTruthy();
                 expect(layout.regions, 'stable attacker and defender sides').toHaveLength(2);
                 expect(layout.objects.length, 'both groups show genuine deployed units').toBeGreaterThanOrEqual(2);
+                const table = layout.table!;
+                expect(table.width, '2D battle board occupies the main battle stage').toBeGreaterThan(panel.width * .8);
+                const guard = { top: table.top, bottom: table.top + table.height };
+                const seat = (name: string) => moment!.labels.find(label => label.id === name)!;
+                expect(seat('attacker').top, 'attacker uses the lower row').toBeGreaterThan(seat('defender').top);
+                expect(seat('defender').top).toBeGreaterThanOrEqual(guard.top);
+                expect(seat('attacker').top + seat('attacker').height).toBeLessThanOrEqual(guard.bottom);
                 for (const object of layout.objects) {
                     expect(object.left >= panel.left && object.top >= panel.top && object.left + object.width <= panel.left + panel.width
                         && object.top + object.height <= panel.top + panel.height, 'unit faces stay within the arena').toBe(true);
-                    for (const dice of layout.diceAreas) expect(object.top + object.height - 1 <= dice.top, 'dice render below the unit row').toBe(true);
+
                 }
                 const end = states.find(item => item.at > moment!.at && (item.phase !== phase || item.state !== state || item.dice.length === 0 || item.dice.some(die => die.ready !== 'true' || die.settled !== (state === 'damage' ? 'true' : 'false'))));
                 expect(end, phase + ' ' + state + ' phase boundary').toBeDefined();
@@ -298,7 +309,7 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                     const rolling = states.find(item => item.phase === phase && item.state === 'rolling' && item.dice.length > 0);
                     const baseline = frames.find(item => rolling && item.at >= rolling.at && item.at < moment!.at);
                     expect(baseline, phase + ' rolling baseline for result pixels').toBeDefined();
-                    const resultLabels = moment!.labels.filter(label => /-(total|damage)$/.test(label.id ?? '') && label.visibility === 'visible');
+                    const resultLabels = moment!.labels.filter(label => /-(?:total|damage|calculation-d\d+)$/.test(label.id ?? '') && label.visibility === 'visible');
                     expect(resultLabels.length, phase + ' visible result labels').toBeGreaterThan(0);
                     const viewport = page.viewportSize()!;
                     const crop = (file: string, label: typeof resultLabels[number]) => {

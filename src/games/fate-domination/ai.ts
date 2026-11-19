@@ -95,12 +95,23 @@ export function buildFateAiLegalActions({ playerId, state: raw }: { playerId: st
     return candidates;
 }
 
-/** 基础策略只读取当前席可见状态。该估值不是完整角色打法或隐藏信息搜索。 */
+function visibleOppositionPower(core: FateDominationCore, playerId: string, floor = 0): number {
+    const location = core.players[playerId].locationId;
+    return Math.max(floor, ...Object.values(core.players)
+        .filter(other => other.id !== playerId && other.locationId === location && !other.eliminated)
+        .map(other => other.publicView?.power ?? visibleFatePower(core, other.id, playerId)));
+}
+
+// 并列首位的玩家平分战果，单改事件战果不会拉开并列双方差距。
+function chariotRewardDirection(core: FateDominationCore, playerId: string): number {
+    return Math.sign(visibleFatePower(core, playerId, playerId) - visibleOppositionPower(core, playerId, -Infinity));
+}
+
+/** 基础策略只读取当前席可见状态。 */
 function utility(core: FateDominationCore, playerId: string): number {
     const player = core.players[playerId];
-    const opponents = Object.values(core.players).filter(other => other.id !== playerId && other.locationId === player.locationId);
     const power = visibleFatePower(core, playerId, playerId);
-    const opposition = Math.max(0, ...opponents.map(other => other.publicView?.power ?? visibleFatePower(core, other.id, playerId)));
+    const opposition = visibleOppositionPower(core, playerId);
     const competing = player.locationId === 'miyama' || player.locationId === 'shinto';
     return player.victoryPoints * 100 + player.mana * .8 + player.commandSpells * 6
         + (player.hand.length - player.activeAttackIds.length) * 1.2 + power * 2
@@ -114,6 +125,16 @@ export function projectFateAiActionOutcome({ context, action: candidate }: { con
     if (!FateDominationDomain.validate(state, command).valid) return { status: 'rejected' };
     if(command.type==='PLAY_SKILL'){
         const ability=resolveFatePlayerAbility(state.core,context.playerId,command.payload.skillId);
+        if (ability?.effects.some(effect => effect.type === 'replace-event')) {
+            const location = state.core.players[context.playerId].locationId;
+            const discarded = location === 'miyama' || location === 'shinto'
+                ? state.core.currentEvents[location].find(card => card.id === command.payload.targetCardId) : undefined;
+            if (!discarded) return { status: 'rejected' };
+            // 只按当前公开事件估值。实际抽取由权威端在提交后处理。
+            const rewardDirection = chariotRewardDirection(state.core, context.playerId);
+            return { status: 'succeeded', utilityDelta: rewardDirection * (3 - discarded.victoryPoints) - 3,
+                hasOwnedFollowUp: true, eventTypes: ['FATE_CHARIOT_DRAWN'] };
+        }
         const draw=ability?.effects.find(effect=>effect.type==='draw-cards');
         if(draw?.type==='draw-cards'){
             const player=state.core.players[context.playerId];
@@ -147,6 +168,15 @@ export function chooseFateAiAction(context: AiDecisionContext) {
         }
         if (candidate.kind === 'post-battle-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'restore' ? 10 : 0;
         if (candidate.kind === 'field-attack-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'place' ? 10 : 0;
+        if (candidate.kind === 'chariot-choice') {
+            const { core, sys } = context.visibleState as State;
+            const choice = sys.interaction.current;
+            if (!isFateChariotChoice(choice)) return -120;
+            const { optionId } = candidate.commands[0].payload as { optionId: string };
+            const card = choice.data.fateContext.offered.find(event => event.id === optionId);
+            if (!card) return -120;
+            return chariotRewardDirection(core, context.playerId) * card.victoryPoints;
+        }
         if(candidate.kind==='investigation-choice'){
             const choice=(context.visibleState as State).sys.interaction.current;
             if(!isFateInvestigationChoice(choice))return -120;

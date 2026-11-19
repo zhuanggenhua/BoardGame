@@ -43,6 +43,7 @@ async function openMatch(page: Page, context: BrowserContext) {
     await expect(canvas.locator('..')).toHaveAttribute('data-map-resource-status', 'ready', { timeout: 30000 });
     const grid = page.getByTestId('betrayal-room-grid');
     await expect(grid).toHaveAttribute('data-visible-explorer-models', '3', { timeout: 30000 });
+    await expect(grid).toHaveAttribute('data-detailed-figure-models', '0');
     return { grid, diagnostics };
 }
 
@@ -53,10 +54,25 @@ function readPose(grid: ReturnType<Page['getByTestId']>) {
     }));
 }
 
+async function expectNearFigures(grid: ReturnType<Page['getByTestId']>, tableTriangles: string) {
+    await expect(grid).not.toHaveAttribute('data-detailed-figure-models', '0');
+    await expect.poll(async () => Number(await grid.getAttribute('data-rendered-figure-triangles')))
+        .toBeGreaterThan(Number(tableTriangles));
+}
+
+async function expectSceneMove(page: Page, grid: ReturnType<Page['getByTestId']>) {
+    await expect(page.locator('[data-testid="betrayal-visual-transition-blocker"][data-transition-kind="explorer-move"]')).toHaveCount(0);
+    await expect(grid).toHaveAttribute('data-visible-explorer-models', '3');
+    await expect(page.getByTestId('betrayal-room-occupant-hallway-0')).toBeVisible();
+}
+
 test('小黑屋正式对局加载角色模型，旋转、平移和缩放后仍能进房', async ({ page, context }) => {
     test.setTimeout(180000);
     const { grid, diagnostics } = await openMatch(page, context);
     const pose = () => readPose(grid);
+    const tableTriangles = (await grid.getAttribute('data-rendered-figure-triangles'))!;
+    expect(Number(tableTriangles)).toBeGreaterThan(20_900);
+    expect(Number(tableTriangles)).toBeLessThanOrEqual(21_000);
     await expect.poll(async () => (await pose()).zoom).toBeGreaterThan(0);
     await saveScreenshot(page, `${staging}/01-开局房间与棋子.png`);
     const before = await pose();
@@ -79,14 +95,23 @@ test('小黑屋正式对局加载角色模型，旋转、平移和缩放后仍�
     expect(hallwayRect).not.toBeNull();
     const anchor = { x: hallwayRect!.x + hallwayRect!.width / 2, y: hallwayRect!.y + hallwayRect!.height / 2 };
     await page.mouse.move(anchor.x, anchor.y);
-    await page.mouse.wheel(0, -120);
+    await page.mouse.wheel(0, -650);
     await expect.poll(async () => (await pose()).zoom).toBeGreaterThan(beforeZoom.zoom + 0.03);
+    await expectNearFigures(grid, tableTriangles);
     const zoomedRect = (await hallway.boundingBox())!;
     expect(Math.abs(zoomedRect.x + zoomedRect.width / 2 - anchor.x)).toBeLessThan(2);
     expect(Math.abs(zoomedRect.y + zoomedRect.height / 2 - anchor.y)).toBeLessThan(2);
+    await saveScreenshot(page, `${staging}/03-放大后显示近景网格.png`);
+    await page.mouse.wheel(0, 255);
+    await expect.poll(async () => (await pose()).zoom).toBeLessThan(1.65);
+    expect((await pose()).zoom).toBeGreaterThan(1.45);
+    await expect(grid).toHaveAttribute('data-detailed-figure-models', '3');
+    await page.mouse.wheel(0, 230);
+    await expect(grid).toHaveAttribute('data-detailed-figure-models', '0');
+    await expect(grid).toHaveAttribute('data-rendered-figure-triangles', tableTriangles);
     await hallway.click();
-    await expect(page.getByTestId('betrayal-room-occupant-hallway-0')).toBeVisible();
-    await saveScreenshot(page, `${staging}/03-放大后移动.png`);
+    await expectSceneMove(page, grid);
+    await saveScreenshot(page, `${staging}/04-缩回棋桌后移动.png`);
     assertNoFatalFrontendErrors([{ label: 'betrayal-three-map', diagnostics }]);
 });
 
@@ -97,7 +122,8 @@ test.describe('手机横屏', () => {
         test.setTimeout(180000);
         const { grid, diagnostics } = await openMatch(page, context);
         const before = await readPose(grid);
-        await saveScreenshot(page, `${staging}/04-横屏开局.png`);
+        const tableTriangles = (await grid.getAttribute('data-rendered-figure-triangles'))!;
+        await saveScreenshot(page, `${staging}/05-横屏开局.png`);
         const hallway = page.getByTestId('betrayal-room-hallway');
         const box = (await hallway.boundingBox())!;
         const x = box.x + box.width / 2;
@@ -107,19 +133,22 @@ test.describe('手机横屏', () => {
             type: 'touchStart',
             touchPoints: [{ x: x - 30, y, id: 1 }, { x: x + 30, y, id: 2 }],
         });
-        await touch.send('Input.dispatchTouchEvent', {
-            type: 'touchMove',
-            touchPoints: [{ x: x - 40, y: y - 10, id: 1 }, { x: x + 40, y: y + 10, id: 2 }],
-        });
+        for (const distance of [40, 65, 100]) {
+            await touch.send('Input.dispatchTouchEvent', {
+                type: 'touchMove',
+                touchPoints: [{ x: x - distance, y: y - distance / 4, id: 1 }, { x: x + distance, y: y + distance / 4, id: 2 }],
+            });
+        }
         await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
         await expect.poll(async () => (await readPose(grid)).zoom).toBeGreaterThan(before.zoom + .1);
         await expect.poll(async () => Math.abs((await readPose(grid)).bearing - before.bearing)).toBeGreaterThan(.12);
+        await expectNearFigures(grid, tableTriangles);
         const zoomed = (await hallway.boundingBox())!;
         expect(Math.abs(zoomed.x + zoomed.width / 2 - x)).toBeLessThan(3);
         expect(Math.abs(zoomed.y + zoomed.height / 2 - y)).toBeLessThan(3);
         await hallway.tap();
-        await expect(page.getByTestId('betrayal-room-occupant-hallway-0')).toBeVisible();
-        await saveScreenshot(page, `${staging}/05-横屏转桌后触控移动.png`);
+        await expectSceneMove(page, grid);
+        await saveScreenshot(page, `${staging}/06-横屏近景触控移动.png`);
         assertNoFatalFrontendErrors([{ label: 'betrayal-three-map-touch', diagnostics }]);
     });
 });
@@ -141,6 +170,8 @@ test('木乃伊模型随正式移动入口从仪式室到地下室起始处', as
     const grid = page.getByTestId('betrayal-room-grid');
     await expect(grid).toHaveAttribute('data-map-renderer', 'three');
     await expect(grid).toHaveAttribute('data-visible-monster-models', '1', { timeout: 30000 });
+    await expect(grid).toHaveAttribute('data-detailed-figure-models', '0');
+    const tableTriangles = (await grid.getAttribute('data-rendered-figure-triangles'))!;
     await expect(page.getByTestId('betrayal-turn-intro-skip')).toHaveCount(0, { timeout: 10000 });
     const confirmRoll = page.getByTestId('betrayal-roll-continue');
     await expect(confirmRoll).toBeEnabled({ timeout: 20000 });
@@ -157,7 +188,8 @@ test('木乃伊模型随正式移动入口从仪式室到地下室起始处', as
     await page.mouse.move(room.x + room.width / 2, room.y + room.height / 2);
     await page.mouse.wheel(0, -480);
     await expect.poll(async () => Number(await grid.getAttribute('data-zoom'))).toBeGreaterThan(1.5);
-    await saveScreenshot(page, `${staging}/06-木乃伊模型.png`);
+    await expectNearFigures(grid, tableTriangles);
+    await saveScreenshot(page, `${staging}/07-木乃伊近景.png`);
 
     const moveTarget = page.getByTestId(`betrayal-room-monster-move-target-${destination.id}`);
     if (!(await moveTarget.isVisible())) {
@@ -170,6 +202,6 @@ test('木乃伊模型随正式移动入口从仪式室到地下室起始处', as
     await expect(source).toHaveCount(0);
     await expect(page.getByTestId(`betrayal-room-monster-${destination.id}-${mummyId}`)).toBeVisible();
     await expect(grid).toHaveAttribute('data-visible-monster-models', '1');
-    await saveScreenshot(page, `${staging}/07-木乃伊模型移动后.png`, { waitMs: 500 });
+    await saveScreenshot(page, `${staging}/08-木乃伊模型移动后.png`, { waitMs: 500 });
     assertNoFatalFrontendErrors([{ label: 'betrayal-three-monster', diagnostics }]);
 });

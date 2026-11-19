@@ -2590,6 +2590,7 @@
       "submissionType": "投稿类型",
       "webZip": "网页 ZIP",
       "zipHint": "上传含网页入口文件的游戏压缩包，最大 32 MB。",
+      "roomSdkGuide": "下载房间 SDK 接入指南",
       "zipRequired": "请选择网页 ZIP 压缩包",
       "zipTooLarge": "网页 ZIP 不能超过 32 MB",
       "zipUpdateHint": "如需更新游戏文件，请在「我的投稿」上传新版 ZIP 并提交审核。",
@@ -2660,7 +2661,10 @@
         "emptyDescription": "你提交的游戏会显示在这里。",
         "processing": "收录处理中",
         "view": "查看投稿",
-        "edit": "编辑投稿"
+        "edit": "编辑投稿",
+        "delete": "删除投稿",
+        "deleteConfirm": "确定删除「{{name}}」？",
+        "deletePublishedConfirm": "删除「{{name}}」会同时将游戏从平台目录下架。确定删除？"
       },
       "works": {
         "title": "我的作品",

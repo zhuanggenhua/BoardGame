@@ -172,36 +172,15 @@ const expectScreenshotsVisiblyDifferent = async (
   ).toBeGreaterThan(60);
 };
 
-const expectGirlTokenMatchesExplorerBoardSize = async (
+const expectGirlBoardMarker = async (
   page: Page,
   girlUnitTestId: string,
   label: string,
+  expectedSize = 54,
 ) => {
-  const metrics = await page.evaluate((testId) => {
-    const girl = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
-    const explorer = document.querySelector<HTMLElement>(
-      '[data-testid^="betrayal-explorer-figure-token-"]',
-    );
-    const girlRect = girl?.getBoundingClientRect();
-    const explorerRect = explorer?.getBoundingClientRect();
-    return {
-      girlExists: Boolean(girl),
-      explorerExists: Boolean(explorer),
-      girlVisualSize: Number(girl?.dataset.tokenVisualSize ?? "0"),
-      girlHeight: girlRect?.height ?? 0,
-      explorerHeight: explorerRect?.height ?? 0,
-    };
-  }, girlUnitTestId);
-  expect(metrics.girlExists, `${label} 必须能看到女孩 token：${JSON.stringify(metrics)}`).toBe(true);
-  expect(metrics.explorerExists, `${label} 必须能看到玩家 token 作尺寸基准：${JSON.stringify(metrics)}`).toBe(true);
-  expect(
-    metrics.girlVisualSize,
-    `${label} 女孩 token 必须保留和玩家 token 同层的设计尺寸：${JSON.stringify(metrics)}`,
-  ).toBeGreaterThan(0);
-  expect(
-    Math.abs(metrics.girlHeight - metrics.explorerHeight),
-    `${label} 女孩 token 屏幕高度必须和玩家 token 保持一致：${JSON.stringify(metrics)}`,
-  ).toBeLessThanOrEqual(2);
+  const marker = page.getByTestId(girlUnitTestId);
+  await expect(marker, label).toBeInViewport();
+  await expect(marker, label).toHaveAttribute("data-token-visual-size", String(expectedSize));
 };
 
 const tradeActionPanelItemStep = (page: Page) =>
@@ -2494,6 +2473,7 @@ const acknowledgeRecentRollForAllPlayers = async (page: Page) => {
 const completeMummyMonsterActionsFromTurnStart = async (
   page: Page,
   screenshots: MummyMonsterTutorialScreenshots = {},
+  verification: { rewardRetry?: boolean; moveRetry?: boolean } = {},
 ) => {
   await waitForStep(page, "mummy-monster-turn-start");
   const moveTarget = await resolveMummyMonsterMoveTutorialTarget(page);
@@ -2514,18 +2494,28 @@ const completeMummyMonsterActionsFromTurnStart = async (
   await page.getByTestId("betrayal-action-monsterMovementRoll").click();
   const movementRollPanel = page.getByTestId("betrayal-recent-roll-panel");
   await expect(movementRollPanel).toBeVisible();
-  await expect(movementRollPanel).toContainText("木乃伊移动");
   await waitForPhysicalDiceSettled(movementRollPanel);
+  await expect(movementRollPanel).toContainText("木乃伊移动");
   await expect(movementRollPanel).toContainText("可移动 0 间");
   await saveMummyMonsterStepScreenshot(page, screenshots.movementRoll);
 
   await acknowledgeRecentRollForAllPlayers(page);
   await waitForStep(page, "mummy-monster-move-target");
   await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
-  await page.getByTestId("betrayal-action-monsterMove").click();
+  await expect(page.getByTestId("betrayal-action-monsterMove")).toHaveCount(0);
   const mummyMoveToken = page.getByTestId(`betrayal-room-monster-${moveTarget.mummyRoomId}-mummy`);
   await expect(mummyMoveToken).toHaveAttribute("data-direct-target", "true");
   await mummyMoveToken.click();
+  if (verification.moveRetry) {
+    await switchRoomMapToFloor(page, "ground");
+    await expect(page.getByTestId("betrayal-room-monster-move-target-entrance-hall")).toBeVisible();
+    await page.getByTestId("betrayal-room-entrance-hall").click();
+    await waitForStep(page, "mummy-monster-move-target");
+    await switchRoomMapToFloor(page, moveTarget.mummyRoomFloor);
+    await expect(mummyMoveToken).toHaveAttribute("data-direct-target", "true");
+    await expect(page.getByTestId(moveTarget.girlTokenTestId)).toHaveAttribute("data-token-status", "placed");
+    await mummyMoveToken.click();
+  }
   if (moveTarget.unrevealedRoomId) {
     await expect(
       page.getByTestId(`betrayal-room-monster-move-target-${moveTarget.unrevealedRoomId}`),
@@ -2552,10 +2542,11 @@ const completeMummyMonsterActionsFromTurnStart = async (
   await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
     "拾起女孩",
   );
-  await expectGirlTokenMatchesExplorerBoardSize(
+  await expectGirlBoardMarker(
     page,
     `betrayal-girl-svg-token-${moveTarget.girlRoomId}`,
     "木乃伊移动到女孩房间后携带女孩",
+    38,
   );
   await saveMummyMonsterStepScreenshot(page, screenshots.moveResult);
   await clickNext(page);
@@ -2604,9 +2595,9 @@ const completeMummyMonsterActionsFromTurnStart = async (
   await heroToken.click();
   const attackRollPanel = page.getByTestId("betrayal-recent-roll-panel");
   await expect(attackRollPanel).toBeVisible();
+  await waitForPhysicalDiceSettled(attackRollPanel);
   await expect(attackRollPanel).toContainText("木乃伊攻击");
   await expect(attackRollPanel).toContainText("攻击投骰");
-  await waitForPhysicalDiceSettled(attackRollPanel);
   await expect(attackRollPanel).toContainText("本会造成");
   await expect(attackRollPanel).toContainText("满足木乃伊偷取条件");
   await expect(attackRollPanel).not.toContainText("伤害或偷取");
@@ -2626,6 +2617,12 @@ const completeMummyMonsterActionsFromTurnStart = async (
   );
   await saveMummyMonsterStepScreenshot(page, screenshots.reward);
 
+  if (verification.rewardRetry) {
+    await page.getByTestId("betrayal-mummy-reward-damage").click();
+    await waitForStep(page, "mummy-attack-reward");
+    await expect(page.getByTestId("betrayal-mummy-reward-steal-map")).toBeEnabled();
+    await expect(page.getByTestId("betrayal-damage-allocation-panel")).toHaveCount(0);
+  }
   await page.getByTestId("betrayal-mummy-reward-steal-map").click();
   await waitForStep(page, "mummy-steal-result");
   await expect(page.getByTestId("betrayal-mummy-reward-banner")).toHaveCount(0);
@@ -6188,7 +6185,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ]);
   });
 
-  test("[mummy-traitor-path] 叛徒教程会打开叛徒剧本并完成木乃伊行动", async ({
+  test("[mummy-traitor-path] 叛徒教程会打开叛徒剧本并亲手完成叛徒胜利", async ({
     page,
     context,
   }) => {
@@ -6244,13 +6241,42 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       attackRoll: STEP_TRAITOR_08,
       reward: STEP_TRAITOR_09,
       stealResult: STEP_TRAITOR_10,
-    });
+    }, { rewardRetry: true });
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "偷窃代替伤害",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "交出圣符",
     );
+
+    await clickNext(page);
+    await waitForStep(page, "pick-up-girl");
+    const wedding = await resolveMummyTraitorTutorialTarget(page);
+    const girl = page.getByTestId(wedding.girlTokenTestId);
+    const use = page.getByTestId("betrayal-action-use");
+    for (const [step, status, action, screenshot] of [
+      ["pick-up-girl", "placed", "拾起女孩", "11-石棺房拾起女孩"],
+      ["give-girl-to-mummy", "held-by-player", "交出女孩", "12-女孩交给木乃伊"],
+      ["give-omen-to-mummy", "held-by-mummy", "交出圣符", "13-圣符交给木乃伊"],
+    ] as const) {
+      await waitForStep(page, step);
+      await expect(girl).toHaveAttribute("data-token-status", status);
+      await expect(use).toContainText(action);
+      await expectTutorialCardInForeground(page, action);
+      await saveScreenshot(page, `${EVIDENCE_DIR}/traitor-path/${screenshot}.jpg`);
+      await use.click();
+    }
+    await expect(page.getByTestId("betrayal-endgame-screen")).toBeVisible();
+    await expect(page.getByTestId("betrayal-endgame-ending-narration")).toContainText("小女孩");
+    await saveScreenshot(page, `${EVIDENCE_DIR}/traitor-path/14-结局朗读.jpg`);
+    await page.getByTestId("betrayal-endgame-ending-continue").click();
+    await waitForStep(page, "traitor-finish");
+    await expect(page.getByTestId("betrayal-endgame-result-report")).toBeVisible();
+    await expect(page.getByTestId("betrayal-endgame-outcome")).toHaveText("胜利");
+    await expectTutorialCardInForeground(page, "叛徒胜利");
+    await saveScreenshot(page, `${EVIDENCE_DIR}/traitor-path/15-叛徒胜利与教程完成入口.jpg`);
+    await clickNext(page);
+    await expect(page.getByTestId("tutorial-overlay-card")).toHaveCount(0);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-traitor-path", diagnostics },
@@ -6318,7 +6344,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId(`betrayal-room-${traitorTarget.roomId}`),
     ).toHaveAttribute("data-direct-target", "true");
-    await expectGirlTokenMatchesExplorerBoardSize(
+    await expectGirlBoardMarker(
       page,
       `betrayal-girl-svg-token-${traitorTarget.roomId}`,
       "叛徒胜利专题拾起女孩前",
@@ -6335,7 +6361,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-action-use"),
     ).toContainText(/交出女孩|Give Girl/i);
-    await expectGirlTokenMatchesExplorerBoardSize(
+    await expectGirlBoardMarker(
       page,
       `betrayal-girl-svg-token-${traitorTarget.roomId}`,
       "叛徒持有女孩后",
@@ -6351,15 +6377,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-inventory-section"),
     ).toContainText("圣符");
-    await expectGirlTokenMatchesExplorerBoardSize(
+    await expectGirlBoardMarker(
       page,
       `betrayal-girl-svg-token-${traitorTarget.roomId}`,
       "木乃伊持有女孩后",
+      38,
     );
     await saveScreenshot(page, STEP_TRAITOR_VICTORY_05);
     await page.getByTestId("betrayal-action-use").click();
 
-    await waitForStep(page, "traitor-finish", 30000);
     const traitorEndgameScreen = page.getByTestId("betrayal-endgame-screen");
     await expect(traitorEndgameScreen).toBeVisible({ timeout: 30000 });
     await expect(traitorEndgameScreen).toContainText("木乃伊");
@@ -6368,6 +6394,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       traitorEndgameScreen.getByTestId("betrayal-endgame-ending-narration"),
     ).toContainText("木乃伊怀中的小女孩");
     await saveScreenshot(page, STEP_TRAITOR_VICTORY_06);
+    await page.getByTestId("betrayal-endgame-ending-continue").click();
+    await waitForStep(page, "traitor-finish");
 
     await expect
       .poll(() =>
@@ -6455,7 +6483,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       attackRoll: STEP_55,
       reward: STEP_56,
       stealResult: STEP_57,
-    });
+    }, { moveRetry: true });
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-mummy-monster-actions", diagnostics },

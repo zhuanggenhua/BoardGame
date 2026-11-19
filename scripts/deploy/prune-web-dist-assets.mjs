@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isExcludedAppMedia } from '../mobile/app-bundle-media.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..', '..');
@@ -19,13 +20,7 @@ export const CLOUDFLARE_PAGES_MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
   'zh-CN/dicethrone/assets-manifest.json',
-  // Android 测试壳/首装场景还没有下载 package-managed 游戏包；
-  // 首页书页缩略图必须保留最小压缩产物，不能把 DiceThrone 大图整包塞回内置资源。
-  'zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
   'zh-CN/qidahen/assets-manifest.json',
-  // Android 测试壳/首装场景可能尚未安装七大恨游戏包；
-  // 主地图是进入对局后的关键首屏资产，只保留压缩版作为离线兜底。
-  'zh-CN/qidahen/board/compressed/qidahen-main-map.webp',
   'zh-CN/smashup/assets-manifest.json',
   'zh-CN/splendor/assets-manifest.json',
   'zh-CN/tictactoe/assets-manifest.json',
@@ -161,6 +156,18 @@ const removeOversizedFiles = (targetPath, maxFileBytes, stats) => {
   }
 };
 
+const removeExcludedAppMedia = (targetPath, stats) => {
+  if (!fs.existsSync(targetPath)) return;
+  for (const entry of fs.readdirSync(targetPath, { withFileTypes: true })) {
+    const fullPath = path.join(targetPath, entry.name);
+    if (entry.isDirectory()) removeExcludedAppMedia(fullPath, stats);
+    else if (entry.isFile() && isExcludedAppMedia(path.relative(path.join(repoRoot, 'dist'), fullPath))) {
+      stats.removedPaths.push(toRepoRelativePath(fullPath));
+      fs.unlinkSync(fullPath);
+    }
+  }
+};
+
 const pruneLocales = (allowedLocaleDirs, stats) => {
   if (!Array.isArray(allowedLocaleDirs) || !fs.existsSync(distLocalesDir)) {
     return;
@@ -250,6 +257,8 @@ export function pruneDistAssets(target = 'web') {
   for (const relativePath of DIST_LOGOS_RETAIN_RELATIVE_PATHS) {
     copyRetainedFile(publicLogosDir, distLogosDir, relativePath);
   }
+
+  if (profile.removePublicAssetMirrorDirs) removeExcludedAppMedia(path.join(repoRoot, 'dist'), stats);
 
   removeOversizedFiles(distAssetsDir, profile.maxAssetFileBytes, stats);
 

@@ -35,6 +35,8 @@ export class GameSubmissionsController {
         @Param('id') id: string,
         @Body(new ValidationPipe({ whitelist: true, transform: true, expectedType: GameSubmissionDto })) body: GameSubmissionDto,
     ) { return this.submissions.update(user.userId, id, body); }
+    @Delete(':id')
+    remove(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.submissions.remove(user.userId, id); }
     @Post(':id/cover')
     @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
     cover(@CurrentUser() user: { userId: string }, @Param('id') id: string, @UploadedFile() file?: { buffer: Buffer }) {

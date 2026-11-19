@@ -128,9 +128,11 @@
 
 ### 最新迁移路径
 
-正式入口 `/play/betrayal` 及其它复用 Betrayal Board 的对局继续消费 `roomMapModel`、`roomSceneModel` 与 `useSceneMovement`。房间图集贴在有厚度的板块上。探索者模型按角色 ID 加载，旧实验 OBJ 与贴图的 GLB 导出可由 `scripts/assets/export-betrayal-explorer-models.mjs` 复现。怪物按 `definitionId` 加载 GLB，由原棋盘按钮承接选中、移动和检视。规则标记及 Pixi 兼容视图仍显示印刷素材。
+正式入口 `/play/betrayal` 及其它复用 Betrayal Board 的对局继续消费 `roomMapModel`、`roomSceneModel` 与 `useSceneMovement`。房间图集贴在有厚度的板块上。探索者模型按角色 ID 加载，`scripts/assets/export-betrayal-explorer-models.mjs` 从旧实验 OBJ 与贴图导出 GLB，默认每个探索者约 12,000 个三角面，保留模型包围盒与原始贴图。复现全精度对照时，传入 `--triangles 0 --output-dir <对照目录>`。怪物按 `definitionId` 加载 GLB，由原棋盘按钮承接选中、移动和检视。规则标记及 Pixi 兼容视图仍显示印刷素材。
 
-TTS Workshop 存档 `3420850553.json` 的小型怪物标志物共用同一个网格，例如 `8f69dc` 与 `ef8e42`。木乃伊使用 WorkBuddy 生成的模型。先用 `export-betrayal-monster-models.py -- <原始 GLB> <裁切 GLB>` 在 Blender 移除生成的方形底座，再用 `repack-betrayal-mummy-model.mjs <裁切 GLB>` 压缩贴图。其余八个怪物按对应定义和印刷图像的识别特征制作，由同一个 Blender 脚本直接导出。成品路径统一为 `public/betrayal-models/monster-<definitionId>.glb`。
+TTS Workshop 存档 `3420850553.json` 的小型怪物标志物共用同一个网格，例如 `8f69dc` 与 `ef8e42`。木乃伊使用 WorkBuddy 生成的模型。先用 `export-betrayal-monster-models.py -- <原始 GLB> <裁切 GLB>` 在 Blender 移除生成的方形底座，再用 `repack-betrayal-mummy-model.mjs <裁切 GLB>` 减至 6,000 个三角面，并以 Meshopt 压缩网格、WebP 压缩贴图。试验其它面数时可传入 `--triangles` 和 `--output` 指向对照用 GLB。其余八个怪物按对应定义和印刷图像的识别特征制作，由同一个 Blender 脚本直接导出。成品路径统一为 `public/betrayal-models/monster-<definitionId>.glb`。
+
+棋子导出后运行 `node scripts/assets/build-betrayal-figure-lods.mjs` 补齐棋桌档。探索者棋桌档约 7,000 个三角面，木乃伊 3,500 个，其余怪物按近景网格复杂度减面。两档共用顶点属性、材质、贴图和定位，GLB 内额外存储棋桌档索引。棋桌缩放达到 1.65 时切到近景档，低于 1.45 时切回棋桌档；两档之间保留当前档位，棋子沿场景内同一移动路径完成跳跃和落地。
 
 正交相机保持前后房间的缩放比例一致。地图命中、合法路线和选择提示从同一相机投影，模型本体拾取交给已有探索者按钮。拖动优先于自动镜头，鼠标滚轮和双指手势围绕作用点缩放。鼠标右键拖动及双指旋转改变朝向，牌堆、属性和确认栏保持屏幕坐标。普通相邻移动沿桌面跳步，特殊位移在源与目的地淡出淡入，房间从桌面上方落位。表现完成仍由原事件队列回收。
 

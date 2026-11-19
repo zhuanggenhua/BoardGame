@@ -1,5 +1,14 @@
 import type { MapViewportState } from '../../../engine/mapRenderer';
 
+export function projectFateMapBounds(bounds: { x: number; y: number; w: number; h: number }, pose: MapViewportState) {
+    return {
+        left: pose.panX + bounds.x * pose.zoom,
+        top: pose.panY + bounds.y * pose.zoom,
+        right: pose.panX + (bounds.x + bounds.w) * pose.zoom,
+        bottom: pose.panY + (bounds.y + bounds.h) * pose.zoom,
+    };
+}
+
 export function constrainFateTableCamera(pose: MapViewportState, width: number, height: number, mapWidth: number, mapHeight: number): MapViewportState {
     if (!width || !height) return pose;
     const constrain = (offset: number, view: number, map: number) => {

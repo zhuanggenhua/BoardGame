@@ -26,12 +26,12 @@ it('触控长按松手后仍可阅读，兼容click不发动；点外部退出�
     expect(reading).toHaveBeenLastCalledWith(false);
 });
 
-it('不可发动的能力仍可聚焦阅读，但不会提交对局命令',()=>{
+it('不可发动的能力仍可聚焦阅读，点击会交给牌桌显示拒绝原因',()=>{
     const activate=vi.fn();
     render(<FateMasterAbilities abilities={[{id:'draw',name:'战略部署',description:'支付1魔力抽2张牌',actionable:true,enabled:false}]} onActivate={activate} onReadingChange={vi.fn()}/>);
     const button=screen.getByRole('button',{name:'发动战略部署'});
     fireEvent.focus(button);fireEvent.click(button);
     expect(button).toHaveAttribute('aria-disabled','true');
     expect(screen.getByTestId('info-tooltip')).toHaveTextContent('支付1魔力抽2张牌');
-    expect(activate).not.toHaveBeenCalled();
+    expect(activate).toHaveBeenCalledExactlyOnceWith('draw');
 });

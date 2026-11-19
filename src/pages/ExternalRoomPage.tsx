@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ExternalApiError, externalRoomAction, joinExternalRoom, leaveExternalRoom, readExternalRoom } from '../api/external-games';
-import { AuthModal } from '../components/auth/AuthModal';
 import { DetailsPrimaryButton } from '../components/common/DetailsPrimaryButton';
 import { ExternalRoomGameFrame } from '../components/external/ExternalRoomGameFrame';
+import { getExternalRoomGuestKey } from '../components/external/nativeRoomGuestKey';
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,70 +19,78 @@ function roomEnded(error: unknown) {
 
 export default function ExternalRoomPage() {
     const { roomId = '' } = useParams();
+    const [search] = useSearchParams();
     const { t } = useTranslation(['lobby', 'common']);
     const { token, user, isLoading } = useAuth();
     const navigate = useNavigate();
     const client = useQueryClient();
-    const [authOpen, setAuthOpen] = useState(false);
     const [issue, setIssue] = useState('');
     const inviteInput = useRef<HTMLInputElement>(null);
-    const enteredLobby = useRef('');
+    const [enteredLobby, setEnteredLobby] = useState('');
+    const autoJoinAttempt = useRef('');
+    const guestKey = !isLoading && !token ? getExternalRoomGuestKey() : undefined;
+    const identity = { token, guestKey };
     const roomKey = ['external-room', roomId, user?.id];
     const query = useQuery({
-        queryKey: roomKey, queryFn: () => readExternalRoom(token!, roomId), enabled: Boolean(token && roomId),
+        queryKey: roomKey, queryFn: () => readExternalRoom(identity, roomId), enabled: !isLoading && Boolean(roomId),
         retry: false, refetchOnWindowFocus: false,
         refetchInterval: state => state.state.data?.started || roomEnded(state.state.error) ? false : 700,
     });
     const join = useMutation({
-        mutationFn: () => joinExternalRoom(token!, roomId),
+        mutationFn: () => joinExternalRoom(identity, roomId),
         onSuccess: view => client.setQueryData(roomKey, view),
     });
     const start = useMutation({
-        mutationFn: () => externalRoomAction(token!, roomId, { type: 'start' }),
+        mutationFn: () => externalRoomAction(identity, roomId, { type: 'start' }),
         onSuccess: view => client.setQueryData(roomKey, view),
     });
     const view = query.data;
-    if (view && !view.started) enteredLobby.current = roomId;
-    const entered = enteredLobby.current === roomId;
+    const autoJoin = search.get('join') === '1' && query.error instanceof ExternalApiError && query.error.status === 403;
+    const joinNow = join.mutate;
+    useEffect(() => {
+        if (!autoJoin || isLoading || autoJoinAttempt.current === roomId) return;
+        autoJoinAttempt.current = roomId;
+        joinNow();
+    }, [autoJoin, isLoading, joinNow, roomId]);
+    if (view && !view.started && enteredLobby !== roomId) setEnteredLobby(roomId);
+    const entered = enteredLobby === roomId;
     useExternalPlay(view?.gameId ?? '', token, Boolean(view?.started && entered));
     const waiting = Boolean(view && !view.started);
     useEffect(() => {
-        if (!token || !waiting) return;
-        const release = () => { void leaveExternalRoom(token, roomId).catch(() => {}); };
+        if ((!token && !guestKey) || !waiting) return;
+        const release = () => { void leaveExternalRoom({ token, guestKey }, roomId).catch(() => {}); };
         window.addEventListener('pagehide', release);
         return () => window.removeEventListener('pagehide', release);
-    }, [roomId, token, waiting]);
+    }, [roomId, token, guestKey, waiting]);
     const onHandshakeTimeout = useCallback(() => setIssue(t('platform.externalRoom.handshakeTimeout')), [t]);
     const back = view ? `/?game=${encodeURIComponent(view.gameId)}` : '/';
     const leave = async () => {
-        if (token && view && !view.started) {
-            try { await leaveExternalRoom(token, roomId); }
+        if (view && !view.started) {
+            try { await leaveExternalRoom(identity, roomId); }
             catch (error) { setIssue((error as Error).message); return; }
         }
         client.removeQueries({ queryKey: roomKey });
         navigate(back);
     };
     const send = (data: Record<string, unknown>) => {
-        if (!token) return;
-        void externalRoomAction(token, roomId, data).catch((error: Error) => setIssue(error.message));
+        void externalRoomAction(identity, roomId, data).catch((error: Error) => setIssue(error.message));
     };
-    if ((isLoading && !view) || (token && query.isFetching && !view && !query.isError)) {
+    if (!view && (isLoading || query.isPending || (autoJoin && !join.isError))) {
         return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
     }
     if (!view || (roomEnded(query.error) && !view.started)) {
         return <main className="external-page external-room-page">
             <section className="external-summary external-room-panel">
                 <h1>{t('platform.externalRoom.join')}</h1>
-                {(join.error || (view && query.error)) && <p role="alert">{(join.error ?? query.error)?.message}</p>}
+                {(join.error || (query.error instanceof ExternalApiError && query.error.status !== 403)) && <p role="alert">{(join.error ?? query.error)?.message}</p>}
                 <div className="external-actions">
                     {!view && <DetailsPrimaryButton className="external-primary" disabled={join.isPending}
-                        onClick={() => token ? join.mutate() : setAuthOpen(true)}>
-                        {t(!token ? 'platform.profile.login' : 'platform.externalRoom.join')}
+                        onClick={() => join.mutate()}>
+                        {t('platform.externalRoom.join')}
                     </DetailsPrimaryButton>}
                     <Link to={back}>{t('platform.externalGamePage.back')}</Link>
                 </div>
             </section>
-            {!token && authOpen && <AuthModal isOpen initialMode="login" visualStyle="platform" onClose={() => setAuthOpen(false)} />}
         </main>;
     }
     const { room, capacity, started } = view;
@@ -97,7 +105,7 @@ export default function ExternalRoomPage() {
     }
     const full = room.players.length === capacity;
     const allReady = full && room.players.every(player => player.ready);
-    const invite = new URL(`/external/rooms/${roomId}`, window.location.origin).href;
+    const invite = new URL(`/external/rooms/${roomId}?join=1`, window.location.origin).href;
     const rosterKey = externalRoomRosterKey(room.players);
     const copy = () => {
         const field = inviteInput.current;

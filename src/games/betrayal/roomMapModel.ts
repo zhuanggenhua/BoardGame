@@ -430,6 +430,7 @@ export function resolveBetrayalBoardRoomMapFloorState({
   currentExplorerFloor,
   selectedRoomMapFloor,
   moveTargetRooms,
+  monsterMoveTargetRooms = [],
   interactionMode,
   selectedInventoryUseEffectMode,
   inventoryTargetRooms,
@@ -444,6 +445,7 @@ export function resolveBetrayalBoardRoomMapFloorState({
   currentExplorerFloor: BetrayalRoomNode["floor"];
   selectedRoomMapFloor: BetrayalRoomNode["floor"];
   moveTargetRooms: BetrayalRoomNode[];
+  monsterMoveTargetRooms?: readonly BetrayalRoomNode[];
   interactionMode: string;
   selectedInventoryUseEffectMode: string | null;
   inventoryTargetRooms: BetrayalRoomNode[];
@@ -455,6 +457,8 @@ export function resolveBetrayalBoardRoomMapFloorState({
   isBloodFromStoneSetupPlacementMode: boolean;
 }): BetrayalBoardRoomMapFloorState {
   const floors = new Set<BetrayalRoomNode["floor"]>(occupiedRoomMapFloors);
+  const monsterMoveTargetFloors = monsterMoveTargetRooms.map((room) => room.floor);
+  for (const floor of monsterMoveTargetFloors) floors.add(floor);
   floors.add(currentExplorerFloor);
   if (moveTargetRooms.length > 0 || interactionMode === "move") {
     for (const room of moveTargetRooms) {
@@ -503,7 +507,7 @@ export function resolveBetrayalBoardRoomMapFloorState({
     selectedRoomMapFloorIndex < orderedFloors.length - 1
       ? orderedFloors[selectedRoomMapFloorIndex + 1]
       : null;
-  const targetFloors = new Set<BetrayalRoomNode["floor"]>();
+  const targetFloors = new Set(monsterMoveTargetFloors);
   if (selectedInventoryUseEffectMode === "placeExplorer") {
     for (const room of inventoryTargetRooms) {
       targetFloors.add(room.floor);

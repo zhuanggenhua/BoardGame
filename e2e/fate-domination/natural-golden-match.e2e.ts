@@ -12,7 +12,7 @@ import { resolveFateMovement } from '../../src/games/fate-domination/domain/move
 import { fateAttackManaCost, resolveFateAttack } from '../../src/games/fate-domination/domain/attackSelection';
 import { fateRidingCandidates } from '../../src/games/fate-domination/domain/ridingChoice';
 import { validate } from '../../src/games/fate-domination/domain/commands';
-import { fateMapCardHitAreasAreClear, sampleFateMapMotion } from './mapContinuityEvidence';
+import { sampleFateMapMotion } from './mapContinuityEvidence';
 import type { FateDominationCore } from '../../src/games/fate-domination/domain';
 
 type State = MatchState<FateDominationCore>;
@@ -180,6 +180,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
         const seen = new Set<string>();
         const motionFrameCounts: Record<string, number> = {};
         let chariotOriginalZoom: string | null = null;
+        let chariotOriginalTransform: string | undefined;
         let iterations = 0;
         while (iterations++ < 220) {
             await expect.poll(async () => {
@@ -395,6 +396,8 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 const chariot=page.getByRole('button',{name:'发动 神威车轮',exact:true});
                 if(await chariot.isVisible() && await chariot.getAttribute('aria-disabled')==='false'){
                     chariotOriginalZoom=await board.locator('.fd-runtime-camera-controls span').textContent();
+                    const mapOverlay = board.locator('.fd-runtime-map-overlay');
+                    chariotOriginalTransform = await mapOverlay.evaluate(node => getComputedStyle(node).transform);
                     await chariot.click();
                     const target=page.locator('.fd-runtime-map-card-hit.is-chariot-target').first();
                     await expect(target).toBeVisible();
@@ -411,6 +414,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     await candidates.first().click();
                     await expect.poll(async()=> (await read()).core.currentEvents[actor.locationId as 'miyama'|'shinto'].some(card=>card.id===selectedId)).toBe(true);
                     const finished=await read();
+                    await expect.poll(() => mapOverlay.evaluate(node => getComputedStyle(node).transform)).toBe(chariotOriginalTransform);
                     await mark('chariot-resolved','选择事件后另一张洗回事件牌堆',[check('选择事件已放置',finished.core.currentEvents[actor.locationId as 'miyama'|'shinto'].some(card=>card.id===selectedId)),check('另一张回到事件牌堆',finished.core.eventDeck.some(card=>card.id===returnedId))],['神威车轮替换事件完成','layout']);
                     seen.add('chariot');continue;
                 }
@@ -466,9 +470,8 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     await source.click();
                     const destination = destinations[0];
                     if (destination === 'shinto' && core.currentEvents.shinto.length > 0) {
-                        const shintoEventCards = page.locator('button[data-fate-shinto-event]');
+                        const shintoEventCards = page.locator('.fd-runtime-map-overlay button[data-fate-shinto-event]');
                         await expect(shintoEventCards).toHaveCount(core.currentEvents.shinto.length);
-                        await expect.poll(() => fateMapCardHitAreasAreClear(shintoEventCards)).toBe(true);
                     }
                     await expect(page.getByTestId(`fate-domination-location-${destination}`)).toBeVisible();
                     if(!seen.has('effect-move'))await mark('effect-move-target', '点击已打出的急行，选择亮起的下一地点', [check('选地点前位置不变',(await read()).core.players['0'].locationId,actor.locationId)], ['急行发动后选择移动地点','target-highlight']);

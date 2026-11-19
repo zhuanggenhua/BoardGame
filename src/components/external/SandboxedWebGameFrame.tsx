@@ -4,6 +4,7 @@ import { readLocalStorageItem, writeLocalStorageItem } from '../../lib/browserSt
 import { WEB_GAME_SANDBOX } from '../../shared/externalGames';
 import { EXTERNAL_NATIVE_ROOM_CONNECT, EXTERNAL_ROOM_CONNECT, EXTERNAL_ROOM_VERSION } from '../../shared/externalRoom';
 import { installValeNativeRoomBridge } from './valeNativeRoomBridge';
+import roomSdkV1 from './roomSdkV1.js?raw';
 
 const STORAGE_MESSAGE = 'boardgame:web-game-storage';
 const MAX_STORAGE_LENGTH = 1024 * 1024;
@@ -53,14 +54,14 @@ function escapeAttribute(value: string) {
     return value.replace(/[&"<]/g, character => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;' })[character]!);
 }
 
-function launchDocument(html: string, entry: string, storageKey: string, nativeMode?: 'host' | 'guest', autoOpen = false) {
+function launchDocument(html: string, entry: string, storageKey: string, roomMode?: 'sdk' | 'host' | 'guest', autoOpen = false) {
     const base = escapeAttribute(entry);
     const args = [readGameStorage(storageKey), window.location.origin, STORAGE_MESSAGE]
         .map(value => JSON.stringify(value).replace(/</g, '\\u003c')).join(',');
     const doctype = html.match(/^\s*<!doctype[^>]*>/i)?.[0] ?? '';
-    const nativeArgs = [window.location.origin, EXTERNAL_NATIVE_ROOM_CONNECT, nativeMode, autoOpen].map(value => JSON.stringify(value)).join(',');
-    const nativeScript = nativeMode ? `<script>(${installValeNativeRoomBridge.toString()})(${nativeArgs});</script>` : '';
-    return `${doctype}<base href="${base}"><meta name="boardgame-platform-origin" content="${escapeAttribute(window.location.origin)}"><script>(${installGameStorage.toString()})(${args});</script>${nativeScript}${html.slice(doctype.length)}`;
+    const nativeArgs = [window.location.origin, EXTERNAL_NATIVE_ROOM_CONNECT, roomMode, autoOpen].map(value => JSON.stringify(value)).join(',');
+    const roomScript = roomMode === 'sdk' ? roomSdkV1 : roomMode ? `(${installValeNativeRoomBridge.toString()})(${nativeArgs});` : '';
+    return `${doctype}<base href="${base}"><meta name="boardgame-platform-origin" content="${escapeAttribute(window.location.origin)}"><script>(${installGameStorage.toString()})(${args});${roomScript}</script>${html.slice(doctype.length)}`;
 }
 
 export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect, onNativeRoomConnect, nativeMode, autoOpen }: {
@@ -102,7 +103,7 @@ export function SandboxedWebGameFrame({ gameId, entry, title, onRoomConnect, onN
                 if (!response.ok || !/^text\/html\b/i.test(response.headers.get('content-type') ?? '')) throw new Error('Game HTML unavailable');
                 return response.text();
             })
-            .then(html => { if (!controller.signal.aborted) setDocumentSource(launchDocument(html, entry, storageKey, nativeMode, autoOpen)); })
+            .then(html => { if (!controller.signal.aborted) setDocumentSource(launchDocument(html, entry, storageKey, onRoomConnect ? 'sdk' : nativeMode, autoOpen)); })
             .catch(() => { if (!controller.signal.aborted) setError(true); });
         return () => {
             controller.abort();

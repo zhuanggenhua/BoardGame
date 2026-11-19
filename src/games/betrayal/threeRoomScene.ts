@@ -5,7 +5,6 @@ import { collectSpriteMotionPhases, resolveSpriteMotionFrame } from '../../engin
 import type {
     MapSceneSprite, MapSceneSpriteMotionPhaseCallback,
 } from '../../engine/mapRenderer/types';
-import { ROOM_TILE_SIZE } from './roomMapModel';
 
 export interface SceneFigureAsset {
     id: string;
@@ -16,7 +15,6 @@ interface ScenePresentation {
     sprites: readonly MapSceneSprite[];
     discoveredRoomIds: ReadonlySet<string>;
     figures: ReadonlyMap<string, SceneFigureAsset>;
-    activeExplorerId?: string;
     onMotionComplete?: (spriteId: string, motionId: string) => void;
     onMotionPhase?: MapSceneSpriteMotionPhaseCallback;
 }
@@ -24,7 +22,7 @@ interface ScenePresentation {
 interface SceneNode {
     key: string;
     root: THREE.Group;
-    figure?: THREE.Object3D;
+    figure?: FigureLevels;
     face: THREE.MeshBasicMaterial;
     materials: MaterialState[];
     artwork: Promise<unknown>;
@@ -40,11 +38,16 @@ interface SceneNode {
 
 type Mesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
 type MaterialState = Pick<THREE.Material, 'transparent' | 'depthWrite' | 'opacity'> & { material: THREE.Material };
-type FigureCounts = { explorers: number; monsters: number };
+type FigureCounts = { explorers: number; monsters: number; detail: number; triangles: number };
+type FigureSources = { detail: THREE.Object3D; table?: THREE.Object3D };
+type FigureLevel = { object: THREE.Object3D; triangles: number };
+type FigureLevels = { detail: FigureLevel; table?: FigureLevel };
 
 const TILE_DEPTH = 7;
 const DISK_HEIGHT = 5;
 const DAYLIGHT = 0xffeed2;
+const DETAIL_ENTER_ZOOM = 1.65;
+const DETAIL_EXIT_ZOOM = 1.45;
 
 function materialState(material: THREE.Material): MaterialState {
     const { depthWrite, opacity, transparent } = material;
@@ -84,22 +87,44 @@ function createTokenFace(sprite: MapSceneSprite, size: number) {
     return geometry;
 }
 
-function disposeFigure(figure: THREE.Object3D) {
+function disposeFigures({ detail, table }: FigureSources) {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
-    figure.traverse(object => {
+    const collect = (object: THREE.Object3D) => {
         if (!(object instanceof THREE.Mesh)) return;
         const mesh = object as Mesh;
-        mesh.geometry.dispose();
-        for (const property of Object.values(mesh.material)) {
+        geometries.add(mesh.geometry);
+        materials.add(mesh.material);
+    };
+    detail.traverse(collect);
+    table?.traverse(collect);
+    for (const geometry of geometries) geometry.dispose();
+    for (const material of materials) {
+        for (const property of Object.values(material)) {
             if (property instanceof THREE.Texture) textures.add(property);
         }
-        mesh.material.dispose();
-    });
+        material.dispose();
+    }
     for (const texture of textures) {
         const image = texture.source.data;
         if (typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap) image.close();
         texture.dispose();
     }
+}
+
+function activeFigureLevel(figure: FigureLevels) {
+    return figure.table?.object.visible ? figure.table : figure.detail;
+}
+
+function updateFigureDetail(figure: FigureLevels, zoom: number) {
+    if (!figure.table) return false;
+    const detail = figure.detail.object;
+    const next = zoom >= (detail.visible ? DETAIL_EXIT_ZOOM : DETAIL_ENTER_ZOOM);
+    if (next === detail.visible) return false;
+    detail.visible = next;
+    figure.table.object.visible = !next;
+    return true;
 }
 
 export function createBetrayalThreeScene(
@@ -110,7 +135,7 @@ export function createBetrayalThreeScene(
     const scene = new THREE.Scene();
     const nodes = new Map<string, SceneNode>();
     const textures = new Map<string, Promise<THREE.Texture>>();
-    const models = new Map<string, Promise<THREE.Object3D>>();
+    const models = new Map<string, Promise<FigureSources>>();
     const progressRing = new THREE.Mesh(
         new THREE.RingGeometry(0.9, 1, 40).rotateX(-Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: 0xede0ad, transparent: true, depthWrite: false }),
@@ -127,8 +152,6 @@ export function createBetrayalThreeScene(
     fill.position.set(320, 200, -420);
     scene.add(fill);
 
-    const spot = new THREE.PointLight(0xffe3a8, 15000, ROOM_TILE_SIZE * 1.15, 2);
-    scene.add(spot);
     const textureLoader = new THREE.TextureLoader();
     const modelLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     let presentation: ScenePresentation | undefined;
@@ -162,7 +185,7 @@ export function createBetrayalThreeScene(
         const cached = models.get(id);
         if (cached) return cached;
         const promise = modelLoader.loadAsync(`${import.meta.env.BASE_URL}betrayal-models/${id}.glb`)
-            .then(result => result.scene);
+            .then(result => ({ detail: result.scene, table: result.scenes.find(scene => scene.name === 'table') }));
         models.set(id, promise);
         return promise;
     }
@@ -170,7 +193,7 @@ export function createBetrayalThreeScene(
     function addNode(sprite: MapSceneSprite, asset: SceneFigureAsset | undefined, key: string) {
         const root = new THREE.Group();
         const ownedMeshes: Mesh[] = [];
-        const modelMaterials: THREE.Material[] = [];
+        const modelMaterials = new Map<THREE.Material, THREE.Material>();
         const monster = sprite.id.startsWith('monster:');
         const entity = sprite.id.startsWith('player:') || monster;
         const { width, height, border, frame } = sprite;
@@ -247,28 +270,44 @@ export function createBetrayalThreeScene(
 
         if (asset) void loadFigure(asset.id).then(source => {
             if (!alive) return;
-            const model = source.clone();
-            model.traverse(object => {
-                if (!(object instanceof THREE.Mesh)) return;
-                const mesh = object as Mesh;
-                mesh.material = mesh.material.clone();
-                modelMaterials.push(mesh.material);
-                node.materials.push(materialState(mesh.material));
-            });
-            const bounds = new THREE.Box3().setFromObject(model);
+            const bounds = new THREE.Box3().setFromObject(source.detail);
             const modelSize = bounds.getSize(new THREE.Vector3());
             const center = bounds.getCenter(new THREE.Vector3());
             const heightLimit = size * (monster ? 1.24 : 1.02);
             const widthLimit = size * (monster ? .88 : .72);
             const scale = Math.min(heightLimit / modelSize.y, widthLimit / Math.max(modelSize.x, modelSize.z));
             const figure = new THREE.Group();
-            model.position.sub(new THREE.Vector3(center.x, bounds.min.y, center.z));
-            figure.add(model);
+            const anchor = new THREE.Vector3(center.x, bounds.min.y, center.z);
+            const createLevel = (original: THREE.Object3D): FigureLevel => {
+                const model = original.clone();
+                let triangles = 0;
+                model.traverse(object => {
+                    if (!(object instanceof THREE.Mesh)) return;
+                    const mesh = object as Mesh;
+                    let material = modelMaterials.get(mesh.material);
+                    if (!material) {
+                        material = mesh.material.clone();
+                        modelMaterials.set(mesh.material, material);
+                        node.materials.push(materialState(material));
+                    }
+                    mesh.material = material;
+                    triangles += (mesh.geometry.index?.count ?? mesh.geometry.getAttribute('position').count) / 3;
+                });
+                model.position.sub(anchor);
+                figure.add(model);
+                return { object: model, triangles };
+            };
             figure.scale.setScalar(scale);
             if (asset.mirrorX) figure.scale.x = -scale;
             figure.position.y = DISK_HEIGHT + 1;
+            const detail = createLevel(source.detail);
+            const table = source.table ? createLevel(source.table) : undefined;
+            if (table) {
+                detail.object.visible = camera.zoom >= DETAIL_ENTER_ZOOM;
+                table.object.visible = !detail.object.visible;
+            }
+            node.figure = { detail, table };
             root.add(figure);
-            node.figure = figure;
             if (modelBase) modelBase.visible = true;
             if (monsterBaseTop) monsterBaseTop.visible = true;
             if (tokenBase) tokenBase.visible = false;
@@ -283,9 +322,13 @@ export function createBetrayalThreeScene(
     }
 
     function reportReady() {
-        const counts = { explorers: 0, monsters: 0 };
+        const counts: FigureCounts = { explorers: 0, monsters: 0, detail: 0, triangles: 0 };
         for (const [id, node] of nodes) {
-            if (node.figure) counts[id.startsWith('monster:') ? 'monsters' : 'explorers']++;
+            if (!node.figure) continue;
+            counts[id.startsWith('monster:') ? 'monsters' : 'explorers']++;
+            const level = activeFigureLevel(node.figure);
+            if (level === node.figure.detail) counts.detail++;
+            counts.triangles += level.triangles;
         }
         onStateChange('ready', counts);
     }
@@ -293,15 +336,16 @@ export function createBetrayalThreeScene(
     function draw(now: number) {
         animation = 0;
         if (disposed || !presentation) return;
-        const { sprites, activeExplorerId, discoveredRoomIds, onMotionComplete, onMotionPhase } = presentation;
+        const { sprites, discoveredRoomIds, onMotionComplete, onMotionPhase } = presentation;
         let moving = false;
+        let detailChanged = false;
         const afterDraw: (() => void)[] = [];
         progressRing.visible = false;
         revealGlow.visible = false;
-        spot.visible = false;
         for (const sprite of sprites) {
             const node = nodes.get(sprite.id);
             if (!node) continue;
+            if (node.figure && updateFigureDetail(node.figure, camera.zoom)) detailChanged = true;
             let { x, y } = sprite;
             let elevation = 0;
             let scale = 1;
@@ -359,12 +403,9 @@ export function createBetrayalThreeScene(
                 const light = discoveredRoomIds.has(sprite.id) ? 1 : .63;
                 if (node.face.map) node.face.color.setScalar(light * reveal);
             }
-            if (sprite.id === activeExplorerId) {
-                spot.position.set(node.root.position.x, 75 + elevation, node.root.position.z);
-                spot.visible = true;
-            }
         }
         renderer.render(scene, camera);
+        if (ready && detailChanged) reportReady();
         afterDraw.forEach(callback => callback());
         if (moving) renderSoon();
     }
@@ -398,7 +439,7 @@ export function createBetrayalThreeScene(
         }).catch(error => {
             if (disposed || currentGeneration !== generation) return;
             console.warn('Betrayal 3D board artwork unavailable', error);
-            onStateChange('error', { explorers: 0, monsters: 0 });
+            onStateChange('error', { explorers: 0, monsters: 0, detail: 0, triangles: 0 });
         });
         renderSoon();
     }
@@ -406,7 +447,7 @@ export function createBetrayalThreeScene(
     const raycaster = new THREE.Raycaster();
     function pickFigure(ndc: THREE.Vector2) {
         raycaster.setFromCamera(ndc, camera);
-        const figures = [...nodes.entries()].flatMap(([id, node]) => node.figure ? [{ id, figure: node.figure }] : []);
+        const figures = [...nodes.entries()].flatMap(([id, node]) => node.figure ? [{ id, figure: activeFigureLevel(node.figure).object }] : []);
         let nearest = Infinity;
         let picked: string | undefined;
         for (const { id, figure } of figures) {
@@ -425,7 +466,7 @@ export function createBetrayalThreeScene(
             cancelAnimationFrame(animation);
             nodes.forEach(node => node.dispose());
             textures.forEach(promise => void promise.then(texture => texture.dispose()).catch(() => {}));
-            models.forEach(promise => void promise.then(disposeFigure).catch(() => {}));
+            models.forEach(promise => void promise.then(disposeFigures).catch(() => {}));
             progressRing.geometry.dispose();
             progressRing.material.dispose();
             revealGlow.geometry.dispose();

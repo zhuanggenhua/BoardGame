@@ -26,7 +26,9 @@ export function resolveFateAttackConfirmation(core:FateDominationCore, playerId:
 }
 
 /** One rule projection for normal attacks from either the hand or servant skill area. */
-export function resolveFateAttack(player: PlayerState, id: string): {kind:'hand'|'skill'; definition:AttackCardDefinition; skill?:SkillDefinition} | undefined {
+type FateAttack = { kind: 'hand' | 'skill'; definition: AttackCardDefinition; skill?: SkillDefinition };
+
+export function resolveFateAttack(player: PlayerState, id: string): FateAttack | undefined {
     const card=player.hand.find(card=>card.id===id);
     if(card) {
         const definition=FATE_ATTACK_BY_ID[card.definitionId];
@@ -42,6 +44,11 @@ export function resolveFateAttack(player: PlayerState, id: string): {kind:'hand'
         sourceStatus:servant.sourceStatus,
     }};
 }
+export function fateBaseAttackManaCost(attack: FateAttack, round?: number) {
+    return round !== undefined && attack.skill && isFateTerritoryCreation(attack.skill.id)
+        ? 16 - 2 * round : attack.definition.manaCost;
+}
+
 /** Evaluate payable cost against the same pre-play state used for confirmation. */
 export function fateAttackManaCost(player: PlayerState, id: string, faceDown = false, round?: number): number | undefined {
     const attack = resolveFateAttack(player, id);
@@ -53,7 +60,7 @@ export function fateAttackManaCost(player: PlayerState, id: string, faceDown = f
     const spearIncrease = skillId === 'sc_cu_1'
         ? (player.piercingSpearPlays ?? 0) * 2
         : 0;
-    const baseCost = round !== undefined && attack.kind === 'skill' && isFateTerritoryCreation(id) ? 16 - 2 * round : attack.definition.manaCost;
+    const baseCost = fateBaseAttackManaCost(attack, round);
     return Math.max(0, baseCost + spearIncrease - smallGrailDiscount - hiddenNameDiscount);
 }
 

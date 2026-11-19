@@ -1215,16 +1215,20 @@ describe('Betrayal 教程配置', () => {
             'mummy-monster-roll',
             'mummy-monster-roll-review',
             'mummy-monster-move-target',
+            'mummy-move-recovery',
             'mummy-monster-move-result',
             'setup-mummy-attack',
             'mummy-attack-forced',
             'mummy-attack-target',
             'mummy-attack-roll-review',
             'mummy-attack-reward',
+            'mummy-reward-recovery',
             'mummy-steal-result',
+            'pick-up-girl',
+            'give-girl-to-mummy',
+            'give-omen-to-mummy',
+            'traitor-finish',
         ]);
-        expect(traitorManifest?.steps.map((step) => step.id)).not.toContain('pick-up-girl');
-        expect(traitorManifest?.steps.map((step) => step.id)).not.toContain('give-girl-to-mummy');
         const traitorSetup = traitorManifest?.steps.find((step) => step.id === 'setup-traitor-monster-actions');
         expect(traitorSetup?.aiActions).toHaveLength(1);
         expect(traitorSetup?.infoStep).toBeUndefined();
@@ -1263,12 +1267,14 @@ describe('Betrayal 教程配置', () => {
             'mummy-monster-roll',
             'mummy-monster-roll-review',
             'mummy-monster-move-target',
+            'mummy-move-recovery',
             'mummy-monster-move-result',
             'setup-mummy-attack',
             'mummy-attack-forced',
             'mummy-attack-target',
             'mummy-attack-roll-review',
             'mummy-attack-reward',
+            'mummy-reward-recovery',
             'mummy-steal-result',
         ]);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-turn-start')?.allowedCommands)
@@ -1306,7 +1312,7 @@ describe('Betrayal 教程配置', () => {
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-reward')?.advanceOnEvents).toEqual([
             {
                 type: 'MUMMY_ATTACK_REWARD_RESOLVED',
-                match: { monsterId: 'mummy', choice: 'steal', stolenCardId: 'map' },
+                match: { monsterId: 'mummy' },
             },
         ]);
     });
@@ -1686,7 +1692,7 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('按差值结算伤害');
         expect(zhCNLocale.tutorial.traitorPath.title).toContain('叛徒视角');
         expect(zhCNLocale.tutorial.traitorPath.description).toContain('木乃伊移动');
-        expect(zhCNLocale.tutorial.traitorPath.description).toContain('胜利前局面');
+        expect(zhCNLocale.tutorial.traitorPath.description).toContain('完成叛徒胜利');
         expect(zhCNLocale.tutorial.traitorPath.victoryTitle).toContain('胜利链');
         expect(zhCNLocale.tutorial.traitorPath.victoryDescription).toContain('合法起点');
         expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('合法起点');

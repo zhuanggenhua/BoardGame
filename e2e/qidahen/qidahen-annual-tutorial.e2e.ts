@@ -300,7 +300,7 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
         await onSelected?.();
         return;
     }
-    const roster = page.getByTestId('qidahen-dispatch-roster');
+    const roster = page.getByTestId('qidahen-dispatch-roster').and(page.locator('[data-dispatch-step="dispatch-troops"]'));
     if (await roster.isVisible()) {
         await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
         for (const id of targets) {
@@ -312,7 +312,9 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
         return;
     }
     for (const id of targets) {
-        if (snapshot.core.regions.some(region => !region.isLogicalRegion && region.id === id)) await clickRegion(page, id);
+        if (snapshot.tutorial.step.id === 'dispatch-source') {
+            await page.locator(`[data-qidahen-map-region-choice="true"][data-qidahen-map-token-type="army"][data-qidahen-map-token-region="${id}"]`).first().click();
+        } else if (snapshot.core.regions.some(region => !region.isLogicalRegion && region.id === id)) await clickRegion(page, id);
         else if (snapshot.core.handCards.some(card => card.id === id)) await clickCard(page, id);
         else if (snapshot.core.pieces.some(piece => piece.id === id)) await clickPiece(page, snapshot, id);
         else await page.getByTestId(`qidahen-turn-option-${id}`).click();
@@ -635,6 +637,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const roster = page.getByTestId('qidahen-dispatch-roster');
                     const units = roster.getByTestId(/^qidahen-dispatch-unit-/);
                     expect(await units.count()).toBeGreaterThan(0);
+                    await expect(roster.locator('[data-qidahen-army-block="flat"] img')).toHaveCount(await units.count());
+                    await expect.poll(() => roster.locator('[data-qidahen-army-block="flat"] img').evaluateAll(images =>
+                        images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
+                    const dockBounds = (await roster.boundingBox())!;
+                    expect(dockBounds.y, '部队栏在地图下方').toBeGreaterThan(viewport.height * .55);
                     await expect(page.locator('[data-pending-committed-selectable="true"]')).toHaveCount(0);
                     const geometry = await units.evaluateAll(items => items.map(item => ({
                         ids: (item.getAttribute('data-piece-ids') ?? '').split(' '),
@@ -663,15 +670,35 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 }
                 if (id === 'dispatch-source') await expect(page.getByTestId('qidahen-turn-choice')).toHaveCount(0);
                 if (id === 'dispatch-target') {
-                    const panel = page.getByTestId('qidahen-turn-choice');
+                    const panel = page.getByTestId('qidahen-dispatch-roster');
                     await expect(panel.getByTestId('qidahen-battle-roster-attacker').locator('[data-piece-ids]')).not.toHaveCount(0);
                     await expect(page.locator('[data-pending-committed-selected="true"]')).toHaveCount(0);
                     await expect(panel.getByTestId('qidahen-turn-option-back')).toBeEnabled();
+                    if (viewport.name === 'desktop') {
+                        const [destination, hint] = await Promise.all([
+                            page.getByTestId('qidahen-map-region-space-city-region-7').boundingBox(),
+                            page.getByTestId('tutorial-overlay-card').boundingBox(),
+                        ]);
+                        expect(destination).not.toBeNull();
+                        expect(destination!.y).toBeGreaterThanOrEqual(0);
+                        expect(destination!.y + destination!.height).toBeLessThanOrEqual(viewport.height);
+                        expect(hint).not.toBeNull();
+                        const sourceUnits = await page.locator('[data-qidahen-map-token-region="city-region-15"][data-qidahen-map-token-type="army"]').evaluateAll(nodes =>
+                            nodes.map(node => node.getBoundingClientRect().toJSON()).filter(bounds => bounds.width > 0 && bounds.height > 0));
+                        expect(sourceUnits.length).toBeGreaterThan(0);
+                        expect(sourceUnits.some(bounds => hint!.x < bounds.right && hint!.x + hint!.width > bounds.left
+                            && hint!.y < bounds.bottom && hint!.y + hint!.height > bounds.top), '提示不能挡住来源部队').toBe(false);
+                    }
+                    if (suffix) {
+                        await expect(panel.getByTestId('qidahen-turn-confirm')).toBeEnabled();
+                        await expect(panel.getByTestId('qidahen-turn-confirm')).toHaveText('确认前往叶赫部');
+                    } else await expect(panel.getByTestId('qidahen-turn-confirm')).toHaveCount(0);
                 }
                 if (id === 'tactic-card') {
                     const panel = page.getByTestId('qidahen-battle-preparation');
                     await expect(panel.getByTestId('qidahen-battle-roster-attacker').locator('[data-piece-ids]')).not.toHaveCount(0);
                     await expect(panel.getByTestId('qidahen-battle-roster-defender').locator('[data-piece-ids]')).not.toHaveCount(0);
+                    await expect(panel.locator('[data-qidahen-army-block="flat"]')).toHaveCount(await panel.locator('[data-qidahen-army-block]').count());
                     await expect(page.getByTestId('qidahen-map-guide-route-overlay')).toHaveCount(0);
                     const lineup = (await panel.boundingBox())!;
                     const blocker = (await page.getByTestId(suffix ? 'qidahen-tactic-card-selection-panel' : 'qidahen-player-float').boundingBox())!;
@@ -1164,7 +1191,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         if (command === 'SYS_INTERACTION_RESPOND') {
                             if (before.interaction?.data.sourceId === 'qidahen:turn-resolution-choice') await submitTurnChoice(page, before, targets,
                                 step.id === 'opening-farm-cycle' && step.content.endsWith('reclaim-target-dynamic') ? async () => { await capture('reclaim-target', '-selected', step.id); }
-                                    : step.id === 'dispatch-troops' ? async () => { await capture(step.id, '-selected'); }
+                                    : step.id === 'dispatch-troops' || step.id === 'dispatch-target' ? async () => { await capture(step.id, '-selected'); }
                                     : firstUpkeepCapture && viewport.name === 'desktop' && (upkeepCaptureId === 'upkeep-yehe' || upkeepCaptureId === 'upkeep-pyongyang')
                                         ? async () => { await capture(upkeepCaptureId!, '-selected', step.id); if (upkeepCaptureId === 'upkeep-yehe') await browseHand(); } : undefined);
                             else if (step.id === 'hand-limit') {
@@ -1229,12 +1256,16 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect(page.getByTestId('qidahen-battle-roll-context')).toHaveText('辽北 → 叶赫部');
                         const arena = page.getByTestId('qidahen-battle-arena');
                         await expect(arena).toBeVisible();
-                        const [panel, attackerSlot, defenderSlot] = await Promise.all(['qidahen-battle-roll-overlay', 'qidahen-battle-side-attacker', 'qidahen-battle-side-defender']
-                            .map(id => arena.getByTestId(id).boundingBox()));
+                        await expect(arena.getByTestId('qidahen-battle-table')).toHaveAttribute('data-table-renderer', 'flat');
+                        const [panel, attackerSlot, defenderSlot] = await Promise.all([
+                            arena.getByTestId('qidahen-battle-roll-overlay').boundingBox(),
+                            arena.locator('[data-qidahen-battle-label="attacker"]').boundingBox(),
+                            arena.locator('[data-qidahen-battle-label="defender"]').boundingBox(),
+                        ]);
                         expect(panel).not.toBeNull();
                         expect(attackerSlot).not.toBeNull();
                         expect(defenderSlot).not.toBeNull();
-                        expect(attackerSlot!.x + attackerSlot!.width, 'attack and defence have distinct sides even during a one-sided roll').toBeLessThan(defenderSlot!.x);
+                        expect(defenderSlot!.y + defenderSlot!.height, '守军保持在上列').toBeLessThan(attackerSlot!.y);
                         expect(panel!.x).toBeGreaterThanOrEqual(0);
                         expect(panel!.y).toBeGreaterThanOrEqual(0);
                         expect(panel!.x + panel!.width).toBeLessThanOrEqual(viewport.width + 1);

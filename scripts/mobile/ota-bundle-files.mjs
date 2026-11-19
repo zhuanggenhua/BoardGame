@@ -1,4 +1,5 @@
 import { DIST_LOGOS_RETAIN_RELATIVE_PATHS } from '../deploy/prune-web-dist-assets.mjs';
+import { APP_HOME_MEDIA_PATHS, isExcludedAppMedia } from './app-bundle-media.mjs';
 
 const OTA_ALLOWED_LOCALE_PREFIX = 'locales/zh-CN/';
 const OTA_ASSET_MANIFEST_PATTERN = /^assets\/(?:.+\/)?assets-manifest\.json$/;
@@ -8,6 +9,9 @@ const normalizeRelativePath = (relativePath) => relativePath.replace(/\\/g, '/')
 
 export const classifyOtaBundleFile = (relativePath) => {
     const normalized = normalizeRelativePath(relativePath);
+
+    if (isExcludedAppMedia(normalized)) return 'remote-skip';
+    if (APP_HOME_MEDIA_PATHS.has(normalized)) return 'include';
 
     if (normalized.startsWith('locales/')) {
         return normalized.startsWith(OTA_ALLOWED_LOCALE_PREFIX) ? 'include' : 'remote-skip';

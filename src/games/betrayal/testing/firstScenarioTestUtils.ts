@@ -1210,7 +1210,9 @@ export function createMummyMonsterMoveReadyTutorialCore(): BetrayalCore {
   return applyTutorialDiscoveryOrder(core);
 }
 
-export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore {
+export function createMummyMonsterAttackRewardReadyTutorialCore(
+  options: { weddingDelivery?: boolean } = {},
+): BetrayalCore {
   let core = createFirstScenarioHauntCore();
   const traitorId = core.scenarioRuntime.traitorPlayerId!;
   const mummyRuntime = core.scenarioRuntime.mummy!;
@@ -1225,8 +1227,13 @@ export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore 
   placeFixtureExplorerInRoom(core, heroTargetId, mummyRoomId);
   setFixtureExplorerInventory(core, heroTargetId, [
     { id: "map", name: "地图", kind: "item" },
-    { id: "holy-symbol", name: "圣符", kind: "omen" },
+    ...(options.weddingDelivery ? [] : [{ id: "holy-symbol", name: "圣符", kind: "omen" } as const]),
   ]);
+  if (options.weddingDelivery) {
+    setFixtureExplorerInventory(core, traitorId, [
+      { id: "holy-symbol", name: "圣符", kind: "omen" },
+    ]);
+  }
   placeFixtureExplorerInRoom(core, deadHeroId, mummyRoomId);
   core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
 
@@ -1238,7 +1245,7 @@ export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore 
   );
   core.scenarioRuntime.mummy = {
     ...mummyRuntime,
-    girlRoomId: null,
+    girlRoomId: options.weddingDelivery ? mummyRoomId : null,
     girlHolderPlayerId: null,
     girlHeldByMummy: false,
     mummyCarriedOmenIds: [],

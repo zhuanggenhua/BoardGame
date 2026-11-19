@@ -1998,64 +1998,6 @@ export default function BetrayalBoard({
     previewState.selectedBloodFromStoneStoneCherubRoomIds,
     selectedBloodFromStoneStoneCherubRoomIds,
   ]);
-  const roomMapFloorState = React.useMemo(
-    () =>
-      resolveBetrayalBoardRoomMapFloorState({
-        occupiedRoomMapFloors,
-        currentExplorerFloor,
-        selectedRoomMapFloor,
-        moveTargetRooms,
-        interactionMode: previewState.interactionMode,
-        selectedInventoryUseEffectMode,
-        inventoryTargetRooms,
-        maskTargetRooms,
-        explorableRoomSlots,
-        bloodFromStoneSetupPendingPlayerChoiceCount:
-          bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
-        bloodFromStoneSetupCandidateRooms,
-        pendingEventTargetRooms,
-        isBloodFromStoneSetupPlacementMode,
-      }),
-    [
-      bloodFromStoneSetupCandidateRooms,
-      bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
-      currentExplorerFloor,
-      explorableRoomSlots,
-      inventoryTargetRooms,
-      isBloodFromStoneSetupPlacementMode,
-      maskTargetRooms,
-      moveTargetRooms,
-      occupiedRoomMapFloors,
-      pendingEventTargetRooms,
-      previewState.interactionMode,
-      selectedInventoryUseEffectMode,
-      selectedRoomMapFloor,
-    ],
-  );
-  const roomMapFloors = roomMapFloorState.floors;
-  React.useEffect(() => {
-    if (!roomMapFloors.includes(selectedRoomMapFloor)) {
-      setSelectedRoomMapFloor(
-        shouldFollowCurrentExplorerFloor
-          ? currentExplorerFloor
-          : viewerExplorerFloor,
-      );
-    }
-  }, [
-    currentExplorerFloor,
-    roomMapFloors,
-    selectedRoomMapFloor,
-    shouldFollowCurrentExplorerFloor,
-    viewerExplorerFloor,
-  ]);
-  const upperRoomMapFloor = roomMapFloorState.upperFloor;
-  const lowerRoomMapFloor = roomMapFloorState.lowerFloor;
-  const upperRoomMapFloorHasSelectionTarget =
-    roomMapFloorState.upperFloorHasSelectionTarget;
-  const lowerRoomMapFloorHasSelectionTarget =
-    roomMapFloorState.lowerFloorHasSelectionTarget;
-  const hasCrossFloorRoomSelectionTargets =
-    roomMapFloorState.hasCrossFloorSelectionTargets;
   const handleSelectRoomMapFloor = React.useCallback(
     (floor: BetrayalRoomNode["floor"]) => {
       if (floor !== selectedRoomMapFloor) {
@@ -2792,6 +2734,71 @@ export default function BetrayalBoard({
     helpingHandsTrollHandAttackOption,
     helpingHandsTrollHandAttackTarget,
   } = monsterActionSelectionReadModel;
+  const monsterMoveTargetRooms = isMonsterMoveMode
+    ? selectedMonsterMoveEntry?.targetRooms
+    : isHelpingHandsTrollHandMoveMode
+      ? selectedHelpingHandsTrollHandMoveEntry?.targetRooms
+      : undefined;
+  const roomMapFloorState = React.useMemo(
+    () =>
+      resolveBetrayalBoardRoomMapFloorState({
+        occupiedRoomMapFloors,
+        currentExplorerFloor,
+        selectedRoomMapFloor,
+        moveTargetRooms,
+        monsterMoveTargetRooms,
+        interactionMode: previewState.interactionMode,
+        selectedInventoryUseEffectMode,
+        inventoryTargetRooms,
+        maskTargetRooms,
+        explorableRoomSlots,
+        bloodFromStoneSetupPendingPlayerChoiceCount:
+          bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
+        bloodFromStoneSetupCandidateRooms,
+        pendingEventTargetRooms,
+        isBloodFromStoneSetupPlacementMode,
+      }),
+    [
+      bloodFromStoneSetupCandidateRooms,
+      bloodFromStoneSetupPlacementPlan.pendingPlayerChoiceCount,
+      currentExplorerFloor,
+      explorableRoomSlots,
+      inventoryTargetRooms,
+      isBloodFromStoneSetupPlacementMode,
+      maskTargetRooms,
+      monsterMoveTargetRooms,
+      moveTargetRooms,
+      occupiedRoomMapFloors,
+      pendingEventTargetRooms,
+      previewState.interactionMode,
+      selectedInventoryUseEffectMode,
+      selectedRoomMapFloor,
+    ],
+  );
+  const roomMapFloors = roomMapFloorState.floors;
+  React.useEffect(() => {
+    if (!roomMapFloors.includes(selectedRoomMapFloor)) {
+      setSelectedRoomMapFloor(
+        shouldFollowCurrentExplorerFloor
+          ? currentExplorerFloor
+          : viewerExplorerFloor,
+      );
+    }
+  }, [
+    currentExplorerFloor,
+    roomMapFloors,
+    selectedRoomMapFloor,
+    shouldFollowCurrentExplorerFloor,
+    viewerExplorerFloor,
+  ]);
+  const upperRoomMapFloor = roomMapFloorState.upperFloor;
+  const lowerRoomMapFloor = roomMapFloorState.lowerFloor;
+  const upperRoomMapFloorHasSelectionTarget =
+    roomMapFloorState.upperFloorHasSelectionTarget;
+  const lowerRoomMapFloorHasSelectionTarget =
+    roomMapFloorState.lowerFloorHasSelectionTarget;
+  const hasCrossFloorRoomSelectionTargets =
+    roomMapFloorState.hasCrossFloorSelectionTargets;
   React.useEffect(() => {
     if (isBloodFromStonePeekabooMode) {
       return;
@@ -4348,11 +4355,14 @@ export default function BetrayalBoard({
         return;
       }
       const movingExplorer = core.currentExplorer;
-      const sourceRect = readBetrayalViewportRect(
-        findBetrayalTestElement(
-          `betrayal-room-occupant-${movingExplorer.roomId}-${movingExplorer.playerId}`,
-        ),
-      );
+      const sceneOwnsMovement = roomGridRef.current?.dataset.mapRenderer === "three";
+      const sourceRect = sceneOwnsMovement
+        ? null
+        : readBetrayalViewportRect(
+            findBetrayalTestElement(
+              `betrayal-room-occupant-${movingExplorer.roomId}-${movingExplorer.playerId}`,
+            ),
+          );
       setRoomMapManualCameraOwned(false);
       dispatch(BETRAYAL_COMMANDS.MOVE_TO_ROOM, payload);
       if (sourceRect && movingExplorer.playerId === viewerPlayerId) {
@@ -7594,6 +7604,7 @@ export default function BetrayalBoard({
         {core.phase === "endgame" ? (
           <EndgameScreen
             core={core}
+            viewerPlayerId={isEndgameSpectator ? null : viewerPlayerId}
             matchData={matchData}
             effectiveLocale={effectiveLocale}
             rematch={endgameRematchAction}

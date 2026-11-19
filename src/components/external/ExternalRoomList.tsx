@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { listNativeExternalRooms } from '../../api/external-games';
+import { listExternalRooms } from '../../api/external-games';
 
-export function NativeExternalRoomList({ gameId }: { gameId: string }) {
+export function ExternalRoomList({ gameId }: { gameId: string }) {
     const { t } = useTranslation('lobby');
     const query = useQuery({
-        queryKey: ['native-external-room-list', gameId],
-        queryFn: () => listNativeExternalRooms(gameId),
+        queryKey: ['external-room-list', gameId],
+        queryFn: () => listExternalRooms(gameId),
         refetchInterval: 1500,
     });
     const rooms = query.data?.rooms ?? [];
@@ -18,7 +18,7 @@ export function NativeExternalRoomList({ gameId }: { gameId: string }) {
             : <ul>{rooms.map(room => <li key={room.roomId}>
                 <span>{t('platform.externalRoom.roomBy', { name: room.hostName })} · {room.occupied}/{room.capacity}</span>
                 {room.occupied < room.capacity
-                    ? <Link to={`/external/native-room/${room.roomId}`}>{t('platform.externalRoom.join')}</Link>
+                    ? <Link to={room.native ? `/external/native-room/${room.roomId}` : `/external/rooms/${room.roomId}?join=1`}>{t('platform.externalRoom.join')}</Link>
                     : <span>{t('platform.externalRoom.full')}</span>}
             </li>)}</ul>}
     </section>;

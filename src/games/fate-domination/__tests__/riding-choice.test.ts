@@ -101,7 +101,7 @@ it('发动骑乘只打开绑定到 ResolutionFrame 的 0–3 手牌选择，不�
     expect(game.state.core.players['0'].usedAbilityIds).toEqual([]);
     expect(game.state.sys.resolution?.activeFrameId).toBe(interaction?.resolutionFrameId);
     expect(JSON.stringify(game.state.sys.resolution)).not.toContain('remote2');
-    expect(game.state.sys.actionLog.entries.at(-1)?.segments).toEqual([{ type: 'text', text: '选择坐骑召唤手牌' }]);
+    expect(game.state.sys.actionLog.entries.at(-1)?.segments).toEqual([{ type: 'i18n', ns: 'game-fate-domination', key: 'log.riding' }]);
 });
 
 it.each([
@@ -160,7 +160,7 @@ it('取消只关闭本次选择，不消费骑乘；取消后可重新发动', (
     expect(game.state.core.players['0'].usedAbilityIds).toEqual([]);
     expect(game.state.sys.interaction.current).toBeUndefined();
     expect(game.state.sys.resolution?.activeFrameId).toBeUndefined();
-    expect(game.state.sys.actionLog.entries.some(entry => entry.segments.some(segment => segment.type === 'text' && segment.text.startsWith('发动技能：')))).toBe(false);
+    expect(game.state.sys.actionLog.entries.some(entry => entry.segments.some(segment => segment.type === 'i18n' && segment.key === 'log.playSkill'))).toBe(false);
     game.useRiding();
     expect(game.state.sys.interaction.current).toBeDefined();
 });

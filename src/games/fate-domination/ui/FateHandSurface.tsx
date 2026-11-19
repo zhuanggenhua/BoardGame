@@ -8,7 +8,7 @@ import {OptimizedImage} from '../../../components/common/media/OptimizedImage';
 import {FATE_ATTACK_BY_ID} from '../data';
 import type {CardInstance, PlayerState, SkillDefinition} from '../domain/types';
 import {projectFateHand} from '../domain/handView';
-import {fateAttackManaCost, resolveFateAttack} from '../domain/attackSelection';
+import {fateAttackManaCost, fateBaseAttackManaCost, resolveFateAttack} from '../domain/attackSelection';
 import {isFateResidualSkill, isFateTerritoryCreation} from '../domain/battlefieldAttacks';
 import './hand-surface.css';
 import {useTouchLongPress} from '../../../hooks/ui/useTouchLongPress';
@@ -105,11 +105,19 @@ export function FateHandSurface({player, round, power, skills, canSelect, canSel
         && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     const costAdjustment = (id: string, faceDown = false) => {
-        const printed = resolveFateAttack(player, id)?.definition.manaCost;
+        const attack = resolveFateAttack(player, id);
         const current = fateAttackManaCost(player, id, faceDown, round);
-        if (current !== undefined && isFateTerritoryCreation(id)) return <span className="fd-card-cost-adjustment">{t('ui.hand.currentCost', { current })}</span>;
-        if (printed === undefined || current === undefined || printed === current) return null;
-        return <span className="fd-card-cost-adjustment">{t('ui.hand.adjustedCost', { current, printed })}</span>;
+        if (!attack || current === undefined) return null;
+        const base = Math.max(0, fateBaseAttackManaCost(attack, round));
+        const direction = current > base ? 'increase' : current < base ? 'decrease' : 'base';
+        if (direction === 'base' && !isFateTerritoryCreation(id)) return null;
+        const label = t(`ui.hand.cost.${direction}`, { current });
+        return <span className="fd-card-cost-adjustment" data-cost-change={direction} aria-label={label} title={label}>
+            <span className="fd-card-cost-value" aria-hidden="true">
+                {direction !== 'base' && <span className="fd-card-cost-direction">{direction === 'increase' ? '↑' : '↓'}</span>}
+                {current}
+            </span>
+        </span>;
     };
 
     const renderSkill = ({skill, assetPath, available, abilityAvailable}: FateSkillCardView, active = false, stagedSkill = false) => (
@@ -144,11 +152,11 @@ export function FateHandSurface({player, round, power, skills, canSelect, canSel
                 } else onRejectCard?.(skill.id,faceDownMode);
             }}
         >
-            <OptimizedImage src={assetPath} alt={skill.name}/>
+            <OptimizedImage src={assetPath} alt={skill.name} className="fd-runtime-card-art"/>
             {active && isFateResidualSkill(skill.id) && <span className="fd-card-residual">{t('ui.hand.residual')}</span>}
             {!active && costAdjustment(skill.id)}
         </motion.button>
-        <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:skill.name})} sourceCardId={skill.id} onInspect={()=>onInspect(assetPath,skill.name,true)} buttonSize="32px" className="fd-card-inspect"/>
+        <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:skill.name})} sourceCardId={skill.id} onInspect={()=>onInspect(assetPath,skill.name,true)} buttonSize="32px" variant="filled" className="fd-card-inspect"/>
         </div>
     );
 
@@ -209,11 +217,11 @@ export function FateHandSurface({player, round, power, skills, canSelect, canSel
                 }}
                 aria-disabled={ridingChoice ? !selectable : !isStaged && !committed && !selectable}
             >
-                <CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} style={{width: '100%'}}/>
+                <CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} className="fd-runtime-card-art" style={{width: '100%'}}/>
                 {!committed && costAdjustment(card.id, faceDown)}
                 {((player.faceDownAttackIds ?? []).includes(card.id) || (player.selectedFaceDownIds ?? []).includes(card.id)) && <span className="fd-face-down-label">{t('ui.hand.faceDown')}</span>}
             </motion.button>
-            <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:definition.name})} sourceCardId={card.id} onInspect={()=>onInspect(definition.assetPath,definition.name,true)} buttonSize="32px" className="fd-card-inspect"/>
+            <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:definition.name})} sourceCardId={card.id} onInspect={()=>onInspect(definition.assetPath,definition.name,true)} buttonSize="32px" variant="filled" className="fd-card-inspect"/>
             </div>
         );
     };
@@ -229,6 +237,7 @@ export function FateHandSurface({player, round, power, skills, canSelect, canSel
         <div
             ref={surface}
             className="fd-runtime-hand-grid"
+            data-selecting-cards={canSelect || Boolean(ridingChoice)}
             data-tutorial-id="fate-hand" data-testid="fate-hand-zones"
             data-played-count={playedIds.length}
             data-riding-choice={ridingChoice ? 'true' : undefined}

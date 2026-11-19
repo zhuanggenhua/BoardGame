@@ -11,7 +11,7 @@ type Props = React.ComponentPropsWithoutRef<typeof BetrayalPixiRoomViewport> & {
 export const BetrayalRoomViewport = React.forwardRef<HTMLDivElement, Props>((props, forwardedRef) => {
     const { figures, ...shared } = props;
     const {
-        sprites, lightingRooms, activeExplorerId, width, height, initialZoom, fitInsets, focusPoint, focusKey,
+        sprites, lightingRooms, width, height, initialZoom, fitInsets, focusPoint, focusKey,
         focusTarget, focusMode, manualCameraOwned, onZoomChange, onManualCameraInteraction,
         onMotionComplete, onMotionPhase, children, ariaLabel,
     } = shared;
@@ -88,6 +88,8 @@ export const BetrayalRoomViewport = React.forwardRef<HTMLDivElement, Props>((pro
             host.dataset.mapResourceStatus = status;
             host.dataset.visibleExplorerModels = String(models.explorers);
             host.dataset.visibleMonsterModels = String(models.monsters);
+            host.dataset.detailedFigureModels = String(models.detail);
+            host.dataset.renderedFigureTriangles = String(models.triangles);
             if (status === 'ready') setReady(true);
             if (status === 'error') setFallback(true);
         });
@@ -119,11 +121,11 @@ export const BetrayalRoomViewport = React.forwardRef<HTMLDivElement, Props>((pro
 
     React.useLayoutEffect(() => {
         rendererOwner.current?.scene.update({
-            sprites, figures, activeExplorerId,
+            sprites, figures,
             discoveredRoomIds: new Set(lightingRooms?.map(room => room.id)),
             onMotionComplete, onMotionPhase,
         });
-    }, [sprites, figures, activeExplorerId, lightingRooms, onMotionComplete, onMotionPhase, fallback]);
+    }, [sprites, figures, lightingRooms, onMotionComplete, onMotionPhase, fallback]);
 
     React.useLayoutEffect(() => {
         const camera = rendererOwner.current?.camera;

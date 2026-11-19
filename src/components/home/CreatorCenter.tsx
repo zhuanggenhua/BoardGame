@@ -6,6 +6,7 @@ import { createCreatorClaim, getClaimEvidence, listCreatorClaims, listOwnedGames
 import { listGameSubmissions } from '../../api/game-submissions';
 import type { CreatorClaim } from '../../shared/externalGames';
 import { GameSubmissionForm } from './PlatformUploadWorkspace';
+import { SubmissionDeleteAction } from './SubmissionDeleteAction';
 import { getSessionStorage, readSessionStorageItem } from '../../lib/browserStorage';
 import './platform-upload.css';
 import './creator-center.css';
@@ -43,7 +44,9 @@ export function MySubmissions({ token, userId, onOpen, filter = 'all', onFilterC
         <div className="creator-list">{items.map(record => <article className="creator-row" key={record.submissionId}>
             {record.coverUrl ? <img className="creator-thumb" src={record.coverUrl} alt="" /> : <span className="creator-thumb creator-thumb-placeholder">{record.name.slice(0, 1)}</span>}
             <div className="creator-row-main"><strong>{record.name}</strong><span className="creator-row-meta"><span className={`creator-status is-${record.status}`}>{record.status === 'approved' && !record.gameId ? t('platform.creatorCenter.submissions.processing') : statusLabels[record.status]}</span><span>{t('platform.creatorCenter.updatedAt', { date: new Date(record.updatedAt).toLocaleDateString() })}</span></span>{record.reviewComment && <small>{record.reviewComment}</small>}</div>
-            <div className="creator-row-actions"><button type="button" onClick={() => onOpen(record.submissionId)}>{record.status === 'pending' ? t('platform.creatorCenter.submissions.view') : t('platform.creatorCenter.submissions.edit')}</button></div>
+            <div className="creator-row-actions"><button type="button" onClick={() => onOpen(record.submissionId)}>{record.status === 'pending' ? t('platform.creatorCenter.submissions.view') : t('platform.creatorCenter.submissions.edit')}</button>
+                <SubmissionDeleteAction record={record} token={token} userId={userId} />
+            </div>
         </article>)}</div>
     </section>;
 }

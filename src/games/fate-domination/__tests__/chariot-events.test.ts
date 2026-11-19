@@ -11,7 +11,8 @@ import { engineConfig } from '../game';
 import { FATE_SERVANTS } from '../data';
 import { applyPlayerViewToState } from '../../../engine/ai/playerView';
 import { validFateChariotResponse } from '../domain/chariotChoice';
-import { buildFateAiLegalActions } from '../ai';
+import { buildFateAiLegalActions, projectFateAiActionOutcome } from '../ai';
+import type { AiDecisionContext } from '../../../engine/ai';
 
 const random: RandomFn = { random: () => .5, d: () => 1, range: min => min, shuffle: cards => [...cards].reverse() };
 
@@ -42,6 +43,12 @@ it('神威车轮走正式交互，拒绝他人或旧输入并不泄露抽取的�
     const target=state.core.currentEvents.miyama[0];
     expect(buildFateAiLegalActions({playerId:'0',state}).some(item=>item.commands.some(command=>command.type==='PLAY_SKILL' && (command.payload as {targetCardId?:string}).targetCardId===target.id))).toBe(true);
     const config={domain:FateDominationDomain,systems:engineConfig.systems};
+    const visibleState = applyPlayerViewToState(engineConfig, state, '0');
+    expect(visibleState.core.eventDeck).toEqual([]);
+    const legalActions = buildFateAiLegalActions({ playerId: '0', state: visibleState });
+    const replacement = legalActions.find(candidate => (candidate.commands[0].payload as { targetCardId?: string }).targetCardId === target.id)!;
+    expect(projectFateAiActionOutcome({ context: { playerId: '0', visibleState, legalActions } as AiDecisionContext, action: replacement }))
+        .toMatchObject({ status: 'succeeded', hasOwnedFollowUp: true });
     const run=(input:typeof state,playerId:string,type:string,payload:object)=>executePipeline(config,input,{type,playerId,payload},rng,ids);
     expect(run(state,'0','PLAY_SKILL',{skillId:skill.id,targetCardId:'invalid'}).success).toBe(false);
     const started=run(state,'0','PLAY_SKILL',{skillId:skill.id,targetCardId:target.id});
@@ -72,6 +79,7 @@ it('神威车轮走正式交互，拒绝他人或旧输入并不泄露抽取的�
     const afterCards=[...finished.state.core.eventDeck,...finished.state.core.eventDiscard,...finished.state.core.currentEvents.miyama,...finished.state.core.currentEvents.shinto].map(card=>card.id).sort();
     expect(afterCards).toEqual(beforeCards);
     expect(finished.state.core.battlefield.miyama.eventCards).toEqual(finished.state.core.currentEvents.miyama);
+    expect(finished.state.sys.actionLog.entries.filter(entry => entry.kind === 'FATE_CHARIOT_RESOLVED')).toHaveLength(1);
     expect(getCurrentInteractionSummary(finished.state).id).toBeUndefined();
     expect(run(finished.state,'0',response.type,response.payload).success).toBe(false);
 });

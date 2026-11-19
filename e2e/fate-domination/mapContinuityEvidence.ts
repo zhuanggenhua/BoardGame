@@ -6,7 +6,7 @@ export function fateMapCardHitAreasAreClear(cards: Locator) {
         const rect = card.getBoundingClientRect();
         return [.12, .5, .88].every(x => [.12, .5, .88].every(y => {
             const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y);
-            return card.contains(hit) || hit?.closest('.fd-map-target-shell,.fd-map-exposed-event') === card.parentElement;
+            return card.contains(hit) || hit?.closest('.fd-map-target-shell') === card.parentElement;
         }));
     }));
 }

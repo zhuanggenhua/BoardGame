@@ -126,7 +126,10 @@ export function buildFateTutorialPlan(seed=FATE_TUTORIAL_SEED, openingDeployment
         const playerId = state.sys.interaction.current?.playerId ?? state.core.currentPlayerId;
         const visibleState = applyPlayerViewToState({gameId:engineConfig.gameId,domain:engineConfig.domain,systems:engineConfig.systems}, state, playerId);
         const legalActions = buildFateAiLegalActions({ playerId, state: visibleState });
-        const ctx = { gameId: 'fate-domination', matchId: 'tutorial-plan', playerId, visibleState, legalActions, interaction: null, responseWindow: null, source: 'local' } as AiDecisionContext;
+        // 首次战后恢复令咒课程依赖 E12 留在场上。教学编排保留该目标，正式对局仍可按局面换牌。
+        const policyActions = planned.has('E12-restore') ? legalActions : legalActions.filter(action =>
+            !(action.commands[0].type === 'PLAY_SKILL' && 'targetCardId' in (action.commands[0].payload as object)));
+        const ctx = { gameId: 'fate-domination', matchId: 'tutorial-plan', playerId, visibleState, legalActions: policyActions, interaction: null, responseWindow: null, source: 'local' } as AiDecisionContext;
         const first = (key: string, predicate: (type: string, payload: Record<string, unknown>) => boolean) => {
             if (playerId !== '0' || planned.has(key)) return undefined;
             const found = legalActions.find(action => predicate(action.commands[0].type, action.commands[0].payload as Record<string, unknown>));
@@ -180,7 +183,7 @@ export function buildFateTutorialPlan(seed=FATE_TUTORIAL_SEED, openingDeployment
             // 留在 E12 战场直到首次实际获得战后令咒选择，避免教程在结算前用令咒移动离场。
             ?? (protectFirstRewardResolution ? legalActions.find(action=>action.commands[0].type==='PASS_ACTION') : undefined)
             // 学员保留令咒应付真正的费用缺口和事件战场，不为每次小幅威力增量消耗。
-            ?? legalActions.find(action => action.actionId === chooseFateAiAction(playerId==='0'&&!awaitingReward?{...ctx,legalActions:legalActions.filter(action=>action.commands[0].type!=='USE_COMMAND_SPELL' && !(!['miyama','shinto'].includes(player.locationId??'') && action.commands[0].type==='PLAY_SKILL' && String((action.commands[0].payload as {skillId?:string}).skillId).startsWith('sc_iskandar_1')))}:ctx)?.actionId);
+            ?? legalActions.find(action => action.actionId === chooseFateAiAction(playerId==='0'&&!awaitingReward?{...ctx,legalActions:policyActions.filter(action=>action.commands[0].type!=='USE_COMMAND_SPELL' && !(!['miyama','shinto'].includes(player.locationId??'') && action.commands[0].type==='PLAY_SKILL' && String((action.commands[0].payload as {skillId?:string}).skillId).startsWith('sc_iskandar_1')))}:ctx)?.actionId);
         const chosen=chosenOverride ?? normalChoice;
         if (!chosen) throw new Error(`Fate教程缺合法动作：${state.core.round}/${state.core.phase}/${playerId}`);
         if(firstOpponentWorkshopDeployment)planned.add('opponent-opening-workshop');

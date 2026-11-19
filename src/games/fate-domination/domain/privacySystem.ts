@@ -2,6 +2,7 @@ import { SPECTATOR_PLAYER_ID } from '../../../engine/playerView';
 import type { GameEvent } from '../../../engine/types';
 import type { EngineSystem } from '../../../engine/systems/types';
 import type { FateDominationCore } from './types';
+import { projectFateLogEntry } from '../actionLog';
 
 /** The public core is not enough: deterministic replay events also contain private pile facts. */
 export function projectFateEvent(event:GameEvent,core:FateDominationCore,viewerId:string):GameEvent {
@@ -30,15 +31,7 @@ export function createFatePrivacySystem():EngineSystem<FateDominationCore>{
  return {id:'fate-private-view',name:'Fate 隐藏信息投影',priority:100,
   playerView:(state,viewerId)=>({
    eventStream:{...state.sys.eventStream,entries:state.sys.eventStream.entries.map(entry=>({...entry,event:projectFateEvent(entry.event,state.core,viewerId)}))},
-   actionLog:{...state.sys.actionLog,entries:state.sys.actionLog.entries.map(entry=>{
-    if(['SELECT_SERVANT','SELECT_ATTACK_CARD'].includes(entry.kind))return {...entry,segments:[{type:'text' as const,text:entry.kind==='SELECT_SERVANT'?'召唤从者':'调整出牌选择'}]};
-    if(entry.kind==='INSPECT_CARD' && entry.actorId!==viewerId){
-     const publicCardNames=[state.core.situation.name,state.core.miyamaEvent.name];
-     const publiclyVisible=entry.segments.some(segment=>segment.type==='text' && publicCardNames.some(name=>segment.text===`查看卡牌：${name}`));
-     if((entry as typeof entry & {fatePrivateInspection?:boolean}).fatePrivateInspection!==false || !publiclyVisible)return {...entry,segments:[{type:'text' as const,text:'查看卡牌'}]};
-    }
-    return entry;
-   })},
+   actionLog:{...state.sys.actionLog,entries:state.sys.actionLog.entries.map(entry=>projectFateLogEntry(entry,state.core,viewerId))},
    undo:{...state.sys.undo,snapshots:[],snapshotCursors:[],restoredRandomCursor:undefined,snapshotCount:state.sys.undo.snapshots.length},
    refereeTrace:undefined,
    ...(viewerId===SPECTATOR_PLAYER_ID?{interaction:{queue:[],isBlocked:Boolean(state.sys.interaction.current)}}:{}),

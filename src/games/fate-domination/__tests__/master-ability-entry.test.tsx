@@ -6,6 +6,7 @@ import { FateDominationBoard } from '../Board';
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 
 vi.mock('../../../contexts/ToastContext', () => ({ useToast: () => ({ warning: vi.fn() }) }));
+vi.mock('../../../lib/audio/useGameAudio', () => ({ useGameAudio: vi.fn(), playDeniedSound: vi.fn(), playSound: vi.fn() }));
 vi.mock('react-i18next', async () => {
  const {createInstance}=await import('i18next');
  const {default:zh}=await import('../../../../public/locales/zh-CN/game-fate-domination.json');
@@ -24,7 +25,8 @@ function setup(masterId: string) {
     const adapter = createReplayAdapter(FateDominationDomain, `master-entry-${masterId}`);
     let state = adapter.setup(['0', '1', '2']);
     state = adapter.execute(state, { type: 'SELECT_MASTER', playerId: '0', payload: { masterId } }).state;
-    state = adapter.execute(state, { type: 'SELECT_MASTER', playerId: '1', payload: { masterId: 'm_waver' } }).state;
+    const peerMasterId = masterId === 'm_waver' ? 'm_kirei' : 'm_waver';
+    state = adapter.execute(state, { type: 'SELECT_MASTER', playerId: '1', payload: { masterId: peerMasterId } }).state;
     for (const playerId of ['0', '1', '2'])
         state = adapter.execute(state, { type: 'ADVANCE_PHASE', playerId, payload: {} }).state;
     state.core.players['0'].mana = 0;
@@ -56,11 +58,11 @@ it('本人牌桌发动战略部署，角色详情保持只读且对手不提供�
     view.rerender(<FateDominationBoard {...({ ...props, G: live } as never)}/>);
     expect(screen.getByRole('button', { name: '发动战略部署' })).toHaveAttribute('aria-disabled','true');
     fireEvent.click(screen.getByRole('button', { name: '查看玩家 2详情' }));
-    expect(state.core.players['1'].skills.some(skill => skill.name === '战略部署')).toBe(true);
+    expect(state.core.players['1'].skills.some(skill => skill.name === '监督者')).toBe(true);
     expect(within(screen.getByRole('dialog')).queryByRole('button', { name: /^发动/ })).toBeNull();
 });
 
-it('监督者从牌桌能力进入目标选择，取消不扣费，选中后确认才提交移动', () => {
+it('监督者从牌桌能力进入目标选择，点击合法地点直接提交移动', () => {
     const { state } = setup('m_kirei');
     state.core.phase = 'action';
     state.core.players['0'].mana = 8;
@@ -74,12 +76,7 @@ it('监督者从牌桌能力进入目标选择，取消不扣费，选中后确�
     begin();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(dispatch).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '取消移动' }));
-    expect(dispatch).not.toHaveBeenCalled();
-    begin();
     fireEvent.click(screen.getByRole('button', { name: '地点recon' }));
-    expect(dispatch).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '确认移动至侦察' }));
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL', {
         skillId: state.core.players['0'].skills.find(skill => skill.name === '监督者')!.id,
         targetLocationId: 'recon',

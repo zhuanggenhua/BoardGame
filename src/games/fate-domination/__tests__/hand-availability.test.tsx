@@ -22,14 +22,14 @@ it('已打出且仍能发动的普通牌显示可用；进入骑乘后不能再�
  expect(button.classList.contains('is-available')).toBe(false);fireEvent.click(button);expect(activate).not.toHaveBeenCalled();
 });
 
-it('普通选牌时所有可用技能都保留可用标记，骑乘独立选牌时一起取消该标记',()=>{
+it('普通草稿可选合法技能，进入骑乘后右侧技能变为不可选',()=>{
  const player=createReplayAdapter(FateDominationDomain,'available-skills').setup(['0','1','2']).core.players['0'];
  const skills=player.skills.map(skill=>({skill,assetPath:'skills/'+skill.id,available:true}));
  const select=vi.fn();
  const props={player,power:0,skills,canSelect:true,onSelect:select,onPlaySkill:vi.fn(),onInspect:vi.fn()};
  const view=render(<FateHandSurface {...props}/>);
- for(const {skill} of skills)expect(screen.getByRole('button',{name:`选择 ${skill.name}`} ).classList.contains('is-available')).toBe(true);
+ for(const {skill} of skills)expect(screen.getByRole('button',{name:`选择 ${skill.name}`} )).toHaveAttribute('aria-disabled','false');
  view.rerender(<FateHandSurface {...props} ridingChoice={{interactionId:'riding',round:1,candidateIds:[],onConfirm:vi.fn(),onCancel:vi.fn()}}/>);
- for(const {skill} of skills){const button=screen.getByRole('button',{name:`选择 ${skill.name}`});expect(button.classList.contains('is-available')).toBe(false);fireEvent.click(button);}
+ for(const {skill} of skills){const button=screen.getByRole('button',{name:`选择 ${skill.name}`});expect(button).toHaveAttribute('aria-disabled','true');fireEvent.click(button);}
  expect(select).not.toHaveBeenCalled();
 });

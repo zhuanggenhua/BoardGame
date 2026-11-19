@@ -2581,6 +2581,7 @@
       "submissionType": "Submission type",
       "webZip": "Web ZIP",
       "zipHint": "Upload a web game ZIP containing index.html, up to 32 MB.",
+      "roomSdkGuide": "Download the room SDK integration guide",
       "zipRequired": "Choose a web game ZIP file",
       "zipTooLarge": "The web ZIP must be 32 MB or smaller",
       "zipUpdateHint": "To update the game files, upload a new ZIP in My Submissions and submit it for review.",
@@ -2651,7 +2652,10 @@
         "emptyDescription": "Games you submit will appear here.",
         "processing": "Listing in progress",
         "view": "View submission",
-        "edit": "Edit submission"
+        "edit": "Edit submission",
+        "delete": "Delete submission",
+        "deleteConfirm": "Delete “{{name}}”?",
+        "deletePublishedConfirm": "Deleting “{{name}}” also removes the game from the platform catalog. Delete it?"
       },
       "works": {
         "title": "My works",

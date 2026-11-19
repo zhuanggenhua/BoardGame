@@ -46,6 +46,10 @@ async function inspectRoomSupport(directory: string, entry: string): Promise<Roo
         const file = await stat(path).catch(() => null);
         if (!file?.isFile() || file.size > 8 * 1024 * 1024) continue;
         const text = await readFile(path, 'utf8');
+        if (/\.html?$/i.test(url.pathname) && [...text.matchAll(/<meta\b[^>]*>/gi)].some(([tag]) =>
+            /\bname\s*=\s*["']boardgame-room-sdk["']/i.test(tag) && /\bcontent\s*=\s*["']1["']/i.test(tag))) {
+            return { roomProtocol: EXTERNAL_ROOM_VERSION };
+        }
         sdk ||= text.includes(EXTERNAL_ROOM_CONNECT) && text.includes('MessageChannel');
         nativeLobby ||= text.includes('id="oh-create"') && text.includes('id="oh-start"') && text.includes('onlineHost(body, prof)');
         nativeMatch ||= text.includes('hostInit(total, name)') && text.includes('guestConnect(offer, name)') && text.includes('hostAccept(i, code)');

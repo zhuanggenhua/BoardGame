@@ -10,13 +10,22 @@ vi.mock('react-i18next',async()=>{
     const locale=(await import('../../../../../public/locales/zh-CN/game-fate-domination.json')).default;
     const instance=createInstance();
     await instance.init({lng:'zh-CN',resources:{'zh-CN':{'game-fate-domination':locale}}});
-    return {useTranslation:()=>({t:instance.getFixedT('zh-CN','game-fate-domination')})};
+    return {useTranslation:()=>({t:instance.getFixedT('zh-CN','game-fate-domination'), i18n: instance})};
 });
 vi.mock('../../../../components/common/media/OptimizedImage',()=>({OptimizedImage:({alt}:{alt:string})=><img alt={alt}/>}));
 
 function Table(){
     const [selectedId,onSelect]=useState<string|null>(null);
-    const [core]=useState(()=>createReplayAdapter(FateDominationDomain,'hover-lifecycle').setup(['0','1','2']).core);
+    const [core]=useState(()=>{
+        const ready = createReplayAdapter(FateDominationDomain,'hover-lifecycle').setup(['0','1','2']).core;
+        for (const id of ['1','2']) {
+            const peer = ready.players[id];
+            const card = peer.deck.shift()!;
+            peer.hand = [card];
+            peer.activeAttackIds = [card.id];
+        }
+        return ready;
+    });
     return <FatePlayerRail core={core} viewerId="0" selectedId={selectedId} onSelect={onSelect} nameFor={id=>`玩家 ${Number(id)+1}`} onDetail={()=>{}} onInspect={()=>{}}/>;
 }
 

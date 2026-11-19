@@ -47,7 +47,7 @@ Web 内容更新默认走 `embedded + OTA / Live Update`。原生插件、权限
 - Android OTA 采用非强制更新；自动检查后台准备，计划在下次启动生效，右下角手动检查可立即更新。
 - 更新取消后不得继续激活或重启；旧客户端过渡必须单独验证。
 - 每次原生启动尽早调用 `notifyAppReady()`，避免插件回滚已下载 bundle。
-- OTA zip 不携带运行时大图片、图集配置、状态图集 JSON、缩略图、支付二维码和共享音频。
+- 软件包与游戏素材的边界见 [asset-pipeline](../.spec/knowledge/standards/asset-pipeline.md#ota-与-android)。
 
 OTA manifest 关键字段：
 
@@ -78,14 +78,7 @@ native `latest.json` 至少包含 `version / versionCode / url / checksum / size
 
 ## 包体边界
 
-embedded APK 和 OTA 都不能重复内置本应由服务器素材主源、游戏包或共享包下载的运行时大资源。重点排除：
-
-- `assets/common/audio/**`
-- `assets/common/images/**` 下的大型运行时资源
-- `assets/atlas-configs/**`
-- `assets/i18n/**` 下除 `assets-manifest.json` 外的图片、音频和运行时配置
-- `public/logos/**`
-- 参考图、预览图、生成图、中间产物
+软件包内素材范围和游戏素材分发以 [asset-pipeline](../.spec/knowledge/standards/asset-pipeline.md#ota-与-android) 为准。
 
 Android 游戏包和共享包的路径合同见 [`asset-pipeline`](../.spec/knowledge/standards/asset-pipeline.md) 与 [`audio-assets`](../.spec/knowledge/standards/audio-assets.md)。zip entry、file index、原生落盘和 H5 读取路径必须同构。
 

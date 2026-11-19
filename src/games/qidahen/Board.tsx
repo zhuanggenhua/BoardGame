@@ -44,7 +44,6 @@ import { CardInspectButton } from '../../components/common/overlays/CardInspectB
 import { QidahenBattlePreparation } from './ui/QidahenBattlePreparation';
 import { QidahenBattleArena } from './ui/QidahenBattleArena';
 import { QidahenDispatchRoster } from './ui/QidahenDispatchRoster';
-import { QidahenBattleRoster } from './ui/QidahenBattleRoster';
 import { QIDAHEN_BATTLE_HUD_SELECTORS } from './ui/QidahenBattleRollOverlay';
 import { QidahenBattleReport } from './ui/QidahenBattleReport';
 import { useQidahenBattlePresentation } from './ui/useQidahenBattlePresentation';
@@ -1559,6 +1558,7 @@ const MapSceneLayer: React.FC<{
     contextRegionIds?: readonly string[];
     maintenanceFortificationId?: string | null;
     turnDispatchSourceRegionId?: string | null;
+    choosingDispatchSource?: boolean;
     battleProtectedRegionIds?: readonly string[];
     turnSelectablePieceIds?: readonly string[];
     turnSelectableTokenIds?: readonly string[];
@@ -1572,7 +1572,7 @@ const MapSceneLayer: React.FC<{
     onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string, tokenId?: string) => void;
-}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, mapPlaybackLocked = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, tutorialMapTokenFocusId = null, mapSelectionCandidateIds, diplomacyRegionIds = [], contextRegionIds = [], maintenanceFortificationId = null, turnDispatchSourceRegionId = null, battleProtectedRegionIds = [], turnSelectablePieceIds = [], turnSelectableTokenIds = [], turnUnitLevels, turnSelectedPieceIds = [], turnSelectedRegionId = null, tutorialRecommendedPieceIds = [], onMapFocusBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, mapPlaybackLocked = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, tutorialMapTokenFocusId = null, mapSelectionCandidateIds, diplomacyRegionIds = [], contextRegionIds = [], maintenanceFortificationId = null, turnDispatchSourceRegionId = null, choosingDispatchSource = false, battleProtectedRegionIds = [], turnSelectablePieceIds = [], turnSelectableTokenIds = [], turnUnitLevels, turnSelectedPieceIds = [], turnSelectedRegionId = null, tutorialRecommendedPieceIds = [], onMapFocusBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const { t: tCommon } = useTranslation('common');
     const currentFactionId = perspectiveFactionId;
@@ -1969,6 +1969,11 @@ const MapSceneLayer: React.FC<{
     const mapFocusBounds = React.useMemo(() => {
         const fortification = getQidahenFortificationGeometry(maintenanceFortificationId);
         if (fortification) return fortification.bounds;
+        if (tutorialStepId === 'dispatch-target' && runtimeRegionOwnership && turnDispatchSourceRegionId && tutorialRegionFocus) {
+            const regions = [turnDispatchSourceRegionId, tutorialRegionFocus.regionId].flatMap(expandRuntimeRegionIds);
+            const bounds = getQidahenRuntimeRegionBounds(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, regions);
+            if (bounds) return bounds;
+        }
         const guidedSource = tutorialStepId === 'frontier-target' ? 'city-region-15' : turnDispatchSourceRegionId;
         if ((tutorialStepId === 'dispatch-target' || tutorialStepId === 'frontier-target') && tutorialRegionFocus && guidedSource) {
             const source = getQidahenRuntimeRegionAnchorTargetPoint(guidedSource);
@@ -2837,7 +2842,8 @@ const MapSceneLayer: React.FC<{
                             })() : undefined}
                             onExpandStack={!individual && token.regionId && (overflowRegionSet.has(token.regionId) || stackSizeFor(token.id) > 1)
                                 ? () => overflowDialog.open(token.regionId!) : undefined}
-                            expandBeforeSelection={!individual && !!token.regionId && overflowRegionSet.has(token.regionId)}
+                            expandBeforeSelection={!individual && !!token.regionId && overflowRegionSet.has(token.regionId)
+                                && !(choosingDispatchSource && mapSelectionCandidateIds.includes(token.regionId))}
                             unitLevel={(token.pieceId ? piecesById.get(token.pieceId)?.level : undefined) ?? turnUnitLevels?.get(token.id)}
                             layoutProtected={pendingCommittedSelectable || formalPieceSelected || grantPardonSourceSelectable || grantPardonSourceSelected
                                 || pincerAdvanceChoice != null || instigateDefectionChoice != null || wuzhenChaohaChoice != null
@@ -2848,7 +2854,7 @@ const MapSceneLayer: React.FC<{
                             regionChoice={token.regionId && (armyLayout.callouts.some(callout => callout.tokenId === token.id)
                                 || (stackSizeFor(token.id) > 1 && mapSelectionCandidateIds.includes(token.regionId))
                                 || (token.type === 'army' && token.location === 'field' && mapSelectionCandidateIds.includes(token.regionId)
-                                    && armyLayout.groups.some(group => group.regionId === token.regionId)))
+                                    && (choosingDispatchSource || armyLayout.groups.some(group => group.regionId === token.regionId))))
                                 && !pendingCommittedSelectable && !grantPardonSourceSelectable && !pincerAdvanceChoice && !instigateDefectionChoice && !wuzhenChaohaChoice ? {
                                     allowed: !mapHitTestingDisabled && !mapPlaybackLocked && !pendingCommittedSelectionActive
                                         && turnSelectablePieceIds.length === 0 && turnSelectableTokenIds.length === 0 && mapSelectionCandidateIds.includes(token.regionId),
@@ -7240,6 +7246,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             || selector === '[data-testid^="qidahen-hand-card-shell-"]') : [
             '[data-testid="qidahen-player-float"]', '[data-testid="qidahen-hand-zone"]',
             '[data-testid="qidahen-hand-interaction-tray"] > div', '[data-testid="qidahen-action-slot"] > *', '[data-testid="qidahen-turn-choice"]',
+            '[data-testid="qidahen-dispatch-roster"]',
             '[data-testid="qidahen-action-wheel"]', '[data-testid="qidahen-map-viewport-controls"]',
             '[data-ui-role="qidahen-hand-magnify-viewport"]', '[data-testid="fab-menu"]',
             '[data-testid="qidahen-draw-anchor"]', '[data-testid="qidahen-discard-anchor"]',
@@ -7275,7 +7282,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     padding: 8 * Math.max(scaleX, scaleY), reservedLabelHeight: 24 * scaleY,
                     preferredZoom: turnInput.step !== 'dispatch-troops' && turnInput.pieceIds.length > 0 ? Math.max(3.35, selectionEntryMapZoom.current)
                         : tutorialStep?.content?.endsWith('farm-target-dynamic') ? 1.6
-                        : tutorialStep?.id === 'dispatch-target' && turnInput.dispatchSourceRegionId ? 2
+                        : tutorialStep?.id === 'dispatch-target' && turnInput.dispatchSourceRegionId ? 1.6
                         : (core.postBattleSelection && !battlePresentation.active) || tutorialStep?.id === 'frontier-target'
                             || ['training-target', 'training-second-target', 'training-third-target', 'training-recruit-target', 'training-finish'].includes(tutorialStep?.id ?? '') ? 1.2
                         : battleFocusKey || tutorialRegionFocus || tutorialMapTokenFocusId || getQidahenFortificationGeometry(turnInput.maintenanceFortificationId)
@@ -7337,15 +7344,10 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         wheelDispatchSelection?.sourceRegionId, core.gaoDiDispatchSelection?.sourceRegionId,
         internalDispatchSelection?.sourceRegionId, grantPardonSelection?.sourceRegionId]);
 
-    const dispatchRosterActive = turnInput.step === 'dispatch-troops' && turnInput.canAct;
+    const dispatchRosterActive = turnInput.canAct && (turnInput.step === 'dispatch-troops' || turnInput.step === 'dispatch-target');
     const chronologyChoiceActive = turnInput.active && turnInput.step === 'chronology';
-    const dispatchTargetContext = turnInput.step === 'dispatch-target' ? <div>
-        <h2 className="text-lg font-bold">{core.regions.find(region => region.id === turnInput.dispatchSourceRegionId)?.name} · {turnInput.title}</h2>
-        <QidahenBattleRoster side="attacker" tokens={core.mapTokens.filter(token => token.imageSrc && token.pieceId
-            && turnInput.committedPieceIds.includes(token.pieceId))} />
-    </div> : undefined;
     const turnChoicePanel = turnInput.active ? <QidahenTurnChoicePanel input={turnInput} inline={chronologyChoiceActive}
-        context={dispatchTargetContext} dock={{ left: ACTIONS_DOCK_LEFT, top: ACTIONS_DOCK_TOP, width: ACTIONS_DOCK_WIDTH }} locale={locale}
+        dock={{ left: ACTIONS_DOCK_LEFT, top: ACTIONS_DOCK_TOP, width: ACTIONS_DOCK_WIDTH }} locale={locale}
         onInspect={(previewRef, title) => setMagnifyTarget({ previewRef, title, rawWidth: CARD_DIMENSIONS.hand.rawWidth, rawHeight: CARD_DIMENSIONS.hand.rawHeight })} /> : null;
     const battleParticipants = battlePresentation.participants;
     const battleRoster = React.useMemo(() => {
@@ -7400,6 +7402,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 contextRegionIds={maintenanceContextRegionIds}
                 maintenanceFortificationId={turnInput.maintenanceFortificationId}
                 turnDispatchSourceRegionId={turnInput.dispatchSourceRegionId ?? (turnInput.step === 'dispatch-source' ? tutorialRegionFocus?.regionId : null)}
+                choosingDispatchSource={turnInput.step === 'dispatch-source' && turnInput.canAct}
                 onMapFocusBoundsChange={setMapFocusBounds}
                 compactRegionTip={compactMapRegionTip}
                 viewport={mapViewport}
@@ -7565,7 +7568,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             </ChronologyZone>
             <QidahenSkipHandAction input={turnInput} />
             <QidahenHandActionControls input={turnInput} recommendedOptionIds={isTutorialActive ? tutorialStep?.allowedTargets : undefined} />
-            {!chronologyChoiceActive ? turnChoicePanel : null}
+            {!chronologyChoiceActive && !dispatchRosterActive ? turnChoicePanel : null}
             {dispatchRosterActive ? <QidahenDispatchRoster input={turnInput}
                 regionName={core.regions.find(region => region.id === turnInput.dispatchSourceRegionId)?.name ?? ''}
                 tokens={core.mapTokens} pieces={core.pieces} trainedIds={core.trainedTroopPieceIdsThisTurn}

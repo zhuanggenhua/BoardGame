@@ -48,12 +48,14 @@ export interface BetrayalEndgameRematchAction {
 
 export function EndgameScreen({
   core,
+  viewerPlayerId,
   matchData,
   effectiveLocale,
   rematch,
   onBackToLobby,
 }: {
   core: BetrayalCore;
+  viewerPlayerId: string | null;
   matchData?: MatchPlayerInfo[];
   effectiveLocale: string;
   /** 重赛操作；传 null 表示当前视角不可重赛（如旁观者），此时隐藏重赛按钮 */
@@ -79,14 +81,17 @@ export function EndgameScreen({
     : result
       ? null
       : allExplorers[allExplorers.length - 1];
-  const outcomeTitle = survivorsWon
-    ? t("board.endgame.victory")
-    : t("board.endgame.defeat");
   const outcomeSubtitle = hauntWon
     ? t("board.endgame.hauntSucceeded")
     : survivorsWon
     ? t("board.endgame.survivorsEscaped")
     : t("board.endgame.traitorSucceeded");
+  const viewerWon = result && viewerPlayerId !== null
+    ? result.winners.includes(viewerPlayerId)
+    : null;
+  const outcomeTitle = viewerWon === null
+    ? outcomeSubtitle
+    : t(viewerWon ? "board.endgame.victory" : "board.endgame.defeat");
   const survivorsTitle = survivorsWon
     ? t("board.endgame.survivorsStatusWin")
     : t("board.endgame.survivorsStatusLose");
@@ -221,15 +226,18 @@ export function EndgameScreen({
                 {t("board.endgame.title")}
               </div>
               <div
+                data-testid="betrayal-endgame-outcome"
                 className={`mt-1 text-[56px] font-bold tracking-[0.1em] drop-shadow-[0_0_18px_rgba(183,239,116,0.28)] ${
-                  survivorsWon ? "text-[#b7ef74]" : "text-[#eb8a67]"
+                  viewerWon === null ? "text-[#f1e1bb]" : viewerWon ? "text-[#b7ef74]" : "text-[#eb8a67]"
                 }`}
               >
                 {outcomeTitle}
               </div>
-              <div className="mt-1 text-[17px] tracking-[0.24em] text-[#f1e1bb]">
-                {outcomeSubtitle}
-              </div>
+              {viewerWon !== null ? (
+                <div className="mt-1 text-[17px] tracking-[0.24em] text-[#f1e1bb]">
+                  {outcomeSubtitle}
+                </div>
+              ) : null}
               <div className="pointer-events-none absolute left-[14%] top-1/2 flex items-center gap-2">
                 <span className="h-px w-16 bg-[linear-gradient(90deg,transparent,#9f854d)]" />
                 <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
@@ -489,7 +497,7 @@ export function EndgameScreen({
                         ))}
                       </div>
                       <div
-                        className={`mt-4 text-center text-[38px] font-bold tracking-[0.12em] drop-shadow-[0_1px_0_rgba(230,211,163,0.28)] ${survivorsWon ? "text-[#4d7330]" : "text-[#92493e]"}`}
+                        className={`mt-4 text-center text-[38px] font-bold tracking-[0.12em] drop-shadow-[0_1px_0_rgba(230,211,163,0.28)] ${viewerWon === null ? "text-[#3a2a19]" : viewerWon ? "text-[#4d7330]" : "text-[#92493e]"}`}
                       >
                         {outcomeTitle}
                       </div>

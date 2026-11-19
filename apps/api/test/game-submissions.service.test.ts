@@ -8,7 +8,7 @@ import type { ExternalGamesService } from '../src/modules/ugc/external-games.ser
 const draft = { name: ' 测试游戏 ', description: '游戏介绍', url: 'https://example.com/game', category: 'card', minPlayers: 2, maxPlayers: 4, author: '作者', rules: '规则' };
 const createService = () => {
     const model = { create: vi.fn(async data => data), findOne: vi.fn(), findOneAndUpdate: vi.fn(), updateOne: vi.fn() };
-    const games = { assertSubmissionEditable: vi.fn(), publishSubmission: vi.fn(async () => 'external-published') } as unknown as ExternalGamesService;
+    const games = { assertSubmissionEditable: vi.fn(), publishSubmission: vi.fn(async () => 'external-published'), unpublishSubmission: vi.fn() } as unknown as ExternalGamesService;
     return { model, games, service: new GameSubmissionsService(model as unknown as Model<GameSubmissionDocument>, games) };
 };
 beforeEach(() => vi.clearAllMocks());
@@ -19,25 +19,33 @@ describe('外部游戏投稿持久化', () => {
         expect(model.create).toHaveBeenCalledWith(expect.objectContaining({ name: '测试游戏', ownerId: 'owner', status: 'draft' }));
         expect(record.submissionId).toBeTruthy();
     });
-    it('禁止反转人数范围与空白正文', () => {
+    it('禁止反转人数范围，介绍可省略', async () => {
         const { service } = createService();
         expect(() => service.create('owner', { ...draft, minPlayers: 5 })).toThrow('最少人数');
-        expect(() => service.create('owner', { ...draft, description: ' ' })).toThrow('名称和介绍');
+        expect((await service.create('owner', { ...draft, description: ' ' })).description).toBe('');
     });
     it('不能更新别人的投稿，查询必须同时限定所有者和投稿编号', async () => {
         const { service, model } = createService(); model.findOne.mockResolvedValue(null);
         await expect(service.update('other', 'id', draft)).rejects.toThrow('没有找到');
-        expect(model.findOne).toHaveBeenCalledWith({ ownerId: 'other', submissionId: 'id' });
+        expect(model.findOne).toHaveBeenCalledWith({ ownerId: 'other', submissionId: 'id', deletedAt: { $exists: false } });
     });
-    it('未上传封面不能送审；有封面的草稿只进入待审核', async () => {
+    it('草稿可以不上传封面，送审后只进入待审核', async () => {
         const { service, model } = createService();
         const record = { ...draft, coverUrl: '', status: 'draft', reviewComment: '', save: vi.fn() };
         model.findOne.mockResolvedValue(record);
-        await expect(service.submit('owner', 'id')).rejects.toThrow('封面');
-        expect(record.save).not.toHaveBeenCalled();
-        record.coverUrl = 'https://example.com/cover.webp';
         model.findOneAndUpdate.mockResolvedValue({ ...record, status: 'pending' });
         expect((await service.submit('owner', 'id')).status).toBe('pending');
+        expect(record.save).not.toHaveBeenCalled();
+    });
+    it('删除自己的投稿才允许下架关联游戏', async () => {
+        const { service, model, games } = createService();
+        model.findOne.mockResolvedValueOnce(null);
+        await expect(service.remove('other', 'id')).rejects.toThrow('没有找到');
+        expect(games.unpublishSubmission).not.toHaveBeenCalled();
+        model.findOne.mockResolvedValueOnce({ status: 'approved', gameId: 'external-id', updatedAt: new Date() });
+        model.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
+        expect(await service.remove('owner', 'id')).toEqual({ deleted: true });
+        expect(games.unpublishSubmission).toHaveBeenCalledWith('id', 'external-id');
     });
 });
 
@@ -85,6 +93,6 @@ describe('投稿规则文件合同', () => {
         const pending = { ...record(), status: 'pending', rulesDocument };
         model.findOne.mockResolvedValue(pending); model.findOneAndUpdate.mockResolvedValue({ ...pending, status: 'approved' });
         await service.review('admin', 'draft-id', { decision: 'approved', comment: '规则文件可查看', revision: pending.updatedAt.toISOString() });
-        expect(games.publishSubmission).toHaveBeenCalledWith('draft-id', 'owner', expect.anything(), '/cover.webp', rulesDocument);
+        expect(games.publishSubmission).toHaveBeenCalledWith('draft-id', 'owner', expect.anything(), '/cover.webp', rulesDocument, undefined);
     });
 });

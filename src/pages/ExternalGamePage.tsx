@@ -91,7 +91,7 @@ export default function ExternalGamePage() {
             </div>
         </div>}
         {playing && canEmbed && <div className="external-player">
-            {item.roomAdapter === 'vale-webrtc'
+            {item.roomAdapter === 'vale-webrtc' && search.get('createRoom') === '1'
                 ? <NativeExternalRoomGame key={gameId} gameId={gameId} entry={item.url}
                     title={t('platform.externalGamePage.iframeTitle', { name: item.name })} autoOpen={search.get('createRoom') === '1'} />
                 : isSandboxedWebGame(item)

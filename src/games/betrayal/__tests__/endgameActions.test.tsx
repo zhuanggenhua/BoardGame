@@ -3,7 +3,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { EndgameScreen } from '../endgameScreen';
-import { playFirstScenarioToSurvivorVictory } from '../testing/firstScenarioTestUtils';
+import { playFirstScenarioToSurvivorVictory, playMummyScenarioToTraitorVictory } from '../testing/firstScenarioTestUtils';
 import betrayalLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
 
 type TranslationTree = Record<string, string | TranslationTree>;
@@ -29,6 +29,7 @@ function renderScreen(options?: {
     return render(
         <EndgameScreen
             core={playFirstScenarioToSurvivorVictory()}
+            viewerPlayerId="0"
             effectiveLocale="zh-CN"
             rematch={options && 'rematch' in options ? options.rematch : { label: '再来一局', onClick: vi.fn() }}
             onBackToLobby={options?.onBackToLobby}
@@ -37,6 +38,19 @@ function renderScreen(options?: {
 }
 
 describe('山屋惊魂终局操作', () => {
+    it('同一结局的胜负标题以当前座位为准，旁观者看到胜方', () => {
+        const core = playMummyScenarioToTraitorVictory();
+        const winner = core.endgameResult!.winners[0];
+        const loser = core.playerIds.find(id => !core.endgameResult!.winners.includes(id))!;
+        const { rerender } = render(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={winner} />);
+        fireEvent.click(screen.getByTestId('betrayal-endgame-ending-continue'));
+        expect(screen.getAllByText('胜利', { exact: true })).toHaveLength(2);
+        rerender(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={loser} />);
+        expect(screen.getAllByText('失败', { exact: true })).toHaveLength(2);
+        rerender(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={null} />);
+        expect(screen.queryByText('失败', { exact: true })).toBeNull();
+        expect(screen.getAllByText('叛徒得逞', { exact: true }).length).toBeGreaterThan(0);
+    });
     it('再来一局与返回大厅按钮接通回调', () => {
         const onRematch = vi.fn();
         const onBackToLobby = vi.fn();

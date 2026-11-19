@@ -54,6 +54,7 @@ export interface MasterDefinition {
     name: string;
     assetPath: string;
     sourceStatus: SourceStatus;
+    implementationStatus?: 'in-progress';
     initMana?: number;
     manaLimit?: number;
     initialCommandSpells?: number;
@@ -67,6 +68,7 @@ export interface ServantDefinition {
     assetPath: string;
     skillAssetPaths: string[];
     sourceStatus: SourceStatus;
+    implementationStatus?: 'in-progress';
     class?: string;
     trueName?: string;
     deck?: string[];

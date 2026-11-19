@@ -21,6 +21,11 @@ const preparedBoardState = (seed: string, playerIds = ['0', '1', '2']) => {
     expect(state.core.phase).toBe('outpost');
     return state;
 };
+const withPeerAttack = (state: ReturnType<typeof preparedBoardState>) => {
+    const peer = state.core.players['1'];
+    peer.activeAttackIds = [peer.hand[0].id];
+    return state;
+};
 it('本人确认准备后不再用选角弹窗遮住前哨之前的牌桌与他席准备', () => {
     const adapter=createReplayAdapter(FateDominationDomain,'confirmed-identity-ui');
     let state=adapter.setup(['0','1','2']);
@@ -40,6 +45,7 @@ it('部署点位点击立即执行一次，不再提供待确认与取消控件'
 });
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 vi.mock('../../../contexts/ToastContext', () => ({useToast: () => ({warning:vi.fn()})}));
+vi.mock('../../../lib/audio/useGameAudio', () => ({ useGameAudio: vi.fn(), playDeniedSound: vi.fn(), playSound: vi.fn() }));
 vi.mock('../../../contexts/UndoContext', () => ({ UndoProvider: ({ children }: {
         children: React.ReactNode;
     }) => <>{children}</> }));
@@ -50,7 +56,7 @@ vi.mock('../../../components/common/media/OptimizedImage', () => ({ OptimizedIma
 vi.mock('../ui/FateMapSurface', () => ({ FateMapSurface: ({ legalLocations, onPawn, onLocation, chariotTargetIds=[],onChariotTarget }: { legalLocations: string[]; onPawn: () => void; onLocation:(id:string)=>void;chariotTargetIds?:string[];onChariotTarget?:(id:string)=>void }) => <div data-testid="shared-map" data-legal-locations={legalLocations.join(',')}><button onClick={onPawn}>本人棋子</button>{legalLocations.map(id=><button key={id} onClick={()=>onLocation(id)}>地点{id}</button>)}{chariotTargetIds.map(id=><button key={id} onClick={()=>onChariotTarget?.(id)}>事件{id}</button>)}</div> }));
 vi.mock('../ui/FatePlayerDetail', () => ({ FatePlayerDetail: ({ playerId, onInspect, onClose }: any) => <div data-testid="detail" onKeyDown={event => {if(event.key==='Escape'){event.stopPropagation();onClose();}}}>{playerId}<button onClick={() => onInspect('fate-domination/skills/sc_saber_1','测试卡')}>检视测试卡</button></div> }));
 it('正式对局使用新手牌与地图表面，选中席位展开出牌，头像打开该玩家详情', () => {
-    const G = preparedBoardState('runtime-board', ['0', '1', '2']);
+    const G = withPeerAttack(preparedBoardState('runtime-board', ['0', '1', '2']));
     G.core.phase = 'action';
     G.core.players['0'].locationId = 'miyama';
     const dispatch = vi.fn();
@@ -287,7 +293,7 @@ it('跳过整个行动的按钮明确叫结束行动，不伪装成只跳过能�
 });
 
 it('检视大图先消费退出键，回到原详情按钮，再次退出才关闭详情', () => {
- const G=preparedBoardState('inspect-layers', ['0','1','2']);
+ const G=withPeerAttack(preparedBoardState('inspect-layers', ['0','1','2']));
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
  fireEvent.click(screen.getByRole('button',{name:'查看玩家 2详情'}));
  const source=screen.getByRole('button',{name:'检视测试卡'});source.focus();fireEvent.click(source);
@@ -311,7 +317,7 @@ it('来自原牌长按的抬手兼容点击不关闭新检视，重新按遮罩�
  expect(screen.queryByRole('button',{name:'关闭测试卡大图'})).toBeNull();
 });
 it('展开出牌不移动席位列表，收起后保留完整席位入口', () => {
- const G=preparedBoardState('seat-drawer', ['0','1','2','3','4','5','6']);
+ const G=withPeerAttack(preparedBoardState('seat-drawer', ['0','1','2','3','4','5','6']));
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
  fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}));
  const drawer=screen.getByLabelText('玩家 2已打出');
@@ -323,7 +329,7 @@ it('展开出牌不移动席位列表，收起后保留完整席位入口', () =
 });
 
 it('保留本人席位和唯一右下阶段入口，抽屉不重复姓名或展示解释按钮', () => {
- const G=preparedBoardState('object-contract', ['0','1','2']);G.core.phase='action';
+ const G=withPeerAttack(preparedBoardState('object-contract', ['0','1','2']));G.core.phase='action';
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
  expect(screen.getByLabelText('本人席位')).toBeTruthy();
  expect(screen.getByTestId('fate-domination-primary-action').closest('.fd-phase-control')).toBeTruthy();
@@ -343,7 +349,7 @@ it('选中一张攻击时不能由阶段入口静默结束，清空选择才恢�
 });
 
 it('本地行动权切换后不把新的本人保留在对手抽屉', () => {
- const G=preparedBoardState('hotseat-selection', ['0','1','2']);G.core.phase='action';
+ const G=withPeerAttack(preparedBoardState('hotseat-selection', ['0','1','2']));G.core.phase='action';
  const props={G,dispatch:vi.fn(),isMultiplayer:false,matchData:[]};
  const {rerender}=render(<FateDominationBoard {...(props as never)}/>);
  fireEvent.pointerEnter(screen.getByRole('button',{name:'查看玩家 2详情'}));

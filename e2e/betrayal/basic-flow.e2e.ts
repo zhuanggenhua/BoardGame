@@ -1,13 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   assertNoFatalFrontendErrors,
   attachPageDiagnostics,
 } from "../helpers/common";
 import {
-  expectBetrayalTransitionTargetsLocator,
   initBetrayalContext,
   injectCore,
-  readLocatorClientRect,
   saveScreenshot,
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
@@ -47,6 +45,21 @@ const TOKEN_DETAIL_MAP_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-地图token
 const TURN_HANDOFF_NO_FOLLOW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-换行动者不自动跟踪视角.png`;
 // Vivo V2314A: 2388x1080 physical landscape / (480 / 160) density = 796x360 CSS.
 const VIVO_V2314A_LANDSCAPE_VIEWPORT = { width: 796, height: 360 } as const;
+
+async function expectExplorerSceneArrival(page: Page, sourceRoomId: string) {
+  const grid = page.getByTestId("betrayal-room-grid");
+  await expect(grid).toHaveAttribute("data-map-renderer", "three");
+  await expect(
+    page.getByTestId("betrayal-room-occupant-hallway-0"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId(`betrayal-room-occupant-${sourceRoomId}-0`),
+  ).toHaveCount(0);
+  await expect(
+    page.getByTestId("betrayal-visual-transition-explorer-token-0"),
+  ).toHaveCount(0);
+  await expect(grid).toHaveAttribute("data-visible-explorer-models", "3");
+}
 
 test.describe("山屋惊魂基本流程", () => {
   test("桌面低高视口角色详情必须能滚动到特性", async ({ page, context }) => {
@@ -403,65 +416,12 @@ test.describe("山屋惊魂基本流程", () => {
       `betrayal-room-occupant-${firstMoveSourceRoomId}-0`,
     );
     await expect(firstMoveSourceToken).toBeVisible();
-    const firstMoveSourceRect = await readLocatorClientRect(
-      firstMoveSourceToken,
-    );
-
     await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeEnabled();
     await saveScreenshot(page, DIRECT_MOVE_TARGET_SCREENSHOT);
     await page.getByTestId("betrayal-room-hallway").click();
-    const moveTransitionBlocker = page.getByTestId(
-      "betrayal-visual-transition-blocker",
-    );
-    await expect(moveTransitionBlocker).toBeVisible();
-    await expect(moveTransitionBlocker).toHaveAttribute(
-      "data-transition-kind",
-      "explorer-move",
-    );
-    await expect(moveTransitionBlocker).toHaveAttribute(
-      "data-transition-target-testid",
-      "betrayal-room-occupant-hallway-0",
-    );
-    const firstMoveTargetToken = page.getByTestId(
-      "betrayal-room-occupant-hallway-0",
-    );
-    await expect(firstMoveTargetToken).toHaveCount(1);
-    await expect(firstMoveTargetToken).toHaveAttribute(
-      "data-visual-transition-anchor-hidden",
-      "true",
-    );
-    const firstMoveTransition = page.locator(
-      '[data-testid^="betrayal-visual-transition-transition-"]',
-    );
-    await expectBetrayalTransitionTargetsLocator(
-      firstMoveTransition,
-      firstMoveTargetToken,
-      "山屋惊魂向左移动动画",
-      { sourceRect: firstMoveSourceRect },
-    );
-    await expect(
-      page.getByTestId("betrayal-visual-transition-explorer-token-0"),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId(`betrayal-room-occupant-${firstMoveSourceRoomId}-0`),
-    ).toHaveCount(0);
-    await expect
-      .poll(() =>
-        page
-          .locator('[data-testid^="betrayal-visual-transition-transition-"]')
-          .evaluate((node) => {
-            const transform = getComputedStyle(node).transform;
-            return transform !== "none" && !transform.endsWith("(1, 0, 0, 1, 0, 0)");
-          }),
-      )
-      .toBe(true);
-    await saveScreenshot(
-      page,
-      `${EVIDENCE_DIR}/07a-山屋惊魂-基本流程-移动到门厅动画中.png`,
-    );
-    await expect(moveTransitionBlocker).toHaveCount(0);
+    await expectExplorerSceneArrival(page, firstMoveSourceRoomId);
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText("移动到门厅");
@@ -508,47 +468,13 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-room-occupant-entrance-hall-0"),
     ).toBeVisible();
-    const directMoveSourceToken = page.getByTestId(
-      "betrayal-room-occupant-entrance-hall-0",
-    );
-    const directMoveSourceRect = await readLocatorClientRect(
-      directMoveSourceToken,
-    );
-
     await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeEnabled();
     await saveScreenshot(page, DIRECT_RETURN_TARGET_SCREENSHOT);
 
     await page.getByTestId("betrayal-room-hallway").click();
-    const directMoveTransitionBlocker = page.getByTestId(
-      "betrayal-visual-transition-blocker",
-    );
-    await expect(directMoveTransitionBlocker).toBeVisible();
-    await expect(directMoveTransitionBlocker).toHaveAttribute(
-      "data-transition-kind",
-      "explorer-move",
-    );
-    await expect(directMoveTransitionBlocker).toHaveAttribute(
-      "data-transition-target-testid",
-      "betrayal-room-occupant-hallway-0",
-    );
-    const directMoveTargetToken = page.getByTestId(
-      "betrayal-room-occupant-hallway-0",
-    );
-    await expect(directMoveTargetToken).toHaveCount(1);
-    await expect(directMoveTargetToken).toHaveAttribute(
-      "data-visual-transition-anchor-hidden",
-      "true",
-    );
-    await expectBetrayalTransitionTargetsLocator(
-      page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
-      directMoveTargetToken,
-      "山屋惊魂运行时向左移动动画",
-      { sourceRect: directMoveSourceRect },
-    );
-    await expect(directMoveTransitionBlocker).toHaveCount(0);
-    await expect(directMoveTargetToken).toBeVisible();
+    await expectExplorerSceneArrival(page, "entrance-hall");
     await expect(page.getByTestId("betrayal-action-move")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-grand-staircase"),

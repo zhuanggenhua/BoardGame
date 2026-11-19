@@ -54,6 +54,8 @@ import { projectFateOpponentCards, servantSkillsFor } from './ui/playerPresentat
 import './ui/runtime-table.css';
 import { placeFateInspection } from './ui/inspectionPlacement';
 import { fateIdentityTaken } from './domain/setup';
+import { playDeniedSound, useGameAudio } from '../../lib/audio/useGameAudio';
+import { FATE_DOMINATION_AUDIO_CONFIG } from './audio.config';
 type Props = GameBoardProps<FateDominationCore, FateDominationCommandMap>;
 type Inspection = {
     asset: string;
@@ -64,9 +66,10 @@ type Inspection = {
 export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, matchData, isMultiplayer, isConnected, reset }) => {
     const { t, i18n } = useTranslation('game-fate-domination');
     const actorId = playerID ?? (isMultiplayer ? null : G.core.currentPlayerId);
+    useGameAudio({ gameId: 'fate-domination', config: FATE_DOMINATION_AUDIO_CONFIG, G: G.core, ctx: { playerId: actorId }, eventEntries: G.sys.eventStream.entries });
     const expectedTutorialCommand = fateTutorialExpected(G.sys.tutorial);
     const {warning}=useToast();
-    const reject=(reason:string)=>warning(reason,undefined,{dedupeKey:`fate-input:${reason}`});
+    const reject=(reason:string)=>{ playDeniedSound(); warning(reason,undefined,{dedupeKey:`fate-input:${reason}`}); };
     const rejectTutorial=()=>reject(expectedTutorialCommand?.type==='DEPLOY_MASTER'?t('feedback.tutorialDeployment',{location:G.core.battlefield[expectedTutorialCommand.payload.locationId as LocationId]?.label}):t('feedback.tutorialTarget'));
     const send = (type: string, payload: unknown) => {
         if (!fateTutorialAllows(G.sys.tutorial,type,payload)){rejectTutorial();return false;}
@@ -295,7 +298,7 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
       : validate(attackDraft.state,{type:'SELECT_SERVANT',playerId:actor.id,payload:{servantId:id}}).valid}
     onInspect={(asset,name) => inspect(asset,name,true,'detail')} onConfirm={identities=>send('ADVANCE_PHASE',{identities})} confirmEnabled={primaryEnabled}/>
     : <>
-   <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} canUseLocation={(id,slot)=>{const command=movement.intent?movement.commandFor(id):deployment.commandFor(id,slot);return Boolean(command&&fateTutorialAllows(G.sys.tutorial,command.type,command.payload));}} movablePlayerId={!interactionBlocked && (movement.normalAvailable||movement.intent) ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else beginNormalMovement();}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={executeLocation} onBattleAnchorChange={registerFgoBattleAnchor} chariotTargetIds={chariotIntent&&actorId?chariotTargets(actorId,chariotIntent):[]} onChariotTarget={targetCardId=>{if(!chariotIntent||!send('PLAY_SKILL',{skillId:chariotIntent,targetCardId}))return false;setChariotIntent(null);return true;}}/>
+   <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} canUseLocation={(id,slot)=>{const command=movement.intent?movement.commandFor(id):deployment.commandFor(id,slot);return Boolean(command&&fateTutorialAllows(G.sys.tutorial,command.type,command.payload));}} movablePlayerId={!interactionBlocked && (movement.normalAvailable||movement.intent) ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else beginNormalMovement();}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={executeLocation} onBattleAnchorChange={registerFgoBattleAnchor} chariotTargetIds={chariotIntent&&actorId?chariotTargets(actorId,chariotIntent):[]} chariotChoiceOpen={Boolean(chariotChoice && chariotChoice.playerId===actorId)} onChariotTarget={targetCardId=>{if(!chariotIntent||!send('PLAY_SKILL',{skillId:chariotIntent,targetCardId}))return false;setChariotIntent(null);return true;}}/>
    {mapDrag.point&&actor&&createPortal(<div className="fd-pawn-drag-ghost" style={{left:mapDrag.point.x,top:mapDrag.point.y}}><OptimizedImage src={fateTokenAsset(actor.masterId)} alt=""/></div>,document.body)}
    <header className="fd-runtime-top"><div><small>{t('brand')}</small><h1>{t('title')}</h1></div><div className="fd-runtime-round">{t('ui.board.roundNumber', { round: core.round })} <span>{t(`phases.${core.phase}`)}</span></div></header>
    <FatePlayerRail core={core} viewerId={actorId} selectedId={selectedSeat} nameFor={nameFor} onSelect={setSelectedSeat} onDetail={id => { setInspection(null); setDetail(id); setSelectedSeat(id); }} onInspect={(asset,name) => inspect(asset,name,true,'opponent')} investigationTargets={investigationTargetIds} onInvestigateTarget={selectInvestigationTarget}/>

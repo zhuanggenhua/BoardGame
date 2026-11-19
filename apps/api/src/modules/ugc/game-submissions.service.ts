@@ -18,9 +18,9 @@ export class GameSubmissionsService {
     constructor(@InjectModel(GameSubmission.name) private readonly records: Model<GameSubmissionDocument>,
         @Inject(ExternalGamesService) private readonly games: ExternalGamesService) {}
 
-    list(ownerId: string) { return this.records.find({ ownerId }).sort({ updatedAt: -1 }).limit(100); }
+    list(ownerId: string) { return this.records.find({ ownerId, deletedAt: { $exists: false } }).sort({ updatedAt: -1 }).limit(100); }
     private async owned(ownerId: string, submissionId: string) {
-        const record = await this.records.findOne({ ownerId, submissionId });
+        const record = await this.records.findOne({ ownerId, submissionId, deletedAt: { $exists: false } });
         if (!record) throw new NotFoundException('没有找到这份投稿');
         return record;
     }
@@ -107,14 +107,30 @@ export class GameSubmissionsService {
     async withdraw(ownerId: string, id: string) {
         const record = await this.owned(ownerId, id);
         await this.games.assertSubmissionEditable(ownerId, record.gameId);
-        const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: 'pending' },
+        const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: 'pending', deletedAt: { $exists: false } },
             { $set: { status: 'draft', reviewComment: '' }, $unset: { reviewRevision: 1, reviewerId: 1 } }, { new: true });
         if (!updated) throw new ConflictException('投稿已处理或未送审');
         return updated;
     }
-    pending() { return this.records.find({ $or: [{ status: 'pending' }, { status: 'approved', gameId: { $exists: false } }] }).sort({ updatedAt: 1 }); }
+    async remove(ownerId: string, id: string) {
+        const record = await this.owned(ownerId, id);
+        if (record.status === 'approved' && !record.gameId) throw new ConflictException('投稿正在收录，请稍后再删除');
+        await this.games.assertSubmissionEditable(ownerId, record.gameId);
+        const deletedAt = new Date();
+        const removed = await this.records.updateOne({ ownerId, submissionId: id, updatedAt: record.updatedAt,
+            deletedAt: { $exists: false } }, { $set: { deletedAt } });
+        if (!removed.modifiedCount) throw new ConflictException('投稿状态已变化，请刷新后重试');
+        try {
+            if (record.gameId) await this.games.unpublishSubmission(id, record.gameId);
+        } catch (error) {
+            await this.records.updateOne({ ownerId, submissionId: id, deletedAt }, { $unset: { deletedAt: 1 } });
+            throw error;
+        }
+        return { deleted: true };
+    }
+    pending() { return this.records.find({ deletedAt: { $exists: false }, $or: [{ status: 'pending' }, { status: 'approved', gameId: { $exists: false } }] }).sort({ updatedAt: 1 }); }
     async review(reviewerId: string, id: string, data: ReviewSubmissionDto) {
-        let record = await this.records.findOne({ submissionId: id, status: 'pending', updatedAt: new Date(data.revision) });
+        let record = await this.records.findOne({ submissionId: id, status: 'pending', updatedAt: new Date(data.revision), deletedAt: { $exists: false } });
         const retry = !record && data.decision === 'approved'
             ? await this.records.findOne({ submissionId: id, status: 'approved', gameId: { $exists: false }, reviewRevision: data.revision }) : null;
         if (!record && !retry) throw new ConflictException('投稿已处理或版本已变化，请刷新');
@@ -122,7 +138,7 @@ export class GameSubmissionsService {
         if (!record) throw new ConflictException('投稿不存在');
         if (record.gameId) await this.games.assertSubmissionEditable(record.ownerId, record.gameId);
         if (data.decision === 'approved') validateExternalFields(record);
-        const reviewed = retry ?? await this.records.findOneAndUpdate({ submissionId: id, status: 'pending', updatedAt: record.updatedAt },
+        const reviewed = retry ?? await this.records.findOneAndUpdate({ submissionId: id, status: 'pending', updatedAt: record.updatedAt, deletedAt: { $exists: false } },
             {
                 $set: { status: data.decision, reviewComment: data.comment?.trim() ?? '', reviewRevision: data.revision, reviewerId },
                 // 新收录和版本更新都能沿用待发布审核记录重试。公开游戏记录保留原入口，直到发布成功。

@@ -8,6 +8,7 @@ export interface ExternalRoomListing {
     hostName: string;
     occupied: number;
     capacity: number;
+    native?: boolean;
 }
 
 export interface ExternalRoomPlayer {

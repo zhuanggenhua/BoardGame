@@ -7,7 +7,7 @@ import type { QidahenFactionId } from '../domain/types';
 import { useTranslation } from 'react-i18next';
 
 /** 复用正式请求；纪年决策嵌入纪年区，其余沿用行动槽，实体仍在地图或手牌选择。 */
-export function QidahenTurnChoicePanel({ input, dock, inline = false, locale, onInspect, context }: { input: ReturnType<typeof useQidahenTurnInput>; dock: { left: number; top: number; width: number }; inline?: boolean; locale?: string; onInspect: (previewRef: CardPreviewRef, title: string) => void; context?: ReactNode }) {
+export function QidahenTurnChoicePanel({ input, dock, inline = false, locale, onInspect }: { input: ReturnType<typeof useQidahenTurnInput>; dock: { left: number; top: number; width: number }; inline?: boolean; locale?: string; onInspect: (previewRef: CardPreviewRef, title: string) => void }) {
     const { t } = useTranslation('game-qidahen');
     if (!input.active || input.step === 'menu' || input.step === 'finish-hand' || input.step === 'dispatch-troops' || input.cardIds.length > 0) return null;
     const spatial = input.mapCandidateIds.length > 0 || input.pieceIds.length > 0;
@@ -18,9 +18,9 @@ export function QidahenTurnChoicePanel({ input, dock, inline = false, locale, on
     return <section className={`pointer-events-auto z-[85] max-h-[660px] overflow-y-auto rounded border-[3px] border-[#c7a26b] bg-[#6d291deF] text-[#fff0d2] shadow-xl ${inline ? 'relative p-2' : 'absolute p-4'}`}
         data-testid="qidahen-turn-choice" data-turn-step={input.step}
         style={inline ? { width: '100%' } : { left: `calc(${dock.left}px + var(--qidahen-mobile-edge-pull, 0px))`, top: dock.top, width: dock.width }}>
-        {context ?? <h2 className={`${inline ? 'text-[16px]' : 'text-[19px]'} font-bold leading-6`}>{input.step === 'dispatch-source'
+        <h2 className={`${inline ? 'text-[16px]' : 'text-[19px]'} font-bold leading-6`}>{input.step === 'dispatch-source'
             ? input.options.find(option => option.id === input.selectedRegionId)?.label
-            : `${input.actorName ? `${input.actorName} · ` : ''}${input.title}`}</h2>}
+            : `${input.actorName ? `${input.actorName} · ` : ''}${input.title}`}</h2>
         {input.pieceIds.length > 0 ? <p className="mt-2 text-[15px]" data-testid="qidahen-turn-selected-count">{input.step === 'upkeep' ? t('board.turnChoice.selectedSupport', { cards: input.selectedCardIds.length, units: input.selectedPieceIds.length }) : t('board.turnChoice.selectedTroops', { units: input.selectedPieceIds.length })}</p> : null}
         {input.cardIds.length > 0 ? <p className="mt-2 text-[15px]">{input.step === 'upkeep' ? t('board.turnChoice.supportOrRemove') : t('board.turnChoice.selectHand')}</p> : null}
         {spatial && input.selectedRegionId && input.step !== 'dispatch-source' ? <p className="mt-2 text-[15px]">{input.options.find(option => option.id === input.selectedRegionId)?.label}</p> : null}
@@ -45,4 +45,3 @@ export function QidahenTurnChoicePanel({ input, dock, inline = false, locale, on
             className="mt-4 min-h-11 w-full rounded border-2 border-[#ffe49b] bg-[#e3ce9e] px-3 py-2 text-[16px] font-bold text-[#342612] disabled:opacity-40">{t('board.turnChoice.confirm')}</button> : null}
     </section>;
 }
-import type { ReactNode } from 'react';

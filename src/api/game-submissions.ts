@@ -39,6 +39,7 @@ async function request<T>(token: string, path: string, method = 'GET', data?: Ga
     return body as T;
 }
 export const listGameSubmissions = (token: string) => request<{ items: GameSubmissionRecord[] }>(token, '');
+export const deleteGameSubmission = (token: string, id: string) => request<{ deleted: boolean }>(token, `/${encodeURIComponent(id)}`, 'DELETE');
 export const saveGameSubmission = (token: string, data: GameSubmissionDraft, id?: string) => request<GameSubmissionRecord>(token, id ? `/${encodeURIComponent(id)}` : '', id ? 'PUT' : 'POST', data);
 export const saveWebZipSubmission = (token: string, data: Omit<GameSubmissionDraft, 'url'>, file: File, id?: string) => {
     const form = new FormData();

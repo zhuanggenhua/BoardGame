@@ -1127,10 +1127,22 @@ const BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN: TutorialManifest = {
     ],
 };
 
+function validateMummyPracticeRecovery(state: MatchState<unknown>, step: TutorialStepSnapshot) {
+    const core = state.core as BetrayalCore;
+    const mummy = core.scenarioRuntime.mummy;
+    if (step.id === 'mummy-move-recovery') return mummy?.girlHeldByMummy === false;
+    if (step.id === 'mummy-reward-recovery') {
+        return Boolean(mummy && !mummy.mummyCarriedCards.some(card => card.id === 'map'));
+    }
+    return true;
+}
+
 const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
     id: 'mummy-monster-actions',
     numPlayers: 3,
+    revision: 2,
     allowManualSkip: true,
+    stepValidator: validateMummyPracticeRecovery,
     steps: [
         {
             id: 'setup-mummy-monster-move',
@@ -1189,6 +1201,17 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
             allowedCommands: [BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM],
             advanceOnEvents: [{ type: 'MONSTER_MOVED', match: { monsterId: 'mummy' } }],
             viewAs: '2',
+        },
+        {
+            id: 'mummy-move-recovery',
+            content: '',
+            viewAs: '2',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '2', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery',
+                recoveryStepId: 'mummy-monster-move-target',
+                reason: '选择其他房间合法。恢复瞬移前的完整局面，继续练习木乃伊进入女孩所在房间。',
+            },
         },
         {
             id: 'mummy-monster-move-result',
@@ -1253,9 +1276,20 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
             allowedCommands: [BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD],
             advanceOnEvents: [{
                 type: 'MUMMY_ATTACK_REWARD_RESOLVED',
-                match: { monsterId: 'mummy', choice: 'steal', stolenCardId: 'map' },
+                match: { monsterId: 'mummy' },
             }],
             viewAs: '2',
+        },
+        {
+            id: 'mummy-reward-recovery',
+            content: '',
+            viewAs: '2',
+            aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '2', payload: {} }],
+            hiddenAutomation: {
+                kind: 'branch-recovery',
+                recoveryStepId: 'mummy-attack-reward',
+                reason: '造成伤害或偷取其他持有物合法。恢复奖励选择前的完整局面，继续练习偷走地图。',
+            },
         },
         {
             id: 'mummy-steal-result',
@@ -1271,7 +1305,9 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
 const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
     id: 'traitor-path',
     numPlayers: 3,
+    revision: 2,
     allowManualSkip: true,
+    stepValidator: validateMummyPracticeRecovery,
     steps: [
         {
             id: 'setup-traitor-monster-actions',
@@ -1288,7 +1324,17 @@ const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
             hiddenAutomation: setupPrecondition('Create the legal traitor monster board before the first visible traitor action step.'),
         },
         BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN.steps[1],
-        ...BETRAYAL_MUMMY_MONSTER_ACTIONS.steps.slice(1),
+        ...BETRAYAL_MUMMY_MONSTER_ACTIONS.steps.slice(1).map(step => step.id === 'setup-mummy-attack'
+            ? {
+                ...step,
+                content: 'game-betrayal:tutorial.traitorPath.steps.setupAttackAndWedding',
+                aiActions: [{
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: { fields: createMummyMonsterAttackRewardReadyTutorialCore({ weddingDelivery: true }) },
+                }],
+            }
+            : step),
+        ...BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN.steps.slice(2),
     ],
 };
 

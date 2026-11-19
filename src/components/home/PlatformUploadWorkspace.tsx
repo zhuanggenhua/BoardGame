@@ -8,6 +8,7 @@ import { MAX_RULES_FILE_BYTES, MAX_WEB_ZIP_BYTES, type ExternalGame } from '../.
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { SubmissionCoverField } from './SubmissionCoverField';
 import { RulesDocumentField } from './RulesDocumentField';
+import { SubmissionDeleteAction } from './SubmissionDeleteAction';
 import './platform-upload.css';
 
 const statusLabelKeys = {
@@ -104,7 +105,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 </div>
             </fieldset>}
             <label>{t('platform.uploadWorkspace.gameName')}<input name="name" maxLength={100} defaultValue={source?.name} /></label>
-            {gameSource === 'zip' ? <label key="web-zip" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.webZip')}
+            {gameSource === 'zip' ? <div className={ownedGame ? undefined : 'platform-upload-source-field'} key="web-zip"><label>{t('platform.uploadWorkspace.webZip')}
                 {!ownedGame && <input key={savedZip?.url} type="file" accept=".zip" required={!savedZip} aria-label={t('platform.uploadWorkspace.webZip')} aria-describedby="submission-zip-check" onChange={event => {
                     const selected = event.currentTarget.files?.[0];
                     setZipFile(undefined); setZipError(''); setError('');
@@ -116,7 +117,9 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 {savedZip && <span>{savedZip.name}</span>}
                 <small id="submission-zip-check">{ownedGame ? t('platform.uploadWorkspace.zipUpdateHint') : t('platform.uploadWorkspace.zipHint')}</small>
                 {zipError && <small role="alert">{zipError}</small>}
-            </label> : gameSource === 'url' && <label key="game-link" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
+            </label>{!ownedGame && <a className="platform-upload-sdk-guide" href={`${import.meta.env.BASE_URL}developers/external-room-sdk.md`} download>
+                {t('platform.uploadWorkspace.roomSdkGuide')}
+            </a>}</div> : gameSource === 'url' && <label key="game-link" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
                 <small id="submission-url-check">{!url ? t('platform.uploadWorkspace.urlEmptyHint') : validUrl ? t('platform.uploadWorkspace.urlValid') : t('platform.uploadWorkspace.urlInvalid')}</small>
             </label>}
             <div className="platform-upload-game-meta">
@@ -212,7 +215,11 @@ export function PlatformUploadWorkspace({ onLogin, submissionId: selectedId, onS
                 onSelectSubmission(saved.submissionId);
             }} onSaved={async id => {
             await client.invalidateQueries({ queryKey }); onSelectSubmission(id);
-        }} headerAction={<button className="platform-upload-list-toggle" type="button" aria-expanded={showList} onClick={() => setShowList(true)}>{t('platform.uploadWorkspace.list')}</button>} />}
+        }} headerAction={<div className="platform-upload-header-actions">
+            {selected && token && <SubmissionDeleteAction record={selected} token={token} userId={user.id}
+                className="platform-upload-delete" onDeleted={() => select(undefined)} />}
+            <button className="platform-upload-list-toggle" type="button" aria-expanded={showList} onClick={() => setShowList(true)}>{t('platform.uploadWorkspace.list')}</button>
+        </div>} />}
         </div>
     </section>;
 }

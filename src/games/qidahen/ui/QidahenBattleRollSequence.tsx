@@ -79,23 +79,33 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
     }, [showDamage]);
 
     if (!stage) return null;
-    return (
-        <section data-testid="qidahen-battle-roll-sequence" data-battle-roll-phase={stage.phase} data-battle-roll-state={showDamage ? 'damage' : 'rolling'} className="flex h-full flex-col" style={{ height: 'var(--qidahen-battle-panel-height, 370px)', color: '#fff3dc', fontFamily: 'ui-serif, "STSong", "SimSun", serif', textShadow: '0 1px 2px #241309' }}>
-            <div className="flex shrink-0 flex-wrap items-baseline justify-center gap-x-3 text-center font-black leading-7">
-                <span data-testid="qidahen-battle-roll-context" data-qidahen-battle-label="context" className="text-[16px]" style={battleLabelStyle}>{sourceName} → {targetName}</span>
-                <span data-qidahen-battle-label="phase" className="text-[22px]" style={battleLabelStyle}>{t(`board.battleRoll.phase.${stage.phase}`)}</span>
-            </div>
-            <div className={`mt-2 grid min-h-0 flex-1 gap-6 ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {sides.map(side => (
-                    <div key={side} data-testid={`qidahen-battle-side-${side}`} className="flex min-h-0 min-w-0 flex-col">
-                        <div className="shrink-0 text-center text-[16px] font-bold leading-6"><span data-qidahen-battle-label={side} className="inline-flex items-center gap-1.5" style={battleLabelStyle}>
+    type Side = 'attacker' | 'defender';
+    const roleLabel = (side: Side) => <span data-qidahen-battle-label={side} className="inline-flex items-center gap-1.5 rounded font-bold" style={battleLabelStyle}>
                             {actors[side].markerSrc ? <OptimizedImage src={actors[side].markerSrc} alt="" className="h-5 w-5 shrink-0 object-contain"
                                 style={{ clipPath: 'circle(48%)' }} placeholder={false} /> : null}
                             {t('board.battleRoll.sideOwner', { faction: actors[side].name, role: t(`board.battleRoll.${side}`) })}
-                        </span></div>
-                        {rosters ? <QidahenBattleRoster side={side} tokens={rosters[side]}
-                            kinds={new Set((side === 'attacker' ? stage.attackerRolls : stage.defenderRolls).map(die => die.troopKind))} /> : null}
-                        <div className="flex min-h-0 flex-1 gap-2">
+    </span>;
+    const renderCalculation = (group: (typeof groups)[number]) => {
+        const adjustedDice = group.dice.filter(die => die.raw !== die.value || (group.dieType === 'd10' && die.raw === 10));
+        if (fixedSides && !adjustedDice.length) return null;
+        return <div key={group.id} className="min-h-6 shrink-0 text-[16px] font-bold leading-6" style={{ visibility: showDamage ? 'visible' : 'hidden' }}
+            data-qidahen-battle-label={fixedSides ? `${group.side}-calculation-${group.dieType}` : undefined}
+            data-testid={`qidahen-battle-dice-calculation-${group.id}`}>
+            {adjustedDice.map((die, dieIndex) => {
+                // 原生十面骰以 0 表示 10。
+                const faceLabel = group.dieType === 'd10' && die.raw === 10 ? '0（10）' : `${die.raw}`;
+                return <span key={dieIndex} className="mx-1 inline-block">
+                    {die.value === die.raw ? faceLabel : `${faceLabel} ${die.value > die.raw ? '+' : '−'} ${Math.abs(die.value - die.raw)} = ${die.value}`}
+                </span>;
+            })}
+        </div>;
+    };
+    const result = (side: Side) => groups.some(group => group.side === side) ? <div data-testid={`qidahen-battle-result-${side}`} className="justify-self-center" style={battleLabelStyle}>
+                    {fixedSides ? groups.filter(group => group.side === side).map(renderCalculation) : null}
+                    <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
+                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[14px] leading-5 sm:text-[16px] sm:leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: t('board.battleRoll.regionFaction', { region: side === 'attacker' ? targetName : sourceName, faction: actors[side === 'attacker' ? 'defender' : 'attacker'].name }) })}</div>
+                </div> : null;
+    const renderDice = (side: Side) => <>
                             {groups.filter(group => group.side === side).map(group => (
                                 <div key={group.id} data-testid={`qidahen-battle-dice-${group.id}`} className="flex min-h-0 min-w-0 flex-1 flex-col">
                                     <DiceBoxPhysicsSource
@@ -116,28 +126,48 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
                                             return next;
                                         })}
                                     />
-                                    <div className="min-h-6 shrink-0 text-center text-[16px] font-bold leading-6" style={{ visibility: showDamage ? 'visible' : 'hidden' }} data-testid={`qidahen-battle-dice-calculation-${group.id}`}>
-                                        {group.dice.map((die, dieIndex) => {
-                                            if (die.raw === die.value && !(group.dieType === 'd10' && die.raw === 10)) return null;
-                                            // 原生十面骰将十点印作0；读数保留该面并同时标出实际点数。
-                                            const faceLabel = group.dieType === 'd10' && die.raw === 10 ? '0（10）' : `${die.raw}`;
-                                            return <span key={dieIndex} className="mx-1 inline-block">
-                                                {die.value === die.raw ? faceLabel : `${faceLabel} ${die.value > die.raw ? '+' : '−'} ${Math.abs(die.value - die.raw)} = ${die.value}`}
-                                            </span>;
-                                        })}
-                                    </div>
+                                    {!fixedSides ? <div className="text-center">{renderCalculation(group)}</div> : null}
                                 </div>
                             ))}
-                        </div>
+    </>;
+    const kinds = {
+        attacker: new Set(stage.attackerRolls.map(die => die.troopKind)),
+        defender: new Set(stage.defenderRolls.map(die => die.troopKind)),
+    };
+    const classic = <>
+        <div className={`mt-2 grid min-h-0 flex-1 gap-6 ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {sides.map(side => <div key={side} data-testid={`qidahen-battle-side-${side}`} className="flex min-h-0 min-w-0 flex-col">
+                <div className="shrink-0 text-center text-[16px] leading-6">{roleLabel(side)}</div>
+                {rosters ? <QidahenBattleRoster side={side} tokens={rosters[side]} kinds={kinds[side]} /> : null}
+                <div className="flex min-h-0 flex-1 gap-2">{renderDice(side)}</div>
+            </div>)}
+        </div>
+        <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${showDamage ? 'qidahen-battle-result-enter' : ''}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
+            {sides.map(side => <React.Fragment key={side}>{result(side) ?? <div aria-hidden="true" />}</React.Fragment>)}
+        </div>
+    </>;
+    return (
+        <section data-testid="qidahen-battle-roll-sequence" data-battle-roll-phase={stage.phase} data-battle-roll-state={showDamage ? 'damage' : 'rolling'} className="flex h-full flex-col" style={{ height: 'var(--qidahen-battle-panel-height, 370px)', color: '#fff3dc', fontFamily: 'ui-serif, "STSong", "SimSun", serif', textShadow: '0 1px 2px #241309' }}>
+            <div className="flex shrink-0 flex-wrap items-baseline justify-center gap-x-3 text-center font-black leading-7">
+                <span data-testid="qidahen-battle-roll-context" data-qidahen-battle-label="context" className="text-[16px]" style={battleLabelStyle}>{sourceName} → {targetName}</span>
+                <span data-qidahen-battle-label="phase" className="text-[22px]" style={battleLabelStyle}>{t(`board.battleRoll.phase.${stage.phase}`)}</span>
+            </div>
+            {fixedSides && rosters ? <div className="mt-2 grid min-h-0 flex-1 grid-rows-2 gap-px overflow-hidden rounded bg-[#9d8057]/50"
+                data-testid="qidahen-battle-table" data-table-renderer="flat">
+                {(['defender', 'attacker'] as const).map(side => <div key={side} data-testid={`qidahen-battle-side-${side}`}
+                    className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,.85fr)] items-center gap-2 bg-[#514132] px-2 sm:px-4">
+                    <div className="min-w-0 text-center">
+                        {roleLabel(side)}
+                        <QidahenBattleRoster side={side} tokens={rosters[side]} kinds={kinds[side]} />
                     </div>
-                ))}
-            </div>
-            <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${showDamage ? 'qidahen-battle-result-enter' : ''}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
-                {sides.map(side => groups.some(group => group.side === side) ? <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
-                    <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
-                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[14px] leading-5 sm:text-[16px] sm:leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: t('board.battleRoll.regionFaction', { region: side === 'attacker' ? targetName : sourceName, faction: actors[side === 'attacker' ? 'defender' : 'attacker'].name }) })}</div>
-                </div> : <div key={side} aria-hidden="true" />)}
-            </div>
+                    <div className="flex h-full min-h-0 gap-2">{renderDice(side)}</div>
+                    <div className={`max-w-full justify-self-start text-center font-bold ${showDamage ? 'qidahen-battle-result-enter' : ''}`}
+                        style={{ visibility: showDamage ? 'visible' : 'hidden' }}
+                        data-testid={showDamage ? `qidahen-battle-stage-damage-${side}` : undefined}>
+                        {result(side)}
+                    </div>
+                </div>)}
+            </div> : classic}
         </section>
     );
 }

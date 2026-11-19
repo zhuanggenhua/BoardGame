@@ -15,6 +15,7 @@ vi.mock('framer-motion', async (importOriginal) => ({
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: endgameActions.vote, registerReset: endgameActions.registerReset }) }));
 vi.mock('../../../contexts/MatchRoomExitContext', () => ({ useMatchRoomExit: () => ({ exitToLobby: endgameActions.exit }) }));
 vi.mock('../../../contexts/ToastContext', () => ({ useToast: () => ({ warning: vi.fn() }) }));
+vi.mock('../../../lib/audio/useGameAudio', () => ({ useGameAudio: vi.fn(), playDeniedSound: vi.fn(), playSound: vi.fn() }));
 vi.mock('../../../contexts/UndoContext', () => ({ UndoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock('../../../hooks/ui/useDeferredRender', () => ({ useDeferredRender: (active: boolean) => active }));
 vi.mock('../../../components/common/animations', () => ({ VictoryParticles: () => null }));

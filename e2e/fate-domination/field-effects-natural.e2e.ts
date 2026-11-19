@@ -171,14 +171,14 @@ test('由正式在线房选择吉尔，实付打出场地牌和残留攻击', as
                 if (!inspectedUnusable) {
                     const unavailable = board.locator('[data-card-zone="skill"][data-focus-card*="sc_gilles_2:"]');
                     await expect(unavailable).toHaveAttribute('aria-disabled', 'true');
-                    await expect(unavailable).toHaveCSS('filter', /grayscale/);
+                    await expect(unavailable.locator('.fd-runtime-card-art')).toHaveCSS('filter', 'none');
                     await unavailable.hover();
                     await page.getByRole('button', { name: '放大阵地建造', exact: true }).click();
                     const preview = page.getByTestId('fate-inspection-card-face');
                     await expect(preview.locator('img')).toBeVisible();
                     await expect.poll(() => preview.locator('img').evaluate(img => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
                     await expect(preview.locator('img')).toHaveCSS('filter', 'none');
-                    await capture('unusable-inspection', '阵地建造当前无法打出，检视使用正常卡面', state, [check('卡面仍为彩色', await preview.locator('img').evaluate(node => getComputedStyle(node).filter), 'none')], 'panel', territoryText);
+                    await capture('unusable-inspection', '前哨阶段可以检视阵地建造', state, [check('卡面仍为彩色', await preview.locator('img').evaluate(node => getComputedStyle(node).filter), 'none')], 'panel', territoryText);
                     await page.keyboard.press('Escape');
                     inspectedUnusable = true;
                 }

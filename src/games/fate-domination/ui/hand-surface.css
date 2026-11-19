@@ -79,13 +79,14 @@
 .fd-skill-slot > .fd-runtime-card-shell { width: 100%; }
 .fd-runtime-card-shell:has(:focus-visible) { z-index: 30; }
 @media (hover: hover) and (pointer: fine) {
-    .fd-played-cards > .fd-runtime-card-shell:hover { z-index: 31; }
+    .fd-hand-parallel > .fd-runtime-card-shell:hover,
+    .fd-skill-slot:has(> .fd-runtime-card-shell:is(:hover, :focus-within)) { z-index: 31; }
 }
 .fd-card-inspect { pointer-events: none; }
 @media (hover: hover) and (pointer: fine) {
     .fd-runtime-card-shell:hover > .fd-card-inspect,
     .fd-card-inspect:focus-visible { pointer-events: auto; opacity: 1; }
-    .fd-hand-parallel .fd-card-inspect { left: 4px; right: auto; }
+    .fd-runtime-card-shell:is(:hover, :focus-within) .fd-face-down-label { right: 40px; }
 }
 @media (hover: none), (pointer: coarse) {
     .fd-card-inspect { display: none; }
@@ -113,7 +114,7 @@
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); }
 .fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
 .fd-played-cards .fd-runtime-card.is-available { outline: 2px solid #ffe08a; outline-offset: 1px; }
-.fd-runtime-card:is([data-card-zone="hand"], [data-card-zone="skill"])[aria-disabled="true"] { filter:grayscale(.9) brightness(.72); }
+.fd-runtime-hand-grid[data-selecting-cards="true"] .fd-runtime-card:is([data-card-zone="hand"], [data-card-zone="skill"])[aria-disabled="true"] > .fd-runtime-card-art { filter:grayscale(.9) brightness(.72); }
 .fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: -2px; }
 .fd-runtime-card[aria-disabled="true"] { cursor: default; }
 
@@ -165,7 +166,46 @@
 .fd-runtime-empty-hand { min-height: 80px; display: grid; place-items: center; color: #b9ad8b; font-size: 13px; }
 .fd-play-summary-heading { display:flex; align-items:center; gap:6px; }
 .fd-hand-mode { padding: 3px 6px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 12px; white-space:nowrap; pointer-events: auto; }
-.fd-card-cost-adjustment { position:absolute; top:22px; left:4px; padding:2px 5px; color:#dcffdc; background:#10251dec; font-size:12px; }
+.fd-card-cost-adjustment {
+    --fd-cost-plate: polygon(13% 0, 87% 0, 100% 25%, 100% 75%, 87% 100%, 13% 100%, 0 75%, 0 25%);
+    position: absolute;
+    /* 与牌面印刷的魔力格对齐，右侧蓝色威力读数保留在原位置。 */
+    left: 55.6%;
+    top: 73.1%;
+    display: grid;
+    width: 23.4%;
+    height: 8.1%;
+    color: #efe1b8;
+    font: 700 calc(var(--fd-hand-card-width) * .104)/1 Georgia, serif;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+.fd-card-cost-adjustment[data-cost-change="increase"] { color: #ff8585; }
+.fd-card-cost-adjustment[data-cost-change="decrease"] { color: #48ef8c; }
+.fd-card-cost-adjustment::before {
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    clip-path: var(--fd-cost-plate);
+    content: '';
+}
+.fd-card-cost-value {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .1em;
+    margin: 1px;
+    background: #050807;
+    clip-path: var(--fd-cost-plate);
+}
+.fd-card-cost-direction { font: 700 .76em/1 system-ui, sans-serif; }
+.fd-card-cost-value::after {
+    width: .68em;
+    height: .68em;
+    background: currentColor;
+    mask: url('./icons/mana-sigil.svg') center / contain no-repeat;
+    content: '';
+}
 .fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
 .fd-runtime-card.is-riding-selected { outline: 2px solid #ffe08a; outline-offset: 2px; }

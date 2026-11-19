@@ -1,28 +1,42 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { MeshoptEncoder } from 'meshoptimizer';
-import { Box3, Vector3 } from 'three';
+import { Box3, BufferAttribute, Vector3 } from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { reduceTriangles } from './simplify-betrayal-geometry.mjs';
 
 const source = fileURLToPath(new URL('../../artifacts/betrayal-3d-prototype/public/betrayal-3d/', import.meta.url));
-const destination = fileURLToPath(new URL('../../public/betrayal-models/', import.meta.url));
+const defaultTriangleBudget = 12_000;
+const { values } = parseArgs({ options: {
+    explorer: { type: 'string' },
+    triangles: { type: 'string' },
+    'output-dir': { type: 'string' },
+} });
+const destination = values['output-dir'] ? resolve(values['output-dir']) : fileURLToPath(new URL('../../public/betrayal-models/', import.meta.url));
+const budget = values.triangles === undefined ? defaultTriangleBudget : Number(values.triangles);
+if (!Number.isSafeInteger(budget) || budget < 0) throw new Error('Expected a non-negative triangle budget');
 const explorerIds = [
     'anita-hernandez', 'jaden-jones', 'beat-box-bowen', 'michelle-monroe',
     'persephone-puleri', 'josef-hooper', 'dan-nguyen-md', 'stephanie-richter',
     'isa-valencia', 'father-warren-leung', 'oliver-swift', 'sammy-angler',
 ];
 
+if (values.explorer && !explorerIds.includes(values.explorer)) throw new Error(`Unknown explorer: ${values.explorer}`);
 await MeshoptEncoder.ready;
 await mkdir(destination, { recursive: true });
 const entries = JSON.parse(await readFile(join(source, 'characters.json'), 'utf8'));
 if (entries.length !== explorerIds.length) throw new Error('Unexpected Betrayal model catalog');
 
 for (const [index, entry] of entries.entries()) {
+    const explorerId = explorerIds[index];
+    if (values.explorer && values.explorer !== explorerId) continue;
     if (entry.mesh !== `character-${index}.obj`) throw new Error(`Unexpected model at index ${index}`);
     const object = new OBJLoader().parse(await readFile(join(source, entry.mesh), 'utf8'));
     const bounds = new Box3();
+    let triangleCount = 0;
     object.traverse(mesh => {
         if (!mesh.isMesh) return;
         mesh.geometry.rotateX(-Math.PI / 2);
@@ -95,6 +109,8 @@ for (const [index, entry] of entries.entries()) {
         const uv = geometry.getAttribute('uv');
         for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
         const indexed = mergeVertices(geometry, 0.000001);
+        reduceTriangles(indexed, budget);
+        triangleCount += indexed.index.count / 3;
         indexed.computeBoundingBox();
         gltf.meshes[0].primitives.push({
             attributes: {
@@ -124,6 +140,6 @@ for (const [index, entry] of entries.entries()) {
     binary.writeUInt32LE(offset);
     binary.write('BIN\0', 4);
     const result = Buffer.concat([header, json, Buffer.alloc(jsonLength - json.length, 0x20), binary, ...chunks]);
-    await writeFile(join(destination, `${explorerIds[index]}.glb`), result);
-    console.log(`${explorerIds[index]}: ${Math.round(result.byteLength / 1024)} KiB`);
+    await writeFile(join(destination, `${explorerId}.glb`), result);
+    console.log(`${explorerId}: ${triangleCount} triangles, ${Math.round(result.byteLength / 1024)} KiB`);
 }
