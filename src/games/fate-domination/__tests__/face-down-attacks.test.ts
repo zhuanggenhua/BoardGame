@@ -1,9 +1,11 @@
 import { expect, it } from 'vitest';
+import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
 import { createReplayAdapter } from '../../../engine/adapter';
 import { FateDominationDomain } from '../domain';
 import { calculateFatePower } from '../domain/power';
 import { projectFatePlayerView } from '../domain/playerView';
 import type { FateDominationCommand } from '../domain';
+import { engineConfig } from '../game';
 const adapter=createReplayAdapter(FateDominationDomain,'face-down');
 function fixture(location:'workshop'|'miyama'='workshop'){
  const state=adapter.setup(['0','1','2']);state.core.phase='action';
@@ -54,4 +56,37 @@ it('一次确认携带暗置子集，服务器从规则重算费用与威力且�
  const publicPlayer=projectFatePlayerView(result.state.core,'1').players['0'];
  expect(JSON.stringify(publicPlayer.publicView?.playedCards)).not.toContain('expensive-a');
  expect(publicPlayer.publicView?.playedCards.every(card=>card.definitionId==='hidden')).toBe(true);
+});
+
+it.each(['workshop', 'miyama'] as const)('手牌不足以完成常规出牌，在 %s 合法结束行动', location => {
+    const state = fixture(location);
+    state.core.players['0'].hand.pop();
+    const pass = { type: 'PASS_ACTION', playerId: '0', payload: {} } as const;
+    expect(FateDominationDomain.validate(state, pass).valid).toBe(true);
+    const result = adapter.execute(state, pass);
+    const opponentView = projectFatePlayerView(result.state.core, '1').players['0'];
+    expect(opponentView.hasPassedAction).toBe(true);
+    expect(opponentView.forcedRevealedHand.map(card => card.definitionId)).toEqual(location === 'miyama' ? ['cardB4'] : []);
+    expect(opponentView.forcedRevealedHand.every(card => card.id !== 'expensive-a')).toBe(true);
+    expect(opponentView.publicView?.playedCards).toEqual([]);
+    expect(opponentView.hand).toEqual([]);
+});
+
+it('战场全暗置公开手牌后，不能申请撤回到公开前', () => {
+    const { core } = fixture('miyama');
+    const ids = core.playerIds;
+    const random = createSeededRandom('reveal-before-undo');
+    const config = { domain: FateDominationDomain, systems: engineConfig.systems };
+    const state = { core, sys: createInitialSystemState(ids, engineConfig.systems, 'reveal-before-undo') };
+    const spell = executePipeline(config, state, { type: 'USE_COMMAND_SPELL', playerId: '0', payload: { effect: 'battle' } }, random, ids);
+    expect(spell.success, spell.error).toBe(true);
+    expect(spell.state.sys.undo.snapshots).toHaveLength(1);
+    const cardIds = ['expensive-a', 'expensive-b'];
+    const confirm = executePipeline(config, spell.state, { type: 'CONFIRM_ATTACK', playerId: '0', payload: { cardIds, faceDownIds: cardIds, round: core.round } }, random, ids);
+    expect(confirm.success, confirm.error).toBe(true);
+    expect(confirm.state.core.players['0'].forcedRevealedHand).toHaveLength(2);
+    const undo = executePipeline(config, confirm.state, { type: 'SYS_REQUEST_UNDO', playerId: '0', payload: { localAutoApprove: true } }, random, ids);
+    expect(undo.success).toBe(false);
+    expect(undo.state.sys.undo.snapshots).toHaveLength(0);
+    expect(undo.state.core.players['0'].forcedRevealedHand).toHaveLength(2);
 });

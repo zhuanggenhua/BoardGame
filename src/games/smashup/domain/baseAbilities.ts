@@ -123,6 +123,8 @@ export interface BaseAbilityContext {
     triggerCardOwnerId?: PlayerId;
     /** onActionPlayed 时：行动是否已声明替代去向。 */
     actionDestinationOverride?: 'hand';
+    /** 当前出牌事件在该玩家本回合行动牌中的序号。 */
+    actionPlayOrdinal?: number;
     /** queued trigger 所属 frame 身份；用于排序/诊断/后续上下文对齐 */
     frameId?: string;
     /** queued trigger 源事件身份；用于运行时上下文恢复 */

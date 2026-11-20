@@ -99,3 +99,49 @@ test('智慧之锅在三人局必须分别给两名玩家不同的牌', async ({
   await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="gift-b"]')).toHaveCount(0, { timeout: 10000 });
   await game.screenshot('智慧之锅-分别赠牌完成', testInfo);
 });
+
+test('收集故事从对手手牌打出属于自己的附着行动', async ({ page, game }, testInfo) => {
+  test.setTimeout(120000);
+  await setChineseLocale(page.context());
+  await game.openTestGame('smashup', { numPlayers: 2, skipInitialization: true }, 45000);
+  await game.setupScene({
+    gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+    player0: {
+      hand: [{ uid: 'collecting', defId: 'anansi_tales_collecting_stories', type: 'action', owner: '0' }],
+      deck: [], discard: [], factions: ['anansi_tales', 'mounties'], actionsPlayed: 0, actionLimit: 1,
+    },
+    player1: {
+      hand: [
+        { uid: 'borrowed-ongoing', defId: 'mounties_bring_em_in', type: 'action', owner: '0' },
+        { uid: 'opponent-card', defId: 'ninja_acolyte', type: 'minion', owner: '1' },
+      ],
+      deck: [], discard: [], factions: ['pirates', 'ninjas'],
+    },
+    bases: [{ defId: 'base_the_factory', minions: [{ uid: 'target', defId: 'wizard_neophyte', owner: '0', controller: '0', power: 2 }] }],
+  });
+  await game.playCard('anansi_tales_collecting_stories');
+  await game.waitForInteraction('anansi_tales_collecting_stories_player', 10000);
+  const playerOptions = await game.getInteractionOptions();
+  const otherPlayer = playerOptions.find(option => option.value?.targetPlayerId === '1');
+  expect(otherPlayer).toBeDefined();
+  await page.locator(`[data-option-id="${otherPlayer.id}"]`).click();
+  await game.waitForInteraction('anansi_tales_collecting_stories', 10000);
+  const options = await game.getInteractionOptions();
+  const borrowed = options.find(option => option.value?.cardUid === 'borrowed-ongoing');
+  const opponentCard = options.find(option => option.value?.cardUid === 'opponent-card');
+  expect(borrowed).toBeDefined();
+  expect(opponentCard?.disabled).toBe(true);
+  await expect(page.locator(`[data-option-id="${opponentCard.id}"]`)).toBeVisible();
+  await game.screenshot('收集故事-选择对手手中自己的附着行动', testInfo);
+  await page.locator(`[data-option-id="${borrowed.id}"]`).click();
+  await expect.poll(async () => {
+    const state = await game.getState();
+    const interaction = state.sys.interaction?.current;
+    return interaction?.data?.options?.some((option: { value?: { minionUid?: string } }) => option.value?.minionUid === 'target') ?? false;
+  }, { timeout: 10000 }).toBe(true);
+  await page.locator('[data-minion-uid="target"]').click();
+  await expect.poll(async () => {
+    const state = await game.getState();
+    return state.core.bases[0].minions[0].attachedActions.some((card: { uid: string }) => card.uid === 'borrowed-ongoing');
+  }).toBe(true);
+});

@@ -144,6 +144,7 @@ export function collectBaseAbilityTriggers(params: {
   triggerCardDefId?: string;
   triggerCardOwnerId?: PlayerId;
   actionDestinationOverride?: 'hand';
+  actionPlayOrdinal?: number;
   actionPlayScope?: 'targetBase' | 'allBases';
   frameId?: string;
   sourceEventId?: string;
@@ -170,6 +171,7 @@ export function collectBaseAbilityTriggers(params: {
     triggerCardDefId,
     triggerCardOwnerId,
     actionDestinationOverride,
+    actionPlayOrdinal,
     actionPlayScope,
     frameId,
     sourceEventId,
@@ -207,6 +209,7 @@ export function collectBaseAbilityTriggers(params: {
       triggerCardDefId,
       triggerCardOwnerId,
       actionDestinationOverride,
+      actionPlayOrdinal,
       frameId,
       sourceEventId,
       now };

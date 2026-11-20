@@ -180,7 +180,7 @@ test('石化发动后，伊斯坎达尔在线实付骑乘，战斗开始时仅�
             await expect(pawns[1].getByText('败北', { exact: true })).toBeVisible();
             await screenshot('02-战斗开始伊斯坎达尔仍参战第三席败北');
 
-            await expect(primary).toHaveAccessibleName('结束我的战斗阶段');
+            await expect(primary).toHaveAccessibleName('完成战斗操作');
             await primary.click();
             await expect.poll(() => view(rider)?.core.currentPlayerId).toBe('1');
             await send(rider, 'ADVANCE_PHASE');

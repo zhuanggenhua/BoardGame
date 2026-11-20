@@ -17,6 +17,7 @@ type ActionExtras = Pick<ActionCardDef,
     | 'activatableAbilities'
     | 'responseWindowTiming'
     | 'responseWindowNeedsBase'
+    | 'postPlayDestination'
 >;
 
 export interface MunchkinSpecialCardDescriptor {
@@ -99,7 +100,7 @@ function treasureMinion(
 
 function treasureAction(
     card: MunchkinSpecialCardDescriptor,
-    options: Pick<ActionCardDef, 'subtype' | 'ongoingTarget' | 'playNeedsBase' | 'playNeedsMinion' | 'specialTiming' | 'specialNeedsBase' | 'responseWindowTiming' | 'responseWindowNeedsBase' | 'abilityTags'>,
+    options: Pick<ActionCardDef, 'subtype' | 'ongoingTarget' | 'playNeedsBase' | 'playNeedsMinion' | 'specialTiming' | 'specialNeedsBase' | 'responseWindowTiming' | 'responseWindowNeedsBase' | 'abilityTags' | 'postPlayDestination'>,
 ): ActionCardDef {
     return {
         id: card.id,
@@ -180,8 +181,8 @@ export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
     treasureAction(treasure('munchkin_treasure_potion_of_straight_line_running_away'), { subtype: 'special', specialTiming: 'afterScoring' }),
     treasureAction(treasure('munchkin_treasure_potion_of_paralysis'), { subtype: 'special', specialTiming: 'beforeScoring', specialNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_potion_of_duplication'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),
-    treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard', abilityTags: ['onPlay'] }),
-    treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard', abilityTags: ['onPlay'] }),
+    treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard', abilityTags: ['onPlay'], postPlayDestination: 'shuffle-into-deck' }),
+    treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard', abilityTags: ['onPlay'], postPlayDestination: 'deck-bottom' }),
 ];
 
 export const MUNCHKIN_MONSTER_CARDS: MunchkinSpecialCardDescriptor[] = [
@@ -347,7 +348,7 @@ export const MUNCHKIN_THIEVES_ACTIONS: ActionCardDef[] = [
         playNeedsBase: true,
         abilityTags: ['ongoing'],
     }),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_smuggling', '走私', 'Smuggling', 1, 16], ['onPlay']),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_smuggling', '走私', 'Smuggling', 1, 16], { abilityTags: ['onPlay'], postPlayDestination: 'deck-bottom' }),
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_strip_bare', '剥光', 'Strip Bare', 1, 17], ['onPlay']),
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_swipe', '顺手拿走', 'Swipe', 2, 18], ['onPlay']),
 ];

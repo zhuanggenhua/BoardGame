@@ -93,16 +93,32 @@
 - `e2e-1795132056111-v8vrzs` 复验大厅创建在线房、真人确认其御主与从者、三席身份分配互异、AI 两席完成出牌并在第二轮交回真人。另复跑美杜莎的真人骑乘分支。审查实图中两席仍显示暗置从者牌背，可悬浮查看已经打出的公开牌，第二轮回到真人准备。骑乘在尝试第四张时显示拒绝原因，成功追加后回到「结束行动」。日志为 `temp/fate-ai-roster-riding-lobby-final.log`，配套规则、隐私和策略回归 90 项通过。
 - 任务收口仍按 [首批动画从者任务](../../openspec/changes/add-fate-domination-mechanism-framework/tasks.md) 跟踪。各行的领域证据仅覆盖已验证的权威状态。
 
-## 首批从者发动音
+## 首批从者音效
 
-从项目语义目录检索防护、风系、地系和金属长矛。均绑定到对应技能已确认的发动事件。旧资产齐全，复用现有音效库；完整注册表保留原定义，运行时精简表增收金属长矛挥动。正式素材源响应 200，Chromium 已核实实际播放。人工试听尚待验收，项目开发工具入口为 `/dev/audio`，试玩服务保持关闭。
+九张技能复用项目已注册的音效。运行时精简表包含下列音效，新增使用的正式资源已回读，Chromium 在线房核实了解码及播放事件。人工试听与 Android 实机验收待办。
 
-| 具体技能 | 音效 | 试听 ID | 选择依据 |
-| --- | --- | --- | --- |
-| 对魔力 | 神圣护盾 | `magic.general.simple_magic_sound_fx_pack_vol.light.holy_ward` | 防护系，3.22 秒。冰川护盾有冰属性暗示，且尾音更长。 |
-| 风王结界 | 风系附魔 | `magic.wind.44.wind_magic_buff_01` | 风系，2.49 秒。掠风声更接近移动或挥击，这里是在原战场发动结界。 |
-| 石化之魔眼 | 大地之握 | `magic.general.simple_magic_sound_fx_pack_vol.earth.earthen_grasp` | 地系施法，3.64 秒。Earthmeld 尾音在 4 秒以上，石崩冲击声更接近一次命中，均未选用。 |
-| 穿刺死棘之枪 | 武器·长矛挥动声（金属制） | `ambient.khron_studio_sound_of_survival_vol_1_assets.weapons.spear.metal_spear.whoosh_metal_spear.weappole_whoosh_metal_spear_01_krst` | 长矛挥动，0.27 秒。金属长矛攻击声暗示击中，幸运分支也应有发动声。 |
+| 具体技能 | 音效和试听 ID | 触发与选择依据 |
+| --- | --- | --- |
+| 对魔力 | 神圣护盾 `magic.general.simple_magic_sound_fx_pack_vol.light.holy_ward` | 发动施放防护，3.22 秒。备选冰川护盾带冰属性暗示，尾音更长。 |
+| 风王结界 | 风系附魔 `magic.wind.44.wind_magic_buff_01` | 在原战场发动结界，2.49 秒。备选掠风声更接近移动或挥击。 |
+| 誓约胜利之剑 | 神圣光束 001 `magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001` | 已实际发动的宝具播放至动画光束节点约 10.159 秒时响一次，音长 3.15 秒。备选蓄能声对应光束前的动作。仅打出未发动时没有该演出和光束声，提前跳过也没有光束声。 |
+| 穿刺死棘之枪 | 金属长矛挥动 `ambient.khron_studio_sound_of_survival_vol_1_assets.weapons.spear.metal_spear.whoosh_metal_spear.weappole_whoosh_metal_spear_01_krst` | 发动挥矛，0.27 秒，目标被幸运保护时同样播放一次。备选金属长矛攻击声暗示击中。 |
+| 战斗续行 | 短身法掠衣声 `combat.general.khron_studio_fight_fury_vol_1_assets.cloth_whoosh.whsh_cloth_whoosh_04` | 权威移动生效时响一次，0.71 秒。备选长冲刺声为 4.50 秒。 |
+| 突穿死翔之枪 | 投矛破空（B） `fantasy.medieval_fantasy_sound_fx_pack_vol.whooshes.spear_whoosh_b` | 已确认投矛时响一次，0.85 秒。备选通用投掷声较难辨认武器，命中声则会提前暗示战果。 |
+| 骑乘 | 短出牌声（三） `card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_3` | 美杜莎和伊斯坎达尔共用。实际提交至少一张追加牌时响一次，0.07 秒；打开选择、草稿改动、被拒绝、空提交均保持安静。普通出牌保留自己的音色，备选马蹄声容易误读为移动。 |
+| 石化之魔眼 | 大地之握 `magic.general.simple_magic_sound_fx_pack_vol.earth.earthen_grasp` | 发动施法，3.64 秒。备选 Earthmeld 尾音超过 4 秒，石崩冲击声更接近命中。 |
+| 骑英之缰绳 | 回响疾风·施放 `magic.general.simple_magic_sound_fx_pack_vol.air.echoing_gust_cast` | 权威移动生效时响一次，3.02 秒。备选旋风要 8.72 秒，马蹄声与普通地图移动容易混淆。 |
+
+- 在线房 `e2e-1795148770154-ma7ckj` 的 5 项通过，核对誓约胜利之剑完整播放及提前跳过、突穿死翔之枪、战斗续行与骑英之缰绳。已核看宝具光束出现时的实图。该轮骑乘的旧断言在异步回调里再次查询播放状态，漏掉了已播完的 0.07 秒短音。`e2e-1795149229491-4d4bwo` 改用实际解码后的播放事件并对照权威提交，骑乘及对魔力、风王结界、穿刺、石化四条用例通过。日志为 `temp/fate-ability-audio-real-policy.log` 和 `temp/fate-ability-audio-adjacent.log`。领域及音频播放回归共 21 项通过。
+
+## 战场无法出牌与手牌公开
+
+[中文规则书的常规出牌条文](../../src/games/fate-domination/intake/rules/chm-进行一场圣杯战争.md:504)要求战场至少明置一张。无法完成时先展示手牌，再暗置出牌；仍不能凑足两张则可结束行动。正常明置和非战场的暗置/结束行动不触发此展示。
+
+- `PASS_ACTION` 现在和战场全暗置的 `ATTACKS_CONFIRMED` 一样记录规则展示。展示的是结束行动或确认前仍在手中的牌。对手可从原头像的悬浮牌列检视，日志说明为何展示及后续动作；暗置攻击仍按牌背显示。权威实例号保留在所有者视图，其他视图仅收到公开牌种和展示顺序。换轮继续按原逻辑清空展示。
+- 两条规则展示分支共用公开信息的撤回边界。首次失败验证捕获战场结束行动未展示、全暗置公开后旧撤回点仍存在。修复后的领域回归覆盖战场与工房对照、公开后实际申请撤回被拒绝。相邻的常规出牌、信息公开、日志及阶段一起通过 27 项。日志为 `temp/fate-forced-reveal-red.log`、`temp/fate-forced-reveal-unit.log`。
+- 在线代表态 `e2e-1795150815788-igrlut` 验证库·丘林剩一张付不起的牌时结束行动，阿尔托莉雅一侧从头像悬浮打开实际牌面。随后阿尔托莉雅经 UI 使用战斗令咒、选择两张暗置牌并确认，库·丘林收到两个牌背、独立的展示列表及规则日志。确认前存在撤回点，确认后为零。只在入场前设置代表态。
+- 逐张核看 1366×768 现图。在原始版本中展示提示直接压在亮色地图上，部分文字难辨。修复后原头像左侧的提示清楚，库·丘林公开的那张牌可点，放大后卡面四边和印刷数值完整。原图「01-战场无合法出牌时展示的手牌」「02-对手放大检视规则展示的手牌」与源码身份均在 `test-results/evidence-screenshots/_temporary` 的 `online-forced-hand-reveal.e2e` 本轮目录。两项相邻在线回归确认混合草稿重连后可原子提交、满载已出牌区仍可检视。日志为 `temp/fate-forced-reveal-evidence-final.log`、`temp/fate-forced-reveal-visual-final.log`。全仓类型检查报告了并行改动 `anansi_tales.ts` 中的错误，未报 Fate 错误。
 
 ## 测试语义对账
 
@@ -143,5 +159,5 @@
 | 战果展示 | H 区印刷圆和同分标记已接入权威分数，轨外保持实际值。常规在线结算的头像移动已在玩家主动调整取景后核看。默认取景下的低分标记与手牌、比分轨与常显玩家栏遮挡仍待解决。七人同分、淘汰及轨外边缘的真实浏览器截图仍待验。 |
 | AI | 已验证基础多轮交接、首批能力代表态、三位动画从者的自然对局，以及阿尔托莉雅第 10 天深山町的资源取舍。更早的高潮资源规划、对手尚未发动的战斗反制、其他能力联动和其余角色策略仍待验证。 |
 | 教程 | 基础课程和角色、高级交互课程分别验收，未覆盖的高级输入留在[教学交互总账](../../src/games/fate-domination/intake/rules/tutorial-ui-coverage.md)。 |
-| 音频 | 已核实正式在线房的日常音乐、部署声、对魔力、风王结界、石化之魔眼和穿刺死棘之枪发动声。其他技能与宝具的音效触发、语义与回放仍须逐项核对。 |
+| 音频 | 已核实正式在线房的日常音乐、部署声和首批三名从者的九张技能。人工试听、Android 实机、重连与撤回后的声音，以及其余角色音效仍须核对。 |
 | 资源发布 | 本轮只复验战斗素材正式入口与缓存。间桐脏砚令咒素材来源缺口继续开放，18 个退役键遵守[原退役合同](../../src/games/fate-domination/intake/catalog/asset-retirement-contract-2026-10-21.md)，完整生产资源与源码发布均待验。 |

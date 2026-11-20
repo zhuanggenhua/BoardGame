@@ -118,10 +118,12 @@ test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用',
 
             expect(await playedSounds()).toEqual([]);
             await primary.click();
-            await expect.poll(playedSounds).toEqual([ridingCue]);
             await expect(primary).toHaveAccessibleName('结束行动');
             await expect(mana).toHaveText('5');
             const after = await read();
+            const confirmedEvents = after.sys.eventStream.entries.slice(-12).map(entry => entry.event.type);
+            expect(confirmedEvents).toContain('FATE_RIDING_CARDS_PLAYED');
+            await expect.poll(playedSounds, { message: `骑乘追加事件后的实播，最近事件 ${confirmedEvents.join('、')}` }).toEqual([ridingCue]);
             const actor = after.core.players['0'];
             expect(actor.activeAttackIds).toEqual([base.id, ...selected]);
             expect(actor.selectedAttackIds).toEqual([]);

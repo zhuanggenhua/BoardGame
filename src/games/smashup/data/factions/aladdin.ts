@@ -37,7 +37,7 @@ export const ALADDIN_ACTIONS: ActionCardDef[] = [
     { id: 'aladdin_jafar', type: 'action', subtype: 'standard', name: '贾方', nameEn: 'Jafar', faction: FACTION, abilityTags: ['onPlay', 'extra'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 9 } },
     { id: 'aladdin_magic_carpet_ride', type: 'action', subtype: 'standard', name: '乘坐魔毯', nameEn: 'Magic Carpet Ride', faction: FACTION, abilityTags: ['onPlay', 'extra'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 } },
     { id: 'aladdin_street_rat', type: 'action', subtype: 'standard', name: '街头混混', nameEn: 'Street Rat', faction: FACTION, abilityTags: ['onPlay', 'extra'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 11 } },
-    { id: 'aladdin_the_lamp', type: 'action', subtype: 'standard', name: '神灯', nameEn: 'The Lamp', faction: FACTION, abilityTags: ['onPlay'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 12 } },
+    { id: 'aladdin_the_lamp', type: 'action', subtype: 'standard', postPlayDestination: 'deck-bottom', name: '神灯', nameEn: 'The Lamp', faction: FACTION, abilityTags: ['onPlay'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 12 } },
     { id: 'aladdin_wish', type: 'action', subtype: 'standard', name: '许愿', nameEn: 'Wish', faction: FACTION, abilityTags: ['onPlay', 'extra'], count: 3, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 13 } },
 ];
 

@@ -27,6 +27,9 @@ import { reduce } from '../domain/reduce';
 import type { RevealHandEvent, RevealDeckTopEvent } from '../domain/types';
 import type { EventStreamEntry } from '../../../engine/types';
 import { RevealOverlay, resolveRevealSuppressionRules } from '../ui/RevealOverlay';
+import { applyPlayerViewToState } from '../../../engine/ai/playerView';
+import { createEventStreamSystem } from '../../../engine/systems/EventStreamSystem';
+import { makeMatchState, makeState } from './helpers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -66,6 +69,34 @@ afterEach(() => {
 });
 
 const PLAYER_IDS = ['0', '1'];
+
+it('私下查看手牌的事件只能进入指定玩家的传输视图', () => {
+    const state = makeMatchState(makeState());
+    state.sys.eventStream = {
+        entries: [
+            { id: 1, event: { type: SU_EVENTS.REVEAL_HAND, payload: {
+                targetPlayerId: '1', viewerPlayerId: '0', cards: [{ uid: 'private-card', defId: 'wizard_neophyte' }], reason: 'test',
+            }, timestamp: 1 } },
+            { id: 2, event: { type: 'SYS_INTERACTION_RESOLVED', payload: {
+                playerId: '0', interactionId: 'private-selection', value: { cardUid: 'private-card' },
+                interactionData: { options: [{ value: { cardUid: 'private-card' } }] },
+            }, timestamp: 2 } },
+            { id: 3, event: { type: SU_EVENTS.REVEAL_HAND, payload: {
+                targetPlayerId: '1', viewerPlayerId: 'all', cards: [{ uid: 'public-card', defId: 'wizard_neophyte' }], reason: 'test',
+            }, timestamp: 3 } },
+        ],
+        nextId: 4, maxEntries: 200,
+    };
+    const config = { domain: SmashUpDomain, systems: [createEventStreamSystem(), createSmashUpEventSystem()] } as any;
+    const ownerView = applyPlayerViewToState(config, state, '0');
+    const otherView = applyPlayerViewToState(config, state, '1');
+    const spectatorView = applyPlayerViewToState(config, state, null);
+    expect(JSON.stringify(ownerView.sys.eventStream)).toContain('private-card');
+    expect(JSON.stringify(otherView.sys.eventStream)).not.toContain('private-card');
+    expect(JSON.stringify(spectatorView.sys.eventStream)).not.toContain('private-card');
+    expect(JSON.stringify(otherView.sys.eventStream)).toContain('public-card');
+    expect(JSON.stringify(spectatorView.sys.eventStream)).toContain('public-card');
+});
 
 function createRunner() {
     return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({

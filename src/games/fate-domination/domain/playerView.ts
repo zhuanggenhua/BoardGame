@@ -70,6 +70,7 @@ export function projectFatePlayerView(state: FateDominationCore, viewerId: strin
             if(id===viewerId)return [id,{...player,deck:[],publicView}];
             return [id, { ...player, publicView, playedSpecialAttackThisRound: fatePlayedSpecialAttackThisRound(player),
                 hand: [], deck: [], discard: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], activeAttackIds: [],
+                forcedRevealedHand: (player.forcedRevealedHand ?? []).map(({ definitionId }, index) => ({ id: `revealed-hand-${index}`, definitionId })),
                 servantId: player.isRevealed ? player.servantId : '', skills: player.isRevealed ? player.skills : [], activeSkills: player.isRevealed ? player.activeSkills : [],
                 piercingSpearPlays: player.isRevealed ? player.piercingSpearPlays : undefined,
             }];

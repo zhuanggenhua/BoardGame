@@ -816,6 +816,11 @@ test.describe('大杀四方文化冲击阿南西传说真实入口验证', () =>
 
     await game.waitForPhase('playCards');
     await game.playCard('anansi_tales_collecting_stories');
+    await game.waitForInteraction('anansi_tales_collecting_stories_player', 10000);
+    await game.selectInteractionOptionBy(
+      option => option.value?.targetPlayerId === '1',
+      '收集故事选择查看玩家 1 的手牌',
+    );
     await game.waitForInteraction('anansi_tales_collecting_stories', 10000);
     await game.selectInteractionOptionBy(
       option => optionHasCardUid(option, 'borrowed-action') && option.value?.fromPlayerId === '1',

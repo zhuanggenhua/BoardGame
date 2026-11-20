@@ -242,6 +242,8 @@ export interface ActionCardDef {
     subtype: ActionSubtype;
     /** 打出时进入场上（例如自行埋葬）；这类行动不属于规则中的标准行动。 */
     entersPlayOnPlay?: boolean;
+    /** 牌面规定结算后此牌的去向，而非通常的弃牌堆。 */
+    postPlayDestination?: 'other-player-hand' | 'deck-bottom' | 'shuffle-into-deck';
     name: string;
     /** @deprecated 历史英文名，已由 i18n 接管，待清理 */
     nameEn?: string;
@@ -528,6 +530,8 @@ export interface PlayerState {
     actionsPlayed: number;
     /** 本回合已打出的行动牌张数（包含额外行动；不包含作为行动额度打出的随从） */
     actionCardsPlayedThisTurn?: number;
+    /** 当前回合该玩家首次打出的标准行动及其事件身份。 */
+    firstStandardActionThisTurn?: { turnNumber: number; cardUid: string; timestamp: number; actionOrdinal: number };
     /** 本回合可打出行动额度（默认 1） */
     actionLimit: number;
     /** 本回合作为“额外牌”打出的牌总数（Eliza 等效果使用） */
@@ -1452,6 +1456,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         defId: string;
         baseIndex: number;
         ownerId?: PlayerId;
+        /** 直接从另一玩家手牌打出时，记录该手牌所属玩家。 */
+        fromHandOfPlayerId?: PlayerId;
         /** 基地 defId（事件发生时的基地，用于日志显示）。可选，用于向后兼容测试代码。 */
         baseDefId?: string;
         power: number;
@@ -1487,6 +1493,8 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         cardUid: string;
         defId: string;
         ownerId?: PlayerId;
+        /** 直接从另一玩家手牌打出时，记录该手牌所属玩家。 */
+        fromHandOfPlayerId?: PlayerId;
         /** 效果要求在回合末归还其他玩家拥有的行动，值为效果来源。 */
         returnToOwnerAtTurnEnd?: string;
         /** 是否为额外行动（不消耗行动次数） */

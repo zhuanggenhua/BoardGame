@@ -10,6 +10,7 @@ function revealsInformation(event: GameEvent, core: FateDominationCore): boolean
     if (event.type === 'FATE_CARDS_DRAWN') return Array.isArray(payload.drawn) && payload.drawn.length > 0;
     if (event.type === 'FATE_CHARIOT_DRAWN') return Array.isArray(payload.offered) && payload.offered.length > 0;
     if (event.type === 'FATE_INVESTIGATION_VIEWED') return payload.playerId!==payload.targetPlayerId && Array.isArray(payload.offered) && payload.offered.length > 0;
+    if (event.type === 'ATTACKS_CONFIRMED' || event.type === 'ACTION_PASSED') return payload.revealHand === true;
     if (event.type === 'BATTLE_RESOLVED') return typeof payload.nextRound === 'number' && payload.nextRound <= 11;
     return event.type === 'PHASE_ADVANCED' && payload.phase === 'action' && core.currentEvents.shinto.length > 0;
 }

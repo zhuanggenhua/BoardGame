@@ -216,6 +216,7 @@ export function validateImmediateHandExtraMinionPlaySemantics(
     params: {
         cardUid: string;
         baseIndex: number;
+        fromHandOfPlayerId?: string;
     },
 ): ValidationResult {
     const restrictionError = getMinionPlayRestrictionError(core, playerId);
@@ -231,7 +232,7 @@ export function validateImmediateHandExtraMinionPlaySemantics(
         return { valid: false, error: '无效的基地索引' };
     }
 
-    const handCard = player.hand.find(card => card.uid === cardUid);
+    const handCard = core.players[params.fromHandOfPlayerId ?? playerId]?.hand.find(card => card.uid === cardUid);
     if (!handCard || !isCardMinionLike(handCard)) {
         return { valid: false, error: '手牌中没有该随从' };
     }

@@ -107,6 +107,7 @@ import type {
 import type { PlayerId } from '../../../engine/types';
 import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getBaseDef, getMinionDef, getCardDef, getFactionTitan } from '../data/cards';
+import { isRulesStandardAction } from './standardAction';
 import {
     getMunchkinSpecialCardDescriptor,
     MUNCHKIN_MONSTER_DECK_DEF_IDS,
@@ -2075,13 +2076,16 @@ export function reduceActionPlayedEvent(
     state: SmashUpCore,
     event: ActionPlayedEvent,
 ): SmashUpCore {
-    const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId, discardPlaySourceId, consumesNormalLimit } = event.payload as any;
+    const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId, discardPlaySourceId, consumesNormalLimit, fromHandOfPlayerId } = event.payload as any;
     const player = state.players[playerId];
+    const sourceHandPlayerId = fromHandOfPlayerId ?? playerId;
+    const sourceHandPlayer = state.players[sourceHandPlayerId];
     const card = fromStored
         ? player.storedCards?.find(c => c.uid === cardUid)
         : fromDiscard
         ? player.discard.find(c => c.uid === cardUid)
-        : player.hand.find(c => c.uid === cardUid);
+        : sourceHandPlayer?.hand.find(c => c.uid === cardUid);
+    if (fromHandOfPlayerId && !card) return state;
     const buriedLookup = (() => {
         if (!fromBuried) return undefined;
         for (let i = 0; i < state.bases.length; i++) {
@@ -2103,7 +2107,7 @@ export function reduceActionPlayedEvent(
         targetMinionUid: event.payload.targetMinionUid,
     });
 
-    const newHand = (fromBuried || fromDiscard || fromStored) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+    const newHand = (fromBuried || fromDiscard || fromStored || sourceHandPlayerId !== playerId) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
     const newStoredCards = fromStored
         ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
         : player.storedCards;
@@ -2144,6 +2148,9 @@ export function reduceActionPlayedEvent(
             actionsPlayed: (isSpecial || isExtraAction || consumesNormalLimit === false) ? player.actionsPlayed : player.actionsPlayed + 1,
             usedDiscardPlayAbilities: newUsedAbilities,
             actionCardsPlayedThisTurn: (player.actionCardsPlayedThisTurn ?? 0) + 1,
+            firstStandardActionThisTurn: isRulesStandardAction(def) && player.firstStandardActionThisTurn?.turnNumber !== state.turnNumber
+                ? { turnNumber: state.turnNumber, cardUid, timestamp: event.timestamp, actionOrdinal: (player.actionCardsPlayedThisTurn ?? 0) + 1 }
+                : player.firstStandardActionThisTurn,
             extraCardsPlayedThisTurn: wasExtraActionPlay
                 ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                 : player.extraCardsPlayedThisTurn,
@@ -2157,6 +2164,10 @@ export function reduceActionPlayedEvent(
             ...targetOwner,
             discard: targetDiscard,
         };
+    }
+    if (sourceHandPlayerId !== playerId && sourceHandPlayer) {
+        const sourcePlayer = nextPlayers[sourceHandPlayerId] ?? sourceHandPlayer;
+        nextPlayers[sourceHandPlayerId] = { ...sourcePlayer, hand: sourcePlayer.hand.filter(c => c.uid !== cardUid) };
     }
     const returnReason = event.payload.returnToOwnerAtTurnEnd;
     const mustReturn = returnReason && movedCard && resolvedOwnerId !== playerId
@@ -2193,11 +2204,14 @@ export function reduceMinionPlayedEvent(
         consumesNormalLimit,
         allowImplicitSource,
         ownerId,
+        fromHandOfPlayerId,
         playAsAction,
     } = event.payload;
     const resolvedBaseIndex = resolveLiveBaseIndex(state, baseIndex, event.payload.baseDefId) ?? baseIndex;
     const player = state.players[playerId];
-    const cardInHand = player.hand.some(card => card.uid === cardUid);
+    const sourceHandPlayerId = fromHandOfPlayerId ?? playerId;
+    const sourceHandPlayer = state.players[sourceHandPlayerId];
+    const cardInHand = sourceHandPlayer?.hand.some(card => card.uid === cardUid) ?? false;
     const cardInDiscard = player.discard.some(card => card.uid === cardUid);
     const cardInDeck = player.deck.some(card => card.uid === cardUid);
     const cardInStored = player.storedCards?.some(card => card.uid === cardUid) ?? false;
@@ -2218,7 +2232,7 @@ export function reduceMinionPlayedEvent(
     // allowImplicitSource: true 时从所有位置尝试移除（用于动态牌源）
     const removeCard = (cards: CardInstance[]) => cards.filter(c => c.uid !== cardUid);
     const shouldRemoveFromHand = !fromDiscard && !fromBuried && !fromStored && (!fromDeck || cardInHand);
-    const newHand = allowImplicitSource ? removeCard(player.hand) : shouldRemoveFromHand ? removeCard(player.hand) : player.hand;
+    const newHand = sourceHandPlayerId !== playerId ? player.hand : allowImplicitSource ? removeCard(player.hand) : shouldRemoveFromHand ? removeCard(player.hand) : player.hand;
     const newDiscard = allowImplicitSource ? removeCard(player.discard) : fromDiscard ? removeCard(player.discard) : player.discard;
     const newDeck = allowImplicitSource ? removeCard(player.deck) : (fromDeck && cardInDeck) ? removeCard(player.deck) : player.deck;
     const newStoredCards = allowImplicitSource
@@ -2422,6 +2436,9 @@ export function reduceMinionPlayedEvent(
         ...state,
         players: {
             ...state.players,
+            ...(sourceHandPlayerId !== playerId && sourceHandPlayer
+                ? { [sourceHandPlayerId]: { ...sourceHandPlayer, hand: removeCard(sourceHandPlayer.hand) } }
+                : {}),
             [playerId]: {
                 ...player,
                 hand: newHand,

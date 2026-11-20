@@ -11,6 +11,8 @@ import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from '../../data/factions/anan
 import {
     expectRegisteredAbilityContract,
     applyEvents,
+    getFirstPrompt,
+    getPromptOptions,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -519,6 +521,98 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(gifted.finalState.sys?.interaction?.current).toBeFalsy();
     });
 
+    it('收集故事先选择一位玩家，私下查看其完整手牌', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', { hand: [makeCard('other-card', 'wizard_neophyte', 'minion', '1')] }),
+                '2': makePlayer('2', { hand: [makeCard('owned-card', 'wizard_mystic_studies', 'action', '0')] }),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 29,
+        });
+        const options = getPromptOptions(getFirstPrompt(result.matchState!));
+        expect(options.some(option => option.value?.targetPlayerId === '1')).toBe(true);
+        expect(options.some(option => option.value?.targetPlayerId === '2')).toBe(true);
+        expect(options.some(option => option.value?.cardUid === 'owned-card')).toBe(false);
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        expect(viewed.success, viewed.error).toBe(true);
+        expect(viewed.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.REVEAL_HAND,
+            payload: expect.objectContaining({ targetPlayerId: '1', viewerPlayerId: '0', cards: [expect.objectContaining({ uid: 'other-card' })] }),
+        }));
+        const inspected = getPromptOptions(getFirstPrompt(viewed.finalState));
+        expect(inspected.find(option => option.value?.cardUid === 'other-card')?.disabled).toBe(true);
+        expect(inspected.some(option => option.value?.cardUid === 'owned-card')).toBe(false);
+    });
+
+    it('收集故事可从所选玩家手中直接额外打出自己拥有的随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', { hand: [makeCard('borrowed-minion', 'ninja_acolyte', 'minion', '0')] }),
+            },
+            bases: [makeBase('base_the_factory')],
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 29,
+        });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        const selected = respondToPromptOption(viewed.finalState, option => option.value?.cardUid === 'borrowed-minion', '选择随从', '0', FIXED_RANDOM);
+        const played = respondToPromptOption(selected.finalState, option => option.value?.baseIndex === 0, '选择基地', '0', FIXED_RANDOM);
+        expect(played.success, played.error).toBe(true);
+        expect(played.events.some(event => event.type === SU_EVENTS.CARD_TRANSFERRED)).toBe(false);
+        expect(played.finalState.core.players['1'].hand).toEqual([]);
+        expect(played.finalState.core.bases[0].minions).toEqual([expect.objectContaining({ uid: 'borrowed-minion', owner: '0', controller: '0' })]);
+    });
+
+    it('收集故事选择另一名玩家手中自己拥有的附着行动后，应能选择目标并打出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', { hand: [makeCard('borrowed-ongoing', 'mounties_bring_em_in', 'action', '0')] }),
+            },
+            bases: [makeBase('base_the_factory', [makeMinion('target', 'wizard_neophyte', '0', 2)])],
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 30,
+        });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        const selected = respondToPromptOption(viewed.finalState, option => option.value?.cardUid === 'borrowed-ongoing', '选择附着行动', '0', FIXED_RANDOM);
+        expect(selected.success, selected.error).toBe(true);
+        const targetPrompt = getFirstPrompt(selected.finalState);
+        expect(getPromptOptions(targetPrompt).some(option => option.value?.minionUid === 'target')).toBe(true);
+        const attached = respondToPromptOption(selected.finalState, option => option.value?.minionUid === 'target', '选择附着目标', '0', FIXED_RANDOM);
+        expect(attached.success, attached.error).toBe(true);
+        expect(attached.finalState.core.players['1'].hand.map(card => card.uid)).not.toContain('borrowed-ongoing');
+        expect(attached.finalState.core.bases[0].minions[0].attachedActions?.some(card => card.uid === 'borrowed-ongoing')).toBe(true);
+    });
+
+    it('收集故事直接从对方手牌打出，不应伪造一次玩家间赠牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-a', 'wizard_neophyte', 'minion', '0'), makeCard('draw-b', 'wizard_neophyte', 'minion', '0')] }),
+                '1': makePlayer('1', { hand: [makeCard('borrowed', 'wizard_mystic_studies', 'action', '0')] }),
+            },
+            bases: [makeBase('base_the_factory', [makeMinion('opponent-leopard', 'anansi_tales_osebo_the_leopard', '1', 4)])],
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 30,
+        });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        const played = respondToPromptOption(viewed.finalState, option => option.value?.cardUid === 'borrowed', '从对手手牌打出', '0', FIXED_RANDOM);
+        expect(played.success, played.error).toBe(true);
+        expect(played.finalState.core.bases[0].minions[0].powerCounters ?? 0).toBe(0);
+        expect(played.events.some(event => event.type === SU_EVENTS.CARD_TRANSFERRED)).toBe(false);
+        expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toContain('borrowed');
+    });
+
     it('收集故事会从另一名玩家手中额外打出自己拥有的行动', () => {
         const core = makeState({
             players: {
@@ -542,8 +636,9 @@ describe('阿南西传说代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 30,
         });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
         const selected = respondToPromptOption(
-            result.matchState!,
+            viewed.finalState,
             option => option.value?.cardUid === 'borrowed' && option.value?.fromPlayerId === '1',
             'play owned action from another hand',
             '0',
@@ -850,6 +945,7 @@ describe('阿南西传说代表性玩法行为', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
+                    firstStandardActionThisTurn: { turnNumber: 1, cardUid: 'web-action', timestamp: 90, actionOrdinal: 1 },
                     discard: [makeCard('web-action', 'anansi_tales_trading_stories', 'action', '0')],
                     deck: [
                         makeCard('draw-1', 'anansi_tales_pot_of_beans', 'action', '0'),
@@ -885,30 +981,7 @@ describe('阿南西传说代表性玩法行为', () => {
 
         expect(gifted.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['web-action']);
         expect(gifted.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
-        expect(gifted.finalState.core.bases[0].metadata?.anansisWebUsedTurn).toBe(1);
-
-        const second = triggerBaseAbilityWithMS('base_anansis_web', 'onActionPlayed', {
-            state: {
-                ...gifted.finalState.core,
-                players: {
-                    ...gifted.finalState.core.players,
-                    '0': {
-                        ...gifted.finalState.core.players['0'],
-                        discard: [makeCard('second-action', 'anansi_tales_pot_of_wisdom', 'action', '0')],
-                    },
-                },
-            },
-            matchState: gifted.finalState,
-            playerId: '0',
-            baseIndex: 0,
-            baseDefId: 'base_anansis_web',
-            triggerCardUid: 'second-action',
-            triggerCardDefId: 'anansi_tales_pot_of_wisdom',
-            triggerCardOwnerId: '0',
-            random: FIXED_RANDOM,
-            now: 91,
-        });
-        expect(second.events).toEqual([]);
+        expect(gifted.finalState.core.players['0'].firstStandardActionThisTurn?.cardUid).toBe('web-action');
 
         const noMinionCore = makeState({
             players: {

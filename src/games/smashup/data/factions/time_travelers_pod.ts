@@ -134,6 +134,7 @@ export const TIME_TRAVELERS_POD_ACTIONS: ActionCardDef[] = [
         id: 'time_travelers_time_walk_pod',
         type: 'action',
         subtype: 'standard',
+        postPlayDestination: 'deck-bottom',
         name: '时间旅行',
         nameEn: 'Time Walk',
         faction: FACTION,

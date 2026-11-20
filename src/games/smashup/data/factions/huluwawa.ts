@@ -197,6 +197,7 @@ export const HULUWAWA_ACTIONS: ActionCardDef[] = [
         id: 'huluwawa_release_my_grandpa',
         type: 'action',
         subtype: 'standard',
+        postPlayDestination: 'deck-bottom',
         name: '快放了我爷爷！',
         nameEn: 'Release My Grandpa!',
         faction: SMASHUP_FACTION_IDS.HULUWAWA,

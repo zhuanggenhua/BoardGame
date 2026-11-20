@@ -7,6 +7,7 @@ type BuildActionPlayedEventParams = {
     cardUid: string;
     defId: string;
     ownerId?: PlayerId;
+    fromHandOfPlayerId?: PlayerId;
     timestamp: number;
     isExtraAction?: boolean;
     fromBuried?: boolean;
@@ -26,6 +27,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
         cardUid,
         defId,
         ownerId,
+        fromHandOfPlayerId,
         timestamp,
         isExtraAction,
         fromBuried,
@@ -46,6 +48,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
             cardUid,
             defId,
             ...(ownerId !== undefined ? { ownerId } : {}),
+            ...(fromHandOfPlayerId !== undefined ? { fromHandOfPlayerId } : {}),
             ...(isExtraAction ? { isExtraAction: true } : {}),
             ...(fromBuried ? { fromBuried: true } : {}),
             ...(fromDiscard ? { fromDiscard: true } : {}),

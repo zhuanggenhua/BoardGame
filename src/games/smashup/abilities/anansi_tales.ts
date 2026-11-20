@@ -9,11 +9,13 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
+    buildAbilityFeedback,
     buildStandardDrawEvents,
     buildValidatedMoveEvents,
     createSkipOption,
     grantExtraAction,
     inspectDeck,
+    revealHand,
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeContinuation,
@@ -26,6 +28,7 @@ import { createPendingActionResolution, resolvePendingActionExecution } from '..
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerActiveBaseAbility, registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { getBaseDef, getCardDef } from '../data/cards';
+import { collectLegalActionPlayTargets, validateActionPlaySemantics, validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { createCardObjectRef, createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import { getEffectiveBreakpoint, registerCustomBreakpointModifiers } from '../domain/ongoingModifiers';
@@ -151,6 +154,7 @@ type PendingActionContinuationContext = AnansiPromptContext & {
     defId: string;
     ownerId: PlayerId;
     targetBaseIndex?: number;
+    targetMinionUid?: string;
     postGiftSelf?: {
         sourceId: string;
         cardUid: string;
@@ -176,6 +180,8 @@ type CollectingStoriesBaseContext = AnansiPromptContext & {
     defId: string;
     fromPlayerId: PlayerId;
 };
+
+type CollectingStoriesHandContext = AnansiPromptContext & { fromPlayerId: PlayerId };
 
 type DiscardActionRecycleContext = AnansiPromptContext & {
     sourceId: 'anansi_tales_ear_of_corn';
@@ -361,18 +367,19 @@ function buildExtraActionPlayEventsFromHand(
     reason: string,
     timestamp: number,
     targetBaseIndex?: number,
+    targetMinionUid?: string,
 ): SmashUpEvent[] {
     return [
-        buildTransferFromCard(card, fromPlayerId, playerId, reason, timestamp),
         buildActionPlayedEvent({
             playerId,
             cardUid: card.uid,
             defId: card.defId,
             ownerId: card.owner,
-            destinationOverride: 'hand',
+            fromHandOfPlayerId: fromPlayerId,
             timestamp,
             isExtraAction: true,
             ...(targetBaseIndex !== undefined ? { targetBaseIndex } : {}),
+            ...(targetMinionUid ? { targetMinionUid } : {}),
             sourceCommandType: reason,
         }),
     ];
@@ -384,12 +391,10 @@ function buildExtraMinionPlayEventsFromHand(
     fromPlayerId: PlayerId,
     card: CardInstance,
     baseIndex: number,
-    reason: string,
     timestamp: number,
 ): SmashUpEvent[] {
     const def = getCardDef(card.defId) as MinionCardDef | undefined;
     return [
-        buildTransferFromCard(card, fromPlayerId, playerId, reason, timestamp),
         {
             type: SU_EVENTS.MINION_PLAYED,
             payload: {
@@ -397,6 +402,7 @@ function buildExtraMinionPlayEventsFromHand(
                 cardUid: card.uid,
                 defId: card.defId,
                 ownerId: card.owner,
+                fromHandOfPlayerId: fromPlayerId,
                 baseIndex,
                 baseDefId: state.bases[baseIndex]?.defId,
                 power: def?.power ?? 0,
@@ -415,6 +421,7 @@ function appendActionOnPlayResolution(params: {
     random: Parameters<typeof resolvePendingActionExecution>[2];
     timestamp: number;
     targetBaseIndex?: number;
+    targetMinionUid?: string;
     postGiftSelf?: PendingActionContinuationContext['postGiftSelf'];
     lockActionDefAfter?: boolean;
 }): {
@@ -430,6 +437,7 @@ function appendActionOnPlayResolution(params: {
         defId: params.card.defId,
         ownerId: params.card.owner,
         ...(params.targetBaseIndex !== undefined ? { targetBaseIndex: params.targetBaseIndex } : {}),
+        ...(params.targetMinionUid ? { targetMinionUid: params.targetMinionUid } : {}),
         ...(params.postGiftSelf ? { postGiftSelf: params.postGiftSelf } : {}),
         ...(params.lockActionDefAfter ? { lockActionDefAfter: true } : {}),
         leadingEvents: params.events,
@@ -446,6 +454,7 @@ const pendingActionResolutionProgram = createEffectProgram<PendingActionContinua
                 defId: context.defId,
                 ownerId: context.ownerId,
                 ...(context.targetBaseIndex !== undefined ? { targetBaseIndex: context.targetBaseIndex } : {}),
+                ...(context.targetMinionUid ? { targetMinionUid: context.targetMinionUid } : {}),
                 now: context.now,
             }),
             context.random,
@@ -946,34 +955,41 @@ const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContex
     },
 });
 
-const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext>({
+function canCollectingStoriesPlayCard(state: SmashUpCore, playerId: PlayerId, fromPlayerId: PlayerId, card: CardInstance): boolean {
+    const def = getCardDef(card.defId);
+    if (isCardMinionLike(card) || def?.type === 'fusion') {
+        return state.bases.some((_base, baseIndex) => validateImmediateHandExtraMinionPlaySemantics(state, playerId, {
+            cardUid: card.uid, baseIndex, fromHandOfPlayerId: fromPlayerId,
+        }).valid);
+    }
+    if (!isCardActionLike(card) || !def || def.type !== 'action') return false;
+    const targets = collectLegalActionPlayTargets(state, playerId, { defId: card.defId });
+    return targets.mode === 'none' ? targets.firstError === null : targets.baseIndices.length > 0;
+}
+
+const collectingStoriesPromptProgram = createPromptProgram<CollectingStoriesHandContext>({
     sourceId: 'anansi_tales_collecting_stories',
     buildInteraction: (context) => {
-        const options: PromptOption<CollectingStoriesChoice>[] = getOtherPlayers(context.matchState.core, context.playerId)
-            .flatMap(fromPlayerId => (
-                (context.matchState.core.players[fromPlayerId]?.hand ?? [])
-                    .filter(card => card.owner === context.playerId)
-                    .map((card, index) => ({
-                        id: `collect-${fromPlayerId}-${index}`,
-                        label: `${getCardLabel(card.defId)} ← ${getPlayerLabel(context.matchState.core, fromPlayerId)}`,
-                        value: { cardUid: card.uid, defId: card.defId, fromPlayerId },
-                        displayMode: 'card' as const,
-                        displayCard: { defId: card.defId, cardUid: card.uid },
-                    }))
-            ));
-        return createAbilityRuntimeSimpleChoice(
-            `anansi_tales_collecting_stories_${context.now}`,
-            context.playerId,
-            '收集故事：选择另一名玩家手中你拥有的一张牌额外打出',
-            [...options, createSkipOption()],
-            {
-                sourceId: 'anansi_tales_collecting_stories',
-                targetType: 'hand',
-                autoResolveIfSingle: false,
-                responseValidationMode: 'live',
-                titleKey: 'ui.anansi_tales_collecting_stories_title',
-            },
-        );
+        const hand = context.matchState.core.players[context.fromPlayerId]?.hand ?? [];
+        const options: PromptOption<CollectingStoriesChoice>[] = hand.map(card => ({
+            id: `collect-${context.fromPlayerId}-${card.uid}`,
+            label: getCardLabel(card.defId),
+            value: { cardUid: card.uid, defId: card.defId, fromPlayerId: context.fromPlayerId },
+            displayMode: 'card',
+            displayCard: { defId: card.defId, cardUid: card.uid },
+            disabled: card.owner !== context.playerId || !canCollectingStoriesPlayCard(context.matchState.core, context.playerId, context.fromPlayerId, card),
+        }));
+        const requestId = `anansi_tales_collecting_stories_${context.now}`;
+        const interaction = createSimpleChoiceFromChoiceRequest<CollectingStoriesChoice>({
+            requestId, gameId: 'smashup', playerId: context.playerId,
+            ownerFrameId: context.matchState.sys.resolution?.activeFrameId,
+            sourceId: 'anansi_tales_collecting_stories', kind: 'choose-option',
+            candidates: [...options, createSkipOption()], selection: { min: 1, max: 1 },
+            skipPolicy: 'optional', recoveryAction: { label: '跳过', commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { interactionId: requestId, optionId: 'skip' } }] },
+            resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
+        }, { title: '收集故事：查看手牌，可以打出你拥有的一张牌', targetType: 'generic', autoResolveIfSingle: false, responseValidationMode: 'live' });
+        interaction.data.inspectedCards = hand.map(card => ({ uid: card.uid, defId: card.defId }));
+        return interaction;
     },
     onResolve: ({ context, state, value, random, timestamp }) => {
         const choice = value as CollectingStoriesChoice | undefined;
@@ -997,8 +1013,18 @@ const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext>(
                 } satisfies CollectingStoriesBaseContext, collectingStoriesBasePromptProgram),
             };
         }
-        if (isCardActionLike(card) && isStandardActionDef(def)) {
-            if (actionLikeNeedsPlayBase(def) && !actionLikeNeedsPlayMinion(def)) {
+        if (isCardActionLike(card) && def?.type === 'action') {
+            const targets = collectLegalActionPlayTargets(state.core, context.playerId, { defId: card.defId });
+            if (targets.mode === 'minion') {
+                return {
+                    events: [],
+                    continuation: createAbilityRuntimeContinuation({
+                        matchState: state, playerId: context.playerId, now: timestamp,
+                        cardUid: card.uid, defId: card.defId, fromPlayerId: choice.fromPlayerId,
+                    } satisfies CollectingStoriesBaseContext, collectingStoriesMinionPromptProgram),
+                };
+            }
+            if (targets.mode === 'base') {
                 return {
                     events: [],
                     continuation: createAbilityRuntimeContinuation({
@@ -1011,6 +1037,7 @@ const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext>(
                     } satisfies CollectingStoriesBaseContext, collectingStoriesBasePromptProgram),
                 };
             }
+            if (targets.firstError) return { events: [] };
             const events = buildExtraActionPlayEventsFromHand(
                 context.playerId,
                 choice.fromPlayerId,
@@ -1032,26 +1059,55 @@ const collectingStoriesPromptProgram = createPromptProgram<AnansiPromptContext>(
     },
 });
 
+const collectingStoriesPlayerPromptProgram = createPromptProgram<AnansiPromptContext>({
+    sourceId: 'anansi_tales_collecting_stories_player',
+    buildInteraction: context => {
+        const requestId = `anansi_tales_collecting_stories_player_${context.now}`;
+        const options = buildPlayerTargetOptions(getOtherPlayers(context.matchState.core, context.playerId).map(targetPlayerId => ({
+            id: `player-${targetPlayerId}`, label: getPlayerLabel(context.matchState.core, targetPlayerId), targetPlayerId,
+        })), { state: context.matchState.core, sourcePlayerId: context.playerId });
+        return createSimpleChoiceFromChoiceRequest({
+            requestId, gameId: 'smashup', playerId: context.playerId,
+            ownerFrameId: context.matchState.sys.resolution?.activeFrameId,
+            sourceId: 'anansi_tales_collecting_stories_player', kind: 'select-player',
+            candidates: options, selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
+        }, { title: '收集故事：选择一位玩家查看手牌', targetType: 'player', autoResolveIfSingle: false, responseValidationMode: 'live' });
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const fromPlayerId = (value as { targetPlayerId?: PlayerId } | undefined)?.targetPlayerId;
+        if (!fromPlayerId || fromPlayerId === context.playerId || !state.core.players[fromPlayerId]) return { events: [] };
+        const hand = state.core.players[fromPlayerId].hand;
+        const events = hand.length > 0
+            ? [revealHand(fromPlayerId, context.playerId, hand.map(card => ({ uid: card.uid, defId: card.defId })), 'anansi_tales_collecting_stories', timestamp, context.playerId)]
+            : [buildAbilityFeedback(context.playerId, 'feedback.hand_empty', timestamp)];
+        return {
+            events,
+            continuation: createAbilityRuntimeContinuation({ matchState: state, playerId: context.playerId, now: timestamp, fromPlayerId } satisfies CollectingStoriesHandContext, collectingStoriesPromptProgram),
+        };
+    },
+});
+
 const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStoriesBaseContext>({
     sourceId: 'anansi_tales_collecting_stories_base',
-    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `anansi_tales_collecting_stories_base_${context.cardUid}_${context.now}`,
-        context.playerId,
-        '收集故事：选择额外打出到的基地',
-        buildBaseTargetOptions(
-            context.matchState.core.bases.map((base, baseIndex) => ({
-                baseIndex,
-                label: getBaseDef(base.defId)?.name ?? base.defId,
-            })),
-            context.matchState.core,
-        ),
-        {
-            sourceId: 'anansi_tales_collecting_stories_base',
-            targetType: 'base',
-            responseValidationMode: 'live',
-            titleKey: 'ui.anansi_tales_collecting_stories_base_title',
-        },
-    ),
+    buildInteraction: context => {
+        const core = context.matchState.core;
+        const card = core.players[context.fromPlayerId]?.hand.find(entry => entry.uid === context.cardUid);
+        const def = card && getCardDef(card.defId);
+        const legalBases = (card && isCardMinionLike(card)) || def?.type === 'fusion'
+            ? core.bases.flatMap((_base, baseIndex) => validateImmediateHandExtraMinionPlaySemantics(core, context.playerId, {
+                cardUid: context.cardUid, baseIndex, fromHandOfPlayerId: context.fromPlayerId,
+            }).valid ? [baseIndex] : [])
+            : collectLegalActionPlayTargets(core, context.playerId, { defId: context.defId }).baseIndices;
+        const options = buildBaseTargetOptions(core.bases.flatMap((base, baseIndex) => legalBases.includes(baseIndex)
+            ? [{ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }] : []), core);
+        const requestId = `anansi_tales_collecting_stories_base_${context.cardUid}_${context.now}`;
+        return createSimpleChoiceFromChoiceRequest({
+            requestId, gameId: 'smashup', playerId: context.playerId, ownerFrameId: context.matchState.sys.resolution?.activeFrameId,
+            sourceId: 'anansi_tales_collecting_stories_base', kind: 'select-zone', candidates: options,
+            selection: { min: 1, max: 1 }, skipPolicy: 'forbidden', resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
+        }, { title: '收集故事：选择额外打出到的基地', targetType: 'base', responseValidationMode: 'live', titleKey: 'ui.anansi_tales_collecting_stories_base_title' });
+    },
     onResolve: ({ context, state, value, random, timestamp }) => {
         const choice = value as BaseChoice | undefined;
         if (choice?.baseIndex === undefined) return { events: [] };
@@ -1060,6 +1116,9 @@ const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStories
         if (!card) return { events: [] };
         const def = getCardDef(card.defId);
         if (isCardMinionLike(card) || def?.type === 'fusion') {
+            if (!validateImmediateHandExtraMinionPlaySemantics(state.core, context.playerId, {
+                cardUid: card.uid, baseIndex: choice.baseIndex, fromHandOfPlayerId: context.fromPlayerId,
+            }).valid) return { events: [] };
             return {
                 events: buildExtraMinionPlayEventsFromHand(
                     state.core,
@@ -1067,12 +1126,12 @@ const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStories
                     context.fromPlayerId,
                     card,
                     choice.baseIndex,
-                    'anansi_tales_collecting_stories',
                     timestamp,
                 ),
             };
         }
-        if (isCardActionLike(card) && isStandardActionDef(def)) {
+        if (isCardActionLike(card) && def?.type === 'action') {
+            if (!validateActionPlaySemantics(state.core, context.playerId, { defId: card.defId, targetBaseIndex: choice.baseIndex }).valid) return { events: [] };
             const events = buildExtraActionPlayEventsFromHand(
                 context.playerId,
                 context.fromPlayerId,
@@ -1093,6 +1152,39 @@ const collectingStoriesBasePromptProgram = createPromptProgram<CollectingStories
             return { events: resolved.events, matchState: resolved.matchState };
         }
         return { events: [] };
+    },
+});
+
+const collectingStoriesMinionPromptProgram = createPromptProgram<CollectingStoriesBaseContext>({
+    sourceId: 'anansi_tales_collecting_stories_minion',
+    buildInteraction: context => {
+        const core = context.matchState.core;
+        const targets = collectLegalActionPlayTargets(core, context.playerId, { defId: context.defId });
+        const candidates = core.bases.flatMap((base, baseIndex) => base.minions
+            .filter(minion => targets.minionUids.includes(minion.uid))
+            .map(minion => ({ uid: minion.uid, defId: minion.defId, baseIndex, label: getCardLabel(minion.defId) })));
+        const options = buildMinionTargetOptions(candidates, {
+            state: core, sourcePlayerId: context.playerId, sourceDefId: context.defId, sourceKind: 'action', effectType: 'affect',
+        });
+        const requestId = `anansi_tales_collecting_stories_minion_${context.cardUid}_${context.now}`;
+        return createSimpleChoiceFromChoiceRequest({
+            requestId, gameId: 'smashup', playerId: context.playerId, ownerFrameId: context.matchState.sys.resolution?.activeFrameId,
+            sourceId: 'anansi_tales_collecting_stories_minion', kind: 'select-object', candidates: options,
+            selection: { min: 1, max: 1 }, skipPolicy: 'forbidden', resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
+        }, { title: '收集故事：选择行动的目标随从', targetType: 'minion', responseValidationMode: 'live' });
+    },
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const choice = value as MinionChoice | undefined;
+        if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
+        const card = state.core.players[context.fromPlayerId]?.hand.find(entry => entry.uid === context.cardUid && entry.owner === context.playerId);
+        if (!card || !validateActionPlaySemantics(state.core, context.playerId, {
+            defId: card.defId, targetBaseIndex: choice.baseIndex, targetMinionUid: choice.minionUid,
+        }).valid) return { events: [] };
+        const events = buildExtraActionPlayEventsFromHand(context.playerId, context.fromPlayerId, card,
+            'anansi_tales_collecting_stories', timestamp, choice.baseIndex, choice.minionUid);
+        const resolved = appendActionOnPlayResolution({ state, events, playerId: context.playerId, card, random, timestamp,
+            targetBaseIndex: choice.baseIndex, targetMinionUid: choice.minionUid });
+        return { events: resolved.events, matchState: resolved.matchState };
     },
 });
 
@@ -1401,13 +1493,8 @@ function deckActionGift(ctx: AbilityContext, sourceId: DeckActionSearchContext['
 }
 
 function collectingStories(ctx: AbilityContext): AbilityResult {
-    const options = getOtherPlayers(ctx.state, ctx.playerId).flatMap(targetPlayerId => (
-        (ctx.state.players[targetPlayerId]?.hand ?? [])
-            .filter(card => card.owner === ctx.playerId)
-            .map(card => ({ targetPlayerId, card }))
-    ));
-    if (options.length === 0) return { events: [] };
-    return runtimeToAbilityResult(executeAbilityProgram(collectingStoriesPromptProgram, {
+    if (getOtherPlayers(ctx.state, ctx.playerId).length === 0) return { events: [] };
+    return runtimeToAbilityResult(executeAbilityProgram(collectingStoriesPlayerPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
@@ -1476,7 +1563,6 @@ function anansisWebOnActionPlayed(ctx: BaseAbilityContext): AbilityResult {
     if (!ctx.matchState || !ctx.triggerCardUid || !ctx.triggerCardDefId || !ctx.triggerCardOwnerId) return { events: [] };
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base?.minions.some(minion => minion.controller === ctx.playerId)) return { events: [] };
-    if (base.metadata?.anansisWebUsedTurn === ctx.state.turnNumber) return { events: [] };
     if (!isStandardActionDef(getCardDef(ctx.triggerCardDefId))) return { events: [] };
     const ownerDiscard = ctx.state.players[ctx.triggerCardOwnerId]?.discard ?? [];
     if (!ownerDiscard.some(card => card.uid === ctx.triggerCardUid)) return { events: [] };
@@ -1489,11 +1575,6 @@ function anansisWebOnActionPlayed(ctx: BaseAbilityContext): AbilityResult {
         defId: ctx.triggerCardDefId,
         fromPlayerId: ctx.triggerCardOwnerId,
         drawCardsAfterTransfer: 2,
-        baseMetadataAfterTransfer: {
-            baseIndex: ctx.baseIndex,
-            metadataUpdate: { anansisWebUsedTurn: ctx.state.turnNumber },
-            reason: 'base_anansis_web',
-        },
     });
     return {
         events: gift.events,
@@ -1567,10 +1648,16 @@ export function registerAnansiTalesAbilities(): void {
         onActionPlayedScope: 'allBases',
         canTrigger: ctx => {
             const base = ctx.state.bases[ctx.baseIndex];
-            return isStandardActionDef(getCardDef(ctx.triggerCardDefId ?? ''))
+            const firstAction = ctx.state.players[ctx.playerId]?.firstStandardActionThisTurn;
+            const action = getCardDef(ctx.triggerCardDefId ?? '');
+            return isStandardActionDef(action)
+                && !action.postPlayDestination
                 && ctx.actionDestinationOverride !== 'hand'
-                && base?.minions.some(minion => minion.controller === ctx.playerId) === true
-                && base.metadata?.anansisWebUsedTurn !== ctx.state.turnNumber;
+                && firstAction?.turnNumber === ctx.state.turnNumber
+                && firstAction.cardUid === ctx.triggerCardUid
+                && firstAction.timestamp === ctx.now
+                && firstAction.actionOrdinal === ctx.actionPlayOrdinal
+                && base?.minions.some(minion => minion.controller === ctx.playerId) === true;
         },
     });
     registerActiveBaseAbility('base_storytellers_hut', storytellersHut, {

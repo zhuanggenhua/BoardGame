@@ -261,6 +261,22 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
         id: 'smashup-event-system',
         name: '大杀四方事件处理',
         priority: 24, // 必须在 FlowSystem(25) 之前执行，确保交互处理器先于 onAutoContinueCheck 运行
+        playerView: (state, playerId) => {
+            const stream = state.sys.eventStream;
+            if (!stream) return {};
+            const entries = stream.entries.map(entry => {
+                if (entry.event.type === INTERACTION_EVENTS.RESOLVED) {
+                    const payload = entry.event.payload as Record<string, unknown>;
+                    if (payload.playerId === playerId) return entry;
+                    return { ...entry, event: { ...entry.event, payload: { playerId: payload.playerId } } };
+                }
+                if (entry.event.type !== SU_EVENT_TYPES.REVEAL_HAND) return entry;
+                const payload = entry.event.payload as { viewerPlayerId?: string; cards?: unknown[] };
+                if (payload.viewerPlayerId === 'all' || payload.viewerPlayerId === playerId) return entry;
+                return { ...entry, event: { ...entry.event, payload: { ...payload, cards: [] } } };
+            });
+            return { eventStream: { ...stream, entries } };
+        },
         beforeCommand: ({ state }) => {
             if (!Reflect.get(state.sys, '_processedDestroyEvents')
                 && !Reflect.get(state.sys, '_processedPlayedEvents')

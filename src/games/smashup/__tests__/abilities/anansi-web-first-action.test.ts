@@ -29,4 +29,128 @@ describe('阿南西之网每回合第一次标准行动', () => {
         expect(second.success, second.error).toBe(true);
         expect(getPromptOptions(getFirstPrompt(second.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
     });
+
+    it('首次标准行动自带转交去向时，后续标准行动也不是本回合第一次', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('first-gift', 'anansi_tales_let_it_be_full_and_eat', 'action', '0'), makeCard('second', 'wizard_mystic_studies', 'action', '0')],
+                    deck: Array.from({ length: 5 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web', [makeMinion('ally', 'wizard_neophyte', '0', 2)])],
+        }));
+        const first = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'first-gift' } });
+        expect(first.success, first.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(first.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
+        const gifted = respondToPromptOption(first.finalState, option => option.value?.targetPlayerId === '1', '赠送让它吃饱', '0');
+        expect(gifted.success, gifted.error).toBe(true);
+        const second = runCommand(gifted.finalState, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'second' } });
+        expect(second.success, second.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(second.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
+    });
+
+    it('进入新回合后，该玩家再次打出的第一张标准行动可以触发', () => {
+        const state = makeMatchState(makeState({
+            turnNumber: 2,
+            players: {
+                '0': makePlayer('0', {
+                    firstStandardActionThisTurn: { turnNumber: 1, cardUid: 'old', timestamp: 1, actionOrdinal: 1 },
+                    hand: [makeCard('new', 'wizard_mystic_studies', 'action', '0')],
+                    deck: Array.from({ length: 5 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web', [makeMinion('ally', 'wizard_neophyte', '0', 2)])],
+        }));
+        const played = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'new' } });
+        expect(played.success, played.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(played.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(true);
+    });
+
+    it('第一次行动时基地没有随从，之后才打出随从也不能把第二次行动当作第一次', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('first', 'wizard_mystic_studies', 'action', '0'),
+                        makeCard('ally-card', 'wizard_neophyte', 'minion', '0'),
+                        makeCard('second', 'wizard_mystic_studies', 'action', '0')],
+                    deck: Array.from({ length: 5 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web')],
+        }));
+        const first = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'first' } });
+        expect(first.success, first.error).toBe(true);
+        const minion = runCommand(first.finalState, { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'ally-card', baseIndex: 0 } });
+        expect(minion.success, minion.error).toBe(true);
+        const second = runCommand(minion.finalState, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'second' } });
+        expect(second.success, second.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(second.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
+    });
+
+    it('牌面规定回牌库底的首次标准行动不能被阿南西之网转交', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('time-walk', 'time_travelers_time_walk', 'action', '0')],
+                    deck: Array.from({ length: 4 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web', [makeMinion('ally', 'wizard_neophyte', '0', 2)])],
+        }));
+        const played = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'time-walk' } });
+        expect(played.success, played.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(played.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
+        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toContain('time-walk');
+    });
+
+    it('先打出非标准行动后，首张标准行动仍可触发', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    actionCardsPlayedThisTurn: 1,
+                    hand: [makeCard('standard', 'wizard_mystic_studies', 'action', '0')],
+                    deck: Array.from({ length: 4 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web', [makeMinion('ally', 'wizard_neophyte', '0', 2)])],
+        }));
+        const played = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'standard' } });
+        expect(played.success, played.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(played.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(true);
+    });
+
+    it('同一张行动牌同回合回手再次打出时不能当作第一次', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('replayed', 'wizard_mystic_studies', 'action', '0')],
+                    deck: Array.from({ length: 5 }, (_, index) => makeCard(`deck-${index}`, 'wizard_neophyte', 'minion', '0')),
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_anansis_web', [makeMinion('ally', 'wizard_neophyte', '0', 2)])],
+        }));
+        const first = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'replayed' } });
+        expect(first.success, first.error).toBe(true);
+        const passed = respondToPromptOption(first.finalState, option => option.value?.kind === 'pass', '让过阿南西之网', '0');
+        expect(passed.success, passed.error).toBe(true);
+        const player = passed.finalState.core.players['0'];
+        const returned = player.discard.find(card => card.uid === 'replayed')!;
+        const recovered = { ...passed.finalState, core: { ...passed.finalState.core, players: {
+            ...passed.finalState.core.players,
+            '0': { ...player, hand: [...player.hand, returned], discard: player.discard.filter(card => card.uid !== 'replayed') },
+        } } };
+        const second = runCommand(recovered, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'replayed' } });
+        expect(second.success, second.error).toBe(true);
+        expect(getPromptOptions(getFirstPrompt(second.finalState)).some(option => String(option.value?.triggerId).includes('base_anansis_web'))).toBe(false);
+    });
 });

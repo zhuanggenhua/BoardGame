@@ -317,7 +317,7 @@ export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', {
         excludedLocations?: LocationId[];
     };
 }>;
-export type ActionPassedEvent = GameEvent<'ACTION_PASSED', { playerId: PlayerId }>;
+export type ActionPassedEvent = GameEvent<'ACTION_PASSED', { playerId: PlayerId; revealHand?: true }>;
 export type LocationResolvedEvent = GameEvent<'LOCATION_RESOLVED', { locationId: LocationId; results: BattleResult[]; noblePlayerIds?: PlayerId[] }>;
 export type SkillPlayedEvent = GameEvent<'SKILL_PLAYED', { playerId: PlayerId; skillId: string; manaSpent: number; targetPlayerId?: PlayerId; targetLocationId?: LocationId; targetCardId?: string }>;
 export type FateAbilityUsedEvent = GameEvent<'FATE_ABILITY_USED', {playerId:PlayerId;skillId:string;usageKey?:string;manaSpent?:number}>;

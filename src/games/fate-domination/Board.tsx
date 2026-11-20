@@ -177,7 +177,14 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const nameFor = (id: string) => matchData?.find(item => String(item.id) === id)?.name ?? `玩家 ${Number(id) + 1}`;
     const chariotTargets=(id:string,sourceId:string)=>fateChariotTargets(core,id).filter(targetCardId=>validate(attackDraft.state,{type:'PLAY_SKILL',playerId:id,payload:{skillId:sourceId,targetCardId}}).valid);
     const investigationTargets=(id:string,sourceId:string)=>core.playerIds.filter(targetPlayerId=>validate(attackDraft.state,{type:'PLAY_SKILL',playerId:id,payload:{skillId:sourceId,targetPlayerId}}).valid);
-    const abilityAvailable=(id:string,sourceId:string)=>!interactionBlocked&&current&&id===actorId&&(resolveFatePlayerAbility(core,id,sourceId)?.effects.some(effect=>effect.type==='replace-event')?chariotTargets(id,sourceId).length>0:resolveFatePlayerAbility(core,id,sourceId)?.effects.some(effect=>effect.type==='investigate-hand')?investigationTargets(id,sourceId).length>0:resolveFatePlayerAbility(core,id,sourceId)?.effects.some(effect=>effect.type==='movement')?movement.legalTargets({kind:'skill',skillId:sourceId}).length>0:validate(attackDraft.state,{type:'PLAY_SKILL',playerId:id,payload:{skillId:sourceId}}).valid);
+    const abilityAvailable = (id: string, sourceId: string) => {
+        if (interactionBlocked || id !== actorId) return false;
+        const effects = resolveFatePlayerAbility(core, id, sourceId)?.effects;
+        if (effects?.some(effect => effect.type === 'replace-event')) return chariotTargets(id, sourceId).length > 0;
+        if (effects?.some(effect => effect.type === 'investigate-hand')) return investigationTargets(id, sourceId).length > 0;
+        if (effects?.some(effect => effect.type === 'movement')) return movement.legalTargets({ kind: 'skill', skillId: sourceId }).length > 0;
+        return validate(attackDraft.state, { type: 'PLAY_SKILL', playerId: id, payload: { skillId: sourceId } }).valid;
+    };
     const activateAbility = (skillId: string) => {
         if (!actorId) return;
         if(!abilityAvailable(actorId,skillId)){rejectCard(skillId,false,true);return;}

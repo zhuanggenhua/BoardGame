@@ -175,7 +175,7 @@ export function paintFateBattleFx(ctx: CanvasRenderingContext2D, effect: FgoBatt
     // 库丘林的直刺以平举枪动画出手，尾迹沿武器水平延伸。
     if (effect.shape === 'thrust') thrust(ctx, time, Math.abs(dx) / span);
     else {
-      // 把挥弧的前缘对到躯干触点。曲线原点在刃尖后上方。
+      // 亮刃高于曲线原点，落到躯干时按挥击方向补足可见前缘。
       ctx.translate(0.055, 0.10);
       slash(ctx, time);
     }

@@ -52,16 +52,18 @@ function formatFateCommandLog({ command, state, events, afterEventsRound }: {
             actorId: command.playerId, kind: resolved.type, segments: [label] } : null;
     }
     if (afterEventsRound !== 0 || command.type === 'SYS_INTERACTION_RESPOND') return null;
+    const revealedHand = events.some(event => (event.type === 'ATTACKS_CONFIRMED' || event.type === 'ACTION_PASSED')
+        && (event.payload as { revealHand?: boolean }).revealHand === true);
     const labels: Record<string, ActionLogSegment> = {
         SELECT_MASTER: segment('selectMaster', { name: masterName ?? 'log.unknownMaster' }, masterName ? undefined : ['name']),
         SELECT_SERVANT: segment('selectServant'),
         DEPLOY_MASTER: segment('deploy', { location }, ['location']),
-        CONFIRM_ATTACK: segment('confirmAttack'),
+        CONFIRM_ATTACK: segment(revealedHand ? 'confirmAttackWithRevealedHand' : 'confirmAttack'),
         INSPECT_CARD: cardName ? segment('inspectNamed', { name: cardName }) : segment('inspect'),
         ADVANCE_PHASE: events.some(event => event.type === 'INITIAL_ATTACK_HAND_DEALT')
             ? segment('finishSetup') : segment('advance', { phase: `phases.${core.phase}` }, ['phase']),
         MOVE_PLAYER: segment('move', { location }, ['location']),
-        PASS_ACTION: segment('pass'),
+        PASS_ACTION: segment(revealedHand ? 'passWithRevealedHand' : 'pass'),
         RESOLVE_LOCATION: segment('resolveLocation', { location }, ['location']),
         PLAY_SKILL: ability?.effects.some(effect => effect.type === 'riding') ? segment('riding')
             : ability ? segment('playSkill', { name: ability.name }) : segment('playAbility'),

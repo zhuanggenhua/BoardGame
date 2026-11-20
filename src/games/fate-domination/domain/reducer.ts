@@ -11,7 +11,7 @@ import { calculateFatePower } from './power';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID } from '../data';
 import { FATE_BATTLE_LOCATION_ORDER } from './types';
-import type { FateDominationCommand, FateDominationCore, FateDominationEvent, LocationId } from './types';
+import type { FateDominationCommand, FateDominationCore, FateDominationEvent, LocationId, PlayerState } from './types';
 import { resolveFateMovement } from './movement';
 import { executeFateAbility, resolveFatePlayerAbility } from './abilityRegistry';
 import { fateRidingFrameId, fateRidingGeneration } from './ridingChoice';
@@ -30,6 +30,10 @@ import {
 } from './mechanics';
 
 const eventMeta = (command: FateDominationCommand) => ({ sourceCommandType: command.type, timestamp: typeof command.timestamp === 'number' ? command.timestamp : 0 });
+
+function handForForcedReveal(player: PlayerState) {
+    return player.hand.filter(card => !player.activeAttackIds.includes(card.id));
+}
 
 function fateActionTurnAfterPass(core: FateDominationCore, passingId: string) {
     const activeIds = core.turnOrder.filter(id => core.players[id].locationId && !core.players[id].eliminated);
@@ -81,7 +85,10 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
             return [{ type: 'PLAYER_MOVED', payload: { playerId: command.playerId, from, to: command.payload.locationId, path: [...resolution.path], mode: resolution.mode, manaSpent: resolution.cost }, ...meta }];
         }
         case 'PASS_ACTION': {
-            const pass = { type: 'ACTION_PASSED' as const, payload: { playerId: command.playerId }, ...meta };
+            const player = core.players[command.playerId];
+            const revealHand = !player.normalAttackPlayed && (player.locationId === 'miyama' || player.locationId === 'shinto')
+                && handForForcedReveal(player).length > 0;
+            const pass: FateDominationEvent = { type: 'ACTION_PASSED', payload: { playerId: player.id, ...(revealHand && { revealHand: true }) }, ...meta };
             return fateActionTurnAfterPass(core, command.playerId).nextActionId
                 ? [pass] : [...fatePreBattleDefeatEvents(core, meta), pass];
         }
@@ -328,7 +335,9 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
             return { ...state, battlefield, players, actionCount: state.actionCount + 1, actionNotice: `已移动至${destination.label}。` };
         }
         case 'ACTION_PASSED': {
-            const players = { ...state.players, [event.payload.playerId]: { ...state.players[event.payload.playerId], hasPassedAction: true, selectedAttackIds: [], selectedFaceDownIds: [] } };
+            const player = state.players[event.payload.playerId];
+            const players = { ...state.players, [player.id]: { ...player, hasPassedAction: true, selectedAttackIds: [], selectedFaceDownIds: [],
+                forcedRevealedHand: event.payload.revealHand ? handForForcedReveal(player) : player.forcedRevealedHand } };
             const { nextActionId, firstBattleId } = fateActionTurnAfterPass(state, event.payload.playerId);
             const currentPlayerId = nextActionId ?? firstBattleId;
             return { ...state, players, phase: nextActionId ? state.phase : 'battle', currentPlayerId, phaseCompletedPlayerIds: nextActionId ? state.phaseCompletedPlayerIds : [], currentTurnIndex: state.turnOrder.indexOf(currentPlayerId), pendingChoice: nextActionId ? { kind: 'attack-cards', playerId: nextActionId, minimum: 2, maximum: 2 } : { kind: 'battle' }, actionNotice: nextActionId ? '已结束行动，轮到下一位玩家。' : '所有玩家结束行动，进入战斗阶段。' };
@@ -550,7 +559,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
                 ...(hasFateSpecialAttack(player, event.payload.cardIds, event.payload.faceDownIds) && { playedSpecialAttackThisRound: true }),
                 ...(playedPiercingSpear && { piercingSpearPlays: (player.piercingSpearPlays ?? 0) + 1 }),
                 faceDownAttackIds: [...(player.faceDownAttackIds ?? []), ...(event.payload.faceDownIds ?? [])],
-                forcedRevealedHand: event.payload.revealHand ? [...player.hand] : player.forcedRevealedHand,
+                forcedRevealedHand: event.payload.revealHand ? handForForcedReveal(player) : player.forcedRevealedHand,
                 activeAttackIds: [...player.activeAttackIds,...attacks], activeSkills:[...player.activeSkills,...skills.filter(id => !isFateFieldAttack(id) || player.locationId === 'miyama' || player.locationId === 'shinto')], revealedSkillIds:[...new Set([...player.revealedSkillIds,...(revealsName ? player.skills.filter(skill=>resolveFateAttack(player,skill.id)?.kind==='skill').map(skill=>skill.id) : skills)])], isRevealed:player.isRevealed||revealsName, normalAttackPlayed:true };
             return { ...state, players:{...state.players,[player.id]:updatedPlayer}, pendingChoice:{kind:null},
                 actionNotice:'已完成常规出牌，可使用已激活的行动能力或结束行动。' };

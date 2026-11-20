@@ -58,20 +58,25 @@ it('同战场出现第二名对手时，真人与 AI 都不能发动贯穿心脏
         .not.toContainEqual(expect.objectContaining({ type: 'PLAY_SKILL', payload: activate.payload }));
 });
 
-it('对手先发动幸运时，贯穿心脏走正式保护结算并消耗本轮发动机会', () => {
+it('已结束本席操作的对手仍可在战力结算前发动幸运，挡下贯穿心脏', () => {
     const { state, activate, execute } = setupHeart();
     const opponent = state.core.players['1'];
     opponent.hand = [{ id: 'lucky-attack', definitionId: 'cardluck' }];
     opponent.activeAttackIds = ['lucky-attack'];
     state.core.currentPlayerId = '1';
 
-    const lucky = execute(state, { type: 'PLAY_SKILL', playerId: '1', payload: { skillId: 'lucky-attack' } });
-    expect(lucky.success).toBe(true);
-    const advanced = execute(lucky.state, { type: 'ADVANCE_PHASE', playerId: '1', payload: {} });
+    const advanced = execute(state, { type: 'ADVANCE_PHASE', playerId: '1', payload: {} });
     expect(advanced.success).toBe(true);
     expect(advanced.state.core.currentPlayerId).toBe('0');
+    const legal = buildFateAiLegalActions({ playerId: '1', state: advanced.state }).flatMap(action => action.commands);
+    expect(legal).toEqual([expect.objectContaining({ type: 'PLAY_SKILL', payload: { skillId: 'lucky-attack' } })]);
 
-    const result = execute(advanced.state, activate);
+    const lucky = execute(advanced.state, { type: 'PLAY_SKILL', playerId: '1', payload: { skillId: 'lucky-attack' } });
+    expect(lucky.success, lucky.error).toBe(true);
+    expect(lucky.state.core.currentPlayerId).toBe('0');
+    expect(lucky.state.core.phaseCompletedPlayerIds).toEqual(['1']);
+
+    const result = execute(lucky.state, activate);
     expect(result.success).toBe(true);
     expect(result.events).toContainEqual(expect.objectContaining({ type: 'FATE_DEFEAT_PREVENTED' }));
     expect(result.state.core.players['1'].defeatMarkers).toEqual([]);
@@ -79,6 +84,21 @@ it('对手先发动幸运时，贯穿心脏走正式保护结算并消耗本轮�
         expect.objectContaining({ actorId: '1', segments: [expect.objectContaining({ key: 'log.battleDefeatPrevented' })] }),
     ]);
     expect(execute(result.state, activate).success).toBe(false);
+});
+
+it('只有当前席能结束战斗操作；最后一席结束后关停所有战斗能力', () => {
+    const { state, activate, execute } = setupHeart();
+    state.core.currentPlayerId = '2';
+    state.core.phaseCompletedPlayerIds = ['0', '1'];
+    expect(execute(state, { type: 'ADVANCE_PHASE', playerId: '0', payload: {} })).toMatchObject({ success: false, error: 'notYourTurn' });
+    const started = execute(state, { type: 'ADVANCE_PHASE', playerId: '2', payload: {} });
+    expect(started.success).toBe(true);
+    expect(started.state.core.battleResolution?.step).toBe('locations');
+    const late = execute(started.state, activate);
+    expect(late).toMatchObject({ success: false, error: 'battleAlreadyResolving', events: [] });
+    expect(late.state.core.players['0'].usedAbilityIds).toEqual([]);
+    expect(late.state.core.players['1'].defeatMarkers).toEqual([]);
+    expect(buildFateAiLegalActions({ playerId: '0', state: started.state })).toEqual([]);
 });
 
 it('穿刺死棘之枪同局跨轮重新可用，每次确认后永久增加下次实付费用', () => {

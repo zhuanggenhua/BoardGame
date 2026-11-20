@@ -92,7 +92,8 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
         case 'PLAY_SKILL': {
             if (core.battleResolution) return fail('battleAlreadyResolving');
             if (core.phase !== 'outpost' && core.phase !== 'action' && core.phase !== 'battle') return fail('wrongPhase');
-            if (!isCurrentPlayer(core, command)) return fail('notYourTurn');
+            // 战斗阶段能力在全员完成战斗操作、开始战力结算前都可发动。
+            if (core.phase !== 'battle' && !isCurrentPlayer(core, command)) return fail('notYourTurn');
             const player=core.players[command.playerId];
             const source=resolveFateAbilitySource(player,command.payload.skillId);
             if(!source)return fail('unknownSkill');

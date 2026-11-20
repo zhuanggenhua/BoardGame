@@ -67,6 +67,7 @@ const SUPPRESSED_REVEAL_REASON_BY_SOURCE_ID: Record<string, string> = {
     super_spies_for_my_eyes_only_reorder: 'super_spies_for_my_eyes_only',
     base_isis_swingin_pad_reorder: 'base_isis_swingin_pad',
     cyborg_apes_monkey_see_monkey_do_choose: 'cyborg_apes_monkey_see_monkey_do',
+    anansi_tales_collecting_stories: 'anansi_tales_collecting_stories',
 };
 
 function extractCardUids(items: unknown): string[] {

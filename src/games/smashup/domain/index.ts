@@ -3637,7 +3637,7 @@ function postProcessSystemEvents(
         }
     }
     
-    for (const event of afterDeckInspection.events) {
+    for (const [eventIndex, event] of afterDeckInspection.events.entries()) {
         if (event.type === SU_EVENTS.VP_AWARDED) {
             const vpEvt = event as VpAwardedEvent;
             const tempCore = prePlayCore;
@@ -3811,6 +3811,11 @@ function postProcessSystemEvents(
             // ACTION_PLAYED 的 onActionPlayed 触发：基底/ongoing 同步入队
             let tempCore = ms.core;
             let tempMatchState = ms;
+            const laterActionCount = afterDeckInspection.events.slice(eventIndex + 1).filter(candidate =>
+                candidate.type === SU_EVENTS.ACTION_PLAYED && candidate.payload.playerId === playedEvt.payload.playerId).length;
+            const actionPlayOrdinal = inputEventsAlreadyReduced
+                ? (state.players[playedEvt.payload.playerId]?.actionCardsPlayedThisTurn ?? 0) - laterActionCount
+                : (prePlayCore.players[playedEvt.payload.playerId]?.actionCardsPlayedThisTurn ?? 0) + 1;
             const sourceEventId = `action-played:${playedEvt.payload.cardUid}:${event.timestamp}`;
             const frameId = `action-played-frame:${playedEvt.payload.cardUid}:${event.timestamp}`;
 
@@ -3877,6 +3882,7 @@ function postProcessSystemEvents(
                     ownerPlayerId: playedEvt.payload.playerId,
                     baseIndex,
                     actionPlayScope: 'allBases',
+                    actionPlayOrdinal,
                     actionDestinationOverride: playedEvt.payload.destinationOverride,
                     actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
                     actionTargetType: playedEvt.payload.targetType,
