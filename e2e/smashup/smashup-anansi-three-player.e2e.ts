@@ -146,3 +146,51 @@ test('收集故事从对手手牌打出属于自己的附着行动', async ({ pa
   }).toBe(true);
   await game.screenshot('收集故事-附着行动完成', testInfo);
 });
+
+for (const playAs of ['minion', 'action'] as const) {
+  test(`收集故事从对手手牌将融合牌作为 ${playAs} 打出`, async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { numPlayers: 2, skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'collecting', defId: 'anansi_tales_collecting_stories', type: 'action', owner: '0' }],
+        deck: [], discard: [], factions: ['anansi_tales', 'adolescent_epic_geckos'], actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: {
+        hand: [{ uid: 'borrowed-fusion', defId: 'geckos_kc_smith', type: 'fusion', owner: '0' }],
+        deck: [], discard: [], factions: ['pirates', 'ninjas'],
+      },
+      bases: [{ defId: 'base_the_factory', minions: [] }],
+    });
+    await game.playCard('anansi_tales_collecting_stories');
+    await game.waitForInteraction('anansi_tales_collecting_stories_player', 10000);
+    const opponent = (await game.getInteractionOptions()).find(option => option.value?.targetPlayerId === '1');
+    expect(opponent).toBeDefined();
+    await page.locator(`[data-option-id="${opponent.id}"]`).click();
+    await game.waitForInteraction('anansi_tales_collecting_stories', 10000);
+    const fusion = (await game.getInteractionOptions()).find(option => option.value?.cardUid === 'borrowed-fusion');
+    expect(fusion).toBeDefined();
+    await page.locator(`[data-option-id="${fusion.id}"]`).click();
+    await game.waitForInteraction('anansi_tales_collecting_stories_fusion', 10000);
+    const modes = await game.getInteractionOptions();
+    const mode = modes.find(option => option.value?.playAs === playAs);
+    expect(mode?.disabled).not.toBe(true);
+    await game.screenshot('收集故事-选择融合牌面', testInfo);
+    await page.locator(`[data-option-id="${mode.id}"]`).click();
+    if (playAs === 'minion') {
+      await game.waitForInteraction('anansi_tales_collecting_stories_base', 10000);
+      await page.locator('[data-base-index="0"]').first().click();
+    }
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        opponentHasCard: state.core.players['1'].hand.some((card: { uid: string }) => card.uid === 'borrowed-fusion'),
+        inPlay: state.core.bases[0].minions.some((card: { uid: string }) => card.uid === 'borrowed-fusion'),
+        discarded: state.core.players['0'].discard.some((card: { uid: string }) => card.uid === 'borrowed-fusion'),
+      };
+    }).toEqual({ opponentHasCard: false, inPlay: playAs === 'minion', discarded: playAs === 'action' });
+    await game.screenshot('收集故事-融合牌打出完成', testInfo);
+  });
+}
