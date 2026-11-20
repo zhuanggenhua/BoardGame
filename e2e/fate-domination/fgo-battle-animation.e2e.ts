@@ -7,6 +7,7 @@ import { createFateAttackDeck } from '../../src/games/fate-domination/domain/set
 import { releaseSourceSession, startSourceSession } from '../framework/sourceIdentity';
 import { fgoEvidenceSnapshot, writeFgoEvidence } from './fgoEvidence';
 import { openFateRepresentativeBoard, type FateState } from './onlineRepresentativeBoard';
+import { initFateAudioContext, trackFateAbilitySounds } from './fateAbilityAudio';
 
 test.use({ viewport: { width: 1366, height: 768 }, video: 'on' });
 test.beforeAll(() => {
@@ -208,6 +209,7 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   test.setTimeout(240000);
   if (!skip) await page.setViewportSize({ width: 1280, height: 800 });
   await initContext(context, { skipImageGate: false });
+  await initFateAudioContext(context);
   const { read, connectPeer } = await openBoard(page, context, ({ core }) => {
     prepareSeatedPlayers(core, 'servant-medusa');
     core.phase = 'action';
@@ -238,6 +240,8 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
     }
   });
   await waitForAssets(page, true);
+  const beamCue = 'Divine Magic Hallowed Beam 001.ogg';
+  const playedSounds = await trackFateAbilitySounds(page, [beamCue]);
   const initial = (await read()).core;
   const cardId = initial.players['0'].hand[0].id;
   const nobleId = initial.players['0'].skills.find(item => item.id.startsWith('sc_saber_np:'))!.id;
@@ -281,6 +285,7 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   await expect(noble.locator('canvas')).toHaveCount(1);
   if (skip) {
     await waitForNobleTime(page, 2.5);
+    expect(await playedSounds()).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath('宝具跳过入口.png') });
     await noble.getByRole('button', { name: /^(跳过|Skip)$/ }).click();
     await expect(noble).toBeHidden();
@@ -295,6 +300,7 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
     expect(final.victoryCondition).toBe('excalibur');
     const result = page.getByRole('region', { name: '圣杯战争结果' });
     await expect(result.getByText('「誓约胜利之剑」生效，赢得第 11 天的战斗即可获胜。', { exact: true })).toBeVisible();
+    expect(await playedSounds()).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath('第十一天宝具获胜终局.png') });
     return;
   }
@@ -312,15 +318,18 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   expect(presentation.alpha).toBe(true);
   await expect(action).toBeEnabled();
   await waitForNobleTime(page, 2.5);
+  expect(await playedSounds()).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('宝具释放过程.png') });
   const during = await fgoEvidenceSnapshot(page, read);
   await waitForNobleTime(page, 14);
+  await expect.poll(playedSounds).toEqual([beamCue]);
   await page.screenshot({ path: testInfo.outputPath('宝具光束过程.png') });
   await expect(noble).toBeHidden({ timeout: 45000 });
   const battle = page.getByTestId('fate-fgo-battle');
   await expect(battle).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('宝具退场后接续地点战斗.png') });
   await expect(battle).toBeHidden({ timeout: 15000 });
+  expect(await playedSounds()).toEqual([beamCue]);
   await page.screenshot({ path: testInfo.outputPath('宝具演出后.png') });
   const after = await fgoEvidenceSnapshot(page, read);
   await writeFgoEvidence(page, testInfo, { chainId: 'saber-noble', action: '确认攻击，战斗阶段发动誓约胜利之剑并结算深山町',

@@ -63,7 +63,7 @@ for (const { name, skill, cost, againstTwo, protectedTarget, source, verifyTrack
     test(`在线库·丘林发动${name}${resultExpectation}`, async ({ page, context, baseURL }, testInfo) => {
         test.setTimeout(150_000);
         if (againstTwo) await initContext(context, { skipImageGate: false });
-        else await initFateAudioContext(context);
+        await initFateAudioContext(context);
         await startSourceSession(context, baseURL!);
         try {
             const { read, connectPeer } = await openFateRepresentativeBoard(page, context, state => prepareCuBattle(state, againstTwo, protectedTarget, verifyTrack));
@@ -106,13 +106,13 @@ for (const { name, skill, cost, againstTwo, protectedTarget, source, verifyTrack
                 }
                 const activate = page.getByRole('button', { name: `发动 ${name}`, exact: true });
                 await expect(activate).toBeEnabled();
-                const spearSound = 'WEAPPole_Whoosh Metal Spear 01_KRST.ogg';
-                const playedSounds = !againstTwo ? await trackFateAbilitySounds(page, [spearSound]) : undefined;
-                if (playedSounds) expect(await playedSounds()).toEqual([]);
+                const spearSound = againstTwo ? 'Spear Whoosh B.ogg' : 'WEAPPole_Whoosh Metal Spear 01_KRST.ogg';
+                const playedSounds = await trackFateAbilitySounds(page, [spearSound]);
+                expect(await playedSounds()).toEqual([]);
                 if (!protectedTarget && !verifyTrack) await screenshot('02-战斗阶段可发动宝具');
                 await activate.click();
                 await expect.poll(async () => (await read()).core.players['0'].usedAbilityIds).toContain(fateAbilityUsageKey(skillId, 'battle'));
-                if (playedSounds) await expect.poll(playedSounds).toEqual([spearSound]);
+                await expect.poll(playedSounds).toEqual([spearSound]);
                 await expect(activate).toBeDisabled();
                 const afterActivation = await read();
                 let result;
@@ -184,7 +184,7 @@ for (const { name, skill, cost, againstTwo, protectedTarget, source, verifyTrack
                 await writeFile(join(run.stagingDir, '效果和权威结果.json'), JSON.stringify({
                     source: { text: source, reference: `中文卡图 ${skill}.png` },
                     sourceIdentity: await captureEvidenceSourceIdentity(page, 'fate-domination'), paidMana: cost, result,
-                    playedAbilitySounds: await playedSounds?.(),
+                    playedAbilitySounds: await playedSounds(),
                 }, null, 2), 'utf8');
             } finally {
                 peers.forEach(peer => peer.disconnect());

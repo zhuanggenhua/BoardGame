@@ -8,6 +8,7 @@ import { createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory } fro
 import { captureEvidenceSourceIdentity, releaseSourceSession, startSourceSession } from '../framework/sourceIdentity';
 import { initContext } from '../helpers/common';
 import { openFateRepresentativeBoard, type FateState } from './onlineRepresentativeBoard';
+import { initFateAudioContext, trackFateAbilitySounds } from './fateAbilityAudio';
 
 test.use({ viewport: { width: 1366, height: 768 } });
 
@@ -48,6 +49,7 @@ function prepareMedusaRiding({ core }: FateState) {
 test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用', async ({ page, context, baseURL }, testInfo) => {
     test.setTimeout(150_000);
     await initContext(context, { skipImageGate: false });
+    await initFateAudioContext(context);
     await startSourceSession(context, baseURL!);
     try {
         const { read, connectPeer } = await openFateRepresentativeBoard(page, context, prepareMedusaRiding);
@@ -91,6 +93,8 @@ test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用',
             await expect(page.getByTestId('fate-runtime-inspection')).toBeVisible();
             await page.keyboard.press('Escape');
 
+            const ridingCue = 'SFX_Card_Play_3.ogg';
+            const playedSounds = await trackFateAbilitySounds(page, [ridingCue, 'SFX_Card_Play_1.ogg']);
             await page.getByRole('button', { name: '发动 骑乘', exact: true }).click();
             const selected = [paid.id, agility.id, magic.id];
             for (const id of selected) {
@@ -114,7 +118,9 @@ test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用',
             await page.mouse.move(12, 12);
             await screenshot('03-骑乘三张预计扣费');
 
+            expect(await playedSounds()).toEqual([]);
             await primary.click();
+            await expect.poll(playedSounds).toEqual([ridingCue]);
             await expect(primary).toHaveAccessibleName('结束行动');
             await expect(mana).toHaveText('5');
             const after = await read();
@@ -133,6 +139,7 @@ test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用',
                     reference: 'FD全卡图鉴V1.0.chm 美杜莎.htm；中文卡图 sc_medusa_1.png' },
                 sourceIdentity: await captureEvidenceSourceIdentity(page, 'fate-domination'),
                 cardsDrawn: 1, paidMana: before.core.players['0'].mana - actor.mana, publiclyPlayed: actor.activeAttackIds,
+                playedAbilitySounds: await playedSounds(),
             }, null, 2), 'utf8');
         } finally {
             opponent.disconnect();

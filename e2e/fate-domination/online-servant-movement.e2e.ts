@@ -10,6 +10,7 @@ import { initContext } from '../helpers/common';
 import { createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory } from '../framework/evidenceScreenshots';
 import { captureEvidenceSourceIdentity, releaseSourceSession, startSourceSession } from '../framework/sourceIdentity';
 import { openFateRepresentativeBoard, type FateState } from './onlineRepresentativeBoard';
+import { initFateAudioContext, trackFateAbilitySounds } from './fateAbilityAudio';
 
 test.use({ viewport: { width: 1366, height: 768 } });
 
@@ -83,6 +84,8 @@ for (const { name, servant, cost, target, label, source, climax } of scenarios) 
         const medusa = servant === 'servant-medusa';
         if (!medusa && target === 'recon') await page.setViewportSize({ width: 1280, height: 720 });
         await initContext(context, { skipImageGate: false });
+        const checkAudio = target === 'shinto' && !climax;
+        if (checkAudio) await initFateAudioContext(context);
         await startSourceSession(context, baseURL!);
         try {
             const { read } = await openFateRepresentativeBoard(page, context, state => prepareMovement(state, servant, target, climax));
@@ -141,6 +144,8 @@ for (const { name, servant, cost, target, label, source, climax } of scenarios) 
                 return;
             }
             await expect(ability).toBeEnabled();
+            const movementCue = medusa ? 'Echoing Gust Cast.ogg' : 'WHSH_Cloth_Whoosh_04.ogg';
+            const playedSounds = checkAudio ? await trackFateAbilitySounds(page, [movementCue, 'Lightning Bolt Cast A.ogg']) : undefined;
             await ability.click();
             const destination = page.getByTestId(`fate-domination-location-${target}`);
             await expect(destination).toBeVisible();
@@ -154,11 +159,13 @@ for (const { name, servant, cost, target, label, source, climax } of scenarios) 
                 if (target !== 'recon') await expect(page.getByTestId('fate-domination-location-recon')).toHaveCount(0);
             }
             expect((await actor()).locationId).toBe('miyama');
+            if (playedSounds) expect(await playedSounds()).toEqual([]);
             await screenshot('02-选择移动目标');
             const targetControl = target === 'recon' ? destination.getByText(label, { exact: true }) : destination;
             await targetControl.click({ timeout: 8000 });
 
             await expect.poll(async () => (await actor()).locationId).toBe(target);
+            if (playedSounds) await expect.poll(playedSounds).toEqual([movementCue]);
             await expect(destination).toHaveCount(0);
             await expect(startingPawn).toHaveCount(0);
             await expect(primary).toBeEnabled();
@@ -209,6 +216,7 @@ for (const { name, servant, cost, target, label, source, climax } of scenarios) 
                 occupants: core.battlefield[target].playerIds,
                 previousTerrain: fateDeploymentTerrain(starting),
                 terrain: ['0', '1', '2'].map(id => fateDeploymentTerrain(core.players[id])),
+                playedAbilitySounds: await playedSounds?.(),
             }, null, 2), 'utf8');
         } finally {
             await releaseSourceSession(context);

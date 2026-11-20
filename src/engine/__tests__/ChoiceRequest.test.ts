@@ -74,6 +74,8 @@ describe('ChoiceRequest', () => {
         expect(result.actions).toHaveLength(1);
         expect(result.actions[0].commands[0].payload).toEqual({ interactionId: 'gift-combinations', optionIds: ['a1', 'b2'] });
         expect(createSimpleChoiceFromChoiceRequest(request, { title: '选择' }).data.multi?.distinctValueKeys).toEqual(['card', 'target']);
+        const impossible = { ...request, candidates: request.candidates.slice(0, 2) };
+        expect(validateChoiceRequest(impossible)).toContainEqual(expect.objectContaining({ code: 'mandatory-choice-unsatisfied', severity: 'error' }));
     });
 
     it('从 Choice Request 生成 AI legalActions，并保留显式跳过动作', () => {

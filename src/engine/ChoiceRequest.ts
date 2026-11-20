@@ -449,7 +449,12 @@ export function validateChoiceRequest<TValue>(request: ChoiceRequest<TValue>): C
             message: 'Choice Request 声明可跳过/确认/取消，但缺少明确 recoveryAction 命令',
         });
     }
-    if (min > enabledCount && !canRecover) {
+    const distinctSelectionUnreachable = min > 0 && !!request.selection.distinctValueKeys?.length
+        && enumerateAiDecisionSelections(
+            request.candidates.map(toAiDecisionCandidate),
+            { ...normalizeSelection(request.selection), maxGeneratedSelections: 1 },
+        ).length === 0;
+    if ((min > enabledCount || distinctSelectionUnreachable) && !canRecover) {
         diagnostics.push({
             severity: 'error',
             code: 'mandatory-choice-unsatisfied',

@@ -247,6 +247,36 @@ describe('阿南西传说代表性玩法行为', () => {
         );
     });
 
+    it('交易故事可将不同手牌交给同一玩家，但不能将同一张牌交给两人', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0', { hand: [
+                    makeCard('gift-a', 'anansi_tales_pot_of_beans', 'action', '0'),
+                    makeCard('gift-b', 'anansi_tales_feather_gifts', 'action', '0'),
+                ], deck: [makeCard('draw-a', 'wizard_neophyte', 'minion', '0'), makeCard('draw-b', 'wizard_neophyte', 'minion', '0')] }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_trading_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'trading',
+            defId: 'anansi_tales_trading_stories', baseIndex: 0, random: FIXED_RANDOM, now: 25,
+        });
+        const promptState = result.matchState!;
+        const prompt = getSimpleChoicePrompt(promptState, 'anansi_tales_trading_stories');
+        const find = (cardUid: string, targetPlayerId: string) => prompt.options.find((option: any) => (
+            option.value?.cardUid === cardUid && option.value?.targetPlayerId === targetPlayerId
+        ))!;
+        const invalid = respondToPromptOptions(promptState, [find('gift-a', '1').id, find('gift-a', '2').id], '0', FIXED_RANDOM);
+        expect(invalid.success).toBe(false);
+        expect(invalid.finalState.sys.interaction.current?.id).toBe(promptState.sys.interaction.current?.id);
+        const valid = respondToPromptOptions(promptState, [find('gift-a', '1').id, find('gift-b', '1').id], '0', FIXED_RANDOM);
+        expect(valid.success, valid.error).toBe(true);
+        expect(valid.finalState.core.players['1'].hand.map(card => card.uid).sort()).toEqual(['gift-a', 'gift-b']);
+        expect(valid.finalState.core.players['0'].hand.map(card => card.uid).sort()).toEqual(['draw-a', 'draw-b']);
+    });
+
     it('玉米穗最多洗回三张弃牌堆行动、获得额外行动并把自己给出', () => {
         const core = makeState({
             players: {
