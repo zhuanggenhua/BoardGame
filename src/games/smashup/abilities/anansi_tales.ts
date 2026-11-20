@@ -1022,7 +1022,7 @@ const collectingStoriesFusionPromptProgram = createPromptProgram<CollectingStori
             ],
             selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
             resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
-        }, { title: '收集故事：选择融合牌的打出方式', titleKey: 'ui.anansi_collect_fusion_title', targetType: 'generic', autoResolveIfSingle: false, responseValidationMode: 'live' });
+        }, { title: '收集故事：选择融合牌的打出方式', titleKey: 'ui.anansi_collect_fusion_title', targetType: 'button', buttonIntent: 'mode', autoResolveIfSingle: false, responseValidationMode: 'live' });
     },
     onResolve: ({ context, state, value, random, timestamp }) => {
         const playAs = (value as { playAs?: 'minion' | 'action' } | undefined)?.playAs;
