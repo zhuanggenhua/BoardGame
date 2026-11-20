@@ -10,6 +10,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     expectBetrayalTransitionTargetsLocator,
     initBetrayalContext,
@@ -218,7 +219,7 @@ test.describe('山屋惊魂普通怪物路径预览真实入口', () => {
         await monsterMoveAction.click();
         await expect(monsterMoveAction).toContainText('取消移动');
         await expect(monsterToken).toHaveAttribute('data-direct-target', 'true');
-        await monsterToken.click();
+        await clickBetrayalSceneFigure(monsterToken);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.targetRoomId}`)).toBeVisible();
         const monsterMoveSourceToken = page.getByTestId(`betrayal-monster-board-token-${NORMAL_MONSTER_ID}`);
         await expect(monsterMoveSourceToken).toBeVisible();

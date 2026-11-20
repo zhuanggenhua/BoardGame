@@ -3,7 +3,7 @@ import path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
 import { createDevRuntimeEnv } from './dev-port-runtime.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
-import { isPortInUse } from './port-allocator.js';
+import { isPortInUse, waitForPortsFree } from './port-allocator.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import {
   registerExitGuard,
@@ -12,7 +12,7 @@ import {
   spawnTsLoaderEntry,
   spawnTsxEntry,
 } from './e2e-server-launcher.js';
-import { startRuntimeHeartbeat } from './e2e-runtime-registry.js';
+import { killPid, startRuntimeHeartbeat } from './e2e-runtime-registry.js';
 
 function resolvePort(value, fallback) {
   const port = Number.parseInt(String(value ?? '').trim(), 10);
@@ -139,8 +139,6 @@ export async function startSingleWorkerRuntime(options = {}) {
     useTsLoaderRuntime,
     useTsxRuntime,
   } = context;
-  const scopedBundleRoot = getScopedBundleRoot(runtimeScope);
-
   await assertChildProcessSupport('single worker E2E 启动', {
     probeEsbuild: !(usePrebuiltRuntime || useTsLoaderRuntime),
   });
@@ -181,6 +179,18 @@ export async function startSingleWorkerRuntime(options = {}) {
         '请先通过 dev-bundle-runner 生成，或切回 PW_SERVER_RUNTIME=tsx/ts-loader/bundle。',
       ].join('\n'),
     );
+  }
+
+  let scopedBundleRoot = getScopedBundleRoot(runtimeScope);
+  // 只有本次隔离运行自己生成的目录才随服务一起回收。共享和预构建产物有独立生命周期。
+  let ownedBundleRoot;
+  if (runtimeMode === 'isolated-single' && !(usePrebuiltRuntime || useTsxRuntime || useTsLoaderRuntime)) {
+    const parent = path.dirname(path.resolve(scopedBundleRoot));
+    fs.mkdirSync(parent, { recursive: true });
+    const expected = path.join(fs.realpathSync.native(process.cwd()), 'temp', 'dev-bundles', 'e2e-single');
+    if (fs.realpathSync.native(parent) !== expected) throw new Error('隔离 E2E 输出目录不能是链接。');
+    ownedBundleRoot = fs.mkdtempSync(path.join(expected, path.basename(scopedBundleRoot) + '-'));
+    scopedBundleRoot = ownedBundleRoot;
   }
 
   const runtimeEnv = createDevRuntimeEnv(ports, {
@@ -277,6 +287,10 @@ export async function startSingleWorkerRuntime(options = {}) {
   }
 
   let stopped = false;
+  let stopPromise;
+  const servicesClosed = Promise.all(managedServices.map(
+    ({ child }) => new Promise(resolve => child.once('close', resolve)),
+  ));
   let rejectFailure;
   const failurePromise = new Promise((_, reject) => {
     rejectFailure = reject;
@@ -303,7 +317,7 @@ export async function startSingleWorkerRuntime(options = {}) {
 
   const stop = (reason = '') => {
     if (stopped) {
-      return;
+      return stopPromise;
     }
     stopped = true;
     stopHeartbeat();
@@ -315,12 +329,28 @@ export async function startSingleWorkerRuntime(options = {}) {
     for (const service of managedServices) {
       runtimeLog.writeLine(`  - ${service.label} pid=${service.child.pid ?? 'unknown'}`);
       try {
-        service.child.kill();
+        if (ownedBundleRoot && service.child.pid && process.platform === 'win32') {
+          killPid(service.child.pid);
+        } else {
+          service.child.kill();
+        }
       } catch {
         // ignore
       }
     }
     runtimeLog.close();
+    stopPromise = servicesClosed.then(async () => {
+      if (!ownedBundleRoot) return;
+      try {
+        if (await waitForPortsFree(Object.values(ports), 2500) && fs.existsSync(ownedBundleRoot)
+          && fs.realpathSync.native(ownedBundleRoot) === ownedBundleRoot) {
+          await fs.promises.rm(ownedBundleRoot, { recursive: true, force: true, maxRetries: 3 });
+        }
+      } catch (error) {
+        logger.warn('未能回收隔离 E2E 产物 %s：%s', ownedBundleRoot, error.message);
+      }
+    });
+    return stopPromise;
   };
 
   for (const service of managedServices) {
@@ -345,6 +375,7 @@ export async function startSingleWorkerRuntime(options = {}) {
     runtimeMode,
     runtimeScope,
     logFile,
+    bundleRoot: scopedBundleRoot,
     managedServices,
     failurePromise,
     getServicePids() {

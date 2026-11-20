@@ -27,7 +27,9 @@ export function isQidahenTurnChoiceSelectionValid(core: QidahenCore, data: Qidah
     if (!choice || playerId !== core.factions[choice.factionId].playerId || ids.length < (choice.min ?? 1)
         || ids.length > Math.min(choice.max ?? 1, choice.candidates.length) || new Set(ids).size !== ids.length
         || ids.some(id => !choice.candidates.some(candidate => candidate.id === id && !candidate.disabled))) return false;
-    return data.step !== 'dispatch-troops' || getQidahenDispatchDraftTargets(core, data.factionId, data.sourceRegionId!, ids).length > 0;
+    if (data.step !== 'dispatch-troops') return true;
+    if (ids.includes('back')) return ids.length === 1;
+    return getQidahenDispatchDraftTargets(core, data.factionId, data.sourceRegionId!, ids).length > 0;
 }
 
 const LABELS = { reclaim: '开垦', 'military-farm': '军屯', diplomacy: '外交', hire: '雇佣', dispatch: '调度／进攻', 'play-character': '打出人物', 'recruit-train': '征兵／训练' };
@@ -89,8 +91,11 @@ export function buildQidahenTurnChoice(core: QidahenCore, data: QidahenTurnResol
         case 'dispatch-source': return regions('选择出兵来源', core.regions.filter(region => getQidahenDispatchSourceRegionIds(core, factionId).includes(region.id)), ids => ({ kind: 'select-dispatch-source', regionId: ids[0] }));
         case 'dispatch-troops': return {
             title: '选择出动部队', factionId, min: 1, max: getQidahenCharacterCommittedTroopLimit(core, factionId, 'wheel-dispatch') ?? 6,
-            candidates: getQidahenDispatchSourcePieces(core, factionId, data.sourceRegionId!).map(piece => ({ id: piece.id, label: `${piece.label} · 等级${piece.level}`, value: piece.id })),
-            resolve: ids => ({ kind: 'select-dispatch-troops', pieceIds: ids }),
+            candidates: [
+                ...getQidahenDispatchSourcePieces(core, factionId, data.sourceRegionId!).map(piece => ({ id: piece.id, label: `${piece.label} · 等级${piece.level}`, value: piece.id })),
+                option('back', '更换出兵地区', { kind: 'cancel-selection' }),
+            ],
+            resolve: ids => ids[0] === 'back' ? { kind: 'cancel-selection' } : { kind: 'select-dispatch-troops', pieceIds: ids },
         };
         case 'dispatch-target': {
             const targets = getQidahenDispatchDraftTargets(core, factionId, data.sourceRegionId!, data.selectedPieceIds!);

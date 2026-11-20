@@ -109,6 +109,79 @@ describe('迪士尼四派系代表性玩法行为', () => {
         }));
     });
 
+    it.each(['borrowed', 'own', 'skip'] as const)('圣诞节将属于我们：私下查看对手手牌后处理 %s', (choice) => {
+        const christmas = 'nightmare_before_christmas_christmas_will_be_ours';
+        const borrowed = makeCard('borrowed', 'wizard_mystic_studies', 'action', '1');
+        const own = makeCard('own', 'wizard_mystic_studies', 'action', '0');
+        const minion = makeCard('minion', 'wizard_neophyte', 'minion', '1');
+        const core = makeState({ players: {
+            '0': makePlayer('0', { hand: [makeCard('christmas', christmas, 'action', '0'), own] }),
+            '1': makePlayer('1', { hand: [borrowed, minion] }),
+        } });
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'christmas' }, timestamp: 1000,
+        }, FIXED_RANDOM);
+        expect(played.success, played.error).toBe(true);
+        expect(played.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.REVEAL_HAND,
+            payload: expect.objectContaining({ viewerPlayerId: '0', targetPlayerId: '1', cards: [
+                { uid: borrowed.uid, defId: borrowed.defId }, { uid: minion.uid, defId: minion.defId },
+            ] }),
+        }));
+        const prompt = getSimpleChoicePrompt(played.finalState, 'smashup_immediate_extra_action');
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid).filter(Boolean)).toEqual(['own', 'borrowed']);
+        const resolved = respondToPromptOption(played.finalState, option =>
+            choice === 'skip' ? option.value?.skip === true : option.value?.cardUid === choice,
+        '选择额外行动', '0', FIXED_RANDOM);
+        expect(resolved.success, resolved.error).toBe(true);
+        const after = resolved.finalState;
+        expect(after.core.players['0'].actionsPlayed).toBe(played.finalState.core.players['0'].actionsPlayed);
+        expect(after.core.players['0'].actionLimit).toBe(played.finalState.core.players['0'].actionLimit);
+        if (choice === 'borrowed') {
+            expect(after.core.players['1'].hand).toEqual([minion]);
+            expect(after.core.players['1'].discard).toContainEqual(borrowed);
+            expect(after.core.borrowedActions).toEqual([expect.objectContaining({ cardUid: borrowed.uid, ownerId: '1' })]);
+        } else {
+            expect(after.core.players['1'].hand).toEqual([borrowed, minion]);
+            expect(after.core.borrowedActions).toBeUndefined();
+        }
+        if (choice === 'own') expect(after.core.players['0'].discard).toContainEqual(own);
+        const ended = runCommand({ ...after, sys: { ...after.sys, phase: 'endTurn' } }, {
+            type: 'ADVANCE_PHASE' as never, playerId: '0', payload: undefined, timestamp: 1010,
+        }, FIXED_RANDOM);
+        expect(ended.success, ended.error).toBe(true);
+        expect(ended.finalState.core.players['1'].hand).toContainEqual(borrowed);
+        expect(ended.finalState.core.players['1'].discard).not.toContainEqual(borrowed);
+        expect(ended.finalState.core.borrowedActions ?? []).toHaveLength(0);
+    });
+
+    it.each(['deck', 'stored', 'box'] as const)('圣诞节将属于我们：回合末按借用牌的实际位置 %s 结算', (zone) => {
+        const card = makeCard('loan-in-zone', 'wizard_mystic_studies', 'action', '1');
+        const core = makeState({
+            turnNumber: 3,
+            players: {
+                '0': makePlayer('0', zone === 'stored' ? { storedCards: [{ ...card, storedByPlayerId: '0', reason: 'test' }] } : {}),
+                '1': makePlayer('1', zone === 'deck' ? { deck: [card] } : zone === 'box' ? { removedFromGame: [card] } : {}),
+            },
+            borrowedActions: [{ cardUid: card.uid, defId: card.defId, borrowerId: '0', ownerId: '1', turnNumber: 3, reason: 'christmas' }],
+        });
+        const state = makeMatchState(core);
+        const result = runCommand({ ...state, sys: { ...state.sys, phase: 'endTurn' } }, {
+            type: 'ADVANCE_PHASE' as never, playerId: '0', payload: undefined, timestamp: 2000,
+        }, FIXED_RANDOM);
+        expect(result.success, result.error).toBe(true);
+        const players = result.finalState.core.players;
+        if (zone === 'box') {
+            expect(players['1'].hand).not.toContainEqual(expect.objectContaining({ uid: card.uid }));
+            expect(players['1'].removedFromGame).toContainEqual(card);
+        } else {
+            expect(players['1'].hand).toContainEqual(expect.objectContaining(card));
+            expect(players['1'].deck).not.toContainEqual(card);
+            expect(players['0'].storedCards ?? []).toHaveLength(0);
+        }
+        expect(result.finalState.core.borrowedActions).toBeUndefined();
+    });
+
     it('从手牌弃牌会记录本回合弃牌次数，回合开始时清空', () => {
         const core = makeState({
             players: {

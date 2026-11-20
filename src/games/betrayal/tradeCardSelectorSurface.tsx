@@ -58,7 +58,11 @@ export function BetrayalTradeCardSelectorSurface({
     <div
       data-testid={testId}
       data-current-flow-choice={currentFlowChoice}
-      className="pointer-events-auto flex max-w-[620px] flex-wrap items-end justify-center gap-1.5 rounded-[8px] border border-[rgba(238,204,126,0.26)] bg-[rgba(12,13,10,0.58)] px-2 py-1.5 shadow-[0_10px_26px_rgba(0,0,0,0.24)] backdrop-blur-sm"
+      className={`pointer-events-auto flex max-w-[620px] flex-wrap items-end justify-center gap-1.5 rounded-[8px] border border-[rgba(238,204,126,0.26)] bg-[rgba(12,13,10,0.58)] px-2 py-1.5 shadow-[0_10px_26px_rgba(0,0,0,0.24)] backdrop-blur-sm${
+        currentFlowChoice === "trade-return"
+          ? " min-[1280px]:mr-[19%] min-[1280px]:max-h-[220px] min-[1280px]:max-w-[220px] min-[1280px]:self-end min-[1280px]:overflow-y-auto"
+          : ""
+      }`}
     >
       <span className="self-center px-1 text-[11px] font-semibold text-[#d9c68f]">
         {label}

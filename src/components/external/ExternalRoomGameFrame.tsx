@@ -10,9 +10,10 @@ interface RoomConnection {
 }
 
 function deliver(connection: RoomConnection, view: ExternalRoomView) {
-    const snapshot = JSON.stringify(view.room);
+    const room = { ...view.room, capacity: view.capacity };
+    const snapshot = JSON.stringify(room);
     if (connection.lastRoom !== snapshot) {
-        connection.port.postMessage({ type: 'room', room: view.room });
+        connection.port.postMessage({ type: 'room', room });
         connection.lastRoom = snapshot;
     }
     for (const signal of view.signals) {

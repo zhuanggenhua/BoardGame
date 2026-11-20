@@ -1,10 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import type { BetrayalCore } from "../../src/games/betrayal/game";
 import {
   assertNoFatalFrontendErrors,
   attachPageDiagnostics,
 } from "../helpers/common";
 import {
+  clickBetrayalSceneGirl,
   createFirstScenarioHauntRuntimeCore,
   initBetrayalContext,
   injectCore,
@@ -19,6 +20,19 @@ const PICKUP_ANIMATION_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-女孩单�
 const EXPLORER_STATE_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-女孩单位-探索者持有.jpg`;
 const GIVE_ANIMATION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-女孩单位-交出动画中.jpg`;
 const MUMMY_STATE_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-女孩单位-木乃伊持有.jpg`;
+
+async function expectNativeGirlTransfer(token: Locator, origin: string, picture: string) {
+  const page = token.page();
+  const id = (await token.getAttribute("data-testid"))!;
+  await page.waitForFunction(({ id, origin }) => {
+    const blocker = document.querySelector('[data-testid="betrayal-visual-transition-blocker"][data-transition-renderer="three"]');
+    const graphic = document.querySelector(`[data-testid="${id}"]`);
+    const bounds = graphic?.getAttribute("data-tutorial-screen-bounds");
+    return blocker && bounds && bounds !== origin &&
+      !blocker.querySelector('[data-testid^="betrayal-visual-transition-transition-"]');
+  }, { id, origin }, { timeout: 10000 });
+  await saveScreenshot(page, picture);
+}
 
 function createMummyGirlUnitReadyRuntimeCore(): {
   core: BetrayalCore;
@@ -91,36 +105,36 @@ function createMummyGirlUnitReadyRuntimeCore(): {
   return { core, roomId };
 }
 
+async function openMummyGirlFixture(page: Page, context: BrowserContext) {
+  await initBetrayalContext(context);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await warmBetrayalFrontend(context);
+  await page.goto("/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=2&seed=mummy-girl-unit", {
+    waitUntil: "domcontentloaded",
+  });
+  await waitForBetrayalPageReady(page);
+  const { core, roomId } = createMummyGirlUnitReadyRuntimeCore();
+  await injectCore(page, core);
+  await expect(page.getByTestId("betrayal-board")).toBeVisible({ timeout: 30000 });
+  return roomId;
+}
+
 test.describe("山屋惊魂女孩单位重构", () => {
   test("女孩作为单位显示，并在拾取后附着到探索者和木乃伊", async ({
     page,
     context,
   }) => {
     test.setTimeout(120000);
-    await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, "betrayal-mummy-girl-unit");
-
-    await page.setViewportSize({ width: 1600, height: 900 });
-    await warmBetrayalFrontend(context);
-    await page.goto(
-      "/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=2&seed=mummy-girl-unit",
-      { waitUntil: "domcontentloaded" },
-    );
-    await waitForBetrayalPageReady(page);
-
-    const { core, roomId } = createMummyGirlUnitReadyRuntimeCore();
-    await injectCore(page, core);
-    await expect(page.getByTestId("betrayal-board")).toBeVisible({
-      timeout: 30000,
-    });
+    const roomId = await openMummyGirlFixture(page, context);
     const observedExplorerPanel = page.getByTestId(
       "betrayal-observed-explorer-panel",
     );
     await expect(observedExplorerPanel).toBeVisible();
     await expect(observedExplorerPanel).toHaveAttribute("data-player-id", "2");
-    await expect(observedExplorerPanel).not.toHaveAttribute(
+    await expect(observedExplorerPanel).toHaveAttribute(
       "data-token-asset",
-      /.*/,
+      "betrayal/tokens/explorers/father-warren-leung",
     );
     await expect(page.getByTestId("betrayal-room-floor-down")).toBeEnabled();
     await page.getByTestId("betrayal-room-floor-down").click();
@@ -149,7 +163,7 @@ test.describe("山屋惊魂女孩单位重构", () => {
     await expect(girlToken).toHaveAttribute("data-token-status", "placed");
     await expect(girlToken).toHaveAttribute("data-token-placement", "room");
     await expect(girlToken).toHaveAttribute("data-direct-target", "true");
-    await expect(girlToken).toHaveAccessibleName("女孩，可拾取");
+    await expect(girlToken).toHaveAccessibleName("女孩预兆标记，可拾取");
     await expect(girlSvg).toHaveAttribute("data-token-attachment", "room");
     await expect(
       roomMarkerLayer.getByTestId(
@@ -162,18 +176,11 @@ test.describe("山屋惊魂女孩单位重构", () => {
     await expect(page.getByTestId("betrayal-room-focus-target")).toHaveCount(0);
     await saveScreenshot(page, ROOM_STATE_SCREENSHOT);
 
-    await girlToken.click();
+    await expect(girlSvg).toHaveAttribute("data-three-marker-ready", "");
+    const groundBounds = (await girlSvg.getAttribute("data-tutorial-screen-bounds"))!;
+    await clickBetrayalSceneGirl(girlToken);
     const pickupTransitionBlocker = page.getByTestId("betrayal-visual-transition-blocker");
-    await expect(pickupTransitionBlocker).toBeVisible();
-    await expect(page.getByTestId("betrayal-board")).toHaveAttribute(
-      "data-betrayal-visual-busy",
-      "true",
-    );
-    await expect(girlToken).toHaveAttribute(
-      "data-token-status",
-      /placed|held-by-player/,
-    );
-    await saveScreenshot(page, PICKUP_ANIMATION_SCREENSHOT);
+    await expectNativeGirlTransfer(girlSvg, groundBounds, PICKUP_ANIMATION_SCREENSHOT);
     await expect(pickupTransitionBlocker).toHaveCount(0);
     await expect(girlToken).toHaveAttribute("data-token-status", "held-by-player");
     await expect(girlToken).toHaveAttribute("data-token-placement", "explorer");
@@ -185,27 +192,55 @@ test.describe("山屋惊魂女孩单位重构", () => {
     await expect(page.getByTestId("betrayal-room-focus-target")).toHaveCount(0);
     await saveScreenshot(page, EXPLORER_STATE_SCREENSHOT);
 
+    await expect(girlSvg).toHaveAttribute("data-three-marker-ready", "");
+    const explorerBounds = (await girlSvg.getAttribute("data-tutorial-screen-bounds"))!;
     await page.getByTestId("betrayal-action-use").click();
     const giveTransitionBlocker = page.getByTestId("betrayal-visual-transition-blocker");
-    await expect(giveTransitionBlocker).toBeVisible();
-    await expect(page.getByTestId("betrayal-board")).toHaveAttribute(
-      "data-betrayal-visual-busy",
-      "true",
-    );
-    await expect(girlToken).toHaveAttribute(
-      "data-token-status",
-      /held-by-player|held-by-mummy/,
-    );
-    await saveScreenshot(page, GIVE_ANIMATION_SCREENSHOT);
+    await expectNativeGirlTransfer(girlSvg, explorerBounds, GIVE_ANIMATION_SCREENSHOT);
     await expect(giveTransitionBlocker).toHaveCount(0);
     await expect(girlToken).toHaveAttribute("data-token-status", "held-by-mummy");
     await expect(girlToken).toHaveAttribute("data-token-placement", "mummy");
     await expect(girlToken).toHaveAttribute("data-token-owner-monster-id", "mummy");
     await expect(girlSvg).toHaveAttribute("data-token-attachment", "mummy");
-    await expect(page.getByTestId("betrayal-action-use")).toHaveText("使用");
-    await expect(page.getByTestId("betrayal-action-use")).toBeDisabled();
+    await expect(page.getByTestId("betrayal-action-use")).toHaveCount(0);
     await saveScreenshot(page, MUMMY_STATE_SCREENSHOT);
 
     assertNoFatalFrontendErrors([{ label: "betrayal-mummy-girl-unit", diagnostics }]);
+  });
+
+  test("三维筹码交接途中失去画布时，棋桌降级并完成原动作", async ({ page, context }) => {
+    test.setTimeout(120000);
+    const roomId = await openMummyGirlFixture(page, context);
+    await page.getByTestId("betrayal-room-floor-down").click();
+    await expect(page.getByTestId("betrayal-room-floor-basement")).toBeVisible();
+    const grid = page.getByTestId("betrayal-room-grid");
+    const canvas = page.getByTestId("betrayal-three-map-canvas");
+    const blocker = page.getByTestId("betrayal-visual-transition-blocker");
+    const girl = page.getByTestId(`betrayal-room-haunt-token-${roomId}-mummy-girl-token`);
+    const graphic = girl.locator("[data-scene-marker-visual]");
+    await expect(grid).toHaveAttribute("data-map-renderer", "three");
+    await expect(graphic).toHaveAttribute("data-tutorial-screen-bounds", /\S/);
+    const [left, top, right, bottom] = (await graphic.getAttribute("data-tutorial-screen-bounds"))!.split(",").map(Number);
+    await canvas.evaluate((element: HTMLCanvasElement) => {
+      const extension = element.getContext("webgl2")?.getExtension("WEBGL_lose_context");
+      if (!extension) throw new Error("浏览器没有提供 WEBGL_lose_context");
+      const host = element.closest<HTMLElement>('[data-testid="betrayal-room-grid"]');
+      if (!host) throw new Error("缺少棋桌的场景命中记录");
+      const observer = new MutationObserver(() => {
+        const transfer = document.querySelector('[data-transition-kind="girl-transfer"][data-transition-renderer="three"]');
+        if (!transfer) return;
+        observer.disconnect();
+        document.documentElement.dataset.betrayalTestContextLoss = host.dataset.lastScenePick;
+        extension.loseContext();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    await page.mouse.click((left + right) / 2, (top + bottom) / 2);
+    await expect(page.locator("html")).toHaveAttribute("data-betrayal-test-context-loss", "marker:mummy-girl");
+    await expect(grid.getByTestId("betrayal-pixi-map-canvas")).toBeVisible();
+    await expect(canvas).toHaveCount(0);
+    await expect(blocker).toHaveCount(0);
+    await expect(girl).toHaveAttribute("data-token-status", "held-by-player");
+    await expect(page.getByTestId("betrayal-action-use")).toHaveText("交出女孩");
   });
 });

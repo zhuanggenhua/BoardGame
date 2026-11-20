@@ -402,6 +402,16 @@ function checkE2eStructure(file, existedAtBase) {
     return;
   }
 
+  // 校验 .spec/knowledge/standards/e2e-verification.md 规定的正式对局入口。
+  const localPlayRoute = /\/play\/([a-z0-9-]+|\$\{[^}\r\n]+\})(?:\/local)?\/?(?=[?#'"\x60])/g;
+  for (const [index, line] of addedLinesSinceBase(file, existedAtBase).entries()) {
+    if (/^\s*(?:\/\/|\*)/.test(line)) continue;
+    for (const match of line.matchAll(localPlayRoute)) {
+      if (match[1] === 'tictactoe') continue;
+      violations.push(`${file}: 新增 E2E 行使用已退役的同屏对局入口 ${match[0]}（added line ${index + 1}）。请使用正式在线房间 /play/<gameId>/match/<matchId>。`);
+    }
+  }
+
   const legacyRootGameId = getLegacyRootE2eGameId(file);
   if (legacyRootGameId) {
     const legacySourcePath = getLegacyRootSourcePath(file);

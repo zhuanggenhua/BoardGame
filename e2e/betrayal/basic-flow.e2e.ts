@@ -4,6 +4,7 @@ import {
   attachPageDiagnostics,
 } from "../helpers/common";
 import {
+  clickBetrayalSceneFigure,
   initBetrayalContext,
   injectCore,
   saveScreenshot,
@@ -1086,7 +1087,7 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-room-floor-basement"),
     ).toHaveAttribute("aria-pressed", "true");
-    await mapTeammateToken.click();
+    await clickBetrayalSceneFigure(mapTeammateToken);
     const panelDetail = page.getByTestId("betrayal-explorer-detail-dialog-1");
     await expect(panelDetail).toBeVisible();
     await expect(panelDetail).toHaveAttribute(
@@ -1115,7 +1116,7 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(mapToken).toBeVisible();
     await expect(mapFigureToken).toBeVisible();
     const mapAsset = await mapFigureToken.getAttribute("data-token-asset");
-    await mapToken.click();
+    await clickBetrayalSceneFigure(mapToken);
     const mapDetail = page.getByTestId("betrayal-explorer-detail-dialog-2");
     await expect(mapDetail).toBeVisible();
     await expect(mapDetail).toHaveAttribute("data-token-asset", mapAsset ?? "");

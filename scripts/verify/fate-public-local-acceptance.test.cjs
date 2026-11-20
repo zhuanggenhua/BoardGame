@@ -1,9 +1,11 @@
 // Pure collector contract checks; this file does not launch a browser or produce E2E evidence.
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
-process.env.FATE_ENTRY = '/assets/test-only.js';
-process.env.FATE_ENTRY_SHA256 = '0'.repeat(64);
-process.env.FATE_SOURCE_REVISION = 'contract-test-only';
+const { spawnSync } = require('node:child_process');
+const { randomUUID } = require('node:crypto');
+const { existsSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const { join } = require('node:path');
 process.env.FATE_EXPECTED_PLAYERS = '3';
 const { readPersistedSnapshot, validateSample, compactState, pendingInputChecks, nextPrimaryExpectation } = require('./fate-public-local-acceptance.cjs');
 
@@ -22,6 +24,19 @@ beforeEach(() => {
         setItem: () => { throw new Error('Collector must never mutate storage'); },
     };
     global.document = { body: { innerText: '准备' }, querySelector: () => null, querySelectorAll: () => [] };
+});
+
+test('旧同屏采集 CLI 在创建证据或启动浏览器前退出', () => {
+    const output = join(tmpdir(), `retired-fate-capture-${randomUUID()}`);
+    const result = spawnSync(process.execPath, [require.resolve('./fate-public-local-acceptance.cjs')], {
+        env: { ...process.env, FATE_TARGET: target, FATE_OUT: output },
+        encoding: 'utf8',
+        timeout: 5000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Fate 同屏取证入口已退役/);
+    assert.equal(existsSync(output), false);
 });
 
 test('reads only the precise original match and returns the persisted authority, without writes', () => {

@@ -2590,7 +2590,7 @@
       "submissionType": "投稿类型",
       "webZip": "网页 ZIP",
       "zipHint": "上传含网页入口文件的游戏压缩包，最大 32 MB。",
-      "roomSdkGuide": "下载房间 SDK 接入指南",
+      "roomSdkGuide": "SDK 接入文档",
       "zipRequired": "请选择网页 ZIP 压缩包",
       "zipTooLarge": "网页 ZIP 不能超过 32 MB",
       "zipUpdateHint": "如需更新游戏文件，请在「我的投稿」上传新版 ZIP 并提交审核。",

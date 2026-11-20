@@ -12,10 +12,13 @@ const FRAMES: Record<string,number> = {
  'fate-domination/cards/attack-magic-mid':5,
  'fate-domination/cards/attack-magic-high':6,
  'fate-domination/cards/attack-magic-super':7,
+ 'fate-domination/cards/attack-strength-low':8,
+ 'fate-domination/cards/attack-strength-mid':9,
+ 'fate-domination/cards/attack-strength-high':10,
+ 'fate-domination/cards/attack-strength-super':11,
  'fate-domination/cards/remote-control':12,
  'fate-domination/cards/rush':13,
  'fate-domination/cards/luck':14,
- 'fate-domination/cards/attack-strength-super':11,
 };
 export function fateCardPreview(assetPath:string):CardPreviewRef {
  const index=FRAMES[assetPath];

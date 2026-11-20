@@ -159,6 +159,38 @@ describe('clientAutoReport', () => {
         });
     });
 
+    it('同一 React 包装错误按游戏和原始构建位置独立上报', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        const payload = {
+            content: '[auto][window.error] Minified React error #520',
+            autoReportKind: 'window-error',
+            source: 'client-window-error' as const,
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Minified React error #520',
+            errorSource: 'https://easyboardgame.top/assets/vendor-AbCd1234.js:10:22',
+            causeName: 'TypeError',
+            causeSource: 'https://easyboardgame.top/assets/Board-AbCd1234.js:12:5',
+        };
+        window.history.replaceState({}, '', '/play/summonerwars/local');
+        await reportClientAutoFeedbackOnce('shared-react-520', payload);
+        await reportClientAutoFeedbackOnce('shared-react-520', payload);
+        await reportClientAutoFeedbackOnce('shared-react-520', {
+            ...payload, causeSource: 'https://easyboardgame.top/assets/Board-AbCd1234.js:42:6',
+        });
+        window.history.replaceState({}, '', '/play/dicethrone/tutorial/dicethrone-basic');
+        await reportClientAutoFeedbackOnce('shared-react-520', payload);
+
+        const reports = getFeedbackFetchCalls().map(([, init]) => JSON.parse(String(init?.body)));
+        expect(reports).toHaveLength(3);
+        expect(reports[0]).toMatchObject({ gameName: 'summonerwars', clientContext: { gameId: 'summonerwars', mode: 'local' } });
+        expect(reports[1].errorContext.causeSource).toContain(':42:6');
+        expect(reports[2]).toMatchObject({ gameName: 'dicethrone', clientContext: { gameId: 'dicethrone', mode: 'tutorial' } });
+        expect(reports.every(report => report.clientContext.matchId === undefined)).toBe(true);
+    });
+
     it('通用来源会透传到自动反馈请求里', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

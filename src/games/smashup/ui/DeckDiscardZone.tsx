@@ -55,6 +55,8 @@ type Props = {
     hasPlayableFromDiscard?: boolean;
     /** 是否为 interaction 驱动的弃牌堆选择（僵尸领主等），自动打开面板 */
     autoOpenPanel?: boolean;
+    /** 当前弃牌堆交互的选择说明 */
+    selectionTitle?: string;
     /** 可从弃牌堆打出的卡牌列表；uid 是选择态唯一真相源。 */
     playableCards?: { uid: string; defId: string; label: string }[];
     /** 当前选中的卡牌 uid */
@@ -103,6 +105,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     deckSelectHint,
     hasPlayableFromDiscard,
     autoOpenPanel,
+    selectionTitle,
     playableCards,
     selectedUid,
     selectedUids,
@@ -261,7 +264,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
         if (!showDiscard || discard.length === 0) return undefined;
 
         const displayData = {
-            title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
+            title: selectionTitle || `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
             panelKind: 'discard' as const,
             // 反转顺序：最新弃掉的卡在左边
             cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
@@ -280,7 +283,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
             minSelections,
             maxSelections,
         };
-    }, [showDiscard, discard, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
+    }, [showDiscard, discard, selectionTitle, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
 
     const deckDisplayCardsData = useMemo(() => {
         if (!showDeck) return undefined;

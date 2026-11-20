@@ -650,6 +650,7 @@ export interface BetrayalActivityEntry {
     id: string;
     text: string;
     tone: BetrayalDiscoverySummary['tone'];
+    kind?: 'mummy-steal';
 }
 
 interface BetrayalRolledDamageResult {
@@ -720,6 +721,7 @@ export interface BetrayalRecentRollState {
     };
     attack?: {
         target: BetrayalHauntAttackTarget;
+        attackerMonsterId?: string;
         defenderPlayerId?: string;
         damageKind: 'physical' | 'mental';
         previousDamageToAttacker: number;
@@ -1132,6 +1134,7 @@ export interface BetrayalCore {
     buriedRoomTiles: BetrayalBuriedRoomTileSummary[];
     possessionOrderByKind: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]>;
     eventOrder: EventTemplate[];
+    eventCardsDrawn?: number;
     deckCounts: Record<BetrayalDeckKind, number>;
     discardCounts: Record<BetrayalDeckKind, number>;
     rooms: BetrayalRoomNode[];
@@ -1537,6 +1540,7 @@ function makeBaseCore(
         buriedRoomTiles: [],
         possessionOrderByKind: discoveryState.possessionOrderByKind,
         eventOrder: discoveryState.eventOrder,
+        eventCardsDrawn: 0,
         deckCounts: { ...BETRAYAL_INITIAL_DECK_COUNTS },
         discardCounts: { omen: 0, item: 0, event: 0 },
         rooms,

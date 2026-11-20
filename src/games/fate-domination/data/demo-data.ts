@@ -2,7 +2,7 @@
 export const DEMO_CARDS = [
   {
     "id": "cardA1",
-    "name": "低位魔法",
+    "name": "低位魔术",
     "kind": "attack",
     "type": "魔法",
     "cost": 0,
@@ -11,7 +11,7 @@ export const DEMO_CARDS = [
   },
   {
     "id": "cardA2",
-    "name": "中位魔法",
+    "name": "中位魔术",
     "kind": "attack",
     "type": "魔法",
     "cost": 0,
@@ -20,7 +20,7 @@ export const DEMO_CARDS = [
   },
   {
     "id": "cardA3",
-    "name": "高位魔法",
+    "name": "高位魔术",
     "kind": "attack",
     "type": "魔法",
     "cost": 0,
@@ -29,7 +29,7 @@ export const DEMO_CARDS = [
   },
   {
     "id": "cardA4",
-    "name": "高位魔法",
+    "name": "超高位魔术",
     "kind": "attack",
     "type": "魔法",
     "cost": 1,
@@ -56,7 +56,7 @@ export const DEMO_CARDS = [
   },
   {
     "id": "cardB1",
-    "name": "迫击",
+    "name": "追击",
     "kind": "attack",
     "type": "力量",
     "cost": 0,
@@ -169,7 +169,7 @@ export const DEMO_CARDS = [
     "type": "特殊",
     "cost": 0,
     "power": 4,
-    "desc": "战斗阶段：你本回合无视直接败北效果。"
+    "desc": "战斗阶段：你本回合无视【直接败北】效果（如果在行动阶段就受到【直接败北】效果，则不能打出此卡。）"
   },
   {
     "id": "cardPreparation",
@@ -178,7 +178,7 @@ export const DEMO_CARDS = [
     "type": "特殊",
     "cost": 1,
     "power": 2,
-    "desc": "行动：地利翻倍。战斗：若赢，获2战果。"
+    "desc": "行动阶段：地利效果翻倍。\n战斗阶段：若你赢得战斗，获得2点战果。"
   },
   {
     "id": "cardSurveil",
@@ -3103,7 +3103,7 @@ export const DEMO_SERVANTS = [
         "req": 3,
         "power": 3,
         "type": "特殊",
-        "desc": "【宝具绽放】被动/战斗阶段：若你于本回合打出了魔耗最高的宝具攻击，获1战果。若其消耗≥4，额外获1战果。\n【魔术抗性】战斗阶段：将与你位于同战场的交战对手控制的魔法/魔术属性攻击威力设置为0。"
+        "desc": "战斗阶段：将同一战场所有对手的魔术属性威力变为0。"
       },
       {
         "id": "sc_saber_2",
@@ -3300,7 +3300,7 @@ export const DEMO_SERVANTS = [
         "req": 4,
         "power": 1,
         "type": "魔术",
-        "desc": "【真名解放】\n行动阶段：在战斗阶段开始前，若与你进行战斗的对手本回合没有打出/加入迅捷属性攻击，则其【败北】。"
+        "desc": "【真名解放】\n行动阶段：在战斗阶段开始前，若与你进行战斗的对手本回合没有打出/加入特殊属性攻击，则其【败北】。"
       },
       {
         "id": "sc_medusa_np",

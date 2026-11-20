@@ -9,6 +9,7 @@ import type {
     DuelOutcomeKind,
     SmashUpCore,
     SmashUpEvent,
+    MinionDestroyedEvent,
     MinionOnBase,
     SmashUpReactionResourceFootprint,
     TriggerInstance,
@@ -115,7 +116,7 @@ export type TriggerTiming =
     | 'beforeScoring'
     | 'afterScoring';
 
-export type TitanAwareTriggerTiming = TriggerTiming | 'whenScoring' | 'onTitanMoved' | 'onTitanRemovedFromPlay';
+export type TitanAwareTriggerTiming = TriggerTiming | 'whenScoring' | 'onTitanPlayed' | 'onTitanMoved' | 'onTitanRemovedFromPlay';
 
 export type AffectType =
     | 'destroy'
@@ -201,6 +202,8 @@ export interface TriggerContext {
     suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
     destroyerId?: PlayerId;
+    /** 防止 / 替代选择恢复原摧毁时使用的来源，与见证者 sourceCardUid 区分。 */
+    destroySource?: Pick<MinionDestroyedEvent['payload'], 'sourcePlayerId' | 'sourceCardUid' | 'sourceDefId' | 'sourceControllerId' | 'sourceBaseIndex' | 'sourceKind'>;
     /** 事件里相关随从/对象的控制者 */
     controllerId?: PlayerId;
     /** 事件原因 */
@@ -349,6 +352,8 @@ interface TriggerEntry {
     global?: boolean;
 
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
+    /** 延迟效果由场上事实承载时，触发条件不依赖原牌仍在指定牌区。 */
+    sourceIndependent?: boolean;
     fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
     generatedPodAlias?: boolean;
 }
@@ -482,6 +487,7 @@ export function registerTrigger(
         phase?: 'replacement' | 'reaction';
         global?: boolean;
         globalZones?: Array<'hand' | 'discard' | 'deck'>;
+        sourceIndependent?: boolean;
         playerContext?: 'eventPlayer' | 'sourceController' | 'sourceHostController';
         baseScoped?: boolean;
         perInstance?: boolean;
@@ -507,6 +513,7 @@ export function registerTrigger(
         effectContract: options?.effectContract,
         global: options?.global,
         globalZones: options?.globalZones,
+        sourceIndependent: options?.sourceIndependent,
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
         fallbackFootprint: options?.fallbackFootprint,
@@ -1174,11 +1181,14 @@ export function registerPodOngoingAliases(): void {
             effectContract,
             global,
             globalZones,
+            sourceIndependent,
             fallbackFootprint,
         } = entry;
 
 
         if (sourceDefId.endsWith('_pod')) continue;
+        // 无牌区来源的延迟事实不能自动复制，否则同一事实会被两个别名重复触发。
+        if (sourceIndependent) continue;
         if (getTitanDef(sourceDefId)) continue;
         if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
@@ -1207,6 +1217,7 @@ export function registerPodOngoingAliases(): void {
             effectContract,
             global,
             globalZones,
+            sourceIndependent,
             fallbackFootprint,
         });
         _mappedCount++;
@@ -1226,6 +1237,7 @@ export function registerPodOngoingAliases(): void {
             effectContract: entry.effectContract,
             global: entry.global,
             globalZones: entry.globalZones,
+            sourceIndependent: entry.sourceIndependent,
             fallbackFootprint: entry.fallbackFootprint,
             generatedPodAlias: true,
         });
@@ -2352,6 +2364,10 @@ function selectGlobalTriggerSourceLocation(
     ctx?: Omit<TriggerContext, 'timing'>,
     isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
+    if (entry.sourceIndependent) {
+        const located = {};
+        return !isEligible || isEligible(located) ? located : undefined;
+    }
     const titanSources = (state.titans ?? [])
         .filter(titan => titan.defId === entry.sourceDefId)
         .map(titan => ({

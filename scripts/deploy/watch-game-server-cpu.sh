@@ -67,6 +67,8 @@ last_reason="unknown"
 last_restarted="no"
 cpu_profile_status="not_attempted"
 cpu_profile_file=""
+profile_started_at=""
+profile_finished_at=""
 
 json_escape() {
   local value="${1:-}"
@@ -99,25 +101,42 @@ record_decision() {
   } >>"$evidence_file"
 }
 
+capture_slow_ai_window() {
+  local label="$1" since="$2" until="$3"
+  local -a pipeline_status=(0 0 0)
+  {
+    echo "## slow AI decisions and recoveries: $label"
+    echo "logsSince=$since logsUntil=$until"
+    if command -v timeout >/dev/null 2>&1; then
+      # Docker adds UTC timestamps even when the application logger uses local time.
+      timeout 5 docker logs --timestamps --since "$since" --until "$until" "$CONTAINER_NAME" 2>&1 \
+        | grep -F -e 'online-ai-slow-decision' -e 'online-ai-slow-recovery' | tail -n 50 \
+        || pipeline_status=("${PIPESTATUS[@]}")
+      if (( pipeline_status[0] != 0 || pipeline_status[1] > 1 || pipeline_status[2] != 0 )); then
+        echo "logWindowStatus=read_failed status=${pipeline_status[*]}"
+      elif (( pipeline_status[1] == 1 )); then
+        echo 'logWindowStatus=no_slow_ai_records'
+      else
+        echo 'logWindowStatus=captured'
+      fi
+    else
+      echo 'logWindowStatus=timeout_command_missing'
+    fi
+    echo
+  } >>"$evidence_file"
+}
+
 capture_high_cpu_root_cause_evidence() {
   {
     echo
     echo "# high CPU root-cause evidence"
+    echo "captureId=$capture_id"
     echo "diagnosticContract=trigger-condition-and-process-snapshot-only"
     echo "note=This section is not a root cause by itself. It preserves process/thread/container evidence so the next incident can be diagnosed instead of only restarted."
     echo
   } >>"$evidence_file"
 
-  {
-    echo "## recent slow AI decisions and recoveries from application logs"
-    # 保留慢决策和慢恢复摘要，也兼容历史日志。
-    docker exec "$CONTAINER_NAME" sh -c '
-      for file in /app/logs/app-*.log; do
-        [ -f "$file" ] && tail -n 5000 "$file"
-      done | grep -F -e "online-ai-slow-decision" -e "online-ai-slow-recovery" | tail -n 50
-    ' 2>&1 || true
-    echo
-  } >>"$evidence_file"
+  capture_slow_ai_window 'sustained CPU samples' "$sampling_started_at" "$sampling_finished_at"
 
   local host_pid
   echo "## host process identity" >>"$evidence_file"
@@ -240,7 +259,8 @@ process._debugProcess(pid);
     return 0
   fi
 
-  echo "profileCaptureStartedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$evidence_file"
+  profile_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+  echo "profileCaptureStartedAt=$profile_started_at" >>"$evidence_file"
   if ! timeout "$CPU_PROFILE_TIMEOUT_SECONDS" docker exec "$CONTAINER_NAME" node "$remote_helper" \
     --duration-ms "$duration_ms" \
     --inspector-port "$CPU_PROFILE_INSPECTOR_PORT" \
@@ -250,7 +270,8 @@ process._debugProcess(pid);
     docker exec "$CONTAINER_NAME" rm -f "$remote_helper" "$remote_profile" >>"$evidence_file" 2>&1 || true
     return 0
   fi
-  echo "profileCaptureFinishedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$evidence_file"
+  profile_finished_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+  echo "profileCaptureFinishedAt=$profile_finished_at" >>"$evidence_file"
   if ! docker cp "$CONTAINER_NAME:$remote_profile" "$local_profile" >>"$evidence_file" 2>&1; then
     cpu_profile_status="profile_copy_failed"
     echo "cpuProfileStatus=$cpu_profile_status" >>"$evidence_file"
@@ -306,8 +327,6 @@ report_high_cpu_feedback() {
   host_name="$(hostname 2>/dev/null || echo unknown-host)"
   local content="[system][infra-cpu-watch] environment=${ENVIRONMENT} host=${HOST_ID} game-server CPU sustained high: average=${average_cpu}% highSamples=${high_samples}/${SAMPLE_COUNT} threshold=${THRESHOLD_PERCENT}% decision=${decision} restarted=${restarted}"
   local incident_key="infra-cpu-watch:${ENVIRONMENT}:${HOST_ID}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}"
-  local capture_id
-  capture_id="cpu-$(printf '%s' "${incident_key}:${timestamp}:$$" | sha256sum | awk '{print $1}')"
   local profile_evidence="process_thread_snapshot_in_evidence_file"
   if [[ "$cpu_profile_status" == "captured" ]]; then
     profile_evidence="process_thread_snapshot_and_v8_cpu_profile"
@@ -402,6 +421,7 @@ high_samples=0
   echo
 } >>"$evidence_file"
 
+sampling_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 for ((i = 1; i <= SAMPLE_COUNT; i += 1)); do
   raw_stats="$(docker stats --no-stream --format '{{.CPUPerc}} {{.MemUsage}} {{.PIDs}}' "$CONTAINER_NAME")"
   cpu_percent="$(printf '%s\n' "$raw_stats" | awk '{ gsub(/%/, "", $1); print $1 }')"
@@ -412,6 +432,7 @@ for ((i = 1; i <= SAMPLE_COUNT; i += 1)); do
     sleep "$SAMPLE_INTERVAL_SECONDS"
   fi
 done
+sampling_finished_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 
 average_cpu="$(printf '%s\n' "${cpu_samples[@]}" | awk '{ sum += $1; count += 1 } END { if (count == 0) print "0"; else printf "%.2f", sum / count }')"
 
@@ -444,6 +465,7 @@ if [[ "$high_samples" -lt "$SAMPLE_COUNT" ]]; then
   exit 0
 fi
 
+capture_id="cpu-$(printf '%s' "${ENVIRONMENT}:${HOST_ID}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}:${timestamp}:$$" | sha256sum | awk '{print $1}')"
 capture_high_cpu_root_cause_evidence
 
 now_epoch="$(date +%s)"
@@ -468,6 +490,9 @@ if [[ "$ENABLE_RESTART" != "1" ]]; then
 fi
 
 capture_v8_cpu_profile
+if [[ "$cpu_profile_status" == "captured" ]]; then
+  capture_slow_ai_window 'V8 profile' "$profile_started_at" "$profile_finished_at"
+fi
 
 echo "[watch-game-server-cpu] HIGH: restarting $CONTAINER_NAME; averageCpu=$average_cpu% evidence=$evidence_file"
 if ! docker restart "$CONTAINER_NAME" >>"$evidence_file" 2>&1; then

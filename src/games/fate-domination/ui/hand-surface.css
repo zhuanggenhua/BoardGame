@@ -77,10 +77,10 @@
 }
 .fd-skill-cards { justify-content: flex-start; }
 .fd-skill-slot > .fd-runtime-card-shell { width: 100%; }
-.fd-runtime-card-shell:has(:focus-visible) { z-index: 30; }
+.fd-skill-slot > .fd-runtime-card-shell:has(:focus-visible) { z-index: 30; }
 @media (hover: hover) and (pointer: fine) {
-    .fd-hand-parallel > .fd-runtime-card-shell:hover,
     .fd-skill-slot:has(> .fd-runtime-card-shell:is(:hover, :focus-within)) { z-index: 31; }
+    .fd-attack-cards .fd-runtime-card:hover:not(.is-riding-selected) { outline: 1px solid #dcc68c; outline-offset: -1px; }
 }
 .fd-card-inspect { pointer-events: none; }
 @media (hover: hover) and (pointer: fine) {
@@ -147,15 +147,23 @@
     line-height: 1.35;
     white-space: nowrap;
 }
+.fd-play-summary:empty { visibility: hidden; }
 
 .fd-play-power { color: #f5dc91; font-size: 18px; font-weight: 800; line-height: 1.35; }
 /* 用户要求放大可选手牌与技能，不改变上方已出/暂存排的原有尺寸。 */
 .fd-played-cards { --fd-hand-card-width: 120px; max-width: calc(var(--fd-hand-card-width) * 3); }
 .fd-played-cards.fd-hand-parallel { justify-content: flex-start; }
-.fd-hand-parallel { justify-content: center; overflow: visible; }
+.fd-hand-parallel {
+    --fd-card-gap: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1)));
+    justify-content: center;
+    overflow: visible;
+}
 .fd-attack-cards, .fd-skill-cards { justify-content: flex-start; }
 .fd-hand-parallel > .fd-runtime-card-shell + .fd-runtime-card-shell,
-.fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1))); }
+.fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: var(--fd-card-gap); }
+/* 悬浮不改牌的叠放顺序，放大镜仍留在可见牌面内。 */
+:is(.fd-attack-cards, .fd-played-cards) > .fd-runtime-card-shell:not(:last-child) { --fd-card-overlap: max(0px, calc(-1 * var(--fd-card-gap))); }
+:is(.fd-attack-cards, .fd-played-cards) .fd-card-inspect { right: calc(.25rem + var(--fd-card-overlap, 0px)); }
 .fd-hand-parallel > .fd-runtime-card-shell,
 .fd-skill-slot > .fd-runtime-card-shell { transition: translate .18s ease, filter .18s ease; }
 /* 教程点名的出牌须露出完整牌面和点击区，同时保持原来位置。 */
@@ -208,7 +216,7 @@
 }
 .fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
-.fd-runtime-card.is-riding-selected { outline: 2px solid #ffe08a; outline-offset: 2px; }
+.fd-runtime-card.is-riding-selected { outline: 2px solid #ffe08a; outline-offset: -2px; }
 
 @media (max-width: 1023px) {
     .fd-runtime-table { --fd-hand-card-width: 108px; }

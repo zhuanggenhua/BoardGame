@@ -6,6 +6,7 @@ import React, {
     useRef,
     useState,
     type ReactNode,
+    type RefObject,
 } from 'react';
 import { logMobileRuntimeCritical } from '../../../lib/mobile/mobileRuntimeDebug';
 
@@ -118,6 +119,11 @@ export interface ZoomPanViewportProps {
     panToScale?: number;
     /** 教程目标已在视口内且能命中时，保留玩家当前镜头。 */
     skipPanWhenTargetVisible?: boolean;
+    /** 同一教学场景内需要同时露出的对象。按当前缩放做最小位移。 */
+    panToRevealGroup?: {
+        targetIds: readonly string[];
+        bottomOverlayRef: RefObject<HTMLElement | null>;
+    };
     controlledViewport?: ZoomPanViewportState;
     onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
     controlledViewportSchedule?: 'sync' | 'animation-frame';
@@ -164,6 +170,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     panToTargetKey,
     panToScale,
     skipPanWhenTargetVisible = false,
+    panToRevealGroup,
     controlledViewport,
     onControlledViewportChange,
     controlledViewportSchedule = 'sync',
@@ -978,9 +985,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             if (cancelled) return;
             const contentEl = contentRef.current;
             const containerEl = containerRef.current;
-            const targetEl = contentEl?.querySelector(
+            const targetEl = contentEl?.querySelector<HTMLElement>(
                 `[data-zoom-pan-target="${panToTarget}"], [data-tutorial-id="${panToTarget}"]`,
-            ) as HTMLElement | null;
+            );
             if (!contentEl || !containerEl || !targetEl) {
                 if (retryCount < 60) {
                     retryCount += 1;
@@ -1006,7 +1013,22 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 : currentZoomLevel;
             const containerRect = containerEl.getBoundingClientRect();
             const elementRect = targetRect;
-            if (skipPanWhenTargetVisible && panToScale == null) {
+            const groupRects = panToRevealGroup?.targetIds.map((id) => contentEl.querySelector(
+                `[data-tutorial-id="${id}"], [data-tutorial-object-id="${id}"]`,
+            )?.getBoundingClientRect());
+            // The first fit can transition from the unmeasured scale. Use the
+            // settled screen rectangles, otherwise the delta uses stale geometry.
+            const fitIsTransitioning = panToRevealGroup && contentEl.getAnimations?.().some(
+                (animation) => 'transitionProperty' in animation && animation.transitionProperty === 'transform',
+            );
+            if (fitIsTransitioning || groupRects?.some((rect) => !rect || rect.width <= 0 || rect.height <= 0)) {
+                if (retryCount < 60) {
+                    retryCount += 1;
+                    retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+                }
+                return;
+            }
+            if (!panToRevealGroup && skipPanWhenTargetVisible && panToScale == null) {
                 // The previous tutorial bubble can briefly cover the next target;
                 // it will be repositioned for the new step and is not a reason to pan.
                 // A large zone can remain clickable even if its center is covered by the HUD.
@@ -1016,7 +1038,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                     const y = elementRect.top + elementRect.height * ry;
                     if (x < containerRect.left || x > containerRect.right || y < containerRect.top || y > containerRect.bottom) return false;
                     const hit = document.elementsFromPoint(x, y).find((element) => !element.closest('[data-tutorial-step]'));
-                    return Boolean(hit && targetEl.contains(hit));
+                    if (!hit || !targetEl.contains(hit)) return false;
+                    const nestedControl = hit.closest('button, [role="button"], a[href], input, select, textarea');
+                    return !nestedControl || nestedControl === targetEl || !targetEl.contains(nestedControl);
                 });
                 if (hasHittablePoint) {
                     handledPanInstructionRef.current = panInstructionKey;
@@ -1056,8 +1080,27 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 // and portal/layout offsets cannot be counted twice.
                 const targetCenterX = (elementRect.left + elementRect.right) / 2 - containerRect.left;
                 const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - containerRect.top;
-                const deltaX = viewportCenterX - targetCenterX;
-                const deltaY = viewportCenterY - targetCenterY;
+                let deltaX = viewportCenterX - targetCenterX;
+                let deltaY = viewportCenterY - targetCenterY;
+                if (panToRevealGroup) {
+                    const rects = [elementRect, ...(groupRects ?? []).filter((rect) => rect != null)];
+                    const overlayTop = panToRevealGroup.bottomOverlayRef.current?.getBoundingClientRect().top;
+                    const safeBottom = Math.min(containerRect.bottom, overlayTop ?? containerRect.bottom);
+                    const margin = 12;
+                    deltaX = Math.max(
+                        containerRect.left + margin - Math.min(...rects.map(({ left }) => left)),
+                        Math.min(0, containerRect.right - margin - Math.max(...rects.map(({ right }) => right))),
+                    );
+                    deltaY = Math.max(
+                        containerRect.top + margin - Math.min(...rects.map(({ top }) => top)),
+                        Math.min(0, safeBottom - margin - Math.max(...rects.map(({ bottom }) => bottom))),
+                    );
+                    if (deltaX === 0 && deltaY === 0) {
+                        handledPanInstructionRef.current = panInstructionKey;
+                        setSettledPanInstructionKey(panInstructionKey);
+                        return;
+                    }
+                }
                 const renderedTranslateMatch = contentEl.style.transform.match(
                     /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/,
                 );
@@ -1165,11 +1208,17 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             });
 
             clearAnimationTimer();
+            handledPanInstructionRef.current = panInstructionKey;
+            if (panToRevealGroup && panToScale == null) {
+                setIsAnimating(false);
+                applyViewport(nextViewport);
+                setSettledPanInstructionKey(panInstructionKey);
+                return;
+            }
             setIsAnimating(true);
             if (targetZoomLevel !== currentZoomLevel) {
                 revealScaleBadge(nextViewport.zoomLevel);
             }
-            handledPanInstructionRef.current = panInstructionKey;
             applyViewport(nextViewport);
             animationTimerRef.current = window.setTimeout(() => {
                 setIsAnimating(false);
@@ -1235,6 +1284,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         fitCenterOffset.y,
         panBoundsMode,
         panInstructionKey,
+        panToRevealGroup,
         panToScale,
         panToTarget,
         panToTargetKey,

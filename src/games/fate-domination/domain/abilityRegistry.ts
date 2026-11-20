@@ -15,6 +15,7 @@ import type { FateDominationCore, FateDominationEvent, LocationId, SkillDefiniti
 import type { FateAbilityPhase, FateRuleModifier } from './mechanics';
 import { createFateCopyRecord } from './mechanics';
 import { resolveFateMovement } from './movement';
+import { fateBattleOpponents } from './battleAwards';
 import { FATE_MASTERS, FATE_SERVANTS, FATE_ATTACK_BY_ID } from '../data';
 
 export type FateAbilityTrigger = 'preparation' | 'outpost' | 'action' | 'battle' | 'round-start' | 'round-end';
@@ -22,6 +23,9 @@ export type FateAbilityTrigger = 'preparation' | 'outpost' | 'action' | 'battle'
 export type FateAbilityEffect =
   | { type: 'draw-cards'; count: number }
   | { type: 'riding' }
+  | { type: 'direct-defeat-sole-opponent' }
+  | { type: 'pre-battle-defeat-without-special' }
+  | { type: 'post-battle-score-per-opponent' }
   | { type: 'replace-event' }
   | { type: 'investigate-hand' }
   | { type: 'battle-win-reward'; victoryPoints: number }
@@ -32,6 +36,7 @@ export type FateAbilityEffect =
       excludedLocations?: readonly LocationId[];
       ignoreEngagement?: boolean;
       nextOnly?: boolean;
+      claimBattlefieldTerrain?: true;
     }
   | {
       type: 'ability-suppression';
@@ -58,6 +63,7 @@ export type FateAbilityEffect =
 
 export interface FateAbilityDefinition extends AbilityDef<FateAbilityEffect, FateAbilityTrigger> {
   activationCost?: number;
+  climaxOnly?: boolean;
   masterForm?: 'supervisor' | 'executor';
   sourceStatus: 'locked' | 'authority-summary';
   mechanicFamily: 'movement' | 'restriction' | 'power' | 'protection' | 'copy' | 'draw';
@@ -100,6 +106,7 @@ function buildDefinition(
   trigger: FateAbilityTrigger,
   mechanicFamily: FateAbilityDefinition['mechanicFamily'],
   effects: FateAbilityEffect[],
+  options?: Pick<FateAbilityDefinition, 'climaxOnly'>,
 ): FateAbilityDefinition | undefined {
   const skill = findSkillDefinition(id);
   if (!skill) return undefined;
@@ -114,11 +121,16 @@ function buildDefinition(
     ...(id === 'm_kirei_s2' ? {masterForm:'supervisor' as const} : id === 'm_kirei_s3' ? {masterForm:'executor' as const} : {}),
     mechanicFamily,
     tags: [mechanicFamily],
+    ...options,
   };
 }
 
 const knownDefinitions: Array<FateAbilityDefinition | undefined> = [
   buildDefinition('sc_iskandar_1', 'action', 'draw', [{ type: 'riding' }]),
+  buildDefinition('sc_medusa_1', 'action', 'draw', [{ type: 'riding' }]),
+  buildDefinition('sc_medusa_2', 'action', 'restriction', [{ type: 'pre-battle-defeat-without-special' }]),
+  buildDefinition('sc_cu_1', 'battle', 'restriction', [{ type: 'direct-defeat-sole-opponent' }]),
+  buildDefinition('sc_cu_np', 'battle', 'power', [{ type: 'post-battle-score-per-opponent' }]),
   buildDefinition('sc_iskandar_2', 'action', 'draw', [{ type: 'replace-event' }]),
   buildDefinition('m_waver_s2','outpost','draw',[{type:'draw-cards',count:2}]),
   buildDefinition('m_waver_s3','outpost','draw',[{type:'investigate-hand'}]),
@@ -151,6 +163,9 @@ const knownDefinitions: Array<FateAbilityDefinition | undefined> = [
     operation: 'set',
     value: 0,
   }]),
+  buildDefinition('sc_saber_np', 'battle', 'power', [{
+    type: 'power-transform', selector: 'total', target: 'self', operation: 'add', value: 4,
+  }], { climaxOnly: true }),
   buildDefinition('sc_emiya_1', 'battle', 'power', [{
     type: 'power-transform',
     selector: 'attack',
@@ -182,6 +197,7 @@ const knownDefinitions: Array<FateAbilityDefinition | undefined> = [
     type: 'movement',
     mode: 'effect',
     allowAnyDestination: true,
+    claimBattlefieldTerrain: true,
   }]),
   buildDefinition('sc_lance_3', 'action', 'copy', [{
     type: 'copy-proxy',
@@ -196,6 +212,18 @@ const knownDefinitions: Array<FateAbilityDefinition | undefined> = [
 ];
 
 fateAbilityRegistry.registerAll(knownDefinitions.filter((definition): definition is FateAbilityDefinition => Boolean(definition)));
+
+fateAbilityExecutorRegistry.register('sc_cu_1', context => {
+  const opponents = fateBattleOpponents(context.core, context.playerId);
+  if (opponents.length !== 1) return { events: [] };
+  const [playerId] = opponents;
+  return { events: [{
+    type: 'FATE_DEFEAT_DECLARED',
+    payload: { playerId, sourceId: context.sourceId, direct: true, markerId: `${context.core.round}:${context.sourceId}:${playerId}` },
+    sourceCommandType: 'PLAY_SKILL',
+    timestamp: context.timestamp,
+  }] };
+});
 
 function sourceFor(context: FateAbilityContext): FateRuleModifier['source'] {
   return {
@@ -272,7 +300,7 @@ fateAbilityExecutorRegistry.register('sc_sasaki_2', (context) => ({
   })),
 }));
 
-for (const id of ['m_kirei_s3', 'sc_saber_1', 'sc_saber_2', 'sc_emiya_1', 'sc_gil_2', 'cardPreparation:action', 'cardPreparation:battle', 'cardluck', 'sc_emiya_2:action', 'sc_emiya_2:battle']) {
+for (const id of ['m_kirei_s3', 'sc_saber_1', 'sc_saber_2', 'sc_saber_np', 'sc_emiya_1', 'sc_gil_2', 'cardPreparation:action', 'cardPreparation:battle', 'cardluck', 'sc_emiya_2:action', 'sc_emiya_2:battle']) {
   fateAbilityExecutorRegistry.register(id, (context) => ({
     events: context.definition.effects.map((effect) => createModifierFromEffect(context, effect)).filter((modifier): modifier is FateRuleModifier => Boolean(modifier)).map((modifier) => ({
       type: 'FATE_RULE_MODIFIER_ATTACHED',
@@ -304,6 +332,7 @@ for (const id of ['m_kirei_s2', 'sc_diarmuid_3', 'sc_cu_2', 'sc_medusa_np', 'car
           path: [...resolution.path],
           mode: resolution.mode,
           manaSpent: resolution.cost,
+          ...(effect.claimBattlefieldTerrain && { claimBattlefieldTerrain: effect.claimBattlefieldTerrain }),
           context: {
             allowAnyDestination: effect.allowAnyDestination,
             ignoreEngagement: effect.ignoreEngagement,

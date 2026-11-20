@@ -744,7 +744,7 @@ export default function BetrayalBoard({
   const roomGridRef = React.useRef<HTMLDivElement | null>(null);
   React.useLayoutEffect(() => {
     const pendingTransition = visualTransition;
-    if (!pendingTransition || pendingTransition.targetRect) {
+    if (!pendingTransition || pendingTransition.targetRect || pendingTransition.worldMarkerTargetId) {
       return undefined;
     }
 
@@ -1167,6 +1167,9 @@ export default function BetrayalBoard({
     canTurnReferenceScenarioBack,
     canTurnReferenceScenarioForward,
   } = scenarioReaderPresentation;
+  const canEnterReferenceScenarioBook = !(
+    referenceScenarioOpeningStageActive && isTutorialActive && tutorialStep?.id === "haunt-hero-reader"
+  );
 
   React.useEffect(() => {
     if (typeof document === "undefined") {
@@ -1289,8 +1292,9 @@ export default function BetrayalBoard({
       (tutorialScenarioStepId === "hero-attack-objective" ||
         tutorialScenarioStepId === "jack-spirit-objective" ||
         tutorialScenarioStepId === "traitor-objective");
+    const isReadingTraitorObjective = isTutorialActive && tutorialScenarioStepId === "traitor-close-objective";
     const openPlan = resolveScenarioReaderOpenPlan(core, viewerPlayerId, {
-      mode: shouldAdvanceScenarioReferenceTutorial
+      mode: shouldAdvanceScenarioReferenceTutorial || isReadingTraitorObjective
         ? "tutorialObjective"
         : "manualReview",
       hasOpeningSection: Boolean(referenceScenarioOpeningSection),
@@ -1298,7 +1302,7 @@ export default function BetrayalBoard({
     });
     const initialScenarioBookSpreadIndex =
       tutorialScenarioStepId === "jack-spirit-objective" ||
-      tutorialScenarioStepId === "traitor-objective"
+      tutorialScenarioStepId === "traitor-objective" || isReadingTraitorObjective
         ? Math.min(1, openPlan.bookSpreadCount - 1)
         : openPlan.initialBookSpreadIndex;
     const hauntRevealKey = openPlan.isPublicHauntRevealReader
@@ -1355,11 +1359,22 @@ export default function BetrayalBoard({
     setLatestDiscoveryQueue([]);
   }, [core]);
 
+  const enteredTraitorReadingStep = React.useRef(false);
+  React.useEffect(() => {
+    if (!isTutorialActive || tutorialStep?.id !== "traitor-close-objective") {
+      enteredTraitorReadingStep.current = false;
+      return;
+    }
+    if (enteredTraitorReadingStep.current) return;
+    enteredTraitorReadingStep.current = true;
+    if (!scenarioReaderOpen) openScenarioReference();
+  }, [isTutorialActive, openScenarioReference, scenarioReaderOpen, tutorialStep?.id]);
+
   const closeReferenceOverlay = React.useCallback(() => {
     const shouldAdvanceScenarioReaderCloseTutorial =
       isTutorialActive &&
       scenarioReaderOpen &&
-      tutorialStep?.id === "haunt-hero-reader-close";
+      (tutorialStep?.id === "haunt-hero-reader-close" || tutorialStep?.id === "traitor-close-objective");
     setReferenceOpen(false);
     setScenarioReaderOpen(false);
     setReferenceScenarioOpeningStageActive(false);
@@ -1419,11 +1434,13 @@ export default function BetrayalBoard({
     ({
       sourceRoomId,
       targetTestId,
+      targetFigureId,
       attachedTo,
       onComplete,
     }: {
       sourceRoomId: string;
       targetTestId: string;
+      targetFigureId: string;
       attachedTo: "room" | "explorer" | "mummy";
       onComplete?: () => void;
     }) => {
@@ -1438,11 +1455,17 @@ export default function BetrayalBoard({
       if (!girlToken || !sourceRect) {
         return false;
       }
+      const grid = roomGridRef.current;
+      const worldMarkerTargetId = grid?.dataset.mapRenderer === "three" ? targetFigureId : undefined;
+      if (worldMarkerTargetId && !grid?.querySelector('[data-scene-marker-visual="marker:mummy-girl"][data-three-marker-ready]')) {
+        return false;
+      }
       return beginBetrayalVisualTransition({
         kind: "girl-transfer",
         sourceRect,
         targetRect: null,
         targetTestId,
+        worldMarkerTargetId,
         girlToken,
         locale: effectiveLocale,
         missingTokenLabel: t("board.hauntTokens.officialTokenMissing"),
@@ -1570,7 +1593,7 @@ export default function BetrayalBoard({
       ? (visualTransition.monster?.id ?? null)
       : null;
   const movingGirlTokenId =
-    visualTransition?.kind === "girl-transfer"
+    visualTransition?.kind === "girl-transfer" && !visualTransition.worldMarkerTargetId
       ? (visualTransition.girlToken?.id ?? null)
       : null;
   const monsterStatuses = React.useMemo(
@@ -2899,6 +2922,7 @@ export default function BetrayalBoard({
       resolveBetrayalHauntActionContext({
         t,
         core,
+        viewerPlayerId,
         shouldPauseHauntBoardActions,
         selectedDustSearchTrait: previewState.selectedDustSearchTrait,
         selectedDustCureTrait: previewState.selectedDustCureTrait,
@@ -2935,6 +2959,7 @@ export default function BetrayalBoard({
       selectedAttackWeaponEffectId,
       shouldPauseHauntBoardActions,
       t,
+      viewerPlayerId,
     ],
   );
   const hauntActionDisabledReason =
@@ -3512,10 +3537,16 @@ export default function BetrayalBoard({
     helpingHandsTrollHandAttackOption &&
     helpingHandsTrollHandAttackTarget,
   );
+  const mummyStealResult =
+    latestLogEntry?.kind === "mummy-steal" &&
+    (!isTutorialActive || tutorialStep?.id === "mummy-steal-result")
+      ? latestLogEntry.text
+      : null;
   const shouldShowTopPromptStack = Boolean(
     visibleDustProgressItems.length > 0 ||
     shouldShowTradeFlowPrompt ||
     mummyPendingReward ||
+    mummyStealResult ||
     helpingHandsPendingReward ||
     shouldShowHelpingHandsMonsterTurnStatus ||
     shouldShowHelpingHandsTrollAttackBanner,
@@ -3604,8 +3635,15 @@ export default function BetrayalBoard({
     pendingPossessionCard: latestDiscoveryPendingPossessionCard,
     displayedKindLabel: latestDiscoveryDisplayedKindLabel,
     displayedTitle: latestDiscoveryDisplayedTitle,
-    continueButton: latestDiscoveryContinueButton,
+    continueButton: latestDiscoveryBaseContinueButton,
   } = latestDiscoveryPresentation;
+  const tutorialBlocksEventRollConfirmation = Boolean(
+    core.pendingEventRollResolution && isTutorialActive && tutorialStep?.allowedCommands &&
+      !tutorialStep.allowedCommands.includes(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL),
+  );
+  const latestDiscoveryContinueButton = tutorialBlocksEventRollConfirmation
+    ? { ...latestDiscoveryBaseContinueButton, disabled: true }
+    : latestDiscoveryBaseContinueButton;
   const shouldShowLatestDiscoverySurface = Boolean(
     shouldShowLatestDiscovery &&
       !shouldAutoReturnAfterLatestDiscovery &&
@@ -4219,6 +4257,7 @@ export default function BetrayalBoard({
     });
   }, [referencePages]);
   const handleReferenceScenarioTurn = (direction: "back" | "forward") => {
+    if (direction === "forward" && !canEnterReferenceScenarioBook) return;
     const shouldAdvanceScenarioTurnTutorial =
       isTutorialActive &&
       direction === "forward" &&
@@ -6877,6 +6916,7 @@ export default function BetrayalBoard({
                   selectedInventoryHealPreviewTraits={
                     selectedInventoryHealPreviewTraits
                   }
+                  healPreviewInSidebar={runtimeViewport.width >= 1280 && runtimeViewport.height >= 760}
                   attackWeaponCardStatuses={
                     hauntActionContext?.actionKind?.startsWith("attack-")
                       ? attackWeaponCardStatuses
@@ -6886,7 +6926,7 @@ export default function BetrayalBoard({
                   selectedCorpseLootTarget={selectedCorpseLootTarget}
                   selectedCorpseLootCardId={selectedCorpseLootCardId}
                   exploreDeclarationOptions={
-                    hasExploreDeclarationOptions
+                    hasExploreDeclarationOptions && !mummyPendingReward && !mummyStealResult
                       ? {
                           label: exploreDeclarationLabel,
                           canDeclareHolySymbolExplore,
@@ -6927,6 +6967,11 @@ export default function BetrayalBoard({
                 />
 
                 <BetrayalRoomMapSurface
+                  sceneTutorialCommands={isTutorialActive
+                    ? tutorialStep?.allowedCommands ?? (tutorialStep?.infoStep ? [] : undefined)
+                    : undefined}
+                  sceneTutorialTargets={isTutorialActive ? tutorialStep?.allowedTargets : undefined}
+                  selectedSceneMonsterMoveId={previewState.selectedMonsterMoveMonsterId}
                   eventEntries={getEventStreamEntries(G)}
                   rollbackRevision={rollbackRevision}
                   onSceneMovementStart={beginVisualSequence}
@@ -6968,11 +7013,16 @@ export default function BetrayalBoard({
                   roomMonsters={roomMonsters}
                   visibleHauntTokensByRoomId={visibleHauntTokensByRoomId}
                   movingGirlTokenId={movingGirlTokenId}
+                  girlTransferId={visualTransition?.worldMarkerTargetId ? visualTransition.id : undefined}
+                  girlTransferTarget={visualTransition?.worldMarkerTargetId}
+                  onGirlTransferComplete={finishBetrayalVisualTransition}
                   movingExplorerPlayerId={movingExplorerPlayerId}
                   movingMonsterId={movingMonsterId}
                   activeHauntTargetGuide={activeHauntTargetGuide}
                   hauntActionKind={hauntActionContext?.actionKind}
-                  canPickUpMummyGirlRoomId={canPickUpMummyGirlRoomId}
+                  canPickUpMummyGirlRoomId={
+                    mummyPendingReward || core.pendingDamageAllocation ? null : canPickUpMummyGirlRoomId
+                  }
                   moveTargetRoomIds={moveTargetRoomIds}
                   skeletonKeyMoveTargetRoomIds={skeletonKeyMoveTargetRoomIds}
                   moveCostByRoomId={moveCostByRoomId}
@@ -7177,6 +7227,7 @@ export default function BetrayalBoard({
                   showTradeFlowPrompt={shouldShowTradeFlowPrompt}
                   tradeAgreementState={tradeAgreementState}
                   tradeBannerStatusText={tradeBannerStatusText}
+                  mummyStealResult={mummyStealResult}
                   mummyReward={
                     mummyPendingReward
                       ? {
@@ -7577,7 +7628,7 @@ export default function BetrayalBoard({
             referenceScenarioLeftPage={referenceScenarioLeftPage}
             referenceScenarioRightPage={referenceScenarioRightPage}
             canTurnReferenceScenarioBack={canTurnReferenceScenarioBack}
-            canTurnReferenceScenarioForward={canTurnReferenceScenarioForward}
+            canTurnReferenceScenarioForward={canTurnReferenceScenarioForward && canEnterReferenceScenarioBook}
             onClose={closeReferenceOverlay}
             onToggleReferenceSide={toggleReferenceSide}
             onReferenceScenarioTurn={handleReferenceScenarioTurn}

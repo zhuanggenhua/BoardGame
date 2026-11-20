@@ -11,6 +11,7 @@ import {
 } from '../../../components/common/animations/BoardFxPresets';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { AttackDie } from './AttackDie';
+import { ATTACK_DIE_REVEAL_MS, ATTACK_DIE_REVEAL_STAGGER_MS } from './attackDieGeometry';
 import { EffectDie } from './EffectDie';
 import {
     resolveFxQuality,
@@ -1155,6 +1156,10 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
         [event.params],
     );
     const hasDice = diceResults.length > 0;
+    const lastShownDie = Math.min(diceResults.length, 6) - 1;
+    const numberDelayMs = hasDice
+        ? ATTACK_DIE_REVEAL_MS + lastShownDie * ATTACK_DIE_REVEAL_STAGGER_MS + MAGE_WARS_FX_TIMING.diceResultSettleMs
+        : 0;
     useTimedImpactAndComplete(
         cell,
         onImpact,
@@ -1189,6 +1194,7 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
                 hostTestId="mage-wars-fx-healing-impact"
                 burstTestId="mage-wars-fx-healing-burst"
                 numberTestId="mage-wars-fx-healing-number"
+                numberDelayMs={numberDelayMs}
                 numberClassName="-mt-16 text-emerald-100 drop-shadow-[0_0_12px_rgba(16,185,129,0.82)]"
             />
             {hasDice ? (

@@ -1211,6 +1211,7 @@ describe('Betrayal 教程配置', () => {
         expect(traitorManifest?.steps.map((step) => step.id)).toEqual([
             'setup-traitor-monster-actions',
             'traitor-objective',
+            'traitor-close-objective',
             'mummy-monster-turn-start',
             'mummy-monster-roll',
             'mummy-monster-roll-review',
@@ -1291,8 +1292,10 @@ describe('Betrayal 教程配置', () => {
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.advanceOnEvents).toEqual([
             { type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } },
         ]);
-        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.highlightFrame)
-            .toBe('none');
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.highlightTarget)
+            .toBe('betrayal-roll-continue');
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-move-result')?.highlightTarget)
+            .toBe('betrayal-mummy-carried-girl');
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-move-target')?.allowedCommands)
             .toEqual(['MOVE_MONSTER_TO_ROOM']);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-target')?.allowedCommands)
@@ -1302,8 +1305,8 @@ describe('Betrayal 教程配置', () => {
             values: [3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1],
             cursor: 0,
         });
-        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.highlightFrame)
-            .toBe('none');
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.highlightTarget)
+            .toBe('betrayal-roll-continue');
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.advanceOnEvents).toEqual([
             { type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } },
         ]);
@@ -1480,7 +1483,7 @@ describe('Betrayal 教程配置', () => {
         expect(basicSteps.useBook).not.toContain('事件牌公开后');
         expect(basicSteps.rollEvent).toContain('给所有玩家看清');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索房间槽');
-        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('不是移动到已发现房间');
+        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('绿色描边');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('房间牌面');
         expect(zhCNLocale.tutorial.mainPath.steps.moveToUpperLanding).toContain('已发现的上层平台');
         expect(zhCNLocale.tutorial.mainPath.steps.moveToUpperLanding).toContain('这一步是移动');
@@ -1705,11 +1708,12 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupMonsterMove).toContain('石棺房间');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterTurnStart).toContain('木乃伊开回合');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRoll).toContain('木乃伊移动骰');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('移动骰结果');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).not.toContain('0 点');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('确认');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('0 或 1');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('瞬移');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('结果为 0 或 1');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('已发现房间');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('会携带女孩');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('由木乃伊携带');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).not.toContain('拾起女孩');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('同房攻击');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('木乃伊攻击英雄');

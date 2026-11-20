@@ -2,18 +2,18 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core/ui/zIndex';
-import { RiftSlash } from '../../../components/common/animations/RiftSlash';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import { useEventStreamCursor } from '../../../engine/hooks/useEventStreamCursor';
 import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
 import type { MatchState } from '../../../engine/types';
 import type { FateDominationCore, LocationId } from '../domain/types';
 import { FGO_SERVANTS, loadedFgoCharacter, loadedFgoNoble, preloadFgoCharacter, preloadFgoNoble, retainFgoAssets } from '../fgo-runtime/fgoPreload';
-import { createFgoBattleRuntime } from '../fgo-runtime/fgoCharacterRuntime';
+import { createFgoBattleRuntime, type FgoBattleEffect } from '../fgo-runtime/fgoCharacterRuntime';
 import { createFgoSceneRuntime } from '../fgo-runtime/fgoSceneRuntime';
 import { fateFgoSequencesFor, type FgoSequence } from './fgoSequence';
 import { playSound } from '../../../lib/audio/useGameAudio';
 import { FATE_BATTLE_IMPACT } from '../audio.config';
+import { FateBattleFx } from './FateBattleFx';
 import './fgo-effects.css';
 
 const reportPreloadFailure = (label: string) => (error: unknown) => {
@@ -23,10 +23,15 @@ const reportPreloadFailure = (label: string) => (error: unknown) => {
 function BattleMotion({ sequence, anchor, onComplete }: { sequence: Extract<FgoSequence, { kind: 'battle' }>; anchor: HTMLElement; onComplete: () => void }) {
   const host = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
-  const [impact, setImpact] = useState<{ x: number; y: number; id: number }>();
-  const showImpact = useCallback((point: { x: number; y: number }) => {
-    playSound(FATE_BATTLE_IMPACT);
-    setImpact(previous => ({ ...point, id: (previous?.id ?? 0) + 1 }));
+  const [strike, setStrike] = useState<Extract<FgoBattleEffect, { kind: 'strike' }>>();
+  const [impact, setImpact] = useState<Extract<FgoBattleEffect, { kind: 'impact' }>>();
+  const showEffect = useCallback((effect: FgoBattleEffect) => {
+    if (effect.kind === 'strike') {
+      setStrike(effect);
+    } else {
+      playSound(FATE_BATTLE_IMPACT);
+      setImpact(effect);
+    }
   }, []);
   React.useLayoutEffect(() => {
     if (!layer.current) return;
@@ -47,19 +52,18 @@ function BattleMotion({ sequence, anchor, onComplete }: { sequence: Extract<FgoS
       return loaded ? [{ ...actor, loaded }] : [];
     });
     try {
-      const runtime = createFgoBattleRuntime(host.current, actors, sequence.laneCount, onComplete, showImpact);
+      const runtime = createFgoBattleRuntime(host.current, actors, sequence.laneCount, onComplete, showEffect);
       if (!runtime) { onComplete(); return; }
       return () => runtime.destroy();
     } catch (error) {
       console.warn('Fate 战斗演出无法播放', error);
       onComplete();
     }
-  }, [sequence, onComplete, showImpact]);
+  }, [sequence, onComplete, showEffect]);
   return <div ref={layer} className="fd-fgo-battle" style={{ zIndex: UI_Z_INDEX.overlay }} data-testid="fate-fgo-battle" aria-hidden="true">
     <div ref={host} className="fd-fgo-battle-canvas" />
-    {impact && <div key={impact.id} className="fd-fgo-impact" style={{ left: `${impact.x}%`, top: `${impact.y}%` }}>
-      <RiftSlash isActive color="rgba(255, 235, 190, 0.9)" duration={300} width={3} />
-    </div>}
+    {strike && <FateBattleFx key={`strike-${strike.turnId}`} effect={strike} />}
+    {impact && <FateBattleFx key={`impact-${impact.turnId}`} effect={impact} />}
   </div>;
 }
 

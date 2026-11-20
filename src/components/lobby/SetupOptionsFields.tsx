@@ -8,12 +8,13 @@ import {
 } from '../../shared/gameSetupOptions';
 
 interface SetupOptionsFieldsProps {
-    gameManifest: GameManifestEntry;
+    gameManifest: Pick<GameManifestEntry, 'id' | 'setupOptions'>;
     selections: GameSetupSelections;
     onSelectionsChange: (next: GameSetupSelections) => void;
     t: TFunction;
     gameNamespace: string;
     numPlayers: number;
+    literalLabels?: boolean;
 }
 
 export function SetupOptionsFields({
@@ -23,6 +24,7 @@ export function SetupOptionsFields({
     t,
     gameNamespace,
     numPlayers,
+    literalLabels = false,
 }: SetupOptionsFieldsProps) {
     const setupEntries = useMemo(
         () => Object.entries(gameManifest.setupOptions ?? {}),
@@ -34,6 +36,7 @@ export function SetupOptionsFields({
     }
 
     const resolveSetupLabel = (labelKey: string): string => {
+        if (literalLabels) return labelKey;
         const gamePrefix = `games.${gameManifest.id}.`;
         if (labelKey.startsWith(gamePrefix)) {
             return t(labelKey.slice(gamePrefix.length), {
@@ -127,6 +130,7 @@ export function SetupOptionsFields({
                                 {resolveSetupLabel(field.labelKey)}
                             </label>
                             <select
+                                aria-label={resolveSetupLabel(field.labelKey)}
                                 data-testid={`setup-option-select-${fieldKey}`}
                                 value={selectedValue}
                                 onChange={(event) => updateSelectField(fieldKey, event.target.value)}

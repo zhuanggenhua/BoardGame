@@ -9,6 +9,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -267,11 +268,11 @@ test.describe('山屋惊魂多类型怪物移动骰组真实入口', () => {
         await monsterMoveAction.click();
         await expect(slowMonsterToken).toHaveAttribute('data-direct-target', 'true');
         await expect(fastMonsterToken).toHaveAttribute('data-direct-target', 'true');
-        await slowMonsterToken.click();
+        await clickBetrayalSceneFigure(slowMonsterToken);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.slowTargetRoomId}`)).toBeVisible();
         await saveScreenshot(page, SLOW_TARGET_SCREENSHOT);
 
-        await fastMonsterToken.click();
+        await clickBetrayalSceneFigure(fastMonsterToken);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.fastTargetRoomId}`)).toBeVisible();
         await saveScreenshot(page, FAST_TARGET_SCREENSHOT);
 

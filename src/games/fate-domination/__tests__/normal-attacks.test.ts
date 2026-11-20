@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest';
 import {createReplayAdapter} from '../../../engine/adapter';
 import {FateDominationDomain} from '../domain';
-import {FATE_SERVANTS} from '../data';
+import {FATE_SERVANTS,FATE_SITUATIONS} from '../data';
 import {calculateFatePower} from '../domain/power';
 import {fateAttackManaCost} from '../domain/attackSelection';
 import type {FateDominationCommand} from '../domain';
@@ -9,6 +9,10 @@ const adapter=createReplayAdapter(FateDominationDomain,'normal-attack-contract')
 const fixture=()=>{
  const state=adapter.setup(['0','1','2']);
  state.core.phase='action';state.core.currentPlayerId='0';
+ state.core.situation=FATE_SITUATIONS.find(item=>item.id==='sit1')!;
+ state.core.currentEvents={miyama:[],shinto:[]};
+ state.core.battlefield.miyama.eventCards=[];
+ state.core.battlefield.shinto.eventCards=[];
  const player=state.core.players['0'];player.locationId='miyama';player.mana=12;
  state.core.battlefield.miyama.playerIds=['0'];state.core.battlefield.miyama.terrainPower=0;
  const servant=FATE_SERVANTS.find(s=>(s.skillCards??[]).some(c=>c.id==='sc_cu_2'))!;
@@ -42,6 +46,27 @@ it('未激活的非被动技能不能直接发动，技能区攻击要求出牌�
  expect(FateDominationDomain.validate(state,command('PLAY_SKILL',{skillId:'sc_cu_2',targetLocationId:'shinto'})).valid).toBe(false);
  state.core.players['0'].mana=7;
  expect(FateDominationDomain.validate(state,command('SELECT_ATTACK_CARD',{cardId:'sc_cu_2'})).valid).toBe(false);
+});
+it('战斗续行可离开交战，但仍禁止工房及已满的侦察',()=>{
+ const initial=fixture();
+ initial.core.players['1'].locationId='miyama';
+ initial.core.battlefield.miyama.playerIds=['0','1'];
+ initial.core.players['2'].locationId='recon';
+ initial.core.battlefield.recon.playerIds=['2'];
+ expect(FateDominationDomain.validate(initial,command('MOVE_PLAYER',{locationId:'shinto'}))).toMatchObject({valid:false,error:'engaged'});
+ const confirm=command('CONFIRM_ATTACK',{cardIds:['basic','sc_cu_2'],faceDownIds:[],round:initial.core.round});
+ expect(FateDominationDomain.validate(initial,confirm).valid).toBe(true);
+ const active=adapter.execute(initial,confirm).state;
+ const moveWithSkill=(targetLocationId:string)=>command('PLAY_SKILL',{skillId:'sc_cu_2',targetLocationId});
+ expect(FateDominationDomain.validate(active,moveWithSkill('workshop')).valid).toBe(false);
+ expect(FateDominationDomain.validate(active,moveWithSkill('recon'))).toMatchObject({valid:false,error:'locationFull'});
+ active.core.battlefield.recon.playerIds=[];
+ active.core.players['2'].locationId=null;
+ const move=moveWithSkill('recon');
+ expect(FateDominationDomain.validate(active,move).valid).toBe(true);
+ const after=adapter.execute(active,move).state;
+ expect(after.core.players['0']).toMatchObject({locationId:'recon',mana:active.core.players['0'].mana});
+ expect(after.core.battlefield.miyama.playerIds).toEqual(['1']);
 });
 it('狂化兰斯洛特的被动允许低于8魔力打出从者技能，但仍须支付牌面魔耗',()=>{
  const state=fixture();const player=state.core.players['0'];const berserker=FATE_SERVANTS.find(servant=>servant.id==='servant-berserker')!;

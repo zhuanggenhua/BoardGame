@@ -127,6 +127,48 @@ test.describe('大杀四方小丑真实入口审计', () => {
     await game.screenshot('03-小丑-滑稽小丑通常行动与牌库底收口', testInfo);
   });
 
+  test('滑稽小丑不能把古埃及自埋牌当作标准行动打出', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'diy_clowns,ancient_egyptians', p1: 'pirates,ninjas', seat1: 'human',
+      skipFactionSelect: true, skipInitialization: false, seed: 20261120,
+    }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [], deck: [{ uid: 'classify-tail', defId: 'diy_clowns_clown_girl', type: 'minion', owner: '0' }],
+        discard: [
+          { uid: 'classify-burial', defId: 'ancient_egyptians_blessing_of_anubis', type: 'action', owner: '0' },
+          { uid: 'classify-normal', defId: 'diy_clowns_confetti_bucket', type: 'action', owner: '0' },
+        ],
+        factions: ['diy_clowns', 'ancient_egyptians'], minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, vp: 0,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['pirates', 'ninjas'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, vp: 0 },
+      bases: [
+        { defId: 'base_the_factory', minions: [{ uid: 'classify-source', defId: 'diy_clowns_slapstick_clown', owner: '0', controller: '0', power: 5 }] },
+        { defId: 'base_the_homeworld', minions: [] },
+      ],
+    });
+    await page.getByTestId('su-discard-toggle').click();
+    const discardPanel = page.locator('[data-discard-view-panel]');
+    await expect(discardPanel.locator('[data-card-uid="classify-burial"]')).toBeVisible();
+    await expect(discardPanel.locator('[data-card-uid="classify-normal"]')).toBeVisible();
+    await expect(discardPanel.locator('[data-card-uid="classify-burial"]')).toHaveClass(/cursor-default/);
+    await expect(discardPanel.locator('[data-card-uid="classify-normal"]')).toHaveClass(/cursor-pointer/);
+    await discardPanel.locator('[data-card-uid="classify-burial"]').click({ force: true });
+    const before = await game.getState();
+    expect(before.core.players['0'].discard.map((card: { uid: string }) => card.uid)).toContain('classify-burial');
+    expect(before.core.players['0'].actionsPlayed).toBe(0);
+    expect(before.sys?.interaction?.current).toBeFalsy();
+    await game.screenshot('小丑-自埋行动不可作为标准行动', testInfo);
+    await discardPanel.locator('[data-card-uid="classify-normal"]').click({ force: true });
+    await expect.poll(async () => (await game.getState()).core.players['0'].actionsPlayed).toBe(1);
+    const after = await game.getState();
+    expect(after.core.players['0'].discard.map((card: { uid: string }) => card.uid)).toContain('classify-burial');
+    expect(after.core.players['0'].deck.map((card: { uid: string }) => card.uid)).toContain('classify-normal');
+  });
+
   test('沉默小丑从真实弃牌堆入口在无通常行动额度时额外打出标准行动', async ({ page, game }, testInfo) => {
     test.setTimeout(120000);
     await setChineseLocale(page.context());

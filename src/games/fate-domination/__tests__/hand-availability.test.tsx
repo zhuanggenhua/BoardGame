@@ -33,3 +33,15 @@ it('普通草稿可选合法技能，进入骑乘后右侧技能变为不可选'
  for(const {skill} of skills){const button=screen.getByRole('button',{name:`选择 ${skill.name}`});expect(button).toHaveAttribute('aria-disabled','true');fireEvent.click(button);}
  expect(select).not.toHaveBeenCalled();
 });
+
+it('工房仍可切换暗置，只有战场显示合计威力',()=>{
+ const player=createReplayAdapter(FateDominationDomain,'location-power').setup(['0','1','2']).core.players['0'];
+ const props={player:{...player,locationId:'workshop' as const},power:0,skills:[],canSelect:true,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
+ const view=render(<FateHandSurface {...props}/>);
+ expect(screen.queryByText('合计威力 0')).toBeNull();
+ const mode=screen.getByRole('button',{name:'暗置选牌'});
+ fireEvent.click(mode);
+ expect(mode).toHaveAttribute('aria-pressed','true');
+ view.rerender(<FateHandSurface {...props} player={{...player,locationId:'miyama'}} power={3}/>);
+ expect(screen.getByText('合计威力 3')).toBeVisible();
+});

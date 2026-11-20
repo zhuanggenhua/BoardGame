@@ -26,6 +26,7 @@ import {
   createBetrayalScriptedRandom,
 } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 import {
+  clickBetrayalSceneFigure,
   createRuntimeCore as createBaseRuntimeCore,
   initBetrayalContext,
   injectCore as injectRawCore,
@@ -6007,7 +6008,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       exchangeTarget?.displayName ?? "",
     );
     await saveScreenshot(page, `${screenshotBase}-06a-交换疾病对象旁提示.jpg`);
-    await targetToken.click();
+    await clickBetrayalSceneFigure(targetToken);
     await expect
       .poll(
         async () => {

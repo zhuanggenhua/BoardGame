@@ -697,7 +697,7 @@ export function findRuntimesByPorts(ports, cwd = process.cwd(), options = {}) {
   });
 }
 
-function killPid(pid) {
+export function killPid(pid) {
   try {
     if (process.platform === 'win32') {
       execHidden(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });

@@ -494,14 +494,17 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     check('电脑至少一方实际出牌', core.playerIds.filter(id => id !== '0').some(id => core.players[id].normalAttackPlayed)),
                     check('可结算地点', await primary.isEnabled()),
                 ], ['战斗阶段按地点结算', 'interaction-mode']);
-                const opponent = board.locator('.fd-runtime-player-rail .fd-runtime-avatar').first();
-                await opponent.hover();
+                const opponents = core.playerIds.filter(id => id !== '0' && core.players[id].normalAttackPlayed);
+                const battleOpponent = opponents.find(id => ['miyama', 'shinto'].includes(core.players[id].locationId ?? '') && !core.players[id].defeatMarkers.length);
+                const opponentId = battleOpponent ?? opponents[0];
+                const seat = board.locator(`[data-tutorial-id="fate-player-${opponentId}"]`);
+                await seat.locator('.fd-runtime-avatar').hover();
                 const row = board.locator('.fd-runtime-opponent-cards');
                 await expect(row.locator('.fd-runtime-public-cards').first().locator('button, .fd-hidden-played-card').first()).toBeVisible();
                 await row.hover();
                 await mark('opponent-cards', '悬浮对手头像，指针移入公开出牌单排', [
                     check('对手公开出牌可检视', await row.isVisible()),
-                    check('头像旁可见威力', await board.locator('.fd-seat-power').first().isVisible()),
+                    check('只有当前参战的对手显示威力数值', await seat.locator('.fd-seat-power[aria-label]').isVisible(), Boolean(battleOpponent)),
                 ], ['悬浮头像查看对手已打出牌', 'interaction-mode']);
                 await page.mouse.move(12, 12);
                 seen.add('battle');

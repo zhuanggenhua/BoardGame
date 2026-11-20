@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
 import {
@@ -54,7 +55,7 @@ export function isMinionCard(defId: string): boolean {
 
 export function isStandardAction(defId: string): boolean {
     const def = getCardDef(defId) as ActionCardDef | undefined;
-    return def?.type === 'action' && def.subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 export function isCharacterModifier(defId: string): boolean {

@@ -59,6 +59,46 @@ import {
 } from "../helpers/common";
 import { EVIDENCE_SCREENSHOT_QUALITY } from "../framework/evidenceScreenshots";
 
+export async function getBetrayalSceneFigurePoint(figure: Locator) {
+  const grid = figure.page().getByTestId("betrayal-room-grid");
+  await expect(figure).toHaveAttribute("data-three-hit-point", /^\[/);
+  const [u, v] = JSON.parse((await figure.getAttribute("data-three-hit-point"))!) as [number, number];
+  const bounds = (await grid.boundingBox())!;
+  return { x: bounds.x + u * bounds.width, y: bounds.y + v * bounds.height };
+}
+
+export async function clickBetrayalSceneFigure(figure: Locator) {
+  const page = figure.page();
+  const grid = page.getByTestId("betrayal-room-grid");
+  if ((await grid.getAttribute("data-map-renderer")) !== "three") {
+    await figure.click();
+    return;
+  }
+  const point = await getBetrayalSceneFigurePoint(figure);
+  const id = (await figure.getAttribute("data-scene-figure-id"))!;
+  const previousPick = Number(await grid.getAttribute("data-scene-pick-sequence"));
+  const hitStack = await page.evaluate(({ x, y }) => document.elementsFromPoint(x, y).slice(0, 6)
+    .map(element => ({ tag: element.tagName, testId: element.getAttribute("data-testid"),
+      control: element.closest("button, a, [role=button]")?.getAttribute("data-testid") })), point);
+  await page.mouse.click(point.x, point.y);
+  await expect(grid, `Three 拾取未收到真实指针，目标 ${id}，坐标及页面命中 ${JSON.stringify({ point, hitStack })}`)
+    .toHaveAttribute("data-scene-pick-sequence", String(previousPick + 1));
+  await expect(grid).toHaveAttribute("data-last-scene-pick", id);
+}
+
+export async function clickBetrayalSceneGirl(token: Locator) {
+  const page = token.page();
+  const grid = page.getByTestId("betrayal-room-grid");
+  const graphic = token.locator("[data-scene-marker-visual]");
+  await expect(grid).toHaveAttribute("data-map-renderer", "three");
+  await expect(graphic).toHaveAttribute("data-tutorial-screen-bounds", /\S/);
+  const [left, top, right, bottom] = (await graphic.getAttribute("data-tutorial-screen-bounds"))!.split(",").map(Number);
+  const previousPick = Number(await grid.getAttribute("data-scene-pick-sequence"));
+  await page.mouse.click((left + right) / 2, (top + bottom) / 2);
+  await expect(grid).toHaveAttribute("data-scene-pick-sequence", String(previousPick + 1));
+  await expect(grid).toHaveAttribute("data-last-scene-pick", "marker:mummy-girl");
+}
+
 type BetrayalHarnessSnapshot = {
   core: BetrayalCore;
   sys?: MatchState<BetrayalCore>["sys"];

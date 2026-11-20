@@ -12,6 +12,11 @@ function optionHasCardUid(option: InteractionOption, cardUid: string): boolean {
   return !!value && typeof value === 'object' && (value as { cardUid?: unknown }).cardUid === cardUid;
 }
 
+function optionHasMinionUid(option: InteractionOption, minionUid: string): boolean {
+  const value = option.value;
+  return !!value && typeof value === 'object' && (value as { minionUid?: unknown }).minionUid === minionUid;
+}
+
 async function dismissSpotlightIfPresent(page: Page): Promise<void> {
   const spotlightQueue = page.getByTestId('card-spotlight-queue');
   if (await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false)) {
@@ -34,6 +39,103 @@ async function expectCleanResolution(game: { getState: () => Promise<{ sys?: { i
 }
 
 test.describe('大杀四方《环游世界：国际事件》摔角手对象级真实入口审计', () => {
+  test('大战怪物允许玩家选择回手行动并洗入其余所选牌', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'luchadors,musketeers', p1: 'mounties,sumo_wrestlers', skipFactionSelect: true, seed: 20261128 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'monsters-source', defId: 'luchadors_senor_muchoslam_vs_the_monsters', type: 'action', owner: '0' }],
+        deck: [{ uid: 'monsters-deck-a', defId: 'luchadors_yellow_demon', type: 'minion', owner: '0' }, { uid: 'monsters-deck-b', defId: 'luchadors_capa_roja', type: 'minion', owner: '0' }],
+        discard: [
+          { uid: 'monsters-quick', defId: 'luchadors_quick_set_up', type: 'action', owner: '0' },
+          { uid: 'monsters-smart', defId: 'luchadors_smart_set_up', type: 'action', owner: '0' },
+          { uid: 'monsters-standard', defId: 'musketeers_biding_time', type: 'action', owner: '0' },
+        ], factions: ['luchadors', 'musketeers'], actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'sumo_wrestlers'] },
+      bases: [{ defId: 'base_the_factory', minions: [] }],
+    });
+    await game.playCard('luchadors_senor_muchoslam_vs_the_monsters');
+    await game.waitForInteraction('luchadors_senor_muchoslam_vs_the_monsters', 10000);
+    const discardPanel = page.locator('[data-discard-view-panel]');
+    await expect(discardPanel).toContainText('选择任意数量弃牌堆行动');
+    for (const uid of ['monsters-quick', 'monsters-smart', 'monsters-standard']) {
+      await discardPanel.locator(`[data-card-uid="${uid}"]`).click({ force: true });
+    }
+    await game.screenshot('大战怪物-选择三张弃牌', testInfo);
+    await game.confirm();
+    await game.waitForInteraction('luchadors_muchoslam_vs_monsters_recover', 10000);
+    await expect(discardPanel).toContainText('选择一张可打在随从上的行动回手');
+    const options = await game.getInteractionOptions();
+    expect(options.some(option => optionHasCardUid(option, 'monsters-quick'))).toBe(true);
+    expect(options.some(option => optionHasCardUid(option, 'monsters-smart'))).toBe(true);
+    expect(options.some(option => optionHasCardUid(option, 'monsters-standard'))).toBe(false);
+    await game.screenshot('大战怪物-选择回手行动', testInfo);
+    await discardPanel.locator('[data-card-uid="monsters-smart"]').click({ force: true });
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const player = (await game.getState()).core.players['0'];
+      return {
+        hand: player.hand.map((card: { uid: string }) => card.uid).sort(),
+        deck: player.deck.map((card: { uid: string }) => card.uid).sort(),
+      };
+    }).toEqual({ hand: ['monsters-smart'], deck: ['monsters-deck-a', 'monsters-deck-b', 'monsters-quick', 'monsters-standard'] });
+    await game.screenshot('大战怪物-回手并洗入牌库', testInfo);
+  });
+
+  test('聪明 Set-Up 的宿主转为己方控制后仍可在首个随从打到此处时抽牌', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'luchadors,musketeers', p1: 'mounties,sumo_wrestlers', skipFactionSelect: true, seed: 20261127 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'smart-new-minion', defId: 'musketeers_young_musketeer', type: 'minion', owner: '0' }],
+        deck: [{ uid: 'smart-draw', defId: 'luchadors_tag_team', type: 'action', owner: '0' }],
+        discard: [], factions: ['luchadors', 'musketeers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'sumo_wrestlers'] },
+      bases: [{ defId: 'base_the_factory', minions: [
+        { uid: 'smart-host', defId: 'mounties_dudlee', owner: '1', controller: '0', power: 2, attachedActions: [{ uid: 'smart-attached', defId: 'luchadors_smart_set_up', ownerId: '0' }] },
+      ] }],
+    });
+    await game.playCard('musketeers_young_musketeer', { targetBaseIndex: 0 });
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => (await game.getState()).core.players['0'].hand.map((card: { uid: string }) => card.uid)).toContain('smart-draw');
+    await game.screenshot('摔角手-己方控制宿主的聪明Set-Up触发抽牌', testInfo);
+  });
+
+  test('压制只能选择附着有自己行动的随从', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'luchadors,sumo_wrestlers', p1: 'musketeers,mounties', skipFactionSelect: true, seed: 20261126 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: { hand: [{ uid: 'pin-hand', defId: 'luchadors_pin', type: 'action', owner: '0' }], deck: [], discard: [], factions: ['luchadors', 'sumo_wrestlers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1 },
+      player1: { hand: [], deck: [], discard: [], factions: ['musketeers', 'mounties'] },
+      bases: [{ defId: 'base_the_factory', minions: [
+        { uid: 'pin-legal', defId: 'mounties_dudlee', owner: '1', controller: '1', power: 3, attachedActions: [{ uid: 'pin-own-action', defId: 'luchadors_quick_set_up', ownerId: '0' }] },
+        { uid: 'pin-no-action', defId: 'mounties_dudlee', owner: '1', controller: '1', power: 3 },
+        { uid: 'pin-opponent-action', defId: 'mounties_northern_mover', owner: '1', controller: '1', power: 4, attachedActions: [{ uid: 'pin-enemy-action', defId: 'mounties_battle_moose', ownerId: '1' }] },
+      ] }],
+    });
+    await page.locator('[data-card-uid="pin-hand"]').click();
+    await expect(page.locator('[data-minion-uid="pin-legal"]')).toHaveAttribute('data-highlighted', 'true');
+    await expect(page.locator('[data-minion-uid="pin-no-action"]')).not.toHaveAttribute('data-highlighted', 'true');
+    await expect(page.locator('[data-minion-uid="pin-opponent-action"]')).not.toHaveAttribute('data-highlighted', 'true');
+    await game.screenshot('摔角手-压制只高亮已有自己行动的随从', testInfo);
+    await page.locator('[data-minion-uid="pin-legal"]').click({ force: true });
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const target = state.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'pin-legal');
+      return target?.attachedActions.map((action: { uid: string }) => action.uid);
+    }).toEqual(['pin-own-action', 'pin-hand']);
+    await game.screenshot('摔角手-压制附着合法目标', testInfo);
+  });
+
   test('黄色恶魔从真实出牌入口在牌库与弃牌堆中选择 Set-Up 行动', async ({ page, game }, testInfo) => {
     test.setTimeout(120000);
     await setChineseLocale(page.context());
@@ -125,7 +227,7 @@ test.describe('大杀四方《环游世界：国际事件》摔角手对象级�
       player1: { factions: ['sumo_wrestlers', 'musketeers'] },
       bases: [{
         defId: 'base_ringside',
-        minions: [{ uid: 'senor-host', defId: 'musketeers_young_musketeer', owner: '1', controller: '1', power: 3 }],
+        minions: [{ uid: 'senor-host', defId: 'musketeers_young_musketeer', owner: '1', controller: '1', power: 3, attachedActions: [{ uid: 'senor-existing', defId: 'luchadors_quick_set_up', ownerId: '0' }] }],
       }],
     });
 
@@ -154,20 +256,18 @@ test.describe('大杀四方《环游世界：国际事件》摔角手对象级�
     });
 
     await page.locator('[data-minion-uid="senor-muchoslam"]').click({ force: true });
-    await page.waitForTimeout(300);
-    await game.screenshot('06-Muchoslam-天赋入口获得额外行动', testInfo);
-    await expect.poll(async () => {
-      const state = await game.getState();
-      const minion = state.core.bases[0]?.minions.find((entry: { uid?: string }) => entry.uid === 'senor-muchoslam');
-      const player = state.core.players['0'];
-      return {
-        talentUsed: minion?.talentUsed ?? false,
-        actionLimit: player?.actionLimit,
-        actionsPlayed: player?.actionsPlayed,
-      };
-    }, { timeout: 10000 }).toEqual({ talentUsed: true, actionLimit: 2, actionsPlayed: 0 });
-
-    await game.playCard('luchadors_pin', { targetMinionUid: 'senor-host' });
+    await game.waitForInteraction('smashup_immediate_extra_action', 10000);
+    const actionOptions = await game.getInteractionOptions();
+    expect(actionOptions.some(option => optionHasCardUid(option, 'senor-pin'))).toBe(true);
+    expect(actionOptions.some(option => optionHasCardUid(option, 'senor-recover'))).toBe(false);
+    await game.screenshot('06-Muchoslam-天赋选择合法额外行动', testInfo);
+    await page.locator('[data-card-uid="senor-pin"]').click({ force: true });
+    await game.waitForInteraction('smashup_immediate_extra_action_minion', 10000);
+    const targetOptions = await game.getInteractionOptions();
+    expect(targetOptions.some(option => optionHasMinionUid(option, 'senor-host'))).toBe(true);
+    expect(targetOptions.some(option => optionHasMinionUid(option, 'senor-muchoslam'))).toBe(false);
+    await game.screenshot('06b-Muchoslam-天赋选择对方随从', testInfo);
+    await page.locator('[data-minion-uid="senor-host"]').click({ force: true });
     await game.waitForNoInteraction(10000);
     await dismissSpotlightIfPresent(page);
     await expect.poll(async () => {
@@ -181,7 +281,7 @@ test.describe('大杀四方《环游世界：国际事件》摔角手对象级�
         discardUids: player?.discard.map((card: { uid?: string }) => card.uid) ?? [],
       };
     }, { timeout: 10000 }).toEqual({
-      attached: ['luchadors_pin'],
+      attached: ['luchadors_quick_set_up', 'luchadors_pin'],
       actionsPlayed: 1,
       actionLimit: 2,
       discardUids: [],

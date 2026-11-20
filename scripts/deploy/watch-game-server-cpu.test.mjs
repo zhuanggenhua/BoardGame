@@ -37,15 +37,12 @@ case "${'${1:-}'} ${'${2:-}'}" in
   "stats --no-stream") printf '99.00%% 100MiB / 1GiB 11\\n' ;;
   "ps ") printf 'CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES\\n' ;;
   "top ") printf 'UID PID PPID C STIME TTY TIME CMD\\nroot 4242 1 99 00:00 ? 00:01 node server.mjs\\n' ;;
+  "logs --timestamps")
+    printf '2026-11-20T01:01:00Z {"message":"[GameTransport] online-ai-slow-decision","matchId":"example","decisionMs":1200}\\n'
+    printf '2026-11-20T01:01:01Z {"message":"[GameTransport] online-ai-slow-recovery","matchId":"example","recoveryElapsedMs":3200}\\n'
+    ;;
   "exec boardgame-game-server")
-    if [[ "$*" == *"online-ai-slow-decision"* ]]; then
-      printf '{"message":"[GameTransport] online-ai-slow-decision","matchId":"example","decisionMs":1200}\\n'
-      if [[ "$*" == *"online-ai-slow-recovery"* ]]; then
-        printf '{"message":"[GameTransport] online-ai-slow-recovery","matchId":"example","recoveryElapsedMs":3200}\\n'
-      fi
-    else
-      printf '# fake container process snapshot\\nTID=1 CPU=99\\n'
-    fi ;;
+    printf '# fake container process snapshot\\nTID=1 CPU=99\\n' ;;
   "restart boardgame-game-server") printf 'boardgame-game-server\\n' ;;
   *) exit 0 ;;
 esac
@@ -102,6 +99,7 @@ esac
         assert.ok(feedbackFile, 'CPU 告警必须生成可重发的反馈文件');
         const feedback = JSON.parse(readFileSync(path.join(evidenceDir, feedbackFile), 'utf8'));
         assert.match(feedback.diagnosticPacket.captureId, /^cpu-[a-f0-9]{64}$/);
+        assert.ok(evidence.includes(`captureId=${feedback.diagnosticPacket.captureId}`));
         assert.equal(feedback.diagnosticPacket.source, 'server');
         const commandLog = readFileSync(dockerCommandLog, 'utf8');
         assert.ok(
@@ -112,11 +110,14 @@ esac
             commandLog.indexOf('docker cp boardgame-game-server:/tmp/boardgame-cpu-profile-') < commandLog.indexOf('docker restart boardgame-game-server'),
             commandLog,
         );
-        assert.ok(
-            commandLog.indexOf('online-ai-slow-decision') >= 0
-                && commandLog.indexOf('online-ai-slow-decision') < commandLog.indexOf('docker restart boardgame-game-server'),
-            commandLog,
-        );
+        const cpuWindow = /slow AI decisions and recoveries: sustained CPU samples\r?\nlogsSince=(\S+) logsUntil=(\S+)/.exec(evidence);
+        const profileWindow = /slow AI decisions and recoveries: V8 profile\r?\nlogsSince=(\S+) logsUntil=(\S+)/.exec(evidence);
+        assert.ok(cpuWindow && profileWindow);
+        for (const [, since, until] of [cpuWindow, profileWindow]) {
+            assert.ok(Date.parse(since) <= Date.parse(until));
+            const read = commandLog.indexOf(`docker logs --timestamps --since ${since} --until ${until}`);
+            assert.ok(read >= 0 && read < commandLog.indexOf('docker restart boardgame-game-server'), commandLog);
+        }
     } finally {
         rmSync(fixtureRoot, { recursive: true, force: true });
     }

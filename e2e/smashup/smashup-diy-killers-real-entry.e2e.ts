@@ -89,6 +89,58 @@ async function openMichaelScoringScene(game: GameTestContext, seed: number): Pro
 }
 
 test.describe('大杀四方杀人狂真实入口审计', () => {
+  test('水晶湖营地实际摧毁后可点击对手随从获得力量', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'diy_killers,aliens', p1: 'pirates,ninjas', seat1: 'local-ai',
+      skipFactionSelect: true, skipInitialization: false, seed: 20261120,
+    }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'savage', defId: 'diy_killers_savage_attack', type: 'action', owner: '0' }],
+        deck: [], discard: [], factions: ['diy_killers', 'aliens'],
+        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, vp: 0,
+      },
+      player1: {
+        hand: [], deck: [], discard: [], factions: ['pirates', 'ninjas'],
+        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, vp: 0,
+      },
+      bases: [
+        { defId: 'base_diy_killers_camp_crystal_lake', minions: [
+          { uid: 'own', defId: 'diy_killers_jason', owner: '0', controller: '0' },
+          { uid: 'victim', defId: 'pirate_first_mate', owner: '1', controller: '1' },
+          { uid: 'enemy-target', defId: 'pirate_buccaneer', owner: '1', controller: '1' },
+        ] },
+        { defId: 'base_the_factory', minions: [] },
+      ],
+    });
+    await game.playCard('diy_killers_savage_attack');
+    await game.waitForInteraction('diy_killers_savage_attack', 10000);
+    await expect(page.getByRole('button', { name: '跳过（不摧毁）' })).toBeVisible();
+    await page.locator('[data-minion-uid="victim"]').click({ force: true });
+    await game.waitForInteraction('base_diy_killers_camp_crystal_lake_power', 10000);
+    await dismissSpotlightIfPresent(page);
+    await expect(page.getByRole('button', { name: '跳过（不摧毁）' })).toBeHidden({ timeout: 5000 });
+    await expect(page.locator('[data-minion-uid="enemy-target"]')).toHaveAttribute('data-highlighted', 'true', { timeout: 10000 });
+    await game.screenshot('水晶湖-选择对手随从加力量', testInfo);
+    await page.locator('[data-minion-uid="enemy-target"]').click({ force: true });
+    await game.waitForInteraction('diy_killers_savage_attack_boost', 10000);
+    await game.selectInteractionOptionBy(option => option.value?.skip === true, '跳过野蛮攻击额外加力');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const base = state.core.bases[0];
+      return {
+        victimPresent: base.minions.some((minion: { uid?: string }) => minion.uid === 'victim'),
+        enemyBoost: base.minions.find((minion: { uid?: string }) => minion.uid === 'enemy-target')?.tempPowerModifier ?? 0,
+        triggerCount: state.core.triggerQueue?.length ?? 0,
+      };
+    }, { timeout: 10000 }).toEqual({ victimPresent: false, enemyBoost: 2, triggerCount: 0 });
+    await game.screenshot('水晶湖-对手随从获得力量', testInfo);
+  });
+
   test('派系详情页显示杀人狂卡牌与图集', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
     await setChineseLocale(page.context());
@@ -594,7 +646,7 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     await machete.click({ force: true });
     await game.waitForInteraction('diy_killers_machete', 10000);
     await game.screenshot('05-杀人狂-杰森大砍刀选择目标基地', testInfo);
-    await game.selectInteractionOptionBy(option => option.value?.toBaseIndex === 1, '大砍刀移动杰森到第二基地');
+    await page.locator('[data-base-index="1"]').first().click();
 
     await expect.poll(async () => {
       const state = await game.getState();
@@ -820,24 +872,23 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     });
 
     await game.playCard('diy_killers_improvised_weapon');
-    await game.waitForNoInteraction(10000);
+    await game.waitForInteraction('smashup_immediate_extra_action', 10000);
     await expect.poll(async () => {
       const state = await game.getState();
       const player = state.core.players['0'];
       return {
         hand: player?.hand?.map((card: { uid?: string }) => card.uid) ?? [],
-        restricted: player?.specificExtraActionPlays?.map((entry: { cardUid?: string; destroyAttachedActionAtTurnEnd?: boolean }) => ({
-          cardUid: entry.cardUid,
-          destroyAttachedActionAtTurnEnd: entry.destroyAttachedActionAtTurnEnd,
-        })) ?? [],
+        choice: state.sys.interaction.current.data.options.map((option: { value?: { cardUid?: string; skip?: boolean } }) => option.value?.cardUid ?? (option.value?.skip ? 'skip' : '')),
       };
     }, { timeout: 10000 }).toEqual({
       hand: ['machete'],
-      restricted: [{ cardUid: 'machete', destroyAttachedActionAtTurnEnd: true }],
+      choice: ['machete', 'skip'],
     });
     await game.screenshot('04-杀人狂-简易武器抽到限定附着行动', testInfo);
 
-    await game.playCard('diy_killers_machete', { targetBaseIndex: 0, targetMinionUid: 'host' });
+    await page.locator('[data-card-uid="machete"]').last().click({ force: true });
+    await game.waitForInteraction('smashup_immediate_extra_action_minion', 10000);
+    await page.locator('[data-minion-uid="host"]').click({ force: true });
     await game.waitForNoInteraction(10000);
     await dismissSpotlightIfPresent(page);
 
@@ -862,9 +913,21 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
       interactionOpen: false,
     });
     await game.screenshot('05-杀人狂-简易武器限定行动已附着', testInfo);
+    await game.advancePhase();
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const host = state.core.bases[0]?.minions?.find((minion: { uid?: string }) => minion.uid === 'host');
+      return {
+        attached: host?.attachedActions?.some((action: { uid?: string }) => action.uid === 'machete') ?? false,
+        discarded: state.core.players['0']?.discard?.some((card: { uid?: string }) => card.uid === 'machete') ?? false,
+        triggerCount: state.core.triggerQueue?.length ?? 0,
+      };
+    }, { timeout: 20000 }).toEqual({ attached: false, discarded: true, triggerCount: 0 });
+    await game.screenshot('05b-杀人狂-简易武器回合结束摧毁装备', testInfo);
   });
 
-  test('人皮脸从真实打牌入口检索电锯并在下一回合触发摧毁', async ({ page, game }, testInfo) => {
+  for (const shouldMove of [false, true]) {
+  test(`人皮脸检索电锯并触发摧毁后${shouldMove ? '点击基地移动' : '跳过移动'}`, async ({ page, game }, testInfo) => {
     test.setTimeout(150000);
     await setChineseLocale(page.context());
     await game.openTestGame('smashup', {
@@ -988,14 +1051,15 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     );
     await game.waitForInteraction('diy_killers_chainsaw_move', 10000);
     await game.screenshot('11-杀人狂-电锯移动宿主选择', testInfo);
-    await game.selectInteractionOptionBy(
-      option => option.id === 'pass' || option.value?.kind === 'pass' || option.value?.skip === true || /不移动|让过|skip/i.test(String(option.label ?? '')),
-      '电锯让过移动宿主',
-    );
+    if (shouldMove) {
+      await page.locator('[data-base-index="1"]').first().click();
+    } else {
+      await page.getByRole('button', { name: /跳过|不移动/ }).first().click();
+    }
 
     await expect.poll(async () => {
       const state = await game.getState();
-      const leatherface = state.core.bases[0]?.minions?.find((minion: { uid?: string }) => minion.uid === 'leatherface-card');
+      const leatherface = state.core.bases[shouldMove ? 1 : 0]?.minions?.find((minion: { uid?: string }) => minion.uid === 'leatherface-card');
       return {
         remainingMinions: state.core.bases[0]?.minions?.map((minion: { uid?: string }) => minion.uid) ?? [],
         powerCounters: leatherface?.powerCounters ?? 0,
@@ -1006,7 +1070,7 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
         queuedInteractions: state.sys?.interaction?.queue?.map((interaction: { data?: { sourceId?: string } }) => interaction.data?.sourceId ?? null) ?? [],
       };
     }, { timeout: 15000 }).toEqual({
-      remainingMinions: ['leatherface-card'],
+      remainingMinions: shouldMove ? [] : ['leatherface-card'],
       powerCounters: 1,
       usedTurn: expect.any(Number),
       triggerQueue: [],
@@ -1016,6 +1080,7 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     });
     await game.screenshot('12-杀人狂-人皮脸摧毁目标并完成生命周期收口', testInfo);
   });
+  }
 
   test('弗莱迪从真实打牌入口检索爪子手套并完成天赋摧毁生命周期', async ({ page, game }, testInfo) => {
     test.setTimeout(150000);
@@ -1230,8 +1295,11 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     await game.screenshot('17-杀人狂-爪子手套真实附着', testInfo);
 
     const attachedGlove = page.locator('[data-attached-action-uid="glove-card"]');
+    // 先移出宿主，确保重新悬停会产生真实的 mouseenter。
+    await page.mouse.move(10, 10);
     await page.locator('[data-minion-uid="freddy-card"]').hover();
     await expect(attachedGlove).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-attached-overlay-owner="freddy-card"]')).toHaveCSS('pointer-events', 'auto');
     const attachedHitSamples = await attachedGlove.evaluate(element => {
       const rect = element.getBoundingClientRect();
       const fractions = Array.from({ length: 9 }, (_, index) => (index + 1) / 10);
@@ -1248,7 +1316,15 @@ test.describe('大杀四方杀人狂真实入口审计', () => {
     });
     const attachedHitPoint = attachedHitSamples.find(sample => sample.uid === 'glove-card');
     if (!attachedHitPoint) {
-      throw new Error(`爪子手套附着卡没有可真实命中的前景区域；hit samples=${JSON.stringify(attachedHitSamples)}`);
+      const layers = await attachedGlove.evaluate(element => {
+        const nodes: Array<{ tag: string; className: string; opacity: string; zIndex: string; pointerEvents: string }> = [];
+        for (let node: Element | null = element; node && nodes.length < 7; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          nodes.push({ tag: node.tagName, className: node.getAttribute('class') ?? '', opacity: style.opacity, zIndex: style.zIndex, pointerEvents: style.pointerEvents });
+        }
+        return nodes;
+      });
+      throw new Error(`爪子手套附着卡没有可真实命中的前景区域；layers=${JSON.stringify(layers)}; hit samples=${JSON.stringify(attachedHitSamples)}`);
     }
     await page.mouse.move(attachedHitPoint.x, attachedHitPoint.y);
     await page.waitForTimeout(200);

@@ -97,6 +97,7 @@ export interface QidahenTurnResolutionAppliedEvent extends GameEvent<'TURN_RESOL
         frameId: string;
         factionId: QidahenFactionId;
         fromStep: QidahenTurnResolutionStep;
+        factKind?: QidahenTurnResolutionFact['kind'];
         fact: QidahenTurnResolutionFact;
     };
 }

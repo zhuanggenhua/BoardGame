@@ -1,5 +1,6 @@
 import { fateSituationEventCounts, distributeFateRoundEvents } from './environmentRules';
 import { capFateMana } from './rules';
+import { getAiSeatIds } from '../../../engine/ai/seatControllers';
 import type { RandomFn, PlayerId } from '../../../engine/types';
 import { FATE_ATTACK_CARDS, FATE_EVENTS, FATE_SERVANTS, FATE_SITUATIONS, FATE_MASTERS } from '../data';
 import type { BattlefieldState, CardInstance, FateDominationCore, LocationId, PlayerState } from './types';
@@ -33,11 +34,14 @@ const createBattlefield = (): Record<LocationId, BattlefieldState> => ({
     recon: { id: 'recon', label: '侦察', movementCost: 0, terrainPower: 0, competitionVictoryPoints: 0, capacity: 1, playerIds: [], eventCards: [] },
 });
 
-const createPlayer = (playerId: PlayerId, index: number): PlayerState => {
-    const master = index === 0
+const createPlayer = (
+    playerId: PlayerId,
+    index: number,
+    master = index === 0
         ? (FATE_MASTERS.find((item) => item.name === '卫宫士郎') ?? FATE_MASTERS[0])
-        : FATE_MASTERS[index % FATE_MASTERS.length];
-    const servant = index === 0 ? (FATE_SERVANTS.find((item) => item.id === 'servant-saber') ?? FATE_SERVANTS[0]) : FATE_SERVANTS[index % FATE_SERVANTS.length];
+        : FATE_MASTERS[index % FATE_MASTERS.length],
+    servant = index === 0 ? (FATE_SERVANTS.find((item) => item.id === 'servant-saber') ?? FATE_SERVANTS[0]) : FATE_SERVANTS[index % FATE_SERVANTS.length],
+): PlayerState => {
     const deck = createFateAttackDeck(playerId, servant.id);
     return {
         id: playerId,
@@ -63,6 +67,7 @@ const createPlayer = (playerId: PlayerId, index: number): PlayerState => {
         revealedSkillIds: [],
         normalAttackPlayed: false,
         normalMoveCompleted: false,
+        playedSpecialAttackThisRound: false,
         skills: [
             ...(master.skills ?? []),
             ...(servant.skillCards ?? []),
@@ -73,7 +78,7 @@ const createPlayer = (playerId: PlayerId, index: number): PlayerState => {
 export function createInitialFateDominationCore(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): FateDominationCore {
     const normalizedPlayerIds = playerIds.length > 0 ? playerIds : ['0', '1', '2'];
     const setupRecord = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
-        ? setupData as { firstPlayerId?: unknown; turnOrder?: unknown }
+        ? setupData as { firstPlayerId?: unknown; turnOrder?: unknown; enableAi?: unknown; seatControllers?: unknown }
         : undefined;
     const requestedTurnOrder = Array.isArray(setupRecord?.turnOrder)
         && setupRecord.turnOrder.length === normalizedPlayerIds.length
@@ -90,7 +95,6 @@ export function createInitialFateDominationCore(playerIds: PlayerId[], random: R
         : firstPlayerIndex > 0
         ? [...normalizedPlayerIds.slice(firstPlayerIndex), ...normalizedPlayerIds.slice(0, firstPlayerIndex)]
         : [...normalizedPlayerIds];
-    const players = Object.fromEntries(normalizedPlayerIds.map((playerId, index) => [playerId, createPlayer(playerId, index)]));
     const eventDeck = random.shuffle(FATE_EVENTS.map((event) => ({ ...event })));
     // CHM setup: shuffle ten ordinary situations, burn two, then reveal round one.
     const ordinarySituations = random.shuffle(FATE_SITUATIONS.filter(card => !card.climax));
@@ -98,6 +102,17 @@ export function createInitialFateDominationCore(playerIds: PlayerId[], random: R
     const counts=fateSituationEventCounts(situation);
     const currentEvents=distributeFateRoundEvents(eventDeck.splice(0,counts.miyama+counts.shinto),situation);
     const battlefield=createBattlefield();battlefield.miyama.eventCards=currentEvents.miyama;battlefield.shinto.eventCards=currentEvents.shinto;
+    const seatControllers = setupRecord?.seatControllers;
+    const configuredAiSeats = setupRecord?.enableAi !== false && seatControllers && typeof seatControllers === 'object' && !Array.isArray(seatControllers)
+        ? getAiSeatIds(seatControllers as Record<string, { type?: unknown } | undefined>) : [];
+    const aiSeats = normalizedPlayerIds.filter(id => configuredAiSeats.includes(id));
+    // 在游戏服用同一随机源挑选 AI 初始候选；先确认的座位仍由正式准备命令锁定。
+    const aiMasters = aiSeats.length ? random.shuffle([...FATE_MASTERS]) : [];
+    const aiServants = aiSeats.length ? random.shuffle([...FATE_SERVANTS]) : [];
+    const players = Object.fromEntries(normalizedPlayerIds.map((playerId, index) => {
+        const aiIndex = aiSeats.indexOf(playerId);
+        return [playerId, createPlayer(playerId, index, aiMasters[aiIndex], aiServants[aiIndex])];
+    }));
     for (const player of Object.values(players)) {
         player.mana = capFateMana(player.masterId, player.mana + situation.printedMana);
     }

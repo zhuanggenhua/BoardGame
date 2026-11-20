@@ -4,6 +4,7 @@ import {
   attachPageDiagnostics,
 } from "../helpers/common";
 import {
+  clickBetrayalSceneFigure,
   createFirstScenarioReadyToLearnAboutJackRuntimeCore,
   createFirstScenarioReadyToExorciseRuntimeCore,
   createFirstScenarioReadyToStudyExorcismRuntimeCore,
@@ -502,7 +503,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       page.getByTestId("betrayal-room-occupant-target-outline-hallway-1"),
       "地图队友 token 必须有贴合本体的五边形高亮",
     ).toHaveAttribute("data-highlight-shape", "pentagon");
-    await mapTeammateTarget.click();
+    await clickBetrayalSceneFigure(mapTeammateTarget);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
     ).toContainText("兔脚");
@@ -1023,7 +1024,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       page,
       [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01],
     );
-    await traitorMapTarget.click();
+    await clickBetrayalSceneFigure(traitorMapTarget);
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText(/攻击|造成|physical damage|击倒/);

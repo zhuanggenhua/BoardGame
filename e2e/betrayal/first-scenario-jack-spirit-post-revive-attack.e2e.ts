@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createJackSpiritPostReviveAttackReadyRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -41,7 +42,7 @@ test.describe('山屋惊魂第一剧本叛徒复活后继续战斗', () => {
         await saveScreenshot(page, READY_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
-        await heroMapTarget.click();
+        await clickBetrayalSceneFigure(heroMapTarget);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/击倒了一名英雄|造成 .* physical damage|扑向英雄/i);
         await saveScreenshot(page, ATTACKED_SCREENSHOT);

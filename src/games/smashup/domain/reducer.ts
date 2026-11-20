@@ -329,7 +329,8 @@ function buildFactionSelectedEventsForCommand(
 export function execute(
     state: MatchState<SmashUpCore>,
     command: SmashUpCommand,
-    random: RandomFn
+    random: RandomFn,
+    options?: { destroyAttachedActionAtTurnEnd?: boolean },
 ): SmashUpEvent[] {
     const now = typeof command.timestamp === 'number' ? command.timestamp : 0;
     const _core = state.core;
@@ -339,7 +340,7 @@ export function execute(
         return [];
     }
 
-    const { events, updatedState } = executeCommand(state, command, random, now);
+    const { events, updatedState } = executeCommand(state, command, random, now, options);
     
     // 如果能力修改了 matchState（如 queueInteraction 创建了 Interaction），
     // 通过引用赋值将 sys 更新传递给 pipeline
@@ -385,7 +386,8 @@ function executeCommand(
     state: MatchState<SmashUpCore>,
     command: SmashUpCommand,
     random: RandomFn,
-    now: number
+    now: number,
+    options?: { destroyAttachedActionAtTurnEnd?: boolean },
 ): { events: SmashUpEvent[]; updatedState?: MatchState<SmashUpCore> } {
     // 防御性初始化：处理测试环境可能传递裸 core 的情况
     // 如果 state 没有 core 字段，说明传递的是裸 core，需要包装
@@ -581,7 +583,8 @@ function executeCommand(
                 targetMinionUid: command.payload.targetMinionUid,
                 fromDiscard,
                 fromStored,
-                destroyAttachedActionAtTurnEnd: specificExtraActionPlay?.entry.destroyAttachedActionAtTurnEnd === true,
+                destroyAttachedActionAtTurnEnd: options?.destroyAttachedActionAtTurnEnd === true
+                    || specificExtraActionPlay?.entry.destroyAttachedActionAtTurnEnd === true,
                 now,
             });
             const counterWindowState = maybeQueueActionCounterWindow(workingState, pendingResolution, now);
@@ -1464,6 +1467,14 @@ export function processDestroyTriggers(
                 triggerMinionPower,
                 controllerId: triggerPlayerId,
                 destroyerId,
+                destroySource: {
+                    sourcePlayerId: de.payload.sourcePlayerId,
+                    sourceCardUid: de.payload.sourceCardUid,
+                    sourceDefId: de.payload.sourceDefId,
+                    sourceControllerId: de.payload.sourceControllerId,
+                    sourceBaseIndex: de.payload.sourceBaseIndex,
+                    sourceKind: de.payload.sourceKind,
+                },
                 reason: de.payload.reason,
                 random,
             now,

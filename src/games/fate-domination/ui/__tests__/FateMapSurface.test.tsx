@@ -22,6 +22,31 @@ it('按中文规则准备牌堆：事件牌库暗置于板面B1 Objectives，检
  const situation=screen.getByRole('button',{name:`检视${core.situation.name}`});expect(situation.style.left).toBe('418px');expect(situation.style.top).toBe('50px');
  const situationDeck=screen.getByRole('button',{name:/检视局势牌库/});expect(situationDeck.style.left).toBe('130px');expect(situationDeck.style.top).toBe('50px');
 });
+it('棋盘战果标记跟随公开分数，七人同分时都在同一印刷圆位内', () => {
+ const ids = ['0', '1', '2', '3', '4', '5', '6'];
+ const core = createReplayAdapter(FateDominationDomain, 'map-victory-track').setup(ids).core;
+ const props = { core, locale: 'zh-CN', legalLocations: [], onLocation: vi.fn(), onInspect: vi.fn() };
+ const view = render(<FateMapSurface {...props}/>);
+ const marks = () => Array.from(view.container.querySelectorAll<HTMLElement>('[data-fate-victory-seat]'));
+ const initial = marks();
+ expect(initial.map(mark => mark.dataset.fateVictorySeat)).toEqual(ids);
+ expect(new Set(initial.map(mark => `${mark.style.left}/${mark.style.top}`)).size).toBe(7);
+ expect(initial.every(mark => Math.hypot(parseFloat(mark.style.left) - 1512, parseFloat(mark.style.top) - 1091) + parseFloat(mark.style.width) / 2 <= 41.001)).toBe(true);
+
+ core.players['0'].victoryPoints = 12;
+ core.players['1'].victoryPoints = -2;
+ core.players['2'].victoryPoints = 42;
+ core.players['3'].victoryPoints = 39;
+ core.players['3'].eliminated = true;
+ view.rerender(<FateMapSurface {...props}/>);
+ const seat = (id: string) => marks().find(mark => mark.dataset.fateVictorySeat === id)!;
+ expect([seat('0').style.left, seat('0').style.top]).toEqual(['1624px', '868px']);
+ expect([seat('3').style.left, seat('3').style.top, seat('3').dataset.eliminated]).toEqual(['1846px', '86px', 'true']);
+ expect([seat('1').textContent, seat('2').textContent]).toEqual(['-2', '42']);
+ expect(parseFloat(seat('1').style.top)).toBeGreaterThan(1091);
+ expect(parseFloat(seat('2').style.top)).toBeLessThan(86);
+});
+
 it('本人棋子直接选择移动，合法地点按钮直接提交目的地', () => {
  const core=createReplayAdapter(FateDominationDomain,'map-pawn').setup(['0','1','2']).core;
  core.battlefield.miyama.playerIds=['0','1'];core.players['0'].locationId='miyama';core.players['1'].locationId='miyama';

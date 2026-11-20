@@ -260,6 +260,7 @@ interface DronePreventContext {
     fromBaseIndex: number;
     toPlayerId: PlayerId;
     destroyerId?: PlayerId;
+    destroySource?: TriggerContext['destroySource'];
 }
 
 interface GimmePodFirstContext {
@@ -542,11 +543,14 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<GiantAntPro
                     minionDefId: context.targetMinionDefId,
                     fromBaseIndex: context.fromBaseIndex,
                     destroyerId: context.destroyerId,
+                    sourceCardUid: context.destroySource?.sourceCardUid,
                     reason: 'giant_ant_drone_skip',
                     now: timestamp,
-                    sourcePlayerId: context.playerId,
-                    sourceControllerId: context.playerId,
-                    sourceKind: 'nonAction',
+                    sourcePlayerId: context.destroySource?.sourcePlayerId ?? context.playerId,
+                    sourceDefId: context.destroySource?.sourceDefId,
+                    sourceControllerId: context.destroySource?.sourceControllerId ?? context.destroySource?.sourcePlayerId ?? context.playerId,
+                    sourceBaseIndex: context.destroySource?.sourceBaseIndex,
+                    sourceKind: context.destroySource?.sourceKind,
                 }),
             };
         }
@@ -561,11 +565,14 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<GiantAntPro
                     minionDefId: context.targetMinionDefId,
                     fromBaseIndex: context.fromBaseIndex,
                     destroyerId: context.destroyerId,
+                    sourceCardUid: context.destroySource?.sourceCardUid,
                     reason: 'giant_ant_drone_skip',
                     now: timestamp,
-                    sourcePlayerId: context.playerId,
-                    sourceControllerId: context.playerId,
-                    sourceKind: 'nonAction',
+                    sourcePlayerId: context.destroySource?.sourcePlayerId ?? context.playerId,
+                    sourceDefId: context.destroySource?.sourceDefId,
+                    sourceControllerId: context.destroySource?.sourceControllerId ?? context.destroySource?.sourcePlayerId ?? context.playerId,
+                    sourceBaseIndex: context.destroySource?.sourceBaseIndex,
+                    sourceKind: context.destroySource?.sourceKind,
                     targetSnapshot: target
                         ? {
                             ownerId: target.owner,
@@ -2311,6 +2318,7 @@ function giantAntDronePreventTrigger(ctx: TriggerContext): SmashUpEvent[] | { ev
             fromBaseIndex: baseIndex,
             toPlayerId: target.owner,
             destroyerId: ctx.destroyerId,
+            destroySource: ctx.destroySource,
         }),
     ), ctx.matchState);
 }

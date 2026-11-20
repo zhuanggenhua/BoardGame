@@ -304,17 +304,21 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
     if (await roster.isVisible()) {
         await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
         for (const id of targets) {
-            await roster.locator(`[data-piece-ids~="${id}"]`).getByTestId(/^qidahen-dispatch-pick-/).click();
+            const amount = roster.locator(`[data-piece-ids~="${id}"]`).getByTestId(/^qidahen-dispatch-quantity-/);
+            await amount.fill(String(Number(await amount.inputValue()) + 1));
         }
         await onSelected?.();
         await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
         await page.getByTestId('qidahen-turn-confirm').click();
         return;
     }
+    if (snapshot.tutorial.step.id === 'dispatch-source') {
+        await clickDispatchSourceStack(page, targets[0]);
+        await onSelected?.();
+        return;
+    }
     for (const id of targets) {
-        if (snapshot.tutorial.step.id === 'dispatch-source') {
-            await page.locator(`[data-qidahen-map-region-choice="true"][data-qidahen-map-token-type="army"][data-qidahen-map-token-region="${id}"]`).first().click();
-        } else if (snapshot.core.regions.some(region => !region.isLogicalRegion && region.id === id)) await clickRegion(page, id);
+        if (snapshot.core.regions.some(region => !region.isLogicalRegion && region.id === id)) await clickRegion(page, id);
         else if (snapshot.core.handCards.some(card => card.id === id)) await clickCard(page, id);
         else if (snapshot.core.pieces.some(piece => piece.id === id)) await clickPiece(page, snapshot, id);
         else await page.getByTestId(`qidahen-turn-option-${id}`).click();
@@ -322,6 +326,14 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
     await onSelected?.();
     await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
     await page.getByTestId('qidahen-turn-confirm').click();
+}
+
+async function clickDispatchSourceStack(page: Page, regionId: string) {
+    const sourceStack = page.locator(`[data-qidahen-map-region-choice="true"][data-qidahen-map-token-type="army"][data-qidahen-map-token-region="${regionId}"]`)
+        .filter({ has: page.locator('[data-qidahen-army-stack-layers="true"]') }).first();
+    await expect(sourceStack.getByTestId(/^qidahen-army-stack-count-/)).toBeVisible();
+    await sourceStack.click();
+    await expect(page.getByTestId('qidahen-dispatch-roster')).toHaveAttribute('data-dispatch-step', 'dispatch-troops');
 }
 
 function annualDynamicTargets(snapshot: Snapshot): string[] {
@@ -637,7 +649,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const roster = page.getByTestId('qidahen-dispatch-roster');
                     const units = roster.getByTestId(/^qidahen-dispatch-unit-/);
                     expect(await units.count()).toBeGreaterThan(0);
-                    await expect(roster.locator('[data-qidahen-army-block="flat"] img')).toHaveCount(await units.count());
+                    await expect(roster.locator('[data-qidahen-army-block="flat"] > img')).toHaveCount(await units.count());
                     await expect.poll(() => roster.locator('[data-qidahen-army-block="flat"] img').evaluateAll(images =>
                         images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
                     const dockBounds = (await roster.boundingBox())!;
@@ -652,6 +664,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const validIds = snapshot.interaction!.data.options.filter(option => !option.disabled
                         && snapshot.core.pieces.some(piece => piece.id === option.id)).map(option => option.id).sort();
                     expect(geometry.flatMap(unit => unit.ids).sort()).toEqual(validIds);
+                    await expect(roster.getByRole('spinbutton')).toHaveCount(geometry.length);
+                    await expect(page.locator('[data-qidahen-dispatch-source="true"][data-qidahen-map-token-region="city-region-15"]').first()).toBeVisible();
                     expect(geometry.reduce((count, unit) => count + unit.count, 0)).toBe(suffix === '-selected' ? dynamicTargets.length : 0);
                     await expect(roster.locator('[data-qidahen-dispatch-recommended="true"]')).toHaveCount(1);
                     for (const { bounds } of geometry) {
@@ -1182,6 +1196,37 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         const command = dynamicCommand;
                         if (!command) throw new Error(`Missing command for ${step.id}`);
                         const targets = dynamicTargets;
+                        if (viewport.name === 'desktop' && step.id === 'dispatch-troops') {
+                            const roster = page.getByTestId('qidahen-dispatch-roster');
+                            await roster.getByTestId('qidahen-turn-option-back').click();
+                            await expect(roster).toHaveCount(0);
+                            await clickDispatchSourceStack(page, 'city-region-15');
+                            expect((await read(page)).tutorial.step?.id).toBe('dispatch-troops');
+                            const group = roster.locator('[data-piece-ids*=" "]').first();
+                            const amount = group.getByRole('spinbutton');
+                            await amount.fill('2');
+                            await expect(group).toHaveAttribute('data-qidahen-dispatch-selected', '2');
+                            await group.getByRole('slider').press('ArrowLeft');
+                            await expect(amount).toHaveValue('1');
+                            await capture('dispatch-quantity-adjustment', '', step.id);
+                            await amount.fill('0');
+                            await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
+                        }
+                        if (viewport.name === 'desktop' && step.id === 'dispatch-target') {
+                            const roster = page.getByTestId('qidahen-dispatch-roster');
+                            const beforeBack = await roster.locator('[data-selected-piece-ids]').evaluateAll(units =>
+                                units.flatMap(unit => (unit.getAttribute('data-selected-piece-ids') ?? '').split(' ').filter(Boolean)).sort());
+                            await clickRegion(page, targets[0]);
+                            await expect(roster.getByTestId('qidahen-turn-confirm')).toBeEnabled();
+                            await roster.getByTestId('qidahen-turn-option-back').click();
+                            await expect(roster).toHaveAttribute('data-dispatch-step', 'dispatch-troops');
+                            expect(await roster.locator('[data-selected-piece-ids]').evaluateAll(units =>
+                                units.flatMap(unit => (unit.getAttribute('data-selected-piece-ids') ?? '').split(' ').filter(Boolean)).sort())).toEqual(beforeBack);
+                            await capture('dispatch-reselect', '', step.id);
+                            await roster.getByTestId('qidahen-turn-confirm').click();
+                            await expect(roster).toHaveAttribute('data-dispatch-step', 'dispatch-target');
+                            await expect(roster.getByTestId('qidahen-turn-confirm')).toHaveCount(0);
+                        }
                         if (step.id === 'battle-roll' && before.core.handCards.some(card => card.id === 'hand-2')) {
                             await capture('tactic-card', '', step.id);
                             await clickCard(page, 'hand-2');

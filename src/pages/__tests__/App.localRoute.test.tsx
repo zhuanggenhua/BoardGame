@@ -3,12 +3,13 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GAME_MANIFEST } from '../../games/manifest';
 
 const toastViewportMock = vi.hoisted(() => ({
     module: { ToastViewport: () => null } as Record<string, unknown>,
 }));
 const routerState = vi.hoisted(() => ({
-    initialEntries: ['/play/fantasyrealms/local'],
+    initialEntries: ['/play/tictactoe/local'],
 }));
 const routeGuardMocks = vi.hoisted(() => ({
     closeAll: vi.fn(),
@@ -185,7 +186,7 @@ vi.mock('../admin/components/AdminSkeletons', () => ({
 
 describe('App local route', () => {
     beforeEach(() => {
-        routerState.initialEntries = ['/play/fantasyrealms/local'];
+        routerState.initialEntries = ['/play/tictactoe/local'];
         routeGuardMocks.getMatch.mockResolvedValue({
             matchID: 'existing-match',
             gameName: 'fantasyrealms',
@@ -199,12 +200,16 @@ describe('App local route', () => {
         vi.useRealTimers();
         runtimeState.nativeAndroid = false;
         runtimeState.nativeMobile = false;
-        routerState.initialEntries = ['/play/fantasyrealms/local'];
+        routerState.initialEntries = ['/play/tictactoe/local'];
         toastViewportMock.module = { ToastViewport: NullComponent };
         vi.resetModules();
     });
 
-    it('命中 /play/:gameId/local 时应渲染 LocalMatchRoom，而不是回退到 TestMatchRoom', async () => {
+    it('只有井字棋显式开启本地同屏', () => {
+        expect(GAME_MANIFEST.filter(game => game.allowLocalMode === true).map(game => game.id)).toEqual(['tictactoe']);
+    });
+
+    it('井字棋的本地入口挂载本地牌桌', async () => {
         const { default: App } = await import('../../App');
 
         render(<App />);
@@ -213,6 +218,24 @@ describe('App local route', () => {
             expect(screen.getByTestId('local-match-room')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it.each(['/play/fate-domination/local', '/play/fantasyrealms/local', '/play/fate-domination?playerID=0'])('玩家打开旧入口 %s 时回到大厅', async (path) => {
+        routerState.initialEntries = [path];
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+        expect(await screen.findByTestId('home-entry')).toBeInTheDocument();
+        expect(screen.queryByTestId('local-match-room')).toBeNull();
+        expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it('教程继续挂载教程牌桌', async () => {
+        routerState.initialEntries = ['/play/fate-domination/tutorial'];
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+        expect(await screen.findByTestId('tutorial-match-room')).toBeInTheDocument();
     });
 
     it.each([

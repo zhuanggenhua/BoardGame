@@ -11,6 +11,7 @@ description: '游戏设计入口。用于玩法、机制、平衡、关卡、UI/
 
 1. 锁定用户要解决的是：立项、核心循环、机制 / 平衡、关卡 / 引导、UI / UX、玩家心理、测试，还是团队决策。
 2. 读取 [`references/topic-cards.md`](references/topic-cards.md) 中对应主题卡；不要加载旧讲义或案例副本。
+   需要游戏案例支撑设计时，走[游戏参考准入](../../knowledge/standards/game-reference-selection.md)。
 3. 先给直接建议，再说明取舍、风险和最小验证动作。
 4. 如果问题已经进入 BoardGame 代码、UI、测试或资源实现，回到对应项目 skill，不用本 skill 代替工程 workflow。
 

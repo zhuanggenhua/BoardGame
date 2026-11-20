@@ -22,6 +22,7 @@ import {
     cloneMonsterMovementRollGroupResult,
     cloneMonsterTurnRuntimeState,
     createInitialMonsterTurnRuntimeState,
+    hasMummyTeleportMoveAvailable,
     resolveBetrayalControlledMonsterId,
 } from './monsterActionReadModel';
 import {
@@ -123,6 +124,9 @@ export function applyBetrayalMonsterMovementGroupRolledState(
     };
     core.scenarioRuntime.monsterTurn = monsterTurn;
     const syncedCore = syncCurrentExplorerProjection(core);
+    const canMummyTeleport = result.monsterIds.some((monsterId) =>
+        hasMummyTeleportMoveAvailable(syncedCore, monsterId),
+    );
     return {
         ...syncedCore,
         recentRoll: {
@@ -134,7 +138,9 @@ export function applyBetrayalMonsterMovementGroupRolledState(
             rollLabel: `速度 ${result.speed}`,
             dice: [...result.dice],
             passiveBonus: 0,
-            latestLabel: `每只可移动 ${result.moveAllowance} 间`,
+            latestLabel: canMummyTeleport
+                ? '木乃伊可瞬移到任意已发现房间'
+                : `每只可移动 ${result.moveAllowance} 间`,
             consumedRabbitFootCardIds: [],
         },
         recommendedAction: resolveRecommendedAction(syncedCore),
@@ -258,6 +264,7 @@ export function applyBetrayalMonsterAttackHeroResolvedState(
                     : (event.payload.monsterDamageOutcome?.logLabel ?? '怪物受伤'),
             attack: {
                 target: 'hero',
+                attackerMonsterId: event.payload.monsterId,
                 defenderPlayerId: event.payload.targetPlayerId,
                 damageKind,
                 previousDamageToAttacker: event.payload.monsterDamageOutcome?.damageAmount ?? 0,

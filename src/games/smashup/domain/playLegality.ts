@@ -3,7 +3,7 @@ import type { ActionCardDef, FusionCardDef, PlayConstraint, SmashUpCore } from '
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower } from '../data/cards';
 import { getMinionTargetBlockInfo } from './effectSemantics';
 import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
-import { getEffectivePower, getPlayerEffectivePowerOnBase } from './ongoingModifiers';
+import { getActionControllerId, getEffectivePower, getPlayerEffectivePowerOnBase } from './ongoingModifiers';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -361,6 +361,10 @@ export function validateActionPlaySemantics(
         }
         if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
             return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
+        }
+        if (def.type === 'action' && def.playTargetMinionRequiresOwnAction
+            && !targetMinion.attachedActions.some(action => getActionControllerId(action) === playerId)) {
+            return { valid: false, error: '目标随从上必须有你控制的行动' };
         }
         const targetProtection = validateActionMinionTargetProtection(
             core,

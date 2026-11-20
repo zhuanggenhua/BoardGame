@@ -43,6 +43,25 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         vi.clearAllMocks();
     });
 
+    it.each(['skeletons_lord_of_bones_mode', 'base_the_nexus_choose'])('模式选择 %s 保持可提交', sourceId => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'mode-choice', kind: 'simple-choice', playerId: '0',
+            data: {
+                title: '选择模式', sourceId, targetType: 'button', buttonIntent: 'mode',
+                options: [
+                    { id: 'first', label: '第一种', value: { mode: 'first' }, displayMode: 'button' },
+                    { id: 'second', label: '第二种', value: { mode: 'second' }, displayMode: 'button' },
+                ],
+            },
+        };
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+        expect(screen.getByTestId('smashup-docked-prompt')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: '第二种' }));
+        const response = respondCommand('second');
+        expect(dispatch).toHaveBeenCalledWith(response.type, { ...response.payload, interactionId: interaction.id });
+    });
+
     it('button-only prompts submit the selected option', () => {
         const dispatch = vi.fn();
         const interaction: InteractionDescriptor<SimpleChoiceData> = {
@@ -488,6 +507,26 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
 
         expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '玩家 1' })).not.toBeInTheDocument();
+    });
+
+    it('手牌与玩家组合候选显示真实接收者身份', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'gift-recipient', kind: 'simple-choice', playerId: '0',
+            data: {
+                title: '选择手牌和接收者', sourceId: 'gift_recipient', targetType: 'hand',
+                options: [
+                    { id: 'gift-one', label: '秘术学习 → 玩家 1', value: { cardUid: 'gift', targetPlayerId: '1' }, displayMode: 'card' },
+                    { id: 'gift-two', label: '秘术学习 → 玩家 2', value: { cardUid: 'gift', targetPlayerId: '2' }, displayMode: 'card' },
+                ],
+            },
+        };
+        const { container } = renderPromptOverlay({
+            interaction, dispatch: vi.fn(), playerID: '0',
+            playerNames: { '1': 'Alice', '2': 'P3' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] }, '2': { factions: ['ninjas', 'wizards'] } }),
+        });
+        expect(container.querySelector('[data-option-id="gift-one"]')).toHaveTextContent('秘术学习 → Alice');
+        expect(container.querySelector('[data-option-id="gift-two"]')).toHaveTextContent('秘术学习 → P3');
     });
 
     it('玩家目标候选缺少真实玩家名且目标只有一个派系时显示派系名', () => {

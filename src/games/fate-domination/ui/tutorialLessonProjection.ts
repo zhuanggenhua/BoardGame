@@ -45,9 +45,13 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
         case 'PLAY_SKILL': {
             const skill = player.skills.find(skill => skill.id === payload.skillId);
             const attack = player.hand.find(card=>card.id===payload.skillId);
-            const goal:FateLessonId = skill?.isMasterSkill ? 'masterAbility' : String(payload.skillId).startsWith('sc_iskandar_1') ? 'riding' : 'actionAbility';
+            const goal:FateLessonId = skill?.isMasterSkill ? 'masterAbility' : payload.targetCardId ? 'chariotTarget'
+                : String(payload.skillId).startsWith('sc_iskandar_1') ? 'riding' : 'actionAbility';
             const masterInput=player.masterId==='m_waver' && String(payload.skillId).split(':')[0]==='s3' ? `点击“调查”，再点亮起的玩家 ${Number(payload.targetPlayerId)+1} 的头像。` : `点击“${skill?.name}”，为本轮攻击补充手牌。`;
-            const described=lesson(goal, skill?.isMasterSkill ? masterInput : goal==='riding'?'点击已打出的“骑乘”，发动坐骑召唤。':attack&&location?`点击已打出的“${resolveFateAttack(player,attack.id)?.definition.name}”，前往${location}。`:undefined, skill?.isMasterSkill ? `fate-master-ability-${String(payload.skillId)}` : 'fate-hand');
+            const input = payload.targetCardId && skill ? `点击已打出的“${skill.name}”，再选地图上亮起的事件牌。`
+                : skill?.isMasterSkill ? masterInput : goal === 'riding' ? '点击已打出的“骑乘”，发动坐骑召唤。'
+                    : attack && location ? `点击已打出的“${resolveFateAttack(player,attack.id)?.definition.name}”，前往${location}。` : undefined;
+            const described=lesson(goal, input, skill?.isMasterSkill ? `fate-master-ability-${String(payload.skillId)}` : 'fate-hand');
             described.fateCopy.ability={...(skill?.isMasterSkill?{masterId:player.masterId}:attack?{attackId:attack.definitionId}:{servantId:player.servantId}),skillId:attack?.definitionId??String(payload.skillId).split(':')[0],...(goal==='riding'?{clause:'action' as const}:{})};
             described.content=fateTutorialText(described.fateCopy);
             return { ...described,

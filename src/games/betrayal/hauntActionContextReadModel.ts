@@ -15,6 +15,7 @@ import {
     type BetrayalHauntSpecialActionStatus,
 } from "./hauntSpecialActionReadModel";
 import { resolveDynamiteTargetRooms } from "./roomMapModel";
+import { findMummyWeddingOmenCard } from "./mummyHauntRules";
 import {
     DUST_CURE_TRAIT_CHOICES,
     DUST_SEARCH_TRAIT_CHOICES,
@@ -71,12 +72,14 @@ export type BetrayalDustHauntTraitSelector = {
 export type BetrayalHauntUseVisualPlan = {
   sourceRoomId: string;
   targetTestId: string;
+  targetFigureId: string;
   attachedTo: "explorer" | "mummy";
 };
 
 export type BetrayalHauntActionContextInput = {
   t: HauntActionText;
   core: BetrayalCore;
+  viewerPlayerId?: string | null;
   shouldPauseHauntBoardActions: boolean;
   selectedDustSearchTrait: BetrayalTraitKey | null;
   selectedDustCureTrait: BetrayalTraitKey | null;
@@ -97,6 +100,7 @@ export type BetrayalHauntActionContextInput = {
 export function resolveBetrayalHauntActionContext({
   t,
   core,
+  viewerPlayerId = core.currentPlayer,
   shouldPauseHauntBoardActions,
   selectedDustSearchTrait,
   selectedDustCureTrait,
@@ -130,12 +134,7 @@ export function resolveBetrayalHauntActionContext({
           monster.definitionId === "mummy",
       ) ?? null)
     : null;
-  const mummyWeddingOmenCard =
-    core.currentExplorer.inventory.find(
-      (card) =>
-        card.kind === "omen" &&
-        (card.id === "holy-symbol" || card.id === "ring"),
-    ) ?? null;
+  const mummyWeddingOmenCard = findMummyWeddingOmenCard(core.currentExplorer);
   const defaultDustSearchTrait = resolveHighestTraitChoice(
     core.currentExplorer.traits,
     DUST_SEARCH_TRAIT_CHOICES,
@@ -258,7 +257,7 @@ export function resolveBetrayalHauntActionContext({
     };
   }
 
-  if (mummyRuntime && !isDead) {
+  if (mummyRuntime && !isDead && viewerPlayerId === core.currentPlayer) {
     const currentRoomId = core.currentExplorer.roomId;
     if (
       mummyRuntime.girlRoomId === currentRoomId &&
@@ -480,6 +479,7 @@ export function resolveBetrayalHauntUseVisualPlan(
     return {
       sourceRoomId: core.currentExplorer.roomId,
       targetTestId: `betrayal-explorer-figure-token-${core.currentExplorer.playerId}`,
+      targetFigureId: `player:${core.currentExplorer.playerId}`,
       attachedTo: "explorer",
     };
   }
@@ -493,6 +493,7 @@ export function resolveBetrayalHauntUseVisualPlan(
     ? {
         sourceRoomId: core.currentExplorer.roomId,
         targetTestId: `betrayal-monster-board-token-${mummyMonsterId}`,
+        targetFigureId: `monster:${mummyMonsterId}`,
         attachedTo: "mummy",
       }
     : null;

@@ -12,6 +12,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 function mount() {
     const core = createReplayAdapter(FateDominationDomain, 'avatar-hover').setup(['0', '1', '2']).core;
+    core.players['1'].locationId = 'miyama';
     core.players['1'].publicView = {
         power: 3, handCount: 2, deckCount: 15, discardCount: 0, skillCards: [], playedSkills: [],
         playedCards: [{ id: 'public', definitionId: 'cardB1' }, { id: 'secret', definitionId: 'hidden' }],
@@ -33,6 +34,10 @@ it('对手公开合计威力无需悬浮或打开详情即可比较，并随正�
     core.players['1'].publicView!.power = 8;
     refresh();
     expect(screen.getByLabelText('玩家1合计威力')).toHaveTextContent('威力8');
+    core.players['1'].locationId = 'workshop';
+    refresh();
+    expect(screen.queryByLabelText('玩家1合计威力')).toBeNull();
+    expect(screen.getByRole('button', { name: '查看玩家1详情' })).toBeVisible();
 });
 
 it('头像移到牌排途中有宽限，悬浮牌排暂停收起，点击可放大，移开后收起', () => {

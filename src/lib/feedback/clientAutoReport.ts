@@ -372,10 +372,11 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     if ((import.meta as { env?: Record<string, unknown> }).env?.MODE === 'test' && !allowInTest) return;
     if (IS_DEV_API_DISABLED) return;
     if (shouldSkipClientAutoReport(payload)) return;
-    if (hasRecentReport(signature) || inFlightReports.has(signature)) return;
-
     const { matchId, mode, gameIdFromRoute } = getCurrentRouteContext();
     const gameId = resolveClientAutoReportGameId(payload.gameId, payload.gameName, gameIdFromRoute);
+    // 同一个框架包装错误可能来自不同的游戏或组件产物。
+    const reportKey = JSON.stringify([gameId, payload.causeName, payload.causeSource, signature]);
+    if (hasRecentReport(reportKey) || inFlightReports.has(reportKey)) return;
     const source = payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE;
     const gameFeedbackContext = getCurrentGameFeedbackContext();
     const diagnosticContext = getCurrentGameFeedbackDiagnosticContext();
@@ -414,7 +415,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
         : undefined;
     const replayTrigger = privateReplayRequired ? getCurrentGameFeedbackReplayTriggerReference() : undefined;
 
-    inFlightReports.add(signature);
+    inFlightReports.add(reportKey);
 
     try {
         const replayCapture = privateReplayRequired && matchId && playerId
@@ -424,7 +425,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
             state,
             clientContext,
             source: 'client-auto',
-            chainId: 'auto-' + signature,
+            chainId: 'auto-' + reportKey,
             privateReplayRequired,
             privateReplayTriggerCaptured: replayCapture?.triggerCaptured === true,
             collectionErrors: privateReplayRequired
@@ -438,7 +439,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 severity: 'high',
                 source,
                 autoReportKind: payload.autoReportKind,
-                gameName: payload.gameName,
+                gameName: payload.gameName === 'client' ? gameId : payload.gameName,
                 contactInfo: `auto:${source}`,
                 actionLog,
                 stateSnapshot,
@@ -472,10 +473,10 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 : false;
             if (!captured) console.warn('[client-auto-report] authoritative feedback capture failed', { matchId, feedbackId });
         }
-        markRecentReport(signature);
+        markRecentReport(reportKey);
     } catch (error) {
         console.warn('[client-auto-report] feedback submit failed', error);
     } finally {
-        inFlightReports.delete(signature);
+        inFlightReports.delete(reportKey);
     }
 }

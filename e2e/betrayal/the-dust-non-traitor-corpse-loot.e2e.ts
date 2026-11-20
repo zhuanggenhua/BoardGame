@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustNonTraitorCorpseLootRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -117,7 +118,7 @@ test('灰尘非叛徒死亡后保留遗物并能从真实页面搜尸', async ({
 
     await page.getByTestId('betrayal-action-trade').click();
     await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText(/拿走了/);
-    await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+    await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
     await expect(page.getByTestId('betrayal-corpse-loot-card-selector')).toBeVisible();
     await page.getByTestId('betrayal-corpse-loot-card-map').click();
     await expect(page.getByTestId('betrayal-corpse-loot-card-map')).toHaveClass(/underline/);

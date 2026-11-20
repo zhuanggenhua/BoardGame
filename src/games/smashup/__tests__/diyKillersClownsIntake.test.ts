@@ -116,7 +116,7 @@ describe('SmashUp 杀人狂 / 小丑 intake', () => {
         expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.DIY_CLOWNS)).toBe(true);
     });
 
-    it('杀人狂和小丑不归入 DIY，关闭 DIY 扩展后仍显示为普通派系元数据，但实施中不进入正式可选池', () => {
+    it('杀人狂和小丑不归入 DIY，关闭 DIY 扩展后仍可由玩家选择并保留实施中标记', () => {
         expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.DIY_KILLERS)).toBe(false);
         expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.DIY_CLOWNS)).toBe(false);
 
@@ -126,8 +126,10 @@ describe('SmashUp 杀人狂 / 小丑 intake', () => {
 
         expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.DIY_KILLERS);
         expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.DIY_CLOWNS);
-        expect(selectableWithoutDiy).not.toContain(SMASHUP_FACTION_IDS.DIY_KILLERS);
-        expect(selectableWithoutDiy).not.toContain(SMASHUP_FACTION_IDS.DIY_CLOWNS);
+        expect(selectableWithoutDiy).toContain(SMASHUP_FACTION_IDS.DIY_KILLERS);
+        expect(selectableWithoutDiy).toContain(SMASHUP_FACTION_IDS.DIY_CLOWNS);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.DIY_KILLERS)).toBe(true);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.DIY_CLOWNS)).toBe(true);
     });
 
     it('中英文 locale 覆盖派系、卡牌与基地文本', () => {

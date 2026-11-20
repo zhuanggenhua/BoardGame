@@ -21,6 +21,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     createExchangeReadyRuntimeCore,
     createMedicalKitUseReadyRuntimeCore,
@@ -41,7 +42,6 @@ const EVIDENCE_DIR = 'evidence/山屋惊魂-木乃伊怪物行动真实入口';
 const MOVE_READY_SCREENSHOT = `${EVIDENCE_DIR}/01-木乃伊怪物回合开始前.jpg`;
 const MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/02-木乃伊移动骰0点.jpg`;
 const MOVE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-木乃伊瞬移女孩房间目标高亮.jpg`;
-const MOVE_ANIMATING_SCREENSHOT = `${EVIDENCE_DIR}/04a-木乃伊瞬移动画中-本体隐藏.jpg`;
 const MOVE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/04-木乃伊瞬移后女孩由木乃伊持有.jpg`;
 const MOVE_ONE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/11-木乃伊移动骰1点.jpg`;
 const MOVE_ONE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/12-木乃伊1点瞬移女孩房间目标高亮.jpg`;
@@ -2264,7 +2264,7 @@ const exerciseMummyGoldenMedicalKitUse = async (
     if (screenshots.targetReady) {
         await saveScreenshot(page, screenshots.targetReady);
     }
-    await teammateTarget.click();
+    await clickBetrayalSceneFigure(teammateTarget);
     await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
     if (screenshots.useReady) {
         await saveScreenshot(page, screenshots.useReady);
@@ -2343,7 +2343,7 @@ const exerciseMummyGoldenManualTrade = async (
     await page.getByTestId('betrayal-action-trade').click();
     await expect(page.getByTestId('betrayal-trade-flow-banner')).toBeVisible();
     await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveAttribute('data-trade-progress-visible', 'status-only');
-    await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('选择交易方案');
+    await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('点同房间队友');
     await expect(page.locator('[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-item-step"]'), '顶部交易横幅不能复写选择步骤').toHaveCount(0);
     const teammateTarget = page.getByTestId('betrayal-room-occupant-hallway-1');
     await expect(teammateTarget).toHaveAttribute('data-direct-target', 'true');
@@ -2352,7 +2352,7 @@ const exerciseMummyGoldenManualTrade = async (
         await saveScreenshot(page, screenshots.targetReady);
     }
 
-    await teammateTarget.click();
+    await clickBetrayalSceneFigure(teammateTarget);
     await expect(page.getByTestId('betrayal-trade-status')).toContainText('可交易给');
     await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('选择交易方案');
     await expect(page.getByTestId('betrayal-trade-action-panel'), '只选队友但未选持有物时不能形成交易方案').toHaveCount(0);
@@ -2429,7 +2429,7 @@ const moveMummyThroughRealRoomTarget = async (
         const mummyToken = page.getByTestId(`betrayal-room-monster-${source.roomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toBeVisible();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
 
         await switchRoomMapToFloor(page, target.floor);
         await expect(targetMarker).toBeVisible();
@@ -2781,7 +2781,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(openingMummyToken).toBeVisible();
         await expect(openingMummyToken).toHaveAttribute('data-monster-detail-entry', 'true');
         await expect(openingMummyToken).toHaveAttribute('title', /力量 8.*速度 3.*神志 5/);
-        await openingMummyToken.click();
+        await clickBetrayalSceneFigure(openingMummyToken);
         const monsterDetail = page.getByTestId('betrayal-monster-detail-dialog');
         await expect(monsterDetail).toBeVisible();
         await expect(monsterDetail).toHaveAttribute('data-portrait-asset', 'betrayal/monsters/mummy');
@@ -2937,7 +2937,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             page.getByTestId(`betrayal-room-occupant-target-outline-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`),
         ).toHaveCount(0);
         await saveScreenshot(page, goldenFlowProcessScreenshot(39, '木乃伊攻击-选择木乃伊攻击者'));
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(
             page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
         ).toHaveAttribute('data-highlight-role', 'source');
@@ -2959,7 +2959,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
             0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
@@ -3118,13 +3118,13 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(page.getByTestId('betrayal-action-monsterAttack')).toContainText('木乃伊攻击');
         await page.getByTestId('betrayal-action-monsterAttack').click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
@@ -3312,7 +3312,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-mummy-rampage-current-scope-candidate-chain', diagnostics }]);
     });
 
-    test('segment：木乃伊移动骰为 0 时，可从怪物动作槽瞬移到女孩房间并拾起女孩', async ({ page, context }) => {
+    test('segment：木乃伊移动骰为 0 时，可点木乃伊模型瞬移到女孩房间并拾起女孩', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-mummy-rampage-monster-teleport');
@@ -3347,8 +3347,9 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await movementRollAction.click();
         const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(rollPanel).toBeVisible();
+        await waitForPhysicalDiceSettled(rollPanel);
         await expect(rollPanel).toContainText('木乃伊移动');
-        await expect(rollPanel).toContainText('可移动 0 间');
+        await expect(rollPanel).toContainText('木乃伊可瞬移到任意已发现房间');
         await expectVisiblePhysicalDiceBox(rollPanel);
         await waitForPhysicalDiceSettled(rollPanel);
         await expect(rollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'true');
@@ -3358,48 +3359,29 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await saveScreenshot(page, MOVE_ROLL_SCREENSHOT);
 
         await acknowledgeRecentRollForAllPlayers(page, context);
-        const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
-        await expect(monsterMoveAction).toBeVisible();
-        await expect(monsterMoveAction).toContainText('移动木乃伊');
+        await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
-        const mummyToken = await expectMonsterMoveActionFocusesMummy(page, fixture);
-        const mummyMoveSourceRect = await readLocatorClientRect(
-            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-        );
-        await mummyToken.click();
+        await switchRoomMapToFloor(page, fixture.mummyRoomFloor);
+        const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
+        await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('只限已发现房间');
         await expect(page.getByTestId('betrayal-turn-hint')).toContainText('不能探索新房间');
         if (fixture.unrevealedRoomId) {
             await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.unrevealedRoomId}`)).toHaveCount(0);
         }
         await switchRoomMapToFloor(page, fixture.girlRoomFloor);
-        await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.girlRoomId}`)).toBeVisible();
+        const grid = page.getByTestId('betrayal-room-grid');
+        await expect.poll(async () => JSON.parse((await grid.getAttribute('data-map-room-highlights')) ?? '{}')[fixture.girlRoomId]).toBe('candidate');
         await saveScreenshot(page, MOVE_TARGET_SCREENSHOT);
 
         await page.getByTestId(`betrayal-room-${fixture.girlRoomId}`).click();
-        const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
-        await expect(transitionBlocker).toBeVisible();
-        await expect(transitionBlocker).toHaveAttribute('data-transition-kind', 'monster-move');
-        await expect(transitionBlocker).toHaveAttribute(
-            'data-transition-target-testid',
-            `betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`,
-        );
-        const movingTargetMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
-        await expect(movingTargetMummyToken).toHaveCount(1);
-        await expect(movingTargetMummyToken).toHaveAttribute('data-visual-transition-anchor-hidden', 'true');
-        await expectBetrayalTransitionTargetsLocator(
-            page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
-            movingTargetMummyToken,
-            '山屋惊魂木乃伊向女孩房间移动动画',
-            { sourceRect: mummyMoveSourceRect },
-        );
-        await expect(page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
+        await expect(grid).toHaveAttribute('data-last-scene-pick', fixture.girlRoomId);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
         });
-        await saveScreenshot(page, MOVE_ANIMATING_SCREENSHOT);
-        await expect(transitionBlocker).toHaveCount(0);
+        await expect(mummyToken).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
             new RegExp(`木乃伊.*${fixture.girlRoomName}`),
         );
@@ -3413,30 +3395,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             'betrayal/tokens/haunts/mummy-girl.svg',
         );
         const movedMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
-        await expectBoardTokenReadableSize(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            '瞬移后木乃伊本体',
-            32,
-        );
-        await expectBoardTokenCircular(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            '瞬移后木乃伊本体',
-        );
-        await expectBoardTokenReadableSize(
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '瞬移后女孩 token',
-            20,
-        );
-        await expectBoardTokensVerticallyStacked(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '瞬移后木乃伊与女孩',
-        );
-        await expectBoardTokensDoNotOverlap(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '瞬移后木乃伊与女孩',
-        );
+        await expect(movedMummyToken).toHaveAttribute('data-three-model', '');
+        await expect(movedMummyToken).toHaveAttribute('data-tutorial-screen-bounds', /^\S/);
+        await expect(page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`))
+            .toHaveAttribute('data-three-marker-ready', '');
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
             girlHeldByMummy: true,
@@ -3446,7 +3408,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-mummy-rampage-monster-teleport', diagnostics }]);
     });
 
-    test('segment：木乃伊移动骰为 1 时，仍可从怪物动作槽瞬移到女孩房间并拾起女孩', async ({ page, context }) => {
+    test('segment：木乃伊移动骰为 1 时，仍可点木乃伊模型瞬移到女孩房间并拾起女孩', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-mummy-rampage-monster-teleport-one');
@@ -3479,7 +3441,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
-        await expect(rollPanel).toContainText('可移动 1 间');
+        await expect(rollPanel).toContainText('木乃伊可瞬移到任意已发现房间');
         await expectVisiblePhysicalDiceBox(rollPanel);
         await waitForPhysicalDiceSettled(rollPanel);
         await expect(rollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'true');
@@ -3490,23 +3452,25 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
 
         await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
-        const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
-        await expect(monsterMoveAction).toBeVisible();
-        await expect(monsterMoveAction).toContainText('移动木乃伊');
+        await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
-        const mummyToken = await expectMonsterMoveActionFocusesMummy(page, fixture);
-        await mummyToken.click();
+        await switchRoomMapToFloor(page, fixture.mummyRoomFloor);
+        const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
+        await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('只限已发现房间');
         await expect(page.getByTestId('betrayal-turn-hint')).toContainText('不能探索新房间');
         if (fixture.unrevealedRoomId) {
             await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.unrevealedRoomId}`)).toHaveCount(0);
         }
         await switchRoomMapToFloor(page, fixture.girlRoomFloor);
-        await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.girlRoomId}`)).toBeVisible();
+        const grid = page.getByTestId('betrayal-room-grid');
+        await expect.poll(async () => JSON.parse((await grid.getAttribute('data-map-room-highlights')) ?? '{}')[fixture.girlRoomId]).toBe('candidate');
         await saveScreenshot(page, MOVE_ONE_TARGET_SCREENSHOT);
 
         await page.getByTestId(`betrayal-room-${fixture.girlRoomId}`).click();
+        await expect(grid).toHaveAttribute('data-last-scene-pick', fixture.girlRoomId);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
             new RegExp(`木乃伊.*${fixture.girlRoomName}`),
         );
@@ -3520,30 +3484,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             'betrayal/tokens/haunts/mummy-girl.svg',
         );
         const movedMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
-        await expectBoardTokenReadableSize(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            '1点瞬移后木乃伊本体',
-            32,
-        );
-        await expectBoardTokenCircular(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            '1点瞬移后木乃伊本体',
-        );
-        await expectBoardTokenReadableSize(
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '1点瞬移后女孩 token',
-            20,
-        );
-        await expectBoardTokensVerticallyStacked(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '1点瞬移后木乃伊与女孩',
-        );
-        await expectBoardTokensDoNotOverlap(
-            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
-            '1点瞬移后木乃伊与女孩',
-        );
+        await expect(movedMummyToken).toHaveAttribute('data-three-model', '');
+        await expect(movedMummyToken).toHaveAttribute('data-tutorial-screen-bounds', /^\S/);
+        await expect(page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`))
+            .toHaveAttribute('data-three-marker-ready', '');
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
             girlHeldByMummy: true,
@@ -3585,28 +3529,21 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
-        await expect(rollPanel).toContainText('可移动 1 间');
+        await expect(rollPanel).toContainText('木乃伊可瞬移到任意已发现房间');
         await acknowledgeRecentRollForAllPlayers(page, context);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
 
-        const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
-        await expect(monsterMoveAction).toBeVisible();
-        await expect(monsterMoveAction).toContainText('移动木乃伊');
-        await monsterMoveAction.click();
+        const grid = page.getByTestId('betrayal-room-grid');
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await expectPrimaryTargetBoundaryFits(
-            page.getByTestId(`betrayal-room-monster-target-outline-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`),
-            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
-            '携带女孩和圣符时木乃伊目标高亮',
-            { maxCenterDelta: 3, maxSizeDelta: 4 },
-        );
-        await mummyToken.click();
+        await expect(grid).toHaveAttribute('data-map-figure-highlights', /"monster:mummy":"candidate"/);
+        await clickBetrayalSceneFigure(mummyToken);
         await switchRoomMapToFloor(page, fixture.sarcophagusRoomFloor);
-        await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.sarcophagusRoomId}`)).toBeVisible();
+        await expect.poll(async () => JSON.parse((await grid.getAttribute('data-map-room-highlights')) ?? '{}')[fixture.sarcophagusRoomId]).toBe('candidate');
         await saveScreenshot(page, RETURN_SARCOPHAGUS_TARGET_SCREENSHOT);
 
-        await page.getByTestId(`betrayal-room-${fixture.sarcophagusRoomId}`).click({ position: { x: 8, y: 8 } });
+        await page.getByTestId(`betrayal-room-${fixture.sarcophagusRoomId}`).click();
+        await expect(grid).toHaveAttribute('data-last-scene-pick', fixture.sarcophagusRoomId);
         const endgame = page.getByTestId('betrayal-endgame-screen');
         await expect(endgame).toBeVisible({ timeout: 30000 });
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
@@ -3660,7 +3597,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await monsterAttackAction.click();
         await expect(monsterAttackAction).toContainText('取消攻击');
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
         await expect(traitorToken).not.toHaveAttribute('data-direct-target', 'true');
         await expect(deadHeroToken).not.toHaveAttribute('data-direct-target', 'true');
@@ -3676,7 +3613,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -3733,7 +3670,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
         await expectBoardTokenReadableSize(
             mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
@@ -3745,7 +3682,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -3801,14 +3738,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -3867,14 +3804,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -3977,14 +3914,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4002,7 +3939,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
 
         await restoredMoveAction.click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await switchRoomMapToFloor(page, fixture.postAttackMoveRoomFloor);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.postAttackMoveRoomId}`)).toBeVisible();
         await page.getByTestId(`betrayal-room-${fixture.postAttackMoveRoomId}`).click();
@@ -4045,14 +3982,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4155,14 +4092,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4268,14 +4205,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4386,14 +4323,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4504,14 +4441,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
@@ -4648,14 +4585,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.mummyRoomId}-${fixture.heroTargetId}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await mummyToken.click();
+        await clickBetrayalSceneFigure(mummyToken);
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
 
         await setHarnessRandomQueue(page, [
             0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
             0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroToken.click();
+        await clickBetrayalSceneFigure(heroToken);
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');

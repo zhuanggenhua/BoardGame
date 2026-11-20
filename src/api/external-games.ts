@@ -1,14 +1,16 @@
 import { UGC_API_URL } from '../config/server';
 import type { CreatorClaim, ExternalGame, ExternalGameFields, ExternalPlayHistory, GameRulesDocument } from '../shared/externalGames';
 import type { GameSubmissionRecord } from './game-submissions';
-import type { ExternalRoomListing, ExternalRoomView } from '../shared/externalRoom';
+import type { ExternalRoomListing, ExternalRoomSettings, ExternalRoomView } from '../shared/externalRoom';
 
 export class ExternalApiError extends Error {
     readonly status: number;
+    readonly code?: string;
 
-    constructor(message: string, status: number) {
+    constructor(message: string, status: number, code?: string) {
         super(message);
         this.status = status;
+        this.code = code;
     }
 }
 
@@ -25,16 +27,17 @@ async function request<T>(path: string, options: { token?: string | null; guestK
     const body = await response.json();
     if (!response.ok) {
         const message = Array.isArray(body.message) ? body.message.join('；') : body.message || body.error;
-        throw new ExternalApiError(typeof message === 'string' ? message : `请求失败（${response.status}）`, response.status);
+        throw new ExternalApiError(typeof message === 'string' ? message : `请求失败（${response.status}）`, response.status,
+            typeof body.code === 'string' ? body.code : undefined);
     }
     return body as T;
 }
 const id = (value: string) => encodeURIComponent(value);
 export type ExternalRoomIdentity = { token?: string | null; guestKey?: string };
-export const createExternalRoom = (identity: ExternalRoomIdentity, gameId: string, capacity: number) =>
-    request<ExternalRoomView>('/external-rooms', { ...identity, method: 'POST', data: { gameId, capacity } });
-export const joinExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
-    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { ...identity, method: 'POST' });
+export const createExternalRoom = (identity: ExternalRoomIdentity, data: { gameId: string; capacity?: number; expectedEntry: string; settings: ExternalRoomSettings; roomName?: string; password?: string }) =>
+    request<ExternalRoomView>('/external-rooms', { ...identity, method: 'POST', data });
+export const joinExternalRoom = (identity: ExternalRoomIdentity, roomId: string, password?: string) =>
+    request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { ...identity, method: 'POST', ...(password ? { data: { password } } : {}) });
 export const readExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
     request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, identity);
 export const externalRoomAction = (identity: ExternalRoomIdentity, roomId: string, data: Record<string, unknown>) =>

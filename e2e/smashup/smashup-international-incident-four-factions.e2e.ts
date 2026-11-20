@@ -327,6 +327,37 @@ async function respondWithOptionIds(
 }
 
 test.describe('大杀四方《环游世界：国际事件》四派系真实入口验证', () => {
+  test('达达尼昂抽牌时不能抽回正在结算的行动', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'musketeers,sumo_wrestlers', p1: 'mounties,luchadors', skipFactionSelect: true, seed: 20261123 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'timing-action', defId: 'musketeers_biding_time', type: 'action', owner: '0' }],
+        deck: [], discard: [], factions: ['musketeers', 'sumo_wrestlers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'luchadors'] },
+      bases: [{ defId: 'base_the_factory', minions: [
+        { uid: 'timing-dartagnan', defId: 'musketeers_dartagnan', owner: '0', controller: '0', power: 4 },
+      ] }],
+    });
+    await page.locator('[data-card-uid="timing-action"]').click();
+    await expect(page.locator('[data-minion-uid="timing-dartagnan"]')).toHaveAttribute('data-highlighted', 'true');
+    await page.locator('[data-minion-uid="timing-dartagnan"]').click({ force: true });
+    await game.waitForNoInteraction(10000);
+    await dismissSpotlightIfPresent(page);
+    await game.screenshot('火枪手-达达尼昂行动结算后的牌区', testInfo);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const player = state.core.players['0'];
+      return {
+        hand: player.hand.map((card: { uid: string }) => card.uid),
+        discard: player.discard.map((card: { uid: string }) => card.uid),
+      };
+    }).toEqual({ hand: [], discard: ['timing-action'] });
+  });
+
   test('真实选秀能选择相扑手、火枪手、骑警、摔角手并进入牌桌', async ({ page, game }, testInfo) => {
     test.setTimeout(180000);
     await setChineseLocale(page.context());
@@ -700,6 +731,8 @@ test.describe('大杀四方《环游世界：国际事件》四派系真实入�
     await game.waitForInteraction('sumo_wrestlers_bulking_stew_target', 10000);
     await game.screenshot('22-炖肉-选择承接指示物随从', testInfo);
     await game.selectInteractionOptionBy(option => optionHasMinionUid(option, 'stew-select-target'), '炖肉选择相扑新人');
+    await game.waitForInteraction('sumo_wrestlers_bulking_stew_target', 10000);
+    await game.selectInteractionOptionBy(option => optionHasMinionUid(option, 'stew-select-target'), '炖肉将第二个指示物放到相扑新人');
     await game.waitForNoInteraction(10000);
     await dismissSpotlightIfPresent(page);
     await expect.poll(async () => {
@@ -770,6 +803,8 @@ test.describe('大杀四方《环游世界：国际事件》四派系真实入�
 
     await game.playCard('sumo_wrestlers_fighting_spirit_prize');
     await game.waitForInteraction('sumo_wrestlers_fighting_spirit_prize', 10000);
+    await expect.poll(async () => (await game.getState()).core.players['0'].hand.map((card: { uid?: string }) => card.uid))
+      .toEqual(['spirit-draw-a', 'spirit-draw-b']);
     await game.screenshot('28-斗志奖-选择分配力量指示物随从', testInfo);
     await respondWithOptionIds(page, game, [
       option => optionHasMinionUid(option, 'spirit-target-a'),
@@ -1026,7 +1061,11 @@ test.describe('大杀四方《环游世界：国际事件》四派系真实入�
     await game.screenshot('30-逆转-计分前响应窗口', testInfo);
 
     await game.playCard('luchadors_reversal', { targetBaseIndex: 0 });
+    await game.waitForInteraction('luchadors_reversal_target', 10000);
+    await game.selectInteractionOptionBy(option => optionHasMinionUid(option, 'reversal-target'), '逆转选择目标随从');
     await game.waitForInteraction('luchadors_reversal_destroy_actions', 10000);
+    const duringResolution = await game.getState();
+    expect(duringResolution.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'reversal-target')?.tempPowerModifier ?? 0).toBe(0);
     await game.screenshot('31-逆转-选择摧毁己方Set-Up行动', testInfo);
     await respondWithOptionIds(page, game, [
       option => optionHasCardUid(option, 'rev-quick'),

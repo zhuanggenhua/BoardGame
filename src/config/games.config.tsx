@@ -45,6 +45,7 @@ const buildGameRegistry = () => {
         const resolvedManifest = resolveGameManifestEntry(manifest);
         registry[resolvedManifest.id] = {
             ...resolvedManifest,
+            allowLocalMode: resolvedManifest.allowLocalMode === true,
             thumbnail,
             isUgc: false,
         };

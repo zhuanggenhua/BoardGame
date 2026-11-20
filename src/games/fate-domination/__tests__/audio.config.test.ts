@@ -26,6 +26,19 @@ it('私人抽牌只在自己席位播放，BGM 按阶段切换，所有音频已
     expect(group('battle')).toBe('battle');
     expect(group('complete')).toBeUndefined();
     const byKey = new Map((await loadCommonAudioRegistry()).entries.map(entry => [entry.key, entry]));
-    for (const key of [...config.criticalSounds!, FATE_BATTLE_IMPACT]) expect(byKey.get(key)?.type, key).toBe('sfx');
+    expect(config.warmSounds).toContain(FATE_BATTLE_IMPACT);
+    for (const key of [...config.criticalSounds!, ...config.warmSounds!]) expect(byKey.get(key)?.type, key).toBe('sfx');
     for (const { key, src } of config.bgm!) expect(byKey.get(key)?.src, key).toBe(src);
+});
+
+it('已确认的能力各自播放发动音，不从修正器、败北事件或后续演出重复播放', () => {
+    const activate = (skillId: string) => config.feedbackResolver({ type: 'FATE_ABILITY_USED', payload: { skillId } }, runtime);
+    expect(activate('sc_saber_1:3')).toMatch(/holy_ward$/);
+    expect(activate('sc_saber_2:4')).toMatch(/wind_magic_buff_01$/);
+    expect(activate('sc_medusa_2:4')).toMatch(/earthen_grasp$/);
+    expect(activate('sc_cu_1:3')).toMatch(/whoosh_metal_spear_01_krst$/);
+    expect(activate('sc_saber_np:5')).toBeNull();
+    expect(activate('sc_medusa_np:5')).toBeNull();
+    expect(config.feedbackResolver({ type: 'FATE_RULE_MODIFIER_ATTACHED', payload: { sourceId: 'sc_saber_2:4' } }, runtime)).toBeNull();
+    expect(config.feedbackResolver({ type: 'FATE_DEFEAT_DECLARED', payload: { sourceId: 'sc_medusa_2:4' } }, runtime)).toBeNull();
 });

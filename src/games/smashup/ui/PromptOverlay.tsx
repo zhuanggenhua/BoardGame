@@ -372,7 +372,12 @@ function resolveSmashUpPlayerChoiceLabel(
     playerNames: Record<string, string> | undefined,
     t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
-    if (prompt?.targetType !== 'player') return option.label;
+    const value = option.value;
+    const isCardPlayerChoice = prompt?.targetType === 'hand'
+        && isRecord(value)
+        && typeof value.cardUid === 'string'
+        && (typeof value.targetPlayerId === 'string' || typeof value.targetPlayerId === 'number');
+    if (prompt?.targetType !== 'player' && !isCardPlayerChoice) return option.label;
     const targetPlayerId = extractPlayerTargetId(option);
     if (!targetPlayerId) return option.label;
     return resolveSmashUpPlayerReferenceText(option.label, targetPlayerId, core, playerNames, t);
@@ -614,6 +619,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 上下文卡图（牌库顶查看等场景）
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
     const isSmashUpReactionPrompt = prompt?.sourceId === 'smashup_reaction_choose';
+    const shouldDockModePrompt = !contextPreviewRef && prompt?.targetType === 'button' && prompt.buttonIntent === 'mode';
     const shouldDockMunchkinPlayerPrompt = !contextPreviewRef
         && (promptTitleKey?.startsWith('ui.munchkin_elves_') === true
             || promptTitleKey?.startsWith('ui.base_treehouse_') === true
@@ -627,7 +633,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     let inlinePromptTestId: string | undefined;
     if (isSmashUpReactionPrompt) {
         inlinePromptTestId = 'smashup-reaction-prompt';
-    } else if (shouldDockMunchkinPlayerPrompt) {
+    } else if (shouldDockMunchkinPlayerPrompt || shouldDockModePrompt) {
         inlinePromptTestId = 'smashup-docked-prompt';
     }
 
@@ -1408,7 +1414,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className={`fixed inset-x-0 ${shouldDockMunchkinPlayerPrompt ? 'top-2 smashup-docked-prompt' : 'inset-0 items-center'} ${isSmashUpReactionPrompt ? 'smashup-reaction-prompt' : ''} flex justify-center pointer-events-none`}
+                className={`fixed inset-x-0 ${shouldDockMunchkinPlayerPrompt || shouldDockModePrompt ? 'top-2 smashup-docked-prompt' : 'inset-0 items-center'} ${isSmashUpReactionPrompt ? 'smashup-reaction-prompt' : ''} flex justify-center pointer-events-none`}
                 style={{ zIndex: UI_Z_INDEX.overlay }}
             >
                 <div className="smashup-prompt-content flex flex-col items-center gap-4 pointer-events-auto">

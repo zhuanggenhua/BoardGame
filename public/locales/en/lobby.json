@@ -2581,7 +2581,7 @@
       "submissionType": "Submission type",
       "webZip": "Web ZIP",
       "zipHint": "Upload a web game ZIP containing index.html, up to 32 MB.",
-      "roomSdkGuide": "Download the room SDK integration guide",
+      "roomSdkGuide": "SDK integration guide",
       "zipRequired": "Choose a web game ZIP file",
       "zipTooLarge": "The web ZIP must be 32 MB or smaller",
       "zipUpdateHint": "To update the game files, upload a new ZIP in My Submissions and submit it for review.",

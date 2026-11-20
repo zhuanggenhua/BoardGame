@@ -19,6 +19,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     clickDiscoveryBackdropAndExpectStillVisible,
     expectVisiblePhysicalDiceBox,
     expectPhysicalDiceSeparated,
@@ -1121,7 +1122,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, HUNTING_KNIFE_TARGET_SCREENSHOT);
 
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用砍刀');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -1180,7 +1181,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, ATTACK_WEAPON_DISABLED_REASONS_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用砍刀');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('使用匕首');
@@ -1284,7 +1285,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, GUN_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用枪');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('physical damage');
@@ -1370,7 +1371,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
             0.5, 0.5, 0.5, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
         ]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用电锯');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('physical damage');
@@ -1452,7 +1453,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
             0.5, 0.5, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
         ]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toBeVisible();
@@ -1622,7 +1623,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(monsterAttackAction).toContainText('取消攻击');
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('幻影摄影师');
         await expect(phantomPhotographerToken).toHaveAttribute('data-direct-target', 'true');
-        await phantomPhotographerToken.click();
+        await clickBetrayalSceneFigure(phantomPhotographerToken);
         await expect(targetHeroToken).toHaveAttribute('data-direct-target', 'true');
         const targetHeroOutline = page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2');
         await expect(targetHeroOutline).toHaveAttribute('data-highlight-shape', 'pentagon');
@@ -1638,7 +1639,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0]);
-        await targetHeroToken.click();
+        await clickBetrayalSceneFigure(targetHeroToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('幻影摄影师');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('精神伤害');
@@ -1693,7 +1694,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, UNARMED_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('physical damage');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('使用匕首');
@@ -1798,7 +1799,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, STRANGE_AMULET_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('physical damage');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -1907,7 +1908,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, RING_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用指环');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('mental damage');
@@ -2010,7 +2011,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, RADIO_MENTAL_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用指环');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('mental damage');
@@ -2109,7 +2110,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用指环');
 
         await expect.poll(async () => {
@@ -2220,7 +2221,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
             0.5, 0, 0, 0, 0, 0,
             0, 0, 0, 0,
         ]);
-        await traitorToken.click();
+        await clickBetrayalSceneFigure(traitorToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用匕首');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('physical damage');

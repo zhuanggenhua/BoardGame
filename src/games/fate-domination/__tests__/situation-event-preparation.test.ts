@@ -20,13 +20,34 @@ it('转机额外明置事件与基础新都暗置事件分开，韦伯私看不�
  next.players['1'].masterId='m_waver';expect(projectFatePlayerView(next,'1').currentEvents.shinto).toEqual(next.currentEvents.shinto);
  expect(next.shintoEventFaceDown).toBe(true);
 });
-it('后两高潮封闭新都侦察并限制工房部署一人',()=>{
- const state=createReplayAdapter(FateDominationDomain,'late-climax').setup(['0','1','2']);state.core.phase='outpost';state.core.situation=FATE_SITUATIONS.find(s=>s.id==='sit12')!;
- expect(FateDominationDomain.validate(state,{type:'DEPLOY_MASTER',playerId:'0',payload:{locationId:'shinto'}}).valid).toBe(false);
- state.core.battlefield.workshop.playerIds=['1'];state.core.players['1'].locationId='workshop';
- expect(FateDominationDomain.validate(state,{type:'DEPLOY_MASTER',playerId:'0',payload:{locationId:'workshop'}}).valid).toBe(false);
- state.core.phase='action';state.core.players['0'].locationId='miyama';
- expect(FateDominationDomain.validate(state,{type:'USE_COMMAND_SPELL',playerId:'0',payload:{effect:'move',targetLocationId:'recon'}}).valid).toBe(false);
+it.each([{ round: 10, situationId: 'sit12' }, { round: 11, situationId: 'sit13' }])(
+ '第 $round 回合禁止部署和进入新都、侦察，且工房满一人后禁止进入', ({ round, situationId }) => {
+ const state=createReplayAdapter(FateDominationDomain,'late-climax').setup(['0','1','2']);
+ const { core } = state;
+ core.round = round;
+ core.phase = 'outpost';
+ core.situation = FATE_SITUATIONS.find(situation => situation.id === situationId)!;
+ const deploy = (locationId: 'miyama' | 'shinto' | 'recon' | 'workshop') =>
+  FateDominationDomain.validate(state, { type: 'DEPLOY_MASTER', playerId: '0', payload: { locationId } });
+ expect(deploy('miyama').valid).toBe(true);
+ expect(deploy('workshop').valid).toBe(true);
+ for (const target of ['shinto', 'recon'] as const) expect(deploy(target)).toMatchObject({ valid: false, error: 'cannotEnterLocation' });
+ core.battlefield.workshop.playerIds = ['1'];
+ Object.assign(core.players['1'], { locationId: 'workshop', deploymentSlot: 0 });
+ expect(deploy('workshop')).toMatchObject({ valid: false, error: 'locationFull' });
+
+ core.phase = 'action';
+ core.players['0'].locationId = 'miyama';
+ core.battlefield.miyama.playerIds = ['0'];
+ // 固有结界会先阻止离开深山町，此处只验证局势的目的地限制。
+ core.currentEvents.miyama = [];
+ core.battlefield.miyama.eventCards = [];
+ for (const targetLocationId of ['shinto', 'recon', 'workshop'] as const) {
+  const move = FateDominationDomain.validate(state, {
+   type: 'USE_COMMAND_SPELL', playerId: '0', payload: { effect: 'move', targetLocationId },
+  });
+  expect(move).toMatchObject({ valid: false, error: targetLocationId === 'workshop' ? 'locationFull' : 'cannotEnterLocation' });
+ }
 });
 it('暗置事件不能通过前哨公开威力侧漏，韦伯仍可私下看到完整效果',()=>{
  const core=createReplayAdapter(FateDominationDomain,'private-power').setup(['0','1','2']).core;

@@ -11,6 +11,7 @@ const entry: GameManifestEntry = {
     playersKey: 'games.tictactoe.players',
     icon: '#',
     cursorTheme: 'tictactoe-neon',
+    allowLocalMode: true,
     mobileProfile: 'portrait-adapted',
     preferredOrientation: 'portrait',
     mobileLayoutPreset: 'board-shell',

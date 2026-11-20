@@ -32,6 +32,7 @@ const playerActions: Record<string, readonly [string, Record<string, unknown>]> 
     'move-new-wolf': moveObject(secondWolf, 'b3'),
     'move-for-wall': move('a2'),
     'place-wall': cast(25700, 5, { targetWallEdgeId: 'b1-b2' }),
+    'skip-wolf-action': [mw.CREATURE_NO_ACTION, { objectId: wolf }],
     'move-for-push': move('a1'),
     'push-through-wall': cast(3425, 6, { targetPlayerId: '1', pushToZoneId: 'b2' }),
     'set-ward': cast(1901, 2, { targetObjectId: wolf }),
@@ -39,6 +40,7 @@ const playerActions: Record<string, readonly [string, Record<string, unknown>]> 
     'approach-cleric': move('a2'),
     'cast-fountain': cast(1710, 4, { targetObjectId: 'mwobj-1-2811-1' }),
     'bind-wand': cast(3725, 5, { targetPlayerId: '0', boundSpellCardId: 3408 }),
+    'cast-bound-major-heal': cast(3408, 9, { targetObjectId: wolf }),
     'rebind-wand': [mw.USE_ARENA_OBJECT_ABILITY, {
         objectId: wand, abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.MAGE_STAFF_BIND, manaCost: 3, boundSpellCardId: 3402,
     }],
@@ -113,6 +115,7 @@ describe('Mage Wars single-match tutorial', () => {
     ])('continues one match after $guard / $counter / $upkeep / $defense', ({ guard, counter, upkeep, defense, repeatUpkeep }) => {
         const match = loadMatch();
         const visited = new Set<string>();
+        const compressed = new Set<string>();
         const options: Record<string, string> = {
             'guard-response': guard, 'pay-counter': counter, 'first-upkeep': upkeep,
             'second-upkeep': 'destroy', 'bow-defense': defense,
@@ -121,11 +124,22 @@ describe('Mage Wars single-match tutorial', () => {
             const { step, pendingAnimationAdvance } = match.state.sys.tutorial;
             if (!step) throw new Error('Expected an active course step');
             visited.add(step.id);
+            if (step.id === 'plan-wand') {
+                expect(match.state.core.objects[wolf].damage).toBeGreaterThanOrEqual(5);
+            }
             if (pendingAnimationAdvance) {
                 match.submit(tutorial.ANIMATION_COMPLETE);
                 continue;
             }
             if (step.aiActions?.length) {
+                if (step.hiddenAutomation?.kind === 'compressed-repeat') {
+                    compressed.add(step.id);
+                    expect(step.aiActions.filter(({ playerId }) => playerId === '0').map(({ commandType }) => commandType))
+                        .not.toContain(mw.PLAN_SPELLS);
+                    expect(step.aiActions.filter(({ playerId }) => playerId === '0').map(({ commandType }) => commandType))
+                        .not.toContain(mw.CREATURE_NO_ACTION);
+                    expect(step.hiddenAutomation.equivalentStepIds?.every((id) => visited.has(id))).toBe(true);
+                }
                 for (const ai of step.aiActions) match.submit(ai.commandType, ai.payload, ai.playerId);
                 if (match.state.sys.tutorial.step?.id === step.id && !match.state.sys.tutorial.pendingAnimationAdvance) {
                     match.submit(tutorial.AI_CONSUMED, { stepId: step.id, batchId: step.aiBatchId });
@@ -161,6 +175,7 @@ describe('Mage Wars single-match tutorial', () => {
             expect(visited.has(id), id).toBe(true);
         }
         expect(visited.has('second-upkeep')).toBe(repeatUpkeep);
+        expect(compressed.size).toBeGreaterThan(0);
         expect(visited.has('duel-finished')).toBe(true);
         expect(match.state.core.gameResult).toBeUndefined();
         expect(isTutorialFreePlay(match.state.sys.tutorial)).toBe(true);

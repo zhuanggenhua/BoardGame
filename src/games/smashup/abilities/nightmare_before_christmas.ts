@@ -1,9 +1,10 @@
 import type { PlayerId } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction, type PromptOption, type SimpleChoiceConfig } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption, type SimpleChoiceConfig, type SimpleChoiceTargetType } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     buildAbilityFeedback,
+    buildPlayerTargetOptions,
     createSkipOption,
     buildStandardDrawEvents,
     buildValidatedCardToDeckBottomEvents,
@@ -11,6 +12,7 @@ import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
     recoverCardsFromDiscard,
+    revealHand,
 } from '../domain/abilityHelpers';
 import { createEffectProgram } from '../domain/abilityRuntime';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -82,7 +84,7 @@ function queueNightmarePrompt<T>(
     title: string,
     titleKey: string,
     options: PromptOption<T>[],
-    targetType: 'generic' | 'hand' | 'discard' | 'minion' | 'base' = 'generic',
+    targetType: SimpleChoiceTargetType = 'generic',
     continuationContext?: Record<string, unknown>,
     config: Partial<Pick<SimpleChoiceConfig, 'autoRefresh' | 'genericIntent' | 'multi' | 'responseValidationMode'>> = {},
 ): AbilityResult {
@@ -349,7 +351,31 @@ function halloweenTownFolks(ctx: AbilityContext): AbilityResult {
 }
 
 function christmasWillBeOurs(ctx: AbilityContext): AbilityResult {
-    return { events: [grantContextualExtraAction(ctx, CHRISTMAS_WILL_BE_OURS)] };
+    if (!ctx.matchState) return { events: [] };
+    const otherPlayerIds = Object.keys(ctx.state.players).filter(playerId => playerId !== ctx.playerId);
+    if (otherPlayerIds.length === 0) return { events: [] };
+    if (otherPlayerIds.length === 1) return { events: revealChristmasHand(ctx.state, ctx.playerId, otherPlayerIds[0], ctx.now) };
+    return queueNightmarePrompt(
+        ctx,
+        `${CHRISTMAS_WILL_BE_OURS}_choose_player`,
+        '圣诞节将属于我们！选择要查看哪位玩家的手牌',
+        'ui.nightmare_before_christmas_christmas_choose_player_title',
+        buildPlayerTargetOptions(otherPlayerIds.map(targetPlayerId => ({ label: `玩家 ${targetPlayerId}`, targetPlayerId })), {
+            state: ctx.state, sourcePlayerId: ctx.playerId,
+        }),
+        'player',
+    );
+}
+
+function revealChristmasHand(state: SmashUpCore, playerId: PlayerId, targetPlayerId: PlayerId, now: number): SmashUpEvent[] {
+    const target = state.players[targetPlayerId];
+    if (!target || targetPlayerId === playerId) return [];
+    return [
+        revealHand(targetPlayerId, playerId, target.hand.map(({ uid, defId }) => ({ uid, defId })), CHRISTMAS_WILL_BE_OURS, now, playerId),
+        grantContextualExtraAction({ playerId, now }, CHRISTMAS_WILL_BE_OURS, {
+            playTiming: 'immediate', borrowActionFromPlayerId: targetPlayerId,
+        }),
+    ];
 }
 
 function ghostlyPresents(ctx: AbilityContext): AbilityResult {
@@ -588,6 +614,10 @@ function zombieDuckToyVp(state: SmashUpCore, baseIndex: number, playerId: Player
 }
 
 export function registerNightmareBeforeChristmasAbilities(): void {
+    registerInteractionHandler(`${CHRISTMAS_WILL_BE_OURS}_choose_player`, (state, playerId, value, _data, _random, timestamp) => {
+        const targetPlayerId = (value as { targetPlayerId?: PlayerId } | undefined)?.targetPlayerId;
+        return { state, events: targetPlayerId === undefined ? [] : revealChristmasHand(state.core, playerId, targetPlayerId, timestamp) };
+    });
     registerInteractionHandler(`${JACK}_recover`, (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as NightmareCardChoice;
         const card = selected.cardUid && selected.defId

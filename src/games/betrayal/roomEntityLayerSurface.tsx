@@ -1,6 +1,7 @@
 import React from "react";
 import { useTouchInspectGesture } from "../../hooks/ui/useTouchInspectGesture";
-import { resolveRoomEntitySlots } from "./roomEntitySceneModel";
+import { GIRL_ROOM_SLOT, resolveRoomEntitySlots } from "./roomEntitySceneModel";
+import { BETRAYAL_COMMANDS } from "./commands";
 import { inferMonsterDefinitionId } from "./monsterReadModel";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +15,7 @@ import type {
 } from "./game";
 import type { BetrayalAttackImpactState } from "./attackImpactPresentation";
 import { BetrayalAttackImpactSurface } from "./attackImpactSurface";
+import { BetrayalScreenFeedback } from "./screenFeedback";
 import type { BetrayalTraitDelta } from "./activityPresentation";
 import { formatMonsterTraitSummary } from "./entityPresentation";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
@@ -53,6 +55,9 @@ type RoomEntityLayerSurfaceProps = {
   occupants: readonly BetrayalExplorerSummary[];
   monsters: readonly BetrayalMonsterSummary[];
   visibleGirlToken?: BetrayalHauntTokenInstanceSummary;
+  sceneTutorialCommands?: readonly string[];
+  selectedSceneMonsterMoveId?: string | null;
+  hasGirlRoomSlot: boolean;
   canSelectRoom: boolean;
   canPickUpMummyGirl: boolean;
   currentExplorerPlayerId: string;
@@ -148,6 +153,9 @@ export function BetrayalRoomEntityLayerSurface({
   occupants,
   monsters,
   visibleGirlToken,
+  sceneTutorialCommands,
+  selectedSceneMonsterMoveId,
+  hasGirlRoomSlot,
   canSelectRoom,
   canPickUpMummyGirl,
   currentExplorerPlayerId,
@@ -214,7 +222,7 @@ export function BetrayalRoomEntityLayerSurface({
   const slots = resolveRoomEntitySlots([
     ...occupants.map(explorer => `player:${explorer.playerId}`),
     ...monsters.map(monster => `monster:${monster.id}`),
-  ]);
+  ], hasGirlRoomSlot);
   const slotStyle = (id: string, width: number, height: number): React.CSSProperties | undefined => {
     if (!sceneArtwork) return undefined;
     const slot = slots.get(id)!;
@@ -327,22 +335,29 @@ export function BetrayalRoomEntityLayerSurface({
               (isDustSicknessExchangeMode &&
                 occupant.playerId === selectedDustTargetPlayerId) ||
               activeHauntTargetGuide?.playerId === occupant.playerId;
-            const isMovementSource = occupant.playerId === movableExplorerPlayerId;
+            const isMovementSource = !isTradeOrLootTargetSelectionActive && occupant.playerId === movableExplorerPlayerId;
+            const sceneCommand = canSelectMonsterAttackTarget ? BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
+              : isMovementSource ? BETRAYAL_COMMANDS.MOVE_TO_ROOM
+                : isHeroAttackTargetingMode || canSelectTraitorTarget ? BETRAYAL_COMMANDS.HAUNT_ATTACK
+                  : isTradeOrLootTargetSelectionActive ? BETRAYAL_COMMANDS.TRADE_POSSESSION
+                    : BETRAYAL_COMMANDS.USE_POSSESSION;
+            const sceneHighlightAllowed = !sceneTutorialCommands || sceneTutorialCommands.includes(sceneCommand);
             const tokenLabel = resolvePlayerName(
               occupant.playerId,
               occupant.displayName,
               matchData,
             );
+            const traitChangeFeedback = traitChangeFeedbackByPlayerId.get(
+              occupant.playerId,
+            );
             const isVisibleFeedbackTarget =
+              traitChangeFeedback?.deltas.some(({ amount }) => amount > 0) &&
               (visibleFeedback?.kind === "heal" ||
                 visibleFeedback?.kind === "traitChange") &&
               ((visibleFeedback.targetPlayerId &&
                 visibleFeedback.targetPlayerId === occupant.playerId) ||
                 visibleFeedback.targetName === tokenLabel ||
                 visibleFeedback.targetName === occupant.displayName);
-            const traitChangeFeedback = traitChangeFeedbackByPlayerId.get(
-              occupant.playerId,
-            );
             const resolvedTraitDeltaText = traitChangeFeedback?.deltas
               .map(
                 ({ trait, amount }) =>
@@ -381,7 +396,8 @@ export function BetrayalRoomEntityLayerSurface({
                       missingTokenLabel={t(
                         "board.hauntTokens.officialTokenMissing",
                       )}
-                      targetHighlight={canSelectExplorerTarget || (isMovementSource && explorerMoveSelected)}
+                      targetHighlight={canSelectExplorerTarget || isMovementSource}
+                      sceneHighlightAllowed={sceneHighlightAllowed}
                       targetHighlightSelected={
                         isSelectedExplorerTarget || isHauntGuideExplorerTarget || (isMovementSource && explorerMoveSelected)
                       }
@@ -389,11 +405,9 @@ export function BetrayalRoomEntityLayerSurface({
                     />,
                   )}
                   {occupantCarriesGirl && visibleGirlToken ? (
-                    <GirlBoardToken
-                      token={visibleGirlToken}
-                      t={t}
-                      attachedTo="explorer"
-                    />
+                    <span className="pointer-events-none absolute left-1/2 top-1/2 z-30 inline-flex -translate-y-1/2 translate-x-3">
+                      <GirlBoardToken token={visibleGirlToken} t={t} attachedTo="explorer" />
+                    </span>
                   ) : null}
                 </span>
                 {isHauntGuideExplorerTarget ? (
@@ -405,6 +419,7 @@ export function BetrayalRoomEntityLayerSurface({
                   </span>
                 ) : null}
                 {traitChangeFeedback && !hasAttackImpact && !isVisibleFeedbackTarget ? (
+                  <BetrayalScreenFeedback key={traitChangeFeedback.presentationKey}>
                   <span
                     data-testid={`betrayal-room-occupant-trait-change-${roomId}-${occupant.playerId}`}
                     data-feedback-style="floating-text"
@@ -432,13 +447,15 @@ export function BetrayalRoomEntityLayerSurface({
                       </span>
                     ))}
                   </span>
+                  </BetrayalScreenFeedback>
                 ) : isVisibleFeedbackTarget && visibleFeedback ? (
+                  <BetrayalScreenFeedback key={traitChangeFeedback?.presentationKey}>
                   <span
                     data-testid={`betrayal-room-occupant-feedback-${roomId}-${occupant.playerId}`}
                     data-feedback-style="floating-text"
                     data-feedback-anchor="target-token"
                     aria-label={resolvedFeedbackText}
-                    className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-0.5 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
+                    className="betrayal-trait-change-floating pointer-events-none z-40 flex-col text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
                   >
                     {traitChangeFeedback
                       ? traitChangeFeedback.deltas.map(({ trait, amount }) => (
@@ -454,6 +471,7 @@ export function BetrayalRoomEntityLayerSurface({
                         ))
                       : resolvedFeedbackText}
                   </span>
+                  </BetrayalScreenFeedback>
                 ) : null}
               </span>
             );
@@ -465,10 +483,14 @@ export function BetrayalRoomEntityLayerSurface({
                   style={slotStyle(`player:${occupant.playerId}`, 66, 72)}
                   type="button"
                   data-testid={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
+                  data-tutorial-id={canSelectMonsterAttackTarget && selectedMonsterAttackSourceId === mummyMonsterId
+                    ? "betrayal-mummy-attack-target"
+                    : undefined}
                   data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                   data-highlight-shape="pentagon"
                   data-direct-target="true"
                   data-scene-figure-id={`player:${occupant.playerId}`}
+                  data-scene-action-blocked={!sceneHighlightAllowed ? "" : undefined}
                   data-visual-transition-anchor-hidden={
                     isMovingExplorerAnchor ? "true" : undefined
                   }
@@ -518,6 +540,7 @@ export function BetrayalRoomEntityLayerSurface({
                 }`}
                 data-testid={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                 data-scene-figure-id={`player:${occupant.playerId}`}
+                data-scene-action-blocked={isMovementSource && !sceneHighlightAllowed ? "" : undefined}
                 data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                 data-tutorial-id={
                   occupant.playerId === currentExplorerPlayerId
@@ -540,6 +563,7 @@ export function BetrayalRoomEntityLayerSurface({
                   onOpenExplorerDetails(occupant.playerId);
                 }}
                 data-move-source={isMovementSource ? "true" : undefined}
+                data-scene-inspect=""
                 aria-pressed={isMovementSource ? explorerMoveSelected : undefined}
                 onClick={(event) => {
                   event.stopPropagation();
@@ -595,6 +619,12 @@ export function BetrayalRoomEntityLayerSurface({
               girlHeldByMummy && monster.id === mummyMonsterId;
             const isSelectedMonsterAttackSource =
               isMonsterAttackMode && selectedMonsterAttackSourceId === monster.id;
+            const isSelectedMonsterMoveSource =
+              isMonsterMoveMode && selectedSceneMonsterMoveId === monster.id;
+            const sceneCommand = canSelectMonsterAttackMonster ? BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
+              : canSelectMonsterMoveMonster ? BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+                : BETRAYAL_COMMANDS.USE_POSSESSION;
+            const sceneHighlightAllowed = !sceneTutorialCommands || sceneTutorialCommands.includes(sceneCommand);
             const monsterHighlightRelation = selectedMonsterAttackTargetPlayerId
               ? resolveMonsterRelationToExplorer(
                   monster.id,
@@ -610,11 +640,7 @@ export function BetrayalRoomEntityLayerSurface({
             const monsterContent = (
               <>
                 <span
-                  className={
-                    monsterCarriesGirl
-                      ? "relative z-10 inline-flex min-h-[98px] min-w-[58px] flex-col items-center justify-center gap-0"
-                      : "relative z-10 inline-flex items-end gap-1.5"
-                  }
+                  className="relative z-10 inline-flex items-end gap-1.5"
                   data-monster-token-cluster={
                     monsterCarriesGirl ? "mummy-carrying-girl" : undefined
                   }
@@ -628,8 +654,9 @@ export function BetrayalRoomEntityLayerSurface({
                     status={monsterStatus}
                     targetHighlight={canSelectToken}
                     targetHighlightRole={
-                      isSelectedMonsterAttackSource ? "source" : "target"
+                      isSelectedMonsterAttackSource || isSelectedMonsterMoveSource ? "source" : "target"
                     }
+                    sceneHighlightAllowed={sceneHighlightAllowed}
                     targetHighlightRelation={monsterHighlightRelation}
                     targetHighlightTestId={
                       canSelectToken
@@ -638,7 +665,7 @@ export function BetrayalRoomEntityLayerSurface({
                     }
                   />
                   {monsterCarriesGirl && visibleGirlToken ? (
-                    <span className="pointer-events-none z-30 inline-flex translate-x-0 translate-y-0">
+                    <span className="pointer-events-none absolute left-1/2 top-1/2 z-30 inline-flex -translate-y-1/2 translate-x-4">
                       <GirlBoardToken
                         token={visibleGirlToken}
                         t={t}
@@ -666,7 +693,9 @@ export function BetrayalRoomEntityLayerSurface({
                   style={slotStyle(`monster:${monster.id}`, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52)}
                   type="button"
                   data-testid={`betrayal-room-monster-${roomId}-${monster.id}`}
+                  data-tutorial-id={monster.id === mummyMonsterId ? "betrayal-mummy-on-board" : undefined}
                   data-scene-figure-id={`monster:${monster.id}`}
+                  data-scene-action-blocked={!sceneHighlightAllowed ? "" : undefined}
                   data-highlight-shape="token"
                   data-direct-target="true"
                   data-monster-status={monsterStatus}
@@ -746,6 +775,7 @@ export function BetrayalRoomEntityLayerSurface({
                     : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
                 }`}
                 data-testid={`betrayal-room-monster-${roomId}-${monster.id}`}
+                data-tutorial-id={monster.id === mummyMonsterId ? "betrayal-mummy-on-board" : undefined}
                 data-scene-figure-id={`monster:${monster.id}`}
                 data-monster-status={monsterStatus}
                 data-visual-transition-anchor-hidden={
@@ -753,6 +783,7 @@ export function BetrayalRoomEntityLayerSurface({
                 }
                 data-token-asset={monster.tokenAsset ?? monster.portraitAsset}
                 data-monster-detail-entry="true"
+                data-scene-inspect=""
                 tabIndex={canSelectRoom ? -1 : undefined}
                 title={`${monster.name} · ${monsterTraitSummary}`}
                 aria-label={t("board.monster.openDetails", {
@@ -760,6 +791,10 @@ export function BetrayalRoomEntityLayerSurface({
                 })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onPointerUp={(event) => event.stopPropagation()}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  onOpenMonsterDetails(monster.id);
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   onOpenMonsterDetails(monster.id);
@@ -772,7 +807,10 @@ export function BetrayalRoomEntityLayerSurface({
         </div>
       ) : null}
       {visibleGirlToken?.status === "placed" ? (
-        <div className="relative flex flex-col items-center justify-center">
+        <div
+          className="relative flex flex-col items-center justify-center"
+          style={slots.has(GIRL_ROOM_SLOT) ? slotStyle(GIRL_ROOM_SLOT, 64, 64) : undefined}
+        >
           <GirlBoardToken
             token={visibleGirlToken}
             t={t}

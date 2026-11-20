@@ -52,6 +52,7 @@ metadata:
 | [`engine-visual-events.md`](standards/engine-visual-events.md) | 视觉事件标准：EventStream、特写、数值冻结、实体保留和 impact 回调——改表现事件时查 |
 | [`feedback-system.md`](standards/feedback-system.md) | 反馈系统标准：提交、状态、去重、恢复和回写边界——改用户反馈链路时查 |
 | [`game-config-package.md`](standards/game-config-package.md) | 游戏配置包标准：manifest、配置源和包体发布边界——改游戏配置包时查 |
+| [`game-reference-selection.md`](standards/game-reference-selection.md) | 游戏参考准入标准：玩法同类性、任务对应和样本结论——选教程、玩法或游戏 UI 参考时查 |
 | [`generated-design-implementation.md`](standards/generated-design-implementation.md) | 生成设计落地标准：设计稿到前端实现的可复刻边界——按视觉稿实现 UI 时查 |
 | [`global-systems.md`](standards/global-systems.md) | 全局系统标准：跨游戏公共能力和入口边界——改全局能力时查 |
 | [`golden-rules.md`](standards/golden-rules.md) | 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查 |

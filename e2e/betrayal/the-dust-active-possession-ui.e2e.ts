@@ -5,6 +5,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustActivePossessionRuntimeCore,
     DUST_ACTIVE_POSSESSION_E2E_CARDS,
     initBetrayalContext,
@@ -226,7 +227,7 @@ test.describe('山屋惊魂作祟3灰尘主动持有牌玩家可见代表链', (
         );
 
         await selectCard(page, 'medical-kit');
-        await page.getByTestId('betrayal-room-occupant-hallway-0').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-0'));
         await expect(page.getByTestId('betrayal-inventory-target-player-0')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-heal-preview')).toBeVisible();
         await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();

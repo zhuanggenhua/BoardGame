@@ -146,6 +146,7 @@ import {
     startsWithObjectPath,
 } from './ui/targetSelectionReadModel';
 import { buildMageWarsTutorialRuntimeSyncKey } from './ui/tutorialRuntimeSyncKey';
+import { MAGE_WARS_TUTORIAL_PLAYER, MAGE_WARS_TUTORIAL_UNICORN } from './tutorialStart';
 import {
     getMageDisplayLabel,
     isMageWarsAttachmentObject,
@@ -173,7 +174,7 @@ import {
     type MageWarsTurnMainActionModel,
 } from './ui/turnMainActionModel';
 import { useMageWarsPlanningDraft } from './ui/useMageWarsPlanningDraft';
-import { getMageWarsTutorialPlan, MageWarsTutorial } from './tutorial';
+import { getMageWarsTutorialPlan, getMageWarsTutorialPresentation, MageWarsTutorial } from './tutorial';
 
 type Props = GameBoardProps<MageWarsCore>;
 
@@ -713,7 +714,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                             <li
                                 key={phaseId}
                                 className={cx(
-                                    'pointer-events-auto relative flex min-h-[1.9rem] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.94rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
+                                    'pointer-events-auto relative flex min-h-[clamp(1.3rem,calc(8vh_-_2rem),1.9rem)] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.94rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
                                     active
                                         ? 'translate-x-1 border-amber-300 bg-amber-200/88 text-stone-950 shadow-[0_0_12px_rgba(251,191,36,0.24)]'
                                         : complete
@@ -2153,6 +2154,9 @@ function SpellbookShelf({
     const { t } = useTranslation('game-mage-wars');
     const [category, setCategory] = useState<SpellbookCategoryId>('all');
     const [page, setPage] = useState(0);
+    const shelfRef = useRef<HTMLElement>(null);
+    const cardRowRef = useRef<HTMLDivElement>(null);
+    const [fittingCardCount, setFittingCardCount] = useState(MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT);
     const planning = phase === 'planning' && canAct && canPlan;
     const categories: Array<{ id: SpellbookCategoryId; label: string }> = [
         { id: 'all', label: t('spellbook.categories.all') },
@@ -2165,6 +2169,36 @@ function SpellbookShelf({
     const spellbookEntries = useMemo(() => (
         getMageWarsSpellbookDisplayEntries(player)
     ), [player]);
+    const widestCardRatio = useMemo(() => spellbookEntries.reduce((ratio, { spellCardId }) => {
+        const spell = getMageWarsSpellCardFromConfig(spellCardId);
+        const aspect = spell && isMageWarsWallSpell(spell)
+            ? SPELL_CARD_BACK_ASPECT_RATIO
+            : getMageWarsSpellCardAspectRatio(spellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
+        return Math.max(ratio, aspect);
+    }, SPELL_CARD_BACK_ASPECT_RATIO), [spellbookEntries]);
+    useLayoutEffect(() => {
+        const shelf = shelfRef.current;
+        const row = cardRowRef.current;
+        if (!shelf || !row) return;
+        const categories = row.previousElementSibling;
+        const pager = row.nextElementSibling;
+        if (!(categories instanceof HTMLElement) || !(pager instanceof HTMLElement)) return;
+        const measure = () => {
+            if (!row.offsetHeight) return;
+            const shelfStyle = getComputedStyle(shelf);
+            const shelfGap = parseFloat(shelfStyle.columnGap) || 0;
+            const padding = (parseFloat(shelfStyle.paddingLeft) || 0) + (parseFloat(shelfStyle.paddingRight) || 0);
+            const cardGap = parseFloat(getComputedStyle(row).columnGap) || 0;
+            const usableWidth = shelf.clientWidth - categories.offsetWidth - pager.offsetWidth - (2 * shelfGap) - padding;
+            const capacity = Math.floor((usableWidth + cardGap) / (row.offsetHeight * widestCardRatio + cardGap));
+            setFittingCardCount(Math.max(1, Math.min(MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT, capacity)));
+        };
+        measure();
+        const resize = new ResizeObserver(measure);
+        resize.observe(shelf);
+        resize.observe(row);
+        return () => resize.disconnect();
+    }, [widestCardRatio]);
     const filteredEntries = useMemo(() => spellbookEntries.filter((entry) => {
         const cardId = entry.spellCardId;
         if (category === 'all') return true;
@@ -2181,7 +2215,7 @@ function SpellbookShelf({
             return counts;
         }, new Map<number, number>())
     ), [selectedCardIds]);
-    const cardsPerPage = Math.max(1, Math.min(MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT, Math.floor(visibleCardCount)));
+    const cardsPerPage = Math.max(1, Math.min(fittingCardCount, Math.floor(visibleCardCount)));
     const pageCount = Math.max(1, Math.ceil(filteredEntries.length / cardsPerPage));
     const currentPage = Math.min(page, pageCount - 1);
     const previewEntries = filteredEntries.slice(currentPage * cardsPerPage, currentPage * cardsPerPage + cardsPerPage);
@@ -2238,6 +2272,7 @@ function SpellbookShelf({
 
     return (
         <section
+            ref={shelfRef}
             className="pointer-events-auto flex w-full items-end px-1.5 pt-3"
             style={{
                 containerType: 'inline-size',
@@ -2294,6 +2329,7 @@ function SpellbookShelf({
                 })}
             </div>
             <div
+                ref={cardRowRef}
                 className="relative z-10 flex min-w-0 shrink-0 items-end overflow-visible"
                 style={{ gap: 'var(--mage-wars-desktop-card-gap, 0.75rem)' }}
             >
@@ -3990,6 +4026,11 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const [publicViewTargetPlayerId, setPublicViewTargetPlayerId] = useState<PlayerId | null>(null);
     const desktopBottomGap = MAGE_WARS_DESKTOP_BOTTOM_GAP_PX;
+    const spellbookRef = useRef<HTMLElement>(null);
+    const tutorialOpeningRevealGroup = useMemo(() => ({
+        targetIds: [`mw-mage-entity-${MAGE_WARS_TUTORIAL_PLAYER}`, `mw-arena-object-${MAGE_WARS_TUTORIAL_UNICORN}`],
+        bottomOverlayRef: spellbookRef,
+    }), []);
     const phase: MageWarsPhase = MAGE_WARS_PHASE_ORDER.find((candidate) => candidate === G.sys.phase) ?? 'reset';
     const core = G.core;
     const players = core.playerOrder.map((id) => core.players[id]).filter(Boolean);
@@ -4026,10 +4067,39 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         phaseActorId,
         sys: G.sys,
     });
-    useTutorialBridge(G.sys.tutorial, dispatch, tutorialRuntimeSyncKey);
+    const {
+        selectedCardIds: selectedPlanningSpellCardIds,
+        setSelectedCardIds: setSelectedPlanningSpellCardIds,
+        clearSelectedCardIds: clearSelectedPlanningSpellCardIds,
+    } = useMageWarsPlanningDraft({
+        phase,
+        viewingPlayerId,
+        currentPlayerId: core.currentPlayerId,
+        phaseActorId,
+        turnNumber: core.turnNumber,
+    });
+    const tutorialPresentation = getMageWarsTutorialPresentation(
+        G.sys.tutorial.active ? G.sys.tutorial.step : undefined,
+        {
+            selectedObjectId,
+            selectedMageId,
+            selectedSpellCardId,
+            plannedSpells: selectedPlanningSpellCardIds,
+            pendingAnimation: G.sys.tutorial.pendingAnimationAdvance === true,
+        },
+    );
+    useTutorialBridge(
+        tutorialPresentation ? { ...G.sys.tutorial, step: tutorialPresentation } : G.sys.tutorial,
+        dispatch,
+        tutorialPresentation
+            ? `${tutorialRuntimeSyncKey}|${tutorialPresentation.content}|${tutorialPresentation.highlightTarget ?? ''}`
+            : tutorialRuntimeSyncKey,
+    );
     const boardTutorialStep = G.sys.tutorial.step ?? G.sys.tutorial.steps[G.sys.tutorial.stepIndex] ?? tutorialStep;
     const boardTutorialActive = isTutorialActive || G.sys.tutorial.active;
-    const boardTutorialHighlightTarget = boardTutorialActive ? boardTutorialStep?.highlightTarget : undefined;
+    const boardTutorialHighlightTarget = boardTutorialActive
+        ? (tutorialPresentation ?? boardTutorialStep)?.highlightTarget
+        : undefined;
     const showDeniedActionToast = useCallback((reason?: string, fallbackReason = 'actionUnavailable') => {
         const normalizedReason = reason && reason.trim() ? reason.trim() : fallbackReason;
         const isReasonKey = /^[A-Za-z0-9_.-]+$/.test(normalizedReason);
@@ -4092,17 +4162,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const canEditPlanningDrafts = phase === 'planning'
         && viewingPlayerId === playerID
         && (!isTutorialActive || tutorialStep?.infoStep !== true);
-    const {
-        selectedCardIds: selectedPlanningSpellCardIds,
-        setSelectedCardIds: setSelectedPlanningSpellCardIds,
-        clearSelectedCardIds: clearSelectedPlanningSpellCardIds,
-    } = useMageWarsPlanningDraft({
-        phase,
-        viewingPlayerId,
-        currentPlayerId: core.currentPlayerId,
-        phaseActorId,
-        turnNumber: core.turnNumber,
-    });
     const requiredTutorialPlan = isTutorialActive ? getMageWarsTutorialPlan(tutorialStep?.id) : undefined;
     const hasRequiredTutorialPlan = !requiredTutorialPlan || (
         requiredTutorialPlan.length === selectedPlanningSpellCardIds.length
@@ -5432,6 +5491,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     panBoundsMode="free"
                     fitInsets={boardTutorialActive ? { bottom: Math.min(144, window.innerHeight * 0.14) } : undefined}
                     panToTarget={tutorialArenaPanTarget}
+                    panToRevealGroup={boardTutorialActive && boardTutorialStep?.id === 'guard-wolf' ? tutorialOpeningRevealGroup : undefined}
                     skipPanWhenTargetVisible
                     containerTestId="mage-wars-arena-viewport"
                     contentTestId="mage-wars-arena-viewport-content"
@@ -5663,7 +5723,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 data-mage-wars-layout-source="viewport-grid-anchored"
                 data-mage-wars-bottom-gap-px={desktopBottomGap}
             >
-                <aside className="pointer-events-none w-full min-w-0 justify-self-stretch">
+                <aside ref={spellbookRef} className="pointer-events-none w-full min-w-0 justify-self-stretch">
                     {viewingPlayer ? (
                         <SpellbookShelf
                             player={viewingPlayer}

@@ -55,16 +55,16 @@ export function getCurrentRouteContext(): RouteContext {
     if (typeof window === 'undefined') return {};
 
     const route = getCurrentRoute();
-    const match = /^\/play\/([^/]+)\/match\/([^/?#]+)/.exec(window.location.pathname);
-    const gameIdFromRoute = match?.[1];
-    const matchId = match?.[2];
-    const mode = (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
+    const gameRoute = /^\/play\/(?<gameId>[a-z0-9][a-z0-9-]*)(?:\/(?:(?<local>local)|(?<tutorial>tutorial)(?:\/[^/]+)?|match\/(?<matchId>[^/]+)))?\/?$/i.exec(window.location.pathname)?.groups;
+    const matchId = gameRoute?.matchId;
+    const mode = matchId ? 'online' : gameRoute?.local ? 'local' : gameRoute?.tutorial ? 'tutorial'
+        : (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
 
     return {
         route,
         matchId,
         mode,
-        gameIdFromRoute,
+        gameIdFromRoute: gameRoute?.gameId?.toLowerCase(),
     };
 }
 

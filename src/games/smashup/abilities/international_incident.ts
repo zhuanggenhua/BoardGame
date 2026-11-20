@@ -32,7 +32,7 @@ import {
     queueMinionPlayEffect,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
-import { getPlayerLabel } from '../domain/utils';
+import { getPlayerLabel, isCardActionLike } from '../domain/utils';
 import {
     registerCardAbilitySuppression,
     registerProtection,
@@ -131,6 +131,7 @@ type BulkingStewTargetContext = PromptContext & {
     sourceCardUid: string;
     selectedCardUids: string[];
     candidates: MinionTargetCandidate[];
+    selectedTargets: Array<{ uid: string; baseIndex: number }>;
 };
 
 type RookieSumoDiscardContext = PromptContext & {
@@ -234,6 +235,10 @@ type MuchoslamVsMonstersContext = PromptContext & {
     candidates: Array<CardChoice & { label: string }>;
 };
 
+type MuchoslamVsMonstersRecoverContext = PromptContext & {
+    selectedCardUids: string[];
+};
+
 type MuchoslamRecoverActionContext = PromptContext & {
     candidates: Array<CardChoice & { label: string }>;
 };
@@ -242,6 +247,11 @@ type ReversalDestroyActionsContext = PromptContext & {
     targetMinionUid: string;
     targetBaseIndex: number;
     candidates: BoardActionCandidate[];
+};
+
+type ReversalTargetContext = PromptContext & {
+    baseIndex: number;
+    candidates: MinionTargetCandidate[];
 };
 
 type SumoHeadButtContext = PromptContext & {
@@ -322,11 +332,10 @@ type TagTeamBaseContext = PromptContext & {
     baseCandidates: Array<{ baseIndex: number; label: string }>;
 };
 
-const SET_UP_ACTION_IDS = new Set([
-    'luchadors_quick_set_up',
-    'luchadors_smart_set_up',
-    'luchadors_powerful_set_up',
-]);
+function isSetUpAction(defId: string): boolean {
+    const def = getCardDef(defId);
+    return def?.type === 'action' && (def.nameEn?.toLowerCase().includes('set-up') ?? false);
+}
 
 const DIRECT_MINION_AFFECTING_ACTION_IDS = new Set([
     'sumo_wrestlers_technique_prize',
@@ -478,14 +487,7 @@ function getActionControllerId(action: { ownerId: PlayerId; metadata?: Record<st
 }
 
 function minionHasSetUpAction(minion: MinionOnBase): boolean {
-    return minion.attachedActions.some(action => SET_UP_ACTION_IDS.has(action.defId));
-}
-
-function minionHasSetUpActionControlledBy(minion: MinionOnBase, playerId: PlayerId): boolean {
-    return minion.attachedActions.some(action =>
-        SET_UP_ACTION_IDS.has(action.defId)
-        && getActionControllerId(action) === playerId,
-    );
+    return minion.attachedActions.some(action => isSetUpAction(action.defId));
 }
 
 function getFirstOtherBaseIndex(state: SmashUpCore, sourceBaseIndex: number): number | undefined {
@@ -757,10 +759,12 @@ const minionEffectPrompt = createPromptProgram<MinionEffectContext>({
             .filter(pick => !pick.skip && pick.minionUid && pick.baseIndex !== undefined)
             .slice(0, context.multiMax ?? 1);
         const events: SmashUpEvent[] = [];
-        if (context.drawAfter) {
-            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: context.matchState.core }, context.playerId, context.drawAfter));
+        if (validPicks.length === 0) {
+            if (context.drawAfter) {
+                events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: context.matchState.core }, context.playerId, context.drawAfter));
+            }
+            return { events };
         }
-        if (validPicks.length === 0) return { events };
 
         const addEffect = (pick: MinionChoice, amount = context.amount) => {
             if (!pick.minionUid || pick.baseIndex === undefined) return;
@@ -783,6 +787,9 @@ const minionEffectPrompt = createPromptProgram<MinionEffectContext>({
             addEffect(validPicks[0], context.amount * context.multiMax);
         } else {
             validPicks.forEach(pick => addEffect(pick));
+        }
+        if (context.drawAfter) {
+            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: context.matchState.core }, context.playerId, context.drawAfter));
         }
         if (context.extraActionAfter) {
             const firstPick = validPicks[0];
@@ -821,7 +828,6 @@ function runMinionEffect(
     if (targetFromCommand && !config.multiMax) {
         return {
             events: [
-                ...drawEvents,
                 config.effect === 'powerCounter'
                     ? addPowerCounter(targetFromCommand.uid, targetFromCommand.baseIndex, config.amount, config.reason, ctx.now, {
                         sourcePlayerId: ctx.playerId,
@@ -835,6 +841,7 @@ function runMinionEffect(
                         sourceControllerId: ctx.playerId,
                         sourceBaseIndex: targetFromCommand.baseIndex,
                     }),
+                ...drawEvents,
                 ...(config.extraActionAfter
                     ? [grantContextualExtraAction(ctx, config.sourceDefId, config.extraActionRestrictToSelected
                         ? { restrictToMinionUid: targetFromCommand.uid }
@@ -1344,7 +1351,7 @@ const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext>({
     },
 });
 
-const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext>({
+const bulkingStewTargetPrompt: AbilityProgram<BulkingStewTargetContext, SmashUpCore, SmashUpEvent> = createPromptProgram<BulkingStewTargetContext>({
     sourceId: 'sumo_wrestlers_bulking_stew_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_bulking_stew_target_${context.now}`,
@@ -1365,20 +1372,34 @@ const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext>({
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as MinionChoice;
-        const target = context.candidates.find(candidate => candidate.uid === selected.minionUid);
+        const target = collectOwnMinions(state.core, context.playerId).find(candidate =>
+            candidate.uid === selected.minionUid && candidate.baseIndex === selected.baseIndex);
         if (!target || context.selectedCardUids.length === 0) return { events: [] };
         const discardable = getDiscardableHandCards(state.core, context.playerId, context.sourceCardUid);
         const selectedCards = discardable.filter(card => context.selectedCardUids.includes(card.uid));
-        if (selectedCards.length === 0) return { events: [] };
+        if (selectedCards.length !== context.selectedCardUids.length) return { events: [] };
+        const selectedTargets = [...context.selectedTargets, { uid: target.uid, baseIndex: target.baseIndex }];
+        if (selectedTargets.length < selectedCards.length) {
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    matchState: state,
+                    now: timestamp,
+                    candidates: collectOwnMinions(state.core, context.playerId),
+                    selectedTargets,
+                }, bulkingStewTargetPrompt),
+            };
+        }
         return {
             events: [
                 buildCardsDiscardedEvent(context.playerId, selectedCards.map(card => card.uid), timestamp),
-                addPowerCounter(target.uid, target.baseIndex, selectedCards.length, 'sumo_wrestlers_bulking_stew', timestamp, {
+                ...selectedTargets.map(selectedTarget => addPowerCounter(selectedTarget.uid, selectedTarget.baseIndex, 1, 'sumo_wrestlers_bulking_stew', timestamp, {
                     sourcePlayerId: context.playerId,
                     sourceDefId: 'sumo_wrestlers_bulking_stew',
                     sourceControllerId: context.playerId,
-                    sourceBaseIndex: target.baseIndex,
-                }),
+                    sourceBaseIndex: selectedTarget.baseIndex,
+                })),
             ],
         };
     },
@@ -1423,6 +1444,7 @@ const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext>(
                 sourceCardUid: context.sourceCardUid,
                 selectedCardUids,
                 candidates: context.candidates,
+                selectedTargets: [],
             } satisfies BulkingStewTargetContext, bulkingStewTargetPrompt),
         };
     },
@@ -1576,17 +1598,20 @@ function sumoPerformancePrize(ctx: AbilityContext): AbilityResult {
 }
 
 function sumoFightingSpiritPrize(ctx: AbilityContext): AbilityResult {
-    return runMinionEffect(ctx, collectOwnMinions(ctx.state, ctx.playerId), {
+    const draws = buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now);
+    const candidates = collectOwnMinions(ctx.state, ctx.playerId);
+    if (candidates.length === 0) return { events: draws };
+    const result = runMinionEffect(ctx, candidates, {
         sourceId: 'sumo_wrestlers_fighting_spirit_prize',
         sourceDefId: 'sumo_wrestlers_fighting_spirit_prize',
         titleKey: 'ui.sumo_wrestlers_fighting_spirit_prize_title',
         effect: 'powerCounter',
         amount: 1,
         reason: 'sumo_wrestlers_fighting_spirit_prize',
-        drawAfter: 2,
         multiMax: 2,
         singleGetsAll: true,
     });
+    return { ...result, events: [...draws, ...result.events] };
 }
 
 const sumoHeadButtPrompt = createPromptProgram<SumoHeadButtContext>({
@@ -1770,7 +1795,7 @@ function sumoGraspTheBelt(ctx: AbilityContext): AbilityResult {
     });
 }
 
-function sumoThirdTierTalent(ctx: AbilityContext): AbilityResult {
+function sumoThirdTierOnPlay(ctx: AbilityContext): AbilityResult {
     const candidates = collectOtherPlayersMinionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex)
         .filter(candidate => {
             const minion = ctx.state.bases[candidate.baseIndex]?.minions.find(entry => entry.uid === candidate.uid);
@@ -1878,7 +1903,7 @@ const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext>({
     },
 });
 
-function sumoRookieSumoTalent(ctx: AbilityContext): AbilityResult {
+function sumoRookieSumoOnPlay(ctx: AbilityContext): AbilityResult {
     const hasDiscardCandidate = (ctx.state.players[ctx.playerId]?.hand.length ?? 0) > 0;
     const candidates = collectOwnMinions(ctx.state, ctx.playerId);
     if (!hasDiscardCandidate || candidates.length === 0) {
@@ -2664,7 +2689,9 @@ function luchadorsSenorMuchoslamOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 function luchadorsSenorMuchoslamTalent(ctx: AbilityContext): AbilityResult {
-    return { events: [grantContextualExtraAction(ctx, 'luchadors_senor_muchoslam')] };
+    return { events: [grantContextualExtraAction(ctx, 'luchadors_senor_muchoslam', {
+        playTiming: 'immediate', restrictToOpponentMinionAction: true, allowSkip: false,
+    })] };
 }
 
 const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsContext>({
@@ -2672,7 +2699,7 @@ const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsC
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_reversal_destroy_actions_${context.now}`,
         context.playerId,
-        '逆转：选择任意数量你的 Set-Up 行动摧毁',
+        '逆转：选择任意数量你的行动摧毁',
         context.candidates.map((action, index) => ({
             id: `ongoing-${index}`,
             label: getCardDef(action.defId)?.name ?? action.defId,
@@ -2695,28 +2722,8 @@ const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsC
             .filter((cardUid): cardUid is string => typeof cardUid === 'string'));
         const target = state.core.bases[context.targetBaseIndex]?.minions.find(minion => minion.uid === context.targetMinionUid);
         if (!target) return { events: [] };
-        const controlEvents = buildMinionControlChangedEvents(state.core, {
-            minionUid: target.uid,
-            minionDefId: target.defId,
-            baseIndex: context.targetBaseIndex,
-            toControllerId: context.playerId,
-            sourcePlayerId: context.playerId,
-            sourceDefId: 'luchadors_reversal',
-            reason: 'luchadors_reversal',
-            now: timestamp,
-        });
-        if (controlEvents.length === 0) return { events: [] };
         return {
-            events: [
-                ...controlEvents,
-                buildMinionMetadataUpdatedEvent(target.uid, context.targetBaseIndex, {
-                    [LUCHADORS_REVERSAL_CONTROL_META]: {
-                        sourcePlayerId: context.playerId,
-                        originalControllerId: target.controller,
-                        turnNumber: state.core.turnNumber,
-                    },
-                }, 'luchadors_reversal_mark', timestamp),
-                ...context.candidates
+            events: context.candidates
                     .filter(action => selectedCardUids.has(action.uid))
                     .flatMap(action => buildValidatedOngoingDetachEvents(state.core, {
                         cardUid: action.uid,
@@ -2728,8 +2735,47 @@ const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsC
                         sourceControllerId: context.playerId,
                         sourceBaseIndex: context.targetBaseIndex,
                     })),
-            ],
         };
+    },
+});
+
+const reversalTargetPrompt = createPromptProgram<ReversalTargetContext>({
+    sourceId: 'luchadors_reversal_target',
+    buildInteraction: context => createAbilityRuntimeSimpleChoice(
+        `luchadors_reversal_target_${context.now}`,
+        context.playerId,
+        '逆转：选择一个带 Set-Up 行动的随从',
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'luchadors_reversal',
+            effectType: 'control',
+        }),
+        { sourceId: 'luchadors_reversal_target', targetType: 'minion', titleKey: 'ui.luchadors_reversal_target_title', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const choice = value as MinionChoice;
+        const target = state.core.bases[context.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid);
+        if (!target || target.controller === context.playerId || !minionHasSetUpAction(target)) return { events: [] };
+        const controlEvents = buildMinionControlChangedEvents(state.core, {
+            minionUid: target.uid, minionDefId: target.defId, baseIndex: context.baseIndex,
+            toControllerId: context.playerId, sourcePlayerId: context.playerId,
+            sourceDefId: 'luchadors_reversal', reason: 'luchadors_reversal', now: timestamp,
+        });
+        if (!controlEvents.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)) return { events: controlEvents };
+        const events = [...controlEvents, buildMinionMetadataUpdatedEvent(target.uid, context.baseIndex, {
+            [LUCHADORS_REVERSAL_CONTROL_META]: {
+                sourcePlayerId: context.playerId, originalControllerId: target.controller, turnNumber: state.core.turnNumber,
+            },
+        }, 'luchadors_reversal_mark', timestamp)];
+        const candidates = target.attachedActions
+            .filter(action => getActionControllerId(action) === context.playerId)
+            .map(action => ({ uid: action.uid, defId: action.defId, ownerId: action.ownerId, baseIndex: context.baseIndex }));
+        if (candidates.length === 0) return { events };
+        return { events, continuation: createAbilityRuntimeContinuation({
+            matchState: state, playerId: context.playerId, now: timestamp,
+            targetMinionUid: target.uid, targetBaseIndex: context.baseIndex, candidates,
+        } satisfies ReversalDestroyActionsContext, reversalDestroyActionsPrompt) };
     },
 });
 
@@ -2743,23 +2789,15 @@ function luchadorsReversal(ctx: AbilityContext): AbilityResult {
     if (ownPower >= bestPower) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     }
-    const target = base.minions.find(minion =>
+    const candidates = base.minions.filter(minion =>
         minion.controller !== ctx.playerId
-        && minionHasSetUpActionControlledBy(minion, ctx.playerId),
-    );
-    if (!target) {
+        && minionHasSetUpAction(minion),
+    ).map(minion => ({ uid: minion.uid, defId: minion.defId, baseIndex: ctx.baseIndex, label: getCardDef(minion.defId)?.name ?? minion.defId }));
+    if (candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const ownAttachedActions = target.attachedActions.filter(action => getActionControllerId(action) === ctx.playerId);
-    return runtimeToAbilityResult(executeAbilityProgram(reversalDestroyActionsPrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-        targetMinionUid: target.uid,
-        targetBaseIndex: ctx.baseIndex,
-        candidates: ownAttachedActions.map(action => ({
-            uid: action.uid,
-            defId: action.defId,
-            ownerId: action.ownerId,
-            baseIndex: ctx.baseIndex,
-        })),
+    return runtimeToAbilityResult(executeAbilityProgram(reversalTargetPrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        baseIndex: ctx.baseIndex, candidates,
     })));
 }
 
@@ -2786,6 +2824,43 @@ function luchadorsReversalTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     }
     return events;
 }
+
+function isActionPlayedOnMinion(card: CardInstance): boolean {
+    const def = getCardDef(card.defId);
+    if (def?.type === 'fusion') return def.actionSubtype === 'ongoing' && def.actionOngoingTarget === 'minion';
+    return def?.type === 'action' && def.subtype === 'ongoing' && def.ongoingTarget === 'minion';
+}
+
+function resolveMuchoslamVsMonsters(
+    state: MatchState<SmashUpCore>, playerId: PlayerId, selectedCardUids: string[], recoverUid: string | undefined,
+    random: AbilityContext['random'], timestamp: number,
+): SmashUpEvent[] {
+    const player = state.core.players[playerId];
+    if (!player) return [];
+    const selected = player.discard.filter(card => selectedCardUids.includes(card.uid) && isCardActionLike(card));
+    const recovered = selected.find(card => card.uid === recoverUid && isActionPlayedOnMinion(card));
+    const rest = selected.filter(card => card.uid !== recovered?.uid);
+    return [
+        ...(recovered ? [recoverCardsFromDiscard(playerId, [recovered.uid], 'luchadors_senor_muchoslam_vs_the_monsters', timestamp)] : []),
+        ...(rest.length ? [buildDeckReorderedEvent(playerId, random.shuffle([...player.deck, ...rest]).map(card => card.uid), timestamp)] : []),
+    ];
+}
+
+const muchoslamVsMonstersRecoverPrompt = createPromptProgram<MuchoslamVsMonstersRecoverContext>({
+    sourceId: 'luchadors_muchoslam_vs_monsters_recover',
+    buildInteraction: context => createAbilityRuntimeSimpleChoice(
+        `luchadors_muchoslam_vs_monsters_recover_${context.now}`,
+        context.playerId,
+        '穆乔摔先生大战怪物：选择一张可打在随从上的行动回手',
+        (context.matchState.core.players[context.playerId]?.discard ?? [])
+            .filter(card => context.selectedCardUids.includes(card.uid) && isActionPlayedOnMinion(card))
+            .map(card => ({ id: card.uid, label: getCardDef(card.defId)?.name ?? card.defId, value: { cardUid: card.uid, defId: card.defId }, displayMode: 'card' as const, _source: 'discard' as const })),
+        { sourceId: 'luchadors_muchoslam_vs_monsters_recover', targetType: 'discard', titleKey: 'ui.luchadors_muchoslam_vs_monsters_recover_title', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ state, context, value, random, timestamp }) => ({
+        events: resolveMuchoslamVsMonsters(state, context.playerId, context.selectedCardUids, (value as CardChoice).cardUid, random, timestamp),
+    }),
+});
 
 const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext>({
     sourceId: 'luchadors_senor_muchoslam_vs_the_monsters',
@@ -2815,36 +2890,21 @@ const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext
         if (selectedCardUids.length === 0) return { events: [] };
         const player = state.core.players[context.playerId];
         if (!player) return { events: [] };
-        const selectedActions = player.discard.filter(card =>
-            selectedCardUids.includes(card.uid)
-            && getCardDef(card.defId)?.type === 'action',
-        );
+        const selectedActions = player.discard.filter(card => selectedCardUids.includes(card.uid) && isCardActionLike(card));
         if (selectedActions.length === 0) return { events: [] };
-        const playableOnMinion = selectedActions.find(card => {
-            const def = getCardDef(card.defId);
-            return def?.type === 'action' && (def.playNeedsMinion === true || def.ongoingTarget === 'minion');
-        });
-        const rest = selectedActions.filter(card => card.uid !== playableOnMinion?.uid);
-        const shuffledRest = random.shuffle(rest);
-        return {
-            events: [
-                ...(playableOnMinion
-                    ? [recoverCardsFromDiscard(context.playerId, [playableOnMinion.uid], 'luchadors_senor_muchoslam_vs_the_monsters', timestamp)]
-                    : []),
-                ...(shuffledRest.length > 0
-                    ? [buildDeckReorderedEvent(context.playerId, [
-                        ...player.deck.map(card => card.uid),
-                        ...shuffledRest.map(card => card.uid),
-                    ], timestamp)]
-                    : []),
-            ],
-        };
+        const recoverable = selectedActions.filter(isActionPlayedOnMinion);
+        if (recoverable.length <= 1) {
+            return { events: resolveMuchoslamVsMonsters(state, context.playerId, selectedCardUids, recoverable[0]?.uid, random, timestamp) };
+        }
+        return { events: [], continuation: createAbilityRuntimeContinuation({
+            matchState: state, playerId: context.playerId, now: timestamp, selectedCardUids,
+        } satisfies MuchoslamVsMonstersRecoverContext, muchoslamVsMonstersRecoverPrompt) };
     },
 });
 
 function luchadorsSenorMuchoslamVsTheMonsters(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const discardActions = player?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
+    const discardActions = player?.discard.filter(isCardActionLike) ?? [];
     if (!player || discardActions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
@@ -3207,7 +3267,7 @@ function buildActionSearchCandidates(
 }
 
 function luchadorsYellowDemon(ctx: AbilityContext): AbilityResult {
-    const candidates = buildActionSearchCandidates(ctx.state, ctx.playerId, card => SET_UP_ACTION_IDS.has(card.defId));
+    const candidates = buildActionSearchCandidates(ctx.state, ctx.playerId, card => isSetUpAction(card.defId));
     if (candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
@@ -3281,7 +3341,7 @@ function luchadorsSmartSetUpTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex !== ctx.sourceBaseIndex) return [];
     const sourceBase = ctx.state.bases[ctx.sourceBaseIndex];
     const host = sourceBase?.minions.find(minion => minion.attachedActions.some(action => action.uid === ctx.sourceCardUid));
-    if (!host || host.controller === ctx.sourceControllerId) return [];
+    if (!host) return [];
     const totalPlayedOnBase = ctx.state.turnOrder.reduce(
         (sum, playerId) => sum + (ctx.state.players[playerId]?.minionsPlayedPerBase?.[ctx.sourceBaseIndex!] ?? 0),
         0,
@@ -3594,15 +3654,15 @@ export function registerInternationalIncidentAbilities(): void {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(sumoYokozunaTalent),
     });
     registerProtection('sumo_wrestlers_yokozuna', 'move', protectionHasYokozuna);
-    registerAbilityProgram('sumo_wrestlers_third_tier', 'talent', {
-        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(sumoThirdTierTalent),
+    registerAbilityProgram('sumo_wrestlers_third_tier', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(sumoThirdTierOnPlay),
     });
     registerTrigger('sumo_wrestlers_top_tier', 'onCardsDiscarded', sumoTopTierOnCardsDiscarded, {
         perInstance: true,
         playerContext: 'sourceController',
     });
-    registerAbilityProgram('sumo_wrestlers_rookie_sumo', 'talent', {
-        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(sumoRookieSumoTalent),
+    registerAbilityProgram('sumo_wrestlers_rookie_sumo', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(sumoRookieSumoOnPlay),
     });
 
     registerAbilityProgram('musketeers_en_garde', 'onPlay', {

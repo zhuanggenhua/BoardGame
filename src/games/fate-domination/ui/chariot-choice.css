@@ -4,3 +4,4 @@
 .fd-chariot-card { position:relative; width:clamp(120px,12vw,190px); }
 .fd-chariot-card > button:first-child { width:100%; padding:0; border:0; background:transparent; cursor:pointer; outline:2px solid #e5cc86; outline-offset:1px; }
 .fd-chariot-card > button:first-child:hover,.fd-chariot-card > button:first-child:focus-visible { outline-color:#fff0b5; outline-offset:2px; }
+.fd-chariot-card > button[aria-disabled="true"]:first-child { outline-color:transparent; cursor:default; }

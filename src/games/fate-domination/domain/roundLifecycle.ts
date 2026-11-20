@@ -1,10 +1,10 @@
-import { isFateResidualSkill } from './battlefieldAttacks';
-import { fateFinalResult, emptyFateBattleResult } from './battleAwards';
+import { fateRetainedBattlefieldAttacks, isFateResidualSkill } from './battlefieldAttacks';
+import { applyFateBattleScoreAdjustment, fateFinalResult, fatePostBattleScoreEvents, emptyFateBattleResult } from './battleAwards';
 import type { BattleResult, FateDominationEvent } from './types';
 import { drawFateCards } from './cardDraw';
 import { fateSituationEventCounts, distributeFateRoundEvents } from './environmentRules';
 import type { RandomFn } from '../../../engine/types';
-import type { BattleResolvedEvent, FateDominationCore, CardInstance, EventCardDefinition } from './types';
+import type { BattleResolvedEvent, FateDominationCore, CardInstance } from './types';
 import { FATE_SITUATIONS } from '../data';
 import { FATE_DEFAULT_HAND_LIMIT, capFateMana } from './rules';
 import { FATE_LOCATION_ORDER } from './movement';
@@ -54,20 +54,26 @@ export function reduceFateRound(state: FateDominationCore, event: BattleResolved
         const skills = current.skills.filter(skill => !(skill.oncePerGame && current.activeSkills.includes(skill.id)));
         return [id, {
             ...current, locationId: null, deploymentSlot: null,
+            secondaryDeploymentSlot: undefined,
             skills,
             revealedSkillIds: current.revealedSkillIds.filter(id => skills.some(skill => skill.id === id)),
             activeAttackIds: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], forcedRevealedHand: [], activeSkills: current.eliminated ? [] : current.activeSkills.filter(isFateResidualSkill), usedAbilityIds: [],
             normalAttackPlayed: false, normalMoveCompleted: false, defeatMarkers: [], hasPassedAction: false,
+            playedSpecialAttackThisRound: false,
             mana: capFateMana(current.masterId, current.mana + (isComplete || current.eliminated ? 0 : nextSituation.printedMana ?? 0)),
             hand, deck, discard,
         }];
     })) as FateDominationCore['players'];
     const awardResults = state.resolvedResults.length ? state.resolvedResults.filter(item => item.status === 'representative-win' || item.status === 'recon') : [result];
     for (const award of awardResults) players[award.playerId] = { ...players[award.playerId], victoryPoints: players[award.playerId].victoryPoints + award.totalVictoryPoints };
-    return { ...state, round: Math.min(nextRound, 11), phase: isComplete ? 'complete' : 'preparation', turnOrder, phaseCompletedPlayerIds: [], shintoEventFaceDown: !isComplete, currentPlayerId: nextPlayerId, currentTurnIndex: turnOrder.indexOf(nextPlayerId), battlefield, situation: nextSituation, miyamaEvent: currentEvents.miyama[0] ?? state.miyamaEvent, battleResult: result, battleResolution: undefined, resolvedLocations: [], resolvedResults: [], situationDeck, situationDeckCount: situationDeck?.length ?? Math.max(0, state.situationDeckCount - 1), eventDeckCount: eventDeck.length, eventDiscardCount: eventDiscard.length, eventDeck, eventDiscard, currentEvents, pendingChoice: { kind: null }, actionNotice: isComplete ? '第 11 回合结束，对局完成。' : `第 ${nextRound} 回合准备阶段已开始。`, gameResult: event.payload.gameResult, players, ruleState: expireFateRuleModifiers(expireFateRuleModifiers(normalizeFateRuleState(state.ruleState), 'turn-end'), 'round-end') };
+    return {
+        ...state,
+        battlefieldAttacks: fateRetainedBattlefieldAttacks(state.battlefieldAttacks, nextSituation),
+        round: Math.min(nextRound, 11), phase: isComplete ? 'complete' : 'preparation', turnOrder, phaseCompletedPlayerIds: [], shintoEventFaceDown: !isComplete, currentPlayerId: nextPlayerId, currentTurnIndex: turnOrder.indexOf(nextPlayerId), battlefield, situation: nextSituation, miyamaEvent: currentEvents.miyama[0] ?? state.miyamaEvent, battleResult: result, battleResolution: undefined, resolvedLocations: [], resolvedResults: [], situationDeck, situationDeckCount: situationDeck?.length ?? Math.max(0, state.situationDeckCount - 1), eventDeckCount: eventDeck.length, eventDiscardCount: eventDiscard.length, eventDeck, eventDiscard, currentEvents, pendingChoice: { kind: null }, actionNotice: isComplete ? '第 11 回合结束，对局完成。' : `第 ${nextRound} 回合准备阶段已开始。`, gameResult: event.payload.gameResult, players, ruleState: expireFateRuleModifiers(expireFateRuleModifiers(normalizeFateRuleState(state.ruleState), 'turn-end'), 'round-end'),
+    };
 }
 
-function nextFateSituation(state:FateDominationCore):FateDominationCore['situation'] {
+export function nextFateSituation(state:FateDominationCore):FateDominationCore['situation'] {
     const nextRound=state.round+1;
     return nextRound >= 11 ? FATE_SITUATIONS.find((situation) => situation.name === '天之杯') ?? state.situation : nextRound === 10 ? FATE_SITUATIONS.find((situation) => situation.name === '身处地狱之门') ?? state.situation : nextRound === 9 ? FATE_SITUATIONS.find((situation) => situation.name === '命运之夜') ?? state.situation : state.situationDeck?.[0] ?? state.situation;
 }
@@ -79,7 +85,7 @@ const eliminationLimitForCompletedRound = (round: number): number | undefined =>
     return undefined;
 };
 
-const eliminationCandidatesForRound = (
+export const fateEliminationCandidatesForRound = (
     core: FateDominationCore,
     results: BattleResult[],
 ): string[] => {
@@ -104,8 +110,11 @@ const eliminationCandidatesForRound = (
 export function finishFateRoundEvents(core:FateDominationCore,results:BattleResult[],random:RandomFn,meta:{timestamp:number;sourceCommandType?:string}):FateDominationEvent[] {
     const awards=results.filter(result=>result.status==='representative-win'||result.status==='recon');
     const nextRound=core.round+1;
+    const scoreEvents = fatePostBattleScoreEvents(core, results, meta);
+    const withScoreEffects = scoreEvents.reduce(applyFateBattleScoreAdjustment, core);
     return [
-        ...eliminationCandidatesForRound(core,awards).map(playerId=>({type:'FATE_ELIMINATION_REQUESTED' as const,payload:{playerId,reason:'round-cut' as const},...meta})),
-        {type:'BATTLE_RESOLVED',payload:{result:awards[0]??emptyFateBattleResult(core.currentPlayerId),nextRound,...prepareFateDeckRecycling(core,random),gameResult:nextRound>11?fateFinalResult(core,awards):undefined},...meta},
+        ...scoreEvents,
+        ...fateEliminationCandidatesForRound(withScoreEffects,awards).map(playerId=>({type:'FATE_ELIMINATION_REQUESTED' as const,payload:{playerId,reason:'round-cut' as const},...meta})),
+        {type:'BATTLE_RESOLVED',payload:{result:awards[0]??emptyFateBattleResult(core.currentPlayerId),nextRound,...prepareFateDeckRecycling(core,random),gameResult:nextRound>11?fateFinalResult(withScoreEffects,awards):undefined},...meta},
     ];
 }

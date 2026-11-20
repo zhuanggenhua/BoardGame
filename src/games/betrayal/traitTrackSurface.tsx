@@ -354,7 +354,9 @@ export function ExplorerTraitOutcomePreview({
   };
   const previewContent = (
     <>
-      <div className="flex min-w-0 items-center justify-between gap-2">
+      <div className={hasAdjustControls
+        ? "grid min-w-0 gap-1.5"
+        : "flex min-w-0 items-center justify-between gap-2"}>
         <span className={`inline-flex min-w-0 items-center gap-1.5 text-[11px] font-bold ${TRAIT_TONE_CLASS[trait].text}`}>
           <OptimizedImage
             src={BETRAYAL_TRAIT_MARKER_ASSETS[trait]}

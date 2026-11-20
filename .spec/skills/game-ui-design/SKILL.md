@@ -94,7 +94,7 @@ UI 设计先回答“玩家此刻要做什么”。
 
 ## 外部参考吸收口径
 
-可参考成熟游戏 UI、桌游、卡牌游戏、平台规范和临时拉取的外部 skills，但它们只能提供不变量，不能替代本项目规则真相源。
+游戏 UI 参考资格按[游戏参考准入](../../knowledge/standards/game-reference-selection.md)判定。
 
 参考案例及其核对状态、适用边界见 [`references/reference-cases.md`](references/reference-cases.md)；后续学习在该案例索引中记录来源、观察、可迁移原因与未证明范围，设计规则仍以 UI 主规范为准。
 

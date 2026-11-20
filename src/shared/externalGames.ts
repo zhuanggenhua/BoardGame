@@ -1,3 +1,5 @@
+import type { ExternalRoomSetup } from './externalRoom';
+
 export const MAX_RULES_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_WEB_ZIP_BYTES = 32 * 1024 * 1024;
 export const SANDBOXED_WEB_GAME_PATH = '/ugc/web-game-packages';
@@ -29,6 +31,7 @@ export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
 export interface ExternalGame extends ExternalGameFields {
     webZipName?: string;
     roomProtocol?: 1;
+    roomSetup?: ExternalRoomSetup;
     roomAdapter?: 'vale-webrtc';
     rulesDocument?: GameRulesDocument;
     gameId: string;

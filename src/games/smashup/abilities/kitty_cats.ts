@@ -423,7 +423,10 @@ function kittyCatsWhiskers(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.kitty_cats_whiskers_title',
         },
     );
-    return { events, matchState: queueInteraction(ctx.matchState, prompt) };
+    return { events, matchState: queueInteraction(ctx.matchState, {
+        ...prompt,
+        data: { ...prompt.data, continuationContext: { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex } },
+    }) };
 }
 
 function kittyCatsWhiskersPod(ctx: AbilityContext): AbilityResult {
@@ -442,7 +445,10 @@ function kittyCatsWhiskersPod(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.kitty_cats_whiskers_title',
         },
     );
-    return { events, matchState: queueInteraction(ctx.matchState, prompt) };
+    return { events, matchState: queueInteraction(ctx.matchState, {
+        ...prompt,
+        data: { ...prompt.data, continuationContext: { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex } },
+    }) };
 }
 
 function kittyCatsInvisibleBicycle(ctx: AbilityContext): AbilityResult {
@@ -527,7 +533,7 @@ function handleDestroyOwnMinion(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
     value: unknown,
-    _data: Record<string, unknown> | undefined,
+    data: Record<string, unknown> | undefined,
     _random: RandomFn,
     timestamp: number,
     context: {
@@ -537,6 +543,7 @@ function handleDestroyOwnMinion(
     },
 ) {
     const selected = value as MinionChoice;
+    const source = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
     if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
     const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
     if (!minion || minion.controller !== playerId) return { state, events: [] };
@@ -548,9 +555,10 @@ function handleDestroyOwnMinion(
             fromBaseIndex: selected.baseIndex,
             destroyerId: playerId,
             sourcePlayerId: playerId,
+            sourceCardUid: source?.sourceCardUid,
             sourceDefId: context.sourceDefId,
             sourceControllerId: playerId,
-            sourceBaseIndex: selected.baseIndex,
+            sourceBaseIndex: source?.sourceBaseIndex ?? selected.baseIndex,
             reason: context.reason,
             now: timestamp,
             sourceKind: context.sourceKind,

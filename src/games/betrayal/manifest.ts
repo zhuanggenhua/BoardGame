@@ -18,7 +18,7 @@ const entry: GameManifestEntry = {
     icon: '屋',
     thumbnailPath: 'betrayal/thumbnails/cover',
     cursorTheme: 'betrayal-haunt',
-    allowLocalMode: true,
+    allowLocalMode: false,
     playerOptions: [3, 4, 5, 6],
     publicRoomSetupSummary: {
         scenario: {

@@ -1913,12 +1913,14 @@ export function grantExtraAction(
         restrictToBase?: number;
         restrictToMinionUid?: string;
         specialActionWindow?: 'meFirst' | 'afterScoring';
+        restrictToOpponentMinionAction?: boolean;
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
         allowFromDiscard?: boolean;
         allowSkip?: boolean;
         destroyAttachedActionAtTurnEnd?: boolean;
+        borrowActionFromPlayerId?: PlayerId;
     },
 ): LimitModifiedEvent {
     return {
@@ -1931,6 +1933,7 @@ export function grantExtraAction(
             ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
             ...(options?.restrictToBase !== undefined ? { restrictToBase: options.restrictToBase } : {}),
             ...(options?.restrictToMinionUid ? { restrictToMinionUid: options.restrictToMinionUid } : {}),
+            ...(options?.restrictToOpponentMinionAction ? { restrictToOpponentMinionAction: true } : {}),
             ...(options?.specialActionWindow ? { specialActionWindow: options.specialActionWindow } : {}),
             ...(options?.restrictToCardUid ? { restrictToCardUid: options.restrictToCardUid } : {}),
             ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
@@ -1938,6 +1941,7 @@ export function grantExtraAction(
             ...(options?.allowFromDiscard ? { allowFromDiscard: true } : {}),
             ...(options?.allowSkip !== undefined ? { allowSkip: options.allowSkip } : {}),
             ...(options?.destroyAttachedActionAtTurnEnd ? { destroyAttachedActionAtTurnEnd: true } : {}),
+            ...(options?.borrowActionFromPlayerId !== undefined ? { borrowActionFromPlayerId: options.borrowActionFromPlayerId } : {}),
         },
         timestamp: now,
     };
@@ -2055,23 +2059,27 @@ export function grantContextualExtraAction(
         restrictToBase?: number;
         restrictToMinionUid?: string;
         restrictToCardUid?: string;
+        restrictToOpponentMinionAction?: boolean;
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
         allowFromDiscard?: boolean;
         allowSkip?: boolean;
         destroyAttachedActionAtTurnEnd?: boolean;
+        borrowActionFromPlayerId?: PlayerId;
     },
 ): LimitModifiedEvent {
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
         playTiming: options?.playTiming ?? resolveExtraPlayTiming(ctx.matchState),
         restrictToBase: options?.restrictToBase,
         restrictToMinionUid: options?.restrictToMinionUid,
+        restrictToOpponentMinionAction: options?.restrictToOpponentMinionAction,
         restrictToCardUid: options?.restrictToCardUid,
         restrictToCardDefId: options?.restrictToCardDefId,
         restrictToBaseModifier: options?.restrictToBaseModifier,
         allowFromDiscard: options?.allowFromDiscard,
         allowSkip: options?.allowSkip,
         destroyAttachedActionAtTurnEnd: options?.destroyAttachedActionAtTurnEnd,
+        borrowActionFromPlayerId: options?.borrowActionFromPlayerId,
     });
 }
 

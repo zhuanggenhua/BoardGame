@@ -54,7 +54,100 @@ async function respondWithOptionIds(
 }
 
 test.describe('大杀四方国际事件相扑手修复后真实入口审计', () => {
-  test('身体猛击、关胁与相扑新人从真实入口完成选择和最终状态收口', async ({ page, game }) => {
+  test('斗志奖没有己方随从时仍从手牌入口抽两张牌', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'sumo_wrestlers,musketeers', p1: 'mounties,luchadors', skipFactionSelect: true, seed: 20261122 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'spirit-no-minion', defId: 'sumo_wrestlers_fighting_spirit_prize', type: 'action', owner: '0' }],
+        deck: [
+          { uid: 'spirit-empty-a', defId: 'sumo_wrestlers_rookie_sumo', type: 'minion', owner: '0' },
+          { uid: 'spirit-empty-b', defId: 'sumo_wrestlers_chikara_mizu', type: 'action', owner: '0' },
+        ],
+        discard: [], factions: ['sumo_wrestlers', 'musketeers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'luchadors'] },
+      bases: [{ defId: 'base_the_factory', minions: [] }],
+    });
+    await game.playCard('sumo_wrestlers_fighting_spirit_prize');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => (await game.getState()).core.players['0'].hand.map((card: { uid?: string }) => card.uid))
+      .toEqual(['spirit-empty-a', 'spirit-empty-b']);
+    await game.screenshot('相扑手-斗志奖无随从仍抽两张', testInfo);
+  });
+
+  test('相扑新人打出后可弃牌并给自己放两个指示物', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'sumo_wrestlers,musketeers', p1: 'mounties,luchadors', skipFactionSelect: true, seed: 20261121 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [
+          { uid: 'rookie-play', defId: 'sumo_wrestlers_rookie_sumo', type: 'minion', owner: '0' },
+          { uid: 'rookie-discard', defId: 'sumo_wrestlers_chikara_mizu', type: 'action', owner: '0' },
+        ],
+        deck: [], discard: [], factions: ['sumo_wrestlers', 'musketeers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'luchadors'] },
+      bases: [{ defId: 'base_the_factory', minions: [] }],
+    });
+    await game.playCard('sumo_wrestlers_rookie_sumo', { targetBaseIndex: 0 });
+    await game.waitForInteraction('sumo_wrestlers_rookie_sumo_discard', 10000);
+    await game.selectInteractionOptionBy(option => optionValue(option).cardUid === 'rookie-discard', '相扑新人弃掉手牌');
+    await game.waitForInteraction('sumo_wrestlers_rookie_sumo_target', 10000);
+    await game.selectInteractionOptionBy(option => optionValue(option).minionUid === 'rookie-play', '相扑新人选择自己');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const rookie = state.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'rookie-play');
+      return { counters: rookie?.powerCounters, discarded: state.core.players['0'].discard.some((card: { uid: string }) => card.uid === 'rookie-discard') };
+    }).toEqual({ counters: 2, discarded: true });
+    await game.screenshot('相扑手-新人打出弃牌后给自己加指示物', testInfo);
+  });
+
+  test('炖肉弃两张牌后可把指示物分给两个不同随从', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'sumo_wrestlers,musketeers', p1: 'mounties,luchadors', skipFactionSelect: true, seed: 20261120 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [
+          { uid: 'split-stew', defId: 'sumo_wrestlers_bulking_stew', type: 'action', owner: '0' },
+          { uid: 'split-a', defId: 'sumo_wrestlers_chikara_mizu', type: 'action', owner: '0' },
+          { uid: 'split-b', defId: 'sumo_wrestlers_grasp_the_belt', type: 'action', owner: '0' },
+        ],
+        deck: [], discard: [], factions: ['sumo_wrestlers', 'musketeers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['mounties', 'luchadors'] },
+      bases: [{ defId: 'base_the_factory', minions: [
+        { uid: 'split-minion-a', defId: 'sumo_wrestlers_rookie_sumo', owner: '0', controller: '0', power: 2 },
+        { uid: 'split-minion-b', defId: 'sumo_wrestlers_rookie_sumo', owner: '0', controller: '0', power: 2 },
+      ] }],
+    });
+    await game.playCard('sumo_wrestlers_bulking_stew');
+    await game.waitForInteraction('sumo_wrestlers_bulking_stew_discard', 10000);
+    await respondWithOptionIds(page, game, [
+      option => optionValue(option).cardUid === 'split-a',
+      option => optionValue(option).cardUid === 'split-b',
+    ]);
+    await game.waitForInteraction('sumo_wrestlers_bulking_stew_target', 10000);
+    await game.selectInteractionOptionBy(option => optionValue(option).minionUid === 'split-minion-a', '第一个指示物给第一个随从');
+    await game.waitForInteraction('sumo_wrestlers_bulking_stew_target', 10000);
+    await game.screenshot('相扑手-炖肉选择第二个指示物', testInfo);
+    await game.selectInteractionOptionBy(option => optionValue(option).minionUid === 'split-minion-b', '第二个指示物给第二个随从');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return state.core.bases[0].minions.map((minion: { powerCounters?: number }) => minion.powerCounters ?? 0);
+    }).toEqual([1, 1]);
+    await game.screenshot('相扑手-炖肉分配到两个随从', testInfo);
+  });
+
+  test('身体猛击、关胁与相扑新人从真实入口完成选择和最终状态收口', async ({ page, game }, testInfo) => {
     test.setTimeout(180000);
     await setChineseLocale(page.context());
     await game.openTestGame('smashup', {
@@ -130,7 +223,7 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       currentPlayer: '0',
       phase: 'playCards',
       player0: {
-        hand: [],
+        hand: [{ uid: 'third-tier-source', defId: 'sumo_wrestlers_third_tier', type: 'minion', owner: '0' }],
         deck: [{ uid: 'third-tier-draw', defId: 'sumo_wrestlers_performance_prize', type: 'action', owner: '0' }],
         discard: [],
         factions: ['sumo_wrestlers', 'musketeers'],
@@ -143,9 +236,8 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       player2: { factions: ['sumo_wrestlers', 'musketeers'] },
       bases: [
         {
-          defId: 'base_the_dohyo',
+          defId: 'base_the_factory',
           minions: [
-            { uid: 'third-tier-source', defId: 'sumo_wrestlers_third_tier', owner: '0', controller: '0', power: 3 },
             { uid: 'third-tier-target', defId: 'musketeers_young_musketeer', owner: '1', controller: '1', power: 3 },
           ],
         },
@@ -154,8 +246,9 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       ],
     });
 
-    await dispatchSmashUpCommand(page, 'su:use_talent', { minionUid: 'third-tier-source', baseIndex: 0 });
+    await game.playCard('sumo_wrestlers_third_tier', { targetBaseIndex: 0 });
     await game.waitForInteraction('sumo_wrestlers_third_tier', 10000);
+    await game.screenshot('相扑手-关胁打出后立即选择', testInfo);
     await game.selectInteractionOptionBy(
       option => optionValue(option).skip === true,
       '关胁跳过移动',
@@ -169,7 +262,7 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       };
     }, { timeout: 10000 }).toEqual({
       hand: [],
-      source: ['third-tier-source', 'third-tier-target'],
+      source: ['third-tier-target', 'third-tier-source'],
     });
 
     await game.setupScene({
@@ -177,7 +270,7 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       currentPlayer: '0',
       phase: 'playCards',
       player0: {
-        hand: [],
+        hand: [{ uid: 'third-tier-source-2', defId: 'sumo_wrestlers_third_tier', type: 'minion', owner: '0' }],
         deck: [{ uid: 'third-tier-draw-2', defId: 'sumo_wrestlers_performance_prize', type: 'action', owner: '0' }],
         discard: [],
         factions: ['sumo_wrestlers', 'musketeers'],
@@ -190,9 +283,8 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       player2: { factions: ['sumo_wrestlers', 'musketeers'] },
       bases: [
         {
-          defId: 'base_the_dohyo',
+          defId: 'base_the_factory',
           minions: [
-            { uid: 'third-tier-source-2', defId: 'sumo_wrestlers_third_tier', owner: '0', controller: '0', power: 3 },
             { uid: 'third-tier-target-2', defId: 'musketeers_young_musketeer', owner: '1', controller: '1', power: 3 },
           ],
         },
@@ -201,7 +293,7 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       ],
     });
 
-    await dispatchSmashUpCommand(page, 'su:use_talent', { minionUid: 'third-tier-source-2', baseIndex: 0 });
+    await game.playCard('sumo_wrestlers_third_tier', { targetBaseIndex: 0 });
     await game.waitForInteraction('sumo_wrestlers_third_tier', 10000);
     await game.selectInteractionOptionBy(
       option => optionValue(option).minionUid === 'third-tier-target-2',
@@ -231,7 +323,10 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       currentPlayer: '0',
       phase: 'playCards',
       player0: {
-        hand: [{ uid: 'rookie-fodder', defId: 'sumo_wrestlers_chikara_mizu', type: 'action', owner: '0' }],
+        hand: [
+          { uid: 'rookie-fodder', defId: 'sumo_wrestlers_chikara_mizu', type: 'action', owner: '0' },
+          { uid: 'rookie-sumo-a', defId: 'sumo_wrestlers_rookie_sumo', type: 'minion', owner: '0' },
+        ],
         discard: [],
         factions: ['sumo_wrestlers', 'musketeers'],
         minionsPlayed: 0,
@@ -242,16 +337,16 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       player1: { factions: ['mounties', 'luchadors'] },
       player2: { factions: ['sumo_wrestlers', 'musketeers'] },
       bases: [{
-        defId: 'base_the_dohyo',
+        defId: 'base_the_factory',
         minions: [
-          { uid: 'rookie-sumo-a', defId: 'sumo_wrestlers_rookie_sumo', owner: '0', controller: '0', power: 2 },
           { uid: 'rookie-sumo-b', defId: 'musketeers_young_musketeer', owner: '0', controller: '0', power: 3 },
         ],
       }],
     });
 
-    await dispatchSmashUpCommand(page, 'su:use_talent', { minionUid: 'rookie-sumo-a', baseIndex: 0 });
+    await game.playCard('sumo_wrestlers_rookie_sumo', { targetBaseIndex: 0 });
     await game.waitForInteraction('sumo_wrestlers_rookie_sumo_discard', 10000);
+    await game.screenshot('相扑手-新人打出后立即选择', testInfo);
     await game.selectInteractionOptionBy(
       option => optionValue(option).skip === true,
       '相扑新人跳过弃牌',
@@ -598,6 +693,7 @@ test.describe('大杀四方国际事件相扑手修复后真实入口审计', ()
       currentPlayer: '0',
       phase: 'playCards',
       player0: {
+        hand: [],
         deck: [{ uid: 'yokozuna-draw', defId: 'sumo_wrestlers_performance_prize', type: 'action', owner: '0' }],
         discard: [],
         factions: ['sumo_wrestlers', 'musketeers'],

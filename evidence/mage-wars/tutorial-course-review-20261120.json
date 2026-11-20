@@ -1,0 +1,818 @@
+{
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "baselineFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\mw-course-original-baseline-20261120.json",
+  "behaviorCommands": [
+    "node scripts/infra/vitest-cli-safe.mjs run src/games/mage-wars/__tests__/tutorial.test.ts src/components/game/framework/__tests__/ZoomPanViewport.test.tsx --configLoader native --maxWorkers=1",
+    "node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/mage-wars-tutorial.e2e.ts --case 单局教程从守卫到同局自由对战 --workers=1"
+  ],
+  "behaviorLogs": [
+    "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-release-unit-20261120.log",
+    "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120.log",
+    "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120.log"
+  ],
+  "tutorial-desktop": [
+    {
+      "uiStateId": "第五回合单局开场",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\01-第五回合单局开场.png",
+      "sha256": "12c462a5798a90cfb8db5a90ecc438c0608878cc94f1461c19ec184288212682",
+      "transition": "打开正式教程并进入第一次守卫决策。",
+      "observation": "开场同时交代兽王、女祭司、获胜目标和近身独角兽。己方灰狼亮框，提示与棋子、双方法师读数和准备区错开。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "阶段悬浮提示",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\02-阶段悬浮提示.png",
+      "sha256": "7b302c248de826c43733712732715751f1a1b904013f53ef9b497cc6f60ab09e",
+      "transition": "把鼠标移到当前的生物行动阶段。",
+      "observation": "左侧展开生物行动解释，当前阶段仍有高亮，说明没有遮住灰狼或守卫提示。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "选中灰狼后显示守卫入口",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\03-选中灰狼后显示守卫入口.png",
+      "sha256": "0c80a28e6695b7354f5fcbf45e15d2f8199ff44bc567b8eedbc4ea8e116b5d8d",
+      "transition": "点击亮起的己方灰狼。",
+      "observation": "选狼后才出现中央下方的守卫按钮，说明指向按钮，原狼、独角兽和生命值仍可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "刚放大时叉号隐藏",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\04-刚放大时叉号隐藏.png",
+      "sha256": "0a29d2331649a89a1ac2929f12a50cfe37bc1365ddb71ccf0c80103555c7be4c",
+      "transition": "守卫后点治疗牌的悬浮放大镜。",
+      "observation": "整张次级治疗卡可读，刚打开时卡边没有常驻叉号。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "悬浮放大卡上才显示关闭",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\05-悬浮放大卡上才显示关闭.png",
+      "sha256": "a0fee83f0347c02456adc70ff9d3839090e4e1d4ad8e347603ebe9e26a155d1c",
+      "transition": "将鼠标移入放大的次级治疗卡。",
+      "observation": "右上角出现关闭叉号，卡名、费用与效果正文没有被遮住。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "治疗选择受伤灰狼",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\06-治疗选择受伤灰狼.png",
+      "sha256": "cb5fa194f6e155591fa59182ad5eeb1a35e9fa1cbb81a7b457112256ccbd7cfe",
+      "transition": "关闭放大卡，再选择准备区的次级治疗。",
+      "observation": "治疗牌保留选中态，提示靠近棋盘上的受伤灰狼，狼及准备牌都可辨认。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "治疗骰总和四与灰狼飘字加三",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\07-治疗骰总和四与灰狼飘字加三.png",
+      "sha256": "7e86573ed6a80edf658eb99018159100fcfbc64a8bdb87f3fdbd92e461dc843d",
+      "transition": "点击灰狼，等待治疗骰落定。",
+      "observation": "中央四个有刻字的骰面和一个空白骰面共显示 4。灰狼身上同时可见独立的 +3，提示避开两处读数。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "治疗四点实际恢复三点",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\08-治疗四点实际恢复三点.png",
+      "sha256": "29e14961748980f4f0529801765e10281fc7bddc419f0a6784f68da8dfdb5ec5",
+      "transition": "骰组和飘字退场后展示治疗结果。",
+      "observation": "灰狼生命为 10/10，提示回顾掷骰与实治，下一步在棋子上方可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "守卫后的反击选择",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\09-守卫后的反击选择.png",
+      "sha256": "d3635f0bb066e1fb2176f1af75e8bb39d9c6c8a94c17c51cd3270a10d1b603c7",
+      "transition": "继续后独角兽攻击灰狼，触发反击响应。",
+      "observation": "反击与放弃按钮并排完整显示，教程提示在响应区下方，两只生物仍可辨。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "最终快速施法按钮",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\10-最终快速施法按钮.png",
+      "sha256": "20204f29f85bd0f1e23a4643032d3f2edc9cfd3dfdf572eb02b04d0258a4f0ac",
+      "transition": "选择反击并等对手结束生物行动。",
+      "observation": "阶段栏高亮最终快速施法，右侧让过按钮清楚，提示未盖住按钮和准备栏。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "弃牌堆可打开用过的次级治疗",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\11-弃牌堆可打开用过的次级治疗.png",
+      "sha256": "8ca447181ca8d904bdd3976b06b130cded2f0425ae82f161eb8b77a00aa052e1",
+      "transition": "让过最终快速施法，在下一轮点己方弃牌堆。",
+      "observation": "展开的牌面为次级治疗，弃牌入口和准备区仍能区分。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "读牌步骤包含法术牌图例",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\12-读牌步骤包含法术牌图例.png",
+      "sha256": "8cab79de8f57ba548e1109e385b62f2f513f58f042b729850adc6018e4c4fa54",
+      "transition": "关闭弃牌预览并继续到计划前的读牌。",
+      "observation": "在真实棋盘前展示火球术示图，费用、行动、范围和目标各有可读指示。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "设置内查阅魔杖魔宠和再生点",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\13-设置内查阅魔杖魔宠和再生点.png",
+      "sha256": "e8109ca9c53086bee1de8d73229cc0fdc8543fcd7a740ee4d79bfe2a6ceb5920",
+      "transition": "从游戏菜单打开设置和规则释义，选施法来源。",
+      "observation": "规则释义与原来的读牌图例同时显示，返回入口和当前下一步未被叠层压住。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "准备召唤与觉醒",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\14-准备召唤与觉醒.png",
+      "sha256": "399da1d6aeca67b776de2790c070169a65788ce7df4426cce504528546734a33",
+      "transition": "回到本局，分别在生物与咒语页选丛林灰狼和兽性觉醒。",
+      "observation": "两张真实准备牌填入右下牌槽，行动标记讲解与确认计划 2/2 同屏。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "结束空部署",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\15-结束空部署.png",
+      "sha256": "2c4d0e4782de88cac623eaa403b6488b320f961dbf7ecf64305dbdac8f8a79bd",
+      "transition": "确认法术后开始部署。",
+      "observation": "部署高亮和右侧结束部署按钮可读，两个准备位都保留。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "保留优先快速施法",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\16-保留优先快速施法.png",
+      "sha256": "66b9d0499532a3300c0c04f300be99377067f8cd555c75baea237868e51789d8",
+      "transition": "结束无来源的部署，来到优先快速施法。",
+      "observation": "左侧阶段高亮和右侧让过控件区分首次快速施法窗口，兽性觉醒仍在准备区。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "近战步骤包含攻击条图例",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\18-近战步骤包含攻击条图例.png",
+      "sha256": "f1ffbcf3f72cbecde659f140a08c368d3b15323c08878dafe746d52656adb89c",
+      "transition": "保留快速施法，等独角兽移动，再让原灰狼追到同区。",
+      "observation": "场上灰狼、攻击条图例和下一步同屏，快速近战、骰子和效果栏的标注可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "玩家主动攻击独角兽",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\19-玩家主动攻击独角兽.png",
+      "sha256": "1af632a8f57d13a54fc87d9202caeacc11a383cf623a8b44ec9d5909b6a3a3f9",
+      "transition": "完成攻击条阅读并选中原灰狼。",
+      "observation": "灰狼和同区独角兽完整处在提示下方，独角兽显示可选边框。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "缩放后仍可点击兽王所在区域召唤",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\20-缩放后仍可点击兽王所在区域召唤.png",
+      "sha256": "fc0a8b031f2938048752eae99fb14292b597ab0354788cab7f3ab2b2cbb71086",
+      "transition": "结算噬咬、交接行动，滚轮缩放后选择准备的灰狼。",
+      "observation": "兽王所在格完整亮起，底栏和目标格错开，选中的召唤牌仍可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "对新灰狼施放兽性觉醒",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\21-对新灰狼施放兽性觉醒.png",
+      "sha256": "e20692888e4a42724414868d91d4dc88e4d327f0f70c3b6c4b8358d400f4bb6a",
+      "transition": "直接点击亮起区域召唤，再选兽性觉醒。",
+      "observation": "兽王仍在原位置附近，新灰狼与兽王同区可辨，兽性觉醒保持选中。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "荆棘墙选择真实边界",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\25-荆棘墙选择真实边界.png",
+      "sha256": "52920f9ad9b9fd51c2d1fb1a5abcadb555184a3a632f7bf8e61fff935577f6fa",
+      "transition": "施放觉醒并移动新狼，下一轮准备荆棘墙，移动兽王后选择墙牌。",
+      "observation": "墙的真实边界在棋盘里显示长条高亮，提示和两张准备牌与落点错开。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "选择灰狼放弃一个完整行动",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\26-选择灰狼放弃一个完整行动.png",
+      "sha256": "bf3520bf96bf3c7add0c29c27626c76e333b51c52234911a721e565e84a31977",
+      "transition": "放置墙，等女祭司靠近，选中仍就绪的原灰狼。",
+      "observation": "右侧明确显示「不行动」，原灰狼和原力推斥的准备位可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "读到重复交接说明后推进至第八回合",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\27-读到重复交接说明后推进至第八回合.png",
+      "sha256": "b21ede3f1bc100c0f5bdef24f4e725b3513ef8a0224d6b03814e11dcc6c69705",
+      "transition": "按不行动后停在可阅读的交接说明。",
+      "observation": "提示解释后续会略过相同窗口，并显示独立的下一步，墙和棋子仍可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "推斥选择墙另一侧",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\30-推斥选择墙另一侧.png",
+      "sha256": "fdd980d7bda5361d8a3dc455cd426a80cec4f1447573edf665c90156879a2f4b",
+      "transition": "开始第八回合、再准备推斥，进入法术范围后点女祭司。",
+      "observation": "女祭司、墙、右下选中的原力推斥和投掷方向提示同屏。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "荆棘五组独立掷骰含全空和双骰四点",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\31-荆棘五组独立掷骰含全空和双骰四点.png",
+      "sha256": "b8097af077e36d27d58de9204ffe38787d49ba3cc1d9eea6f66f0ba38c9a528b",
+      "transition": "点击穿过荆棘墙的落点并等实际墙骰。",
+      "observation": "五个独立两骰面板横向显示，第一组的空白骰、0 点和第二组的两颗 2、4 点可分别读到。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "穿过荆棘后的规则说明",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\32-穿过荆棘后的规则说明.png",
+      "sha256": "3d35c1f5859d1ce671d88138042c2ad8e127f4e8a9fdf0256f007a7217111aba",
+      "transition": "等推斥与荆棘墙结算结束。",
+      "observation": "女祭司出现在墙另一边，提示标出墙和等级相关的结算说明，下一步可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "结界伏在第一只灰狼身上",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\34-结界伏在第一只灰狼身上.png",
+      "sha256": "b69ce9a065680c6d2fa482e183521575c79b86883d0277c8f3b5ac64acaa4aaf",
+      "transition": "进入下一轮，准备并选择法力失效。",
+      "observation": "第一只灰狼高亮，正要施放的法力失效仍在右侧准备位，双方棋子可分辨。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "法力失效提示与付费按钮分开",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\35-法力失效提示与付费按钮分开.png",
+      "sha256": "49313785a34f58ad6f411d1edd4989739f37cc28f7764ea895e1123a007b94cc",
+      "transition": "将结界伏在狼身，等待女祭司施放昏睡。",
+      "observation": "支付并展示、展示并弃置的响应条在说明上方，两个操作完整可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "行为日志回看法力失效的反制",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\36-行为日志回看法力失效的反制.png",
+      "sha256": "0463a20e280a4608d73e38aa098116bea57b1fdf5a5c5d77869e0fb97289fbc3",
+      "transition": "付费反制昏睡，进入计划时打开行为日志。",
+      "observation": "行为日志显示法力失效反制昏睡的条目，日志和当前护甲提示可分别阅读，确认按钮在右侧。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "装备巨熊皮甲",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\38-装备巨熊皮甲.png",
+      "sha256": "78f18041f7d0d9fb6458f29d1ef1b12b8c9119c46f5514f7531946bd7d6f4065",
+      "transition": "关闭日志，准备巨熊皮甲并在快速施法时选择它。",
+      "observation": "兽王和装备法术都在可读区域，提示放在兽王上方。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "玩家向牧师施放攻击法术",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\41-玩家向牧师施放攻击法术.png",
+      "sha256": "174770c51b075d90a242eed89ea896947a644de8fc92ed98a92621534d156e92",
+      "transition": "等牧师进场，靠近后准备并选择间歇喷泉。",
+      "observation": "被瞄准的牧师与选中的攻击法术同屏，提示解释攻击骰和黄色效果骰各自的用途。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "准备法师魔杖",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\42-准备法师魔杖.png",
+      "sha256": "1cbcba4f985a3c1030a6cb496ad204cefc62786e95c285ee820990b42cc4ec7c",
+      "transition": "间歇喷泉结算后，女祭司解除眩晕。牧师治疗独角兽，独角兽再度重创灰狼。",
+      "observation": "计划提示连到灰狼受伤后的治疗需求，法师魔杖和确认计划入口在自己的位置。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "法师魔杖首绑选择",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\43-法师魔杖首绑选择.png",
+      "sha256": "341404a2c07968594fe804a2796a7339e6e6e8bc8521652f1776f1dce9204e75",
+      "transition": "准备并施放法师魔杖，点兽王打开真实绑定选项。",
+      "observation": "单体治疗以完整卡面提供确认，费用可见，教程体和卡面分开。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "从法师魔杖施放初次绑定的单体治疗",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\44-从法师魔杖施放初次绑定的单体治疗.png",
+      "sha256": "490b2b3ee80690b0934c80dffcf9607446a63bf10737f47b90f451e1ad513ac3",
+      "transition": "绑定单体治疗，下一轮点已装备的魔杖发动法术。",
+      "observation": "佩戴的魔杖和受伤的第一只灰狼同屏，提示说明此次施法费用和绑定仍有效。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "法师魔杖改绑选择",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\45-法师魔杖改绑选择.png",
+      "sha256": "e1f0cca441830e98aded51fea59085ba4f8ef03a27d3ba804f058a86725c35fb",
+      "transition": "实际施放单体治疗后重新点魔杖的改绑。",
+      "observation": "次级治疗以真实卡面单独成为选项，说明中可读出改绑费用。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "精华汲取付费保住灰狼",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\46-精华汲取付费保住灰狼.png",
+      "sha256": "4cdbfa523f26ef8fddff879441ef978b0500eb295f4a3bd95ab286229a77d835",
+      "transition": "改绑后等女祭司施放精华汲取，进入维持。",
+      "observation": "第二只灰狼身边的附着牌、付费和放弃响应与解释同屏。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "放置巢穴",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\48-放置巢穴.png",
+      "sha256": "8d5fd2bbbc78b87684ba10faa2918091ac6e070ee73b6d7a1f3cc6e4966fd0c5",
+      "transition": "第一次付费保住灰狼，再准备并选中巢穴。",
+      "observation": "兽王所在区域显示绿色落点，巢穴法术与落点同时可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "精华汲取第二次放弃",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\49-精华汲取第二次放弃.png",
+      "sha256": "3779fdc8cd29dda3edbab9541c109b06bc6e8f62898042e330bb2f9036bc838f",
+      "transition": "放置巢穴后推进到下一轮维持。",
+      "observation": "第二次付费和放弃都在清楚的响应条上，受影响的第二只灰狼可辨认。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "从巢穴部署苦木林狐",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\50-从巢穴部署苦木林狐.png",
+      "sha256": "103c63cd9bc0a7662ea93e24dc36816326daa65aaf0554a3d4467efc36847059",
+      "transition": "放弃支付后，为巢穴选狐，部署时点巢穴。",
+      "observation": "部署高亮、巢穴本体和费用分担说明同时可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "从法师魔杖施放次级治疗",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\51-从法师魔杖施放次级治疗.png",
+      "sha256": "336df312e1ca14e426be4f55569d6e36ff7232ff39aa8945e29cb31e883e73fe",
+      "transition": "在巢穴的区域部署狐，再次点击法师魔杖施放改绑的法术。",
+      "observation": "原灰狼与魔杖附件相邻，选中的施法来源和目标可分辨。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "查看女祭司公开长弓与准备牌隐私",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\52-查看女祭司公开长弓与准备牌隐私.png",
+      "sha256": "955c1aeaa2906afca42311d60f1edbe2d54a12f5bfe70a507b2020e262362b5f",
+      "transition": "等待女祭司装备并准备一张新法术，点击查看她。",
+      "observation": "顶部显示对手公开视角与返回自己，右侧明确显示对手已计划 1，牌面仍隐藏。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "远程攻击的防御选择",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\55-远程攻击的防御选择.png",
+      "sha256": "87972722f420befa9edb0597a27ed474b7a7d1e2c4c78aad642a3d8dcae6325e",
+      "transition": "返回自己，准备和施放灵蛇反射，等待女祭司射击。",
+      "observation": "防御与不防御按钮完整，教程提示与响应条分开，灰狼生命仍可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "法师亲自近战",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\57-法师亲自近战.png",
+      "sha256": "fe067af2d538eb4f528d335efff68705e4c838c6ef101876257cf90dacd009cf",
+      "transition": "处理弓箭后让兽王进入同一区，下一轮点兽王。",
+      "observation": "当前两名法师有可操作标记，提示指向对面的女祭司，右侧生命读数仍在。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "首次近战后可从原地继续对打",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\58-首次近战后可从原地继续对打.png",
+      "sha256": "037df25b2fcb1a959f834c4dba1f83a7395cd3474a9870b5058396f679f191d5",
+      "transition": "点女祭司并等待兽王近战结算。",
+      "observation": "结算后的女祭司生命读数保留，完成按钮明确告知下一项正式操作。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "引导退场保留第十七回合原棋盘",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\59-引导退场保留第十七回合原棋盘.png",
+      "sha256": "d086ad9c1547c3cf8d745401b54d55c61c4b21e50e30fea4ff6bd8c28394e871",
+      "transition": "点击完成并返回。",
+      "observation": "引导提示撤下，双方生物和装备仍在第十七回合棋盘上，右侧结束行动入口可用。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "续局后女祭司实际接管行动",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\60-续局后女祭司实际接管行动.png",
+      "sha256": "29a63a0267be5b17b0f4c220de91964d1c0199c28ab1139118de18578491adba",
+      "transition": "刷新重开刚才的对局，按真实结束行动。",
+      "observation": "再次看到女祭司的实战反馈与近战骰，教程没有重新弹出。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "主线完整录屏",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-desktop-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\video.webm",
+      "sha256": "2d3838a3da3b6c394c7892d341f6d4afa5f5dee81468752fbebcce0becede7a8",
+      "transition": "同一次桌面跑次从入口起连续录制至退场后对手行动。",
+      "observation": "录屏能按时间回查开场与守卫、治疗骰、缩放后召唤、墙体推斥、响应、魔杖、巢穴、公开视角和同局续玩。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "tutorial-compact": [
+    {
+      "uiStateId": "较矮窗口查阅规则释义",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\13-较矮窗口查阅规则释义.png",
+      "sha256": "2bc1cea18252a4ba27c3f1ed9879ac4b88f0644bcb24357a11b199e114828353",
+      "transition": "在较矮窗口走过防御与放弃反击，进入下一轮后打开规则释义。",
+      "observation": "设置里的施法来源和中央火球术图例分开，关闭和下一步都有操作空间。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口恢复同一局和未确认计划草稿",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\14-较矮窗口恢复同一局和未确认计划草稿.png",
+      "sha256": "932a9f836b9490f5b901abe140fdba322e77f1b68ad9ef1e625c25322a12549d",
+      "transition": "关闭设置，选灰狼但不提交计划，再刷新恢复本局。",
+      "observation": "右下留有灰狼草稿和 1/2，当前提示与法术书分类仍可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "紧凑窗口法力失效提示与付费按钮分开",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\36-紧凑窗口法力失效提示与付费按钮分开.png",
+      "sha256": "4793c5f899a0423dcfc9d9ebe3bae7bafa0f4fd404dc1469407b24a23ec13589",
+      "transition": "恢复计划后继续召唤、穿墙和放置结界，等待对手昏睡。",
+      "observation": "较矮窗口的反制选项与教程内容分行，灰狼、女祭司和准备区仍可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口回看真实反制结果",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\37-较矮窗口回看真实反制结果.png",
+      "sha256": "8d9a140ca1c4545a9eec69e46aa0a09a05bce472f82b8e0261f9cb692cf61bbf",
+      "transition": "付费后进入计划，打开行为日志。",
+      "observation": "日志里可辨认真实反制条目，右侧留出本轮护甲提示。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口从第十五回合恢复巢穴计划",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\51-较矮窗口从第十五回合恢复巢穴计划.png",
+      "sha256": "d72efc4a541502ece9c3c0466e72678fe13b2b9bc2f1d51d184fdca076118261",
+      "transition": "维持选择后刷新，再从教程进度恢复。",
+      "observation": "巢穴真实牌面、法术书和空计划位均已加载，恢复提示停在给巢穴选牌。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口在近战后仍可完成引导",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\60-较矮窗口在近战后仍可完成引导.png",
+      "sha256": "83564a954d6a8a9b7774727d3aaa8706ead6148133da3e6786d543b5030c4f07",
+      "transition": "部署狐、查看长弓、执行防御，并用兽王完成近战。",
+      "observation": "女祭司受击后的棋子和生命读数在完成说明下方，完成按钮完整可见。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口退场后仍可操作原棋盘",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\61-较矮窗口退场后仍可操作原棋盘.png",
+      "sha256": "1bfcb155d2a7475fb62f5ed59737fdf5be608e3a5525bb70f4eb60848ca80146",
+      "transition": "点击完成并返回。",
+      "observation": "狭窄高度下仍保留原棋盘、资源、准备栏和结束行动按钮。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口续局后女祭司接管行动",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\62-较矮窗口续局后女祭司接管行动.png",
+      "sha256": "7b0140c7ac7e5564e85870f3b080b92c8ef0e55a115a92343c5f8fae58ef8065",
+      "transition": "重开同一对局，点击结束行动把回合交给女祭司。",
+      "observation": "近战效果清楚出现，双方场上单位与正式面板保留。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口真实自由对战的结局",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\63-较矮窗口真实自由对战的结局.png",
+      "sha256": "dee5841b1089cc5ee65aff9282b4f924267cdb27299415b25cfdeebd43fa2769",
+      "transition": "在原棋盘上继续交接并处理正常响应，直至兽王倒下。",
+      "observation": "终局层报告正式败局并提供再来一局、返回大厅，未显示教程提示。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "uiStateId": "较矮窗口再来一局从守卫重新开始",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\mw-course-r12-compact-settled-20261120\\mage-wars-mage-wars-tutorial.e2e.ts-单局教程从守卫到同局自由对战的真实点击链-chromium\\screenshots\\64-较矮窗口再来一局从守卫重新开始.png",
+      "sha256": "c6769a89626e05d6f972abe0451ad6971816c420142f63a4b93d71e784b68d52",
+      "transition": "用终局的再来一局按钮重新开局。",
+      "observation": "新局恢复初始守卫决策，灰狼和独角兽及新的准备牌可读。",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ]
+}

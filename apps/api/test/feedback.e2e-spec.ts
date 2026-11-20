@@ -1667,7 +1667,7 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body.status).toBe('open');
     });
 
-    it('infra-cpu-watch 相同 CPU 高水位系统反馈应聚合到同一条记录并累计次数', async () => {
+    it('infra-cpu-watch 聚合累计次数并用同一次触发的原文和现场', async () => {
         const payloadA = {
             content: '[system][infra-cpu-watch] game-server CPU sustained high: average=91.00% highSamples=3/3 threshold=80% decision=dry-run restarted=no',
             source: 'infra-cpu-watch',
@@ -1677,6 +1677,8 @@ describe('Feedback Module (e2e)', () => {
             autoReportKind: 'cpu-sustained-high',
             incidentKey: 'infra-cpu-watch:test-host:boardgame-game-server:80:a',
             gameName: 'infra',
+            diagnosticPacket: { schemaVersion: 1, captureId: 'cpu-event-a', source: 'server', capturedAt: '2026-11-15T00:00:00.000Z', collectionStatus: 'partial', replayability: 'unreplayable', missingFields: [] },
+            stateSnapshot: JSON.stringify({ averageCpu: 91 }),
             clientContext: {
                 gameId: 'infra',
                 route: 'host-cpu-watch',
@@ -1692,6 +1694,7 @@ describe('Feedback Module (e2e)', () => {
             ...payloadA,
             content: '[system][infra-cpu-watch] game-server CPU sustained high: average=96.00% highSamples=3/3 threshold=80% decision=restarted restarted=yes',
             incidentKey: 'infra-cpu-watch:test-host:boardgame-game-server:80:b',
+            diagnosticPacket: { ...payloadA.diagnosticPacket, captureId: 'cpu-event-b' },
             stateSnapshot: JSON.stringify({
                 averageCpu: 96,
                 evidenceFile: '/home/admin/BoardGame/logs/game-server-cpu-watch/sample.txt',
@@ -1719,7 +1722,22 @@ describe('Feedback Module (e2e)', () => {
         const docs = await feedbackModel.find({ source: 'infra-cpu-watch' }).lean();
         expect(docs).toHaveLength(1);
         expect(docs[0].occurrenceCount).toBe(2);
+        expect(docs[0].content).toBe(payloadB.content);
+        expect(docs[0].diagnosticPacket?.captureId).toBe(payloadB.diagnosticPacket.captureId);
         expect(JSON.parse(docs[0].stateSnapshot || '{}').averageCpu).toBe(96);
+
+        const legacyContent = '[system][infra-cpu-watch] game-server CPU sustained high: average=98.00%';
+        await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ ...payloadA, content: legacyContent, diagnosticPacket: undefined, stateSnapshot: undefined })
+            .expect(201);
+        const latest = await feedbackModel.findById(first.body._id).lean();
+        expect(latest?.occurrenceCount).toBe(3);
+        expect(latest?.content).toBe(legacyContent);
+        expect(latest?.diagnosticPacket).toBeUndefined();
+        expect(latest?.stateSnapshot).toBeUndefined();
+        expect(latest?.diagnosticCaptureIds).toEqual(['cpu-event-a', 'cpu-event-b']);
     });
 
     it('online-ai-watchdog 并发同 key 上报时 occurrenceCount 应精确累加且仅保留一个 canonical', async () => {

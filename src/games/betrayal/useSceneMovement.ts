@@ -8,6 +8,7 @@ import { selectBetrayalFootstepKey } from './audio.config';
 import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalRoomNode } from './game';
 import type { BetrayalEvent } from './events';
 import { getAllExplorers } from './explorerReadModel';
+import { resolveBetrayalHauntTokenInstances } from './hauntTokenModel';
 import { resolveBetrayalEntitySceneSprites } from './roomSceneModel';
 import { resolveRoomCenterPoint, type RoomCanvasLayout } from './roomMapModel';
 import { resolveSceneMovementFacts, type SceneMovementFact } from './sceneMovementModel';
@@ -122,7 +123,11 @@ export function useSceneMovement({ core, entries, rollbackRevision, rooms, layou
                 },
             });
         }
-        const previousSprites = new Map(resolveBetrayalEntitySceneSprites(rooms, groupByRoom(explorers), groupByRoom(monsters), layout, locale, core.currentExplorer.playerId).map(sprite => [sprite.id, sprite]));
+        const girlRoomId = resolveBetrayalHauntTokenInstances(before.core).find(token => token.id === 'mummy-girl-token')?.roomId;
+        const previousSprites = new Map(resolveBetrayalEntitySceneSprites(
+            rooms, groupByRoom(explorers), groupByRoom(monsters), layout, locale, core.currentExplorer.playerId,
+            undefined, undefined, girlRoomId,
+        ).map(sprite => [sprite.id, sprite]));
         const finalIndexByEntity = new Map<string, number>();
         facts.forEach((fact, index) => finalIndexByEntity.set(fact.entityId, index));
         const immediatelyPresented = new Map<string, string>();

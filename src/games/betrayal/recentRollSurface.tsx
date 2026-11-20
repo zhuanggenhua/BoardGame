@@ -708,7 +708,9 @@ export function StandardRecentRollOverlay({
           openTable
           compactResult
           compactRowsClassName="grid-rows-[minmax(252px,1fr)_auto]"
-          resultStageClassName="mt-3"
+          resultStageClassName={roll.kind === "monsterMoveRoll"
+            ? "mt-3 w-[320px] max-w-full justify-self-center"
+            : "mt-3"}
           diceStyleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
           effectiveLocale={effectiveLocale}
           actorLabel={actorLabel}

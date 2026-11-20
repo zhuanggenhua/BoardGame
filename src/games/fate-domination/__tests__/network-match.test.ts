@@ -11,7 +11,7 @@ import type {MatchState} from '../../../engine/types';
 import {FateDominationDomain} from '../domain';
 import type {FateDominationCommand, FateDominationCore} from '../domain';
 import {engineConfig} from '../game';
-import {FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANTS} from '../data';
+import {FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANTS, FATE_SITUATIONS} from '../data';
 import {createFateAttackDeck} from '../domain/setup';
 
 type State = MatchState<FateDominationCore>;
@@ -278,5 +278,49 @@ it('真实网络正费用骑乘扣款（合法原牌实例代表态，非自然�
         initial.core.battlefield.workshop.playerIds = ['0'];
         const allIds = [...initial.core.players['0'].hand, ...initial.core.players['0'].deck].map(card => card.id);
         expect(new Set(allIds).size).toBe(deck.length);
+    });
+}, 30000);
+
+it('联网确认骑英之缰绳再发动，所有席收到两处地利的新归属', async () => {
+    await withNetworkMatch(async ({clients, errors, state, send}) => {
+        const before = (await state()).core.players['0'];
+        const skillId = before.skills.find(skill => skill.id.startsWith('sc_medusa_np:'))!.id;
+        const cardIds = [skillId, before.hand[0].id];
+        const played = await send('0', 'CONFIRM_ATTACK', {cardIds, faceDownIds: [], round: 1});
+        expect(played.core.players['0']).toMatchObject({mana: 3, locationId: 'miyama', isRevealed: true});
+        const moved = await send('0', 'PLAY_SKILL', {skillId, targetLocationId: 'shinto'});
+        expect(moved.core.players['0']).toMatchObject({mana: 3, locationId: 'shinto', deploymentSlot: 0, secondaryDeploymentSlot: 1});
+        for (const client of clients) {
+            const { core } = client.latestState as State;
+            expect(core.battlefield.shinto.playerIds).toEqual(['1', '2', '0']);
+            expect(core.players['0']).toMatchObject({deploymentSlot: 0, secondaryDeploymentSlot: 1});
+            expect(core.players['1'].deploymentSlot).toBeNull();
+            expect(core.players['2'].deploymentSlot).toBeNull();
+            expect(core.players['0'].publicView?.power).toBeGreaterThan(core.players['1'].publicView?.power ?? 0);
+        }
+        expect(errors).toEqual([[], [], []]);
+    }, 'medusa-two-terrain-network', ({core}) => {
+        core.phase = 'action';
+        core.currentPlayerId = '0';
+        core.turnOrder = ids;
+        core.situation = FATE_SITUATIONS.find(situation => situation.id === 'sit1')!;
+        core.battlefield.miyama.playerIds = ['0'];
+        core.battlefield.shinto.playerIds = ['1', '2'];
+        core.battlefield.shinto.eventCards = [];
+        core.currentEvents.shinto = [];
+        const medusa = FATE_SERVANTS.find(servant => servant.id === 'servant-medusa')!;
+        const player = core.players['0'];
+        const deck = createFateAttackDeck(player.id, medusa.id);
+        const card = deck.find(item => item.definitionId === 'cardB1')!;
+        player.servantId = medusa.id;
+        player.skills = [...player.skills.filter(skill => !skill.id.startsWith('sc_')), ...medusa.skillCards!.map((skill, index) => ({...skill, id: `${skill.id}:${index}`}))];
+        player.locationId = 'miyama';
+        player.mana = 12;
+        player.hand = [card];
+        player.deck = deck.filter(item => item.id !== card.id);
+        for (const [index, id] of ['1', '2'].entries()) {
+            core.players[id].locationId = 'shinto';
+            core.players[id].deploymentSlot = index;
+        }
     });
 }, 30000);

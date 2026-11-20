@@ -1,0 +1,30 @@
+[data-map-renderer="three"] [data-three-model],
+[data-map-renderer="three"] [data-scene-marker-id]:has([data-three-marker-ready]) {
+    pointer-events: none;
+}
+
+[data-map-renderer="three"] [data-three-model] [data-scene-legacy-highlight],
+[data-map-renderer="three"] [data-three-marker-ready] {
+    opacity: 0;
+}
+
+[data-map-renderer="three"] [data-scene-legacy-highlight] .betrayal-map-explore-mark {
+    display: none;
+}
+
+[data-map-renderer="three"] :is(
+    [data-scene-legacy-tint],
+    [data-testid="betrayal-map-move-reach-overlay"],
+    [data-testid="betrayal-line-of-sight-overlay"],
+    [data-move-reach-doorway]
+) {
+    opacity: 0;
+}
+
+[data-map-renderer="three"] [data-scene-room-id],
+[data-map-renderer="three"] [data-room-state] ~ [data-scene-legacy-highlight],
+[data-map-renderer="three"] [data-scene-room-id] [data-scene-legacy-highlight] {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}

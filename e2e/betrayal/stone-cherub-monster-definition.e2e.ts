@@ -18,6 +18,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -692,7 +693,7 @@ const selectPeekabooStoneCherubs = async (page: Page) => {
     await expect(peekabooAction).toContainText('玩躲猫猫');
     await peekabooAction.click();
     await expect(sameRoomCherub).toHaveAttribute('data-direct-target', 'true');
-    await sameRoomCherub.click();
+    await clickBetrayalSceneFigure(sameRoomCherub);
     await expect(lineOfSightCherub).toHaveAttribute('data-direct-target', 'true');
     return lineOfSightCherub;
 };
@@ -1057,7 +1058,7 @@ test.describe('山屋惊魂石像小天使怪物定义真实入口', () => {
 
         await monsterMoveAction.click();
         await expect(stoneCherubToken).toHaveAttribute('data-direct-target', 'true');
-        await stoneCherubToken.click();
+        await clickBetrayalSceneFigure(stoneCherubToken);
         const targetRoom = page.getByTestId(`betrayal-room-${fixture.targetRoomId}`);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.targetRoomId}`)).toBeVisible();
         await saveScreenshot(page, TARGET_SCREENSHOT);
@@ -1239,7 +1240,7 @@ test.describe('山屋惊魂石像小天使怪物定义真实入口', () => {
         ).toContainText('点同房石像');
         await saveScreenshot(page, PEEKABOO_SAME_ROOM_SCREENSHOT);
 
-        await sameRoomCherub.click();
+        await clickBetrayalSceneFigure(sameRoomCherub);
         await expect(lineOfSightCherub).toHaveAttribute('data-direct-target', 'true');
         await expect(lineOfSightCherub).toHaveAttribute('data-haunt-target-hitbox', 'true');
         await expect(

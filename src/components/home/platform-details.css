@@ -39,10 +39,6 @@ body .platform-details-cover .betrayal-game-thumbnail img { object-fit: cover; o
 .platform-details-tab-mobile { display: none; }
 .platform-details-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
 .platform-details-scroll { display: contents; }
-.platform-external-room-list { margin-bottom: 12px; }
-.platform-external-room-list h3 { margin-bottom: 8px; font-weight: 800; }
-.platform-external-room-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #aaa; overflow-wrap: anywhere; }
-.platform-external-room-list a { min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap; border: 2px solid #111; padding: 6px 12px; font-weight: 700; }
 @media (max-width: 1023px) {
     .platform-game-details { width: 100vw; height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); max-height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); min-height: 0; border: 0; border-top: 3px solid #000; border-radius: 16px 16px 0 0; box-shadow: none; overflow: hidden; }
     .platform-details-close { position: absolute; top: 8px; right: 8px; }

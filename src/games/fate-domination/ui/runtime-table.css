@@ -23,6 +23,7 @@
 .fd-runtime-seat-summary .fd-seat-name { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .fd-runtime-seat-summary .fd-seat-power { flex-shrink:0; color:#f4d77b; font-size:19px; font-variant-numeric:tabular-nums; }
 .fd-runtime-seat-summary .fd-seat-power small { margin-right:3px; font-size:10px; font-weight:400; }
+.fd-runtime-seat-summary .fd-seat-power.is-defeated { color:#ffb6af; font-size:13px; }
 .fd-runtime-seat-summary > b > i { flex-shrink:0; }
 .fd-runtime-seat-summary > span { display:block; font-size:11px; white-space:nowrap; color:#ded4b9; }
 /* 对方出牌直接平铺；离开后的宽限时间由席位交互负责。 */

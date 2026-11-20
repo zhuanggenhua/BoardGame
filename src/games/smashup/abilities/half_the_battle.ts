@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type {
  PlayerId } from '../../../engine/types';
 import { registerSimpleAbility, resolveAbility } from '../domain/abilityRegistry';
@@ -493,7 +494,7 @@ function nextPlayerTurnStartExpiration(state: SmashUpCore, playerId: PlayerId): 
 function isStandardAction(defId: string): boolean {
     const def = getCardDef(defId);
     if (!def) return false;
-    if (def.type === 'action') return def.subtype === 'standard';
+    if (def.type === 'action') return isRulesStandardAction(def);
     if (def.type === 'fusion') return def.actionSubtype === 'standard';
     return false;
 }

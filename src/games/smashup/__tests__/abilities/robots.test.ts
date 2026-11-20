@@ -1036,4 +1036,33 @@ describe('机器人 ongoing 能力', () => {
         );
         expect(drawEvents.length).toBe(1);
     });
+
+    it('守护者消灭樱花花园里的微型机存储者后，应分别结算两次抽牌', () => {
+        const player = makeRobotPlayer('0', { hand: [makeCard('guard', 'robot_microbot_guard', 'minion', '0')] });
+        const state = makeState({
+            players: { '0': player, '1': makeRobotPlayer('1') },
+            bases: [
+                makeBase({ defId: 'base_sakura_garden', minions: [makeMinion('archive', 'robot_microbot_archive', '0', 1)] }),
+                makeBase({ defId: 'base_the_factory' }),
+            ],
+        });
+
+        const played = execPlayMinion(state, '0', 'guard', 0);
+        const destroy = getSimpleChoicePrompt(played.matchState, 'robot_microbot_guard');
+        const archiveOption = getPromptOptions(destroy).find(option => option.value?.minionUid === 'archive');
+        expect(archiveOption).toBeDefined();
+        let result = respondToPrompt(played.matchState, archiveOption!.id, '0', defaultRandom);
+        expect(result.success, result.error).toBe(true);
+        for (let index = 0; index < 3; index++) {
+            const reaction = getOptionalSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose');
+            if (!reaction) break;
+            const option = getPromptOptions(reaction)[0];
+            result = respondToPrompt(result.finalState, option.id, reaction.playerId, defaultRandom);
+            expect(result.success, result.error).toBe(true);
+        }
+
+        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toContain('archive');
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(player.deck.slice(0, 2).map(card => card.uid));
+        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(player.deck.slice(2).map(card => card.uid));
+    });
 });

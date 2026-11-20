@@ -4,6 +4,7 @@ import {FATE_SERVANT_BY_ID} from '../data';
 import { calculateFatePower } from './power';
 import type { FateDominationCore, PlayerState } from './types';
 import { normalizeFateRuleState } from './mechanics';
+import { fatePlayedSpecialAttackThisRound } from './attackSelection';
 
 /** The same visibility contract serves transport and local/spectator UI. */
 export function projectFateSkillCards(player:PlayerState,viewerId:string|null|undefined):NonNullable<PlayerState['publicView']>['skillCards'] {
@@ -67,7 +68,8 @@ export function projectFatePlayerView(state: FateDominationCore, viewerId: strin
                 playedSkills: skillCards.flatMap(card=>card && player.activeSkills.includes(card.id) ? [card] : []),
             };
             if(id===viewerId)return [id,{...player,deck:[],publicView}];
-            return [id, { ...player, publicView, hand: [], deck: [], discard: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], activeAttackIds: [],
+            return [id, { ...player, publicView, playedSpecialAttackThisRound: fatePlayedSpecialAttackThisRound(player),
+                hand: [], deck: [], discard: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], activeAttackIds: [],
                 servantId: player.isRevealed ? player.servantId : '', skills: player.isRevealed ? player.skills : [], activeSkills: player.isRevealed ? player.activeSkills : [],
                 piercingSpearPlays: player.isRevealed ? player.piercingSpearPlays : undefined,
             }];

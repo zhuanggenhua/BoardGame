@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check, Maximize2 } from 'lucide-react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { ImplementationStatusRibbon } from '../../../components/game/framework/ImplementationStatusRibbon';
 import { FATE_MASTERS, FATE_SERVANTS } from '../data';
 import { FATE_MASTER_REFERENCE_COMPONENTS } from '../data/masterReferenceComponents';
 import './identity-setup.css';
@@ -67,11 +68,14 @@ export function FateIdentitySetup({ masterId, servantId, available, onInspect, o
                         const label = t('ui.identitySetup.selectCandidate', { role: roleLabel, name });
                         return <button key={candidate.id} type="button" className="fd-identity-candidate"
                             data-testid={`fate-setup-${kind}-${candidate.id}`} aria-label={label}
-                            aria-describedby={candidate.implementationStatus ? `fate-status-${candidate.id}` : undefined}
+                            aria-description={candidate.implementationStatus ? inProgress : undefined}
                             aria-pressed={chosen[kind] === candidate.id} disabled={!enabled} onClick={() => setChosen(current => ({ ...current, [kind]: candidate.id }))}>
                             <div className="fd-identity-candidate-art">
                                 <OptimizedImage src={candidate.assetPath} alt=""/>
-                                {candidate.implementationStatus && <small id={`fate-status-${candidate.id}`} className="fd-identity-status">{inProgress}</small>}
+                                {candidate.implementationStatus && <ImplementationStatusRibbon
+                                    label={inProgress} unit="clamp(10px, 1.5vh, 15px)"
+                                    testId={`fate-identity-status-${candidate.id}`}
+                                />}
                             </div>
                             <span>{name}</span>
                         </button>;
@@ -80,7 +84,6 @@ export function FateIdentitySetup({ masterId, servantId, available, onInspect, o
             </section>
             <section className="fd-identity-reader" aria-label={t('ui.identitySetup.currentCharacter')}>
                 <h2>{identity.name}</h2>
-                {identity.implementationStatus && <small className="fd-identity-reader-status">{inProgress}</small>}
                 <button type="button" className="fd-identity-reader-art" aria-label={t('ui.identitySetup.enlargeCard', { name: current.name, side: back ? t('ui.identitySetup.cardBackSide') : '' })} onClick={() => onInspect(image,current.name)}>
                     <OptimizedImage src={image} alt={current.name}/>
                     <Maximize2 size={18} aria-hidden="true"/>

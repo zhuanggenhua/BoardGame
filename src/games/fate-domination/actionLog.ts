@@ -1,7 +1,7 @@
 import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState } from '../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS } from './data';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
-import type { FateDominationCore, LocationId } from './domain/types';
+import type { FateBattleScoreAdjustedEvent, FateDefeatDeclaredEvent, FateDefeatPreventedEvent, FateDominationCore, LocationId } from './domain/types';
 
 export const FATE_LOG_COMMANDS = [
     'SELECT_MASTER', 'SELECT_SERVANT', 'DEPLOY_MASTER', 'CONFIRM_ATTACK', 'INSPECT_CARD',
@@ -17,7 +17,7 @@ function segment(key: string, params?: Record<string, string>, paramI18nKeys?: s
     return { type: 'i18n', ns: 'game-fate-domination', key: `log.${key}`, ...(params && { params }), ...(paramI18nKeys && { paramI18nKeys }) };
 }
 
-export function formatFateActionLog({ command, state, events, afterEventsRound }: {
+function formatFateCommandLog({ command, state, events, afterEventsRound }: {
     command: Command; state: MatchState<unknown>; events: GameEvent[]; afterEventsRound: number;
 }): ActionLogEntry | null {
     const core = state.core as FateDominationCore;
@@ -75,6 +75,34 @@ export function formatFateActionLog({ command, state, events, afterEventsRound }
         ...(command.type === 'INSPECT_CARD' && { fatePrivateInspection: Boolean(handCard) }),
     };
     return entry;
+}
+
+export function formatFateActionLog(args: Parameters<typeof formatFateCommandLog>[0]): ActionLogEntry[] {
+    const commandEntry = formatFateCommandLog(args);
+    const entries = commandEntry ? [commandEntry] : [];
+    const timestamp = args.command.timestamp ?? 0;
+    const sequence = args.state.sys.eventStream?.nextId ?? 0;
+    const append = (id: string, actorId: string, kind: string, label: ActionLogSegment) => {
+        entries.push({ id, timestamp, actorId, kind, segments: [label] });
+    };
+    for (const event of args.events) {
+        if (event.type === 'FATE_DEFEAT_DECLARED') {
+            const { playerId, markerId } = (event as FateDefeatDeclaredEvent).payload;
+            append(`fate-defeat-${markerId}-${sequence}`, playerId, event.type, segment('battleDefeat'));
+        }
+        if (event.type === 'FATE_DEFEAT_PREVENTED') {
+            const { playerId, sourceId } = (event as FateDefeatPreventedEvent).payload;
+            append(`fate-defeat-prevented-${sourceId}-${playerId}-${sequence}`, playerId, event.type, segment('battleDefeatPrevented'));
+        }
+        if (event.type === 'FATE_BATTLE_SCORE_ADJUSTED') {
+            const { sourceId, changes } = (event as FateBattleScoreAdjustedEvent).payload;
+            for (const { playerId, amount } of changes) {
+                append(`fate-score-${sourceId}-${playerId}-${sequence}`, playerId, event.type,
+                    segment(amount > 0 ? 'battleScoreGain' : 'battleScoreLoss', { amount: String(Math.abs(amount)) }));
+            }
+        }
+    }
+    return entries;
 }
 
 export function projectFateLogEntry(entry: ActionLogEntry, core: FateDominationCore, viewerId: string): ActionLogEntry {

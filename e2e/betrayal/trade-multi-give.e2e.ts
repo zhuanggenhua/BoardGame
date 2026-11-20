@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createExchangeReadyRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -55,7 +56,7 @@ test('真实页面普通同房交易支持发起方一次给出多张持有物',
     await expect(page.getByTestId('betrayal-inventory-omen-book-selected-outline'), '书本必须保持选中').toBeVisible();
     await expect(page.getByTestId('betrayal-selected-inventory-card-name'), '发起方已选持有物应显示为多张').toContainText('兔脚、书本');
 
-    await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+    await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
     await expect(page.getByTestId('betrayal-trade-return-selector'), '选中同房间队友后必须显示对方持有物').toBeVisible();
     await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]'), '未选对方物品前摘要必须列出两张己方给出物').toContainText(/你给出.*兔脚.*书本/);
     await saveScreenshot(page, MULTI_GIVE_SELECTED_SCREENSHOT);

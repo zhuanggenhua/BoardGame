@@ -18,6 +18,13 @@ const statusLabelKeys = {
     rejected: 'platform.uploadWorkspace.status.rejected',
 } as const;
 
+function RoomSdkGuideLink() {
+    const { t } = useTranslation('lobby');
+    return <a className="platform-upload-sdk-guide" href="/developers/external-room-sdk" target="_blank" rel="noopener">
+        {t('platform.uploadWorkspace.roomSdkGuide')}
+    </a>;
+}
+
 export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, headerAction }: { record?: GameSubmissionRecord; ownedGame?: ExternalGame; onSaved: (id: string) => void | Promise<void>; onDraftSaved?: (record: GameSubmissionRecord) => void | Promise<void>; headerAction?: ReactNode }) {
     const { token } = useAuth();
     const { t } = useTranslation(['lobby', 'common']);
@@ -85,6 +92,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
         finally { setBusy(false); }
     }}>
         <header className="platform-upload-form-heading"><h2>{source ? source.name : t('platform.uploadWorkspace.title')}</h2>{headerAction}</header>
+        {!ownedGame && <RoomSdkGuideLink />}
         <p>{ownedGame ? t('platform.uploadWorkspace.editDescription') : t('platform.uploadWorkspace.description')}</p>
         {record && <p role="status">{t(statusLabelKeys[record.status])}{record.reviewComment ? ` · ${record.reviewComment}` : ''}</p>}
         {record?.status === 'pending' && <p>{t('platform.uploadWorkspace.pendingLocked')}</p>}
@@ -117,9 +125,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
                 {savedZip && <span>{savedZip.name}</span>}
                 <small id="submission-zip-check">{ownedGame ? t('platform.uploadWorkspace.zipUpdateHint') : t('platform.uploadWorkspace.zipHint')}</small>
                 {zipError && <small role="alert">{zipError}</small>}
-            </label>{!ownedGame && <a className="platform-upload-sdk-guide" href={`${import.meta.env.BASE_URL}developers/external-room-sdk.md`} download>
-                {t('platform.uploadWorkspace.roomSdkGuide')}
-            </a>}</div> : gameSource === 'url' && <label key="game-link" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
+            </label></div> : gameSource === 'url' && <label key="game-link" className={ownedGame ? undefined : 'platform-upload-source-field'}>{t('platform.uploadWorkspace.gameUrl')}<input name="url" type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" aria-label={t('platform.uploadWorkspace.gameUrl')} aria-describedby="submission-url-check" />
                 <small id="submission-url-check">{!url ? t('platform.uploadWorkspace.urlEmptyHint') : validUrl ? t('platform.uploadWorkspace.urlValid') : t('platform.uploadWorkspace.urlInvalid')}</small>
             </label>}
             <div className="platform-upload-game-meta">
@@ -187,7 +193,12 @@ export function PlatformUploadWorkspace({ onLogin, submissionId: selectedId, onS
     }, [showList]);
     const queryKey = ['game-submissions', user?.id] as const;
     const records = useQuery({ queryKey, queryFn: () => listGameSubmissions(token!), enabled: Boolean(token && user) });
-    if (!user) return <section className="platform-upload-login"><h2>{t('platform.uploadWorkspace.title')}</h2><p>{t('platform.uploadWorkspace.loginPrompt')}</p><button type="button" onClick={onLogin}>{t('platform.profile.login')}</button></section>;
+    if (!user) return <section className="platform-upload-login">
+        <h2>{t('platform.uploadWorkspace.title')}</h2>
+        <RoomSdkGuideLink />
+        <p>{t('platform.uploadWorkspace.loginPrompt')}</p>
+        <button type="button" onClick={onLogin}>{t('platform.profile.login')}</button>
+    </section>;
     const selected = records.data?.items.find(record => record.submissionId === selectedId);
     const select = (id?: string) => { if (id !== selectedId) setEditorRevision(value => value + 1); onSelectSubmission(id); setShowList(false); };
     const listContent = <>

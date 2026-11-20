@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustControlImpulsesSicknessExchangeRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -140,7 +141,7 @@ const requestControlImpulsesExchange = async (page: Page) => {
     const targetToken = page.getByTestId('betrayal-room-occupant-hallway-0');
     await expect(targetToken).toHaveAttribute('data-direct-target', 'true');
     await expect(page.getByTestId('betrayal-room-occupant-target-cue-hallway-0')).toContainText('交换疾病');
-    await targetToken.click();
+    await clickBetrayalSceneFigure(targetToken);
     await expect(page.getByTestId('betrayal-sickness-exchange-banner')).toHaveAttribute('data-sickness-exchange-state', 'waiting');
     await expect.poll(() => readDustControlImpulsesState(page)).toMatchObject({
         activePlayerId: '0',

@@ -667,6 +667,7 @@ export interface BoardHealingImpactPresetProps {
   overflow?: number;
   sizeClassName?: string;
   numberClassName?: string;
+  numberDelayMs?: number;
   onImpact?: () => void;
   onComplete?: () => void;
 }
@@ -688,6 +689,7 @@ export const BoardHealingImpactPreset: React.FC<BoardHealingImpactPresetProps> =
   overflow = 2.25,
   sizeClassName = 'relative h-28 w-28',
   numberClassName = 'text-emerald-100 drop-shadow-[0_0_12px_rgba(16,185,129,0.82)]',
+  numberDelayMs = 0,
   onImpact,
   onComplete,
 }) => {
@@ -728,7 +730,7 @@ export const BoardHealingImpactPreset: React.FC<BoardHealingImpactPresetProps> =
             animate={active
               ? { opacity: [0, 1, 1, 0], scale: [0.62, 1.12, 1, 1.04], y: [8, -2, -8, -18] }
               : { opacity: 0, scale: 0.62, y: 8 }}
-            transition={{ duration: 1.1, ease: 'easeOut', times: [0, 0.18, 0.72, 1] }}
+            transition={{ duration: 1.1, delay: numberDelayMs / 1000, ease: 'easeOut', times: [0, 0.18, 0.72, 1] }}
           >
             +{amount}
           </motion.div>

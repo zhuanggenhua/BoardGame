@@ -108,9 +108,10 @@ export function appendActivity(
     core: BetrayalCore,
     text: string,
     tone: BetrayalActivityEntry['tone'],
+    kind?: BetrayalActivityEntry['kind'],
 ): BetrayalActivityEntry[] {
     return [
-        { id: `${core.exploreIndex}-${core.activityLog.length}-${text}`, text, tone },
+        { id: `${core.exploreIndex}-${core.activityLog.length}-${text}`, text, tone, ...(kind ? { kind } : {}) },
         ...core.activityLog,
     ].slice(0, 6);
 }

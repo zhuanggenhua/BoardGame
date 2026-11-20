@@ -227,7 +227,7 @@ async function cleanupManagedRuntimeGracefully(runtime, controller, logger = con
     logger.log?.(`🛑 停止 E2E runtime: ${formatRuntimeSummary(runtime)}`);
 
     if (controller) {
-        controller.stop('runtime-manager graceful shutdown');
+        await controller.stop('runtime-manager graceful shutdown');
     } else {
         stopRuntime(runtime, { logger });
     }
@@ -404,7 +404,7 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     let directSourceIdentity = null;
 
     try {
-        directSourceIdentity = serverRuntime !== 'bundle' ? readRuntimeSourceIdentity(plan.scope) : null;
+        directSourceIdentity = serverRuntime !== 'bundle' ? readRuntimeSourceIdentity({ runtime: serverRuntime }) : null;
         controller = await startSingleWorkerRuntime({
             env: withE2ELocalAssetEnv({
                 ...process.env,
@@ -468,7 +468,10 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
                 throw error;
             }),
         ]);
-        const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity(plan.scope);
+        const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity({
+            runtime: serverRuntime,
+            bundleRoot: controller.bundleRoot,
+        });
         if (!sourceIdentityMatches(selectRuntimeSourceIdentity(sourceIdentity, targetGameId))) throw new Error('服务启动期间目标依赖发生变化，请按当前源码重新启动。');
         if (frontendSourceHash !== getFrontendSourceHash(process.cwd())) throw new Error('前端启动配置在服务启动期间发生变化，请按当前配置重新启动。');
         touchRuntime(plan.scope, { sourceIdentity });
@@ -482,7 +485,7 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
         };
     } catch (error) {
         if (controller) {
-            controller.stop('runtime startup failed');
+            await controller.stop('runtime startup failed');
             await waitForPortsFree(Object.values(ports ?? {}), RUNTIME_STOP_TIMEOUT_MS);
         }
         await releaseReservedPortsForScope(plan.scope, process.cwd(), process.pid);

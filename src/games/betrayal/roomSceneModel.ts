@@ -50,6 +50,7 @@ export function resolveBetrayalEntitySceneSprites(
     currentPlayerId: string,
     movingExplorerPlayerId?: string | null,
     movingMonsterId?: string | null,
+    girlRoomId?: string | null,
 ): MapSceneSprite[] {
     return rooms.flatMap(room => {
         const occupants = occupantsByRoom[room.id] ?? [];
@@ -57,7 +58,7 @@ export function resolveBetrayalEntitySceneSprites(
         const slots = resolveRoomEntitySlots([
             ...occupants.map(explorer => `player:${explorer.playerId}`),
             ...monsters.map(monster => `monster:${monster.id}`),
-        ]);
+        ], room.id === girlRoomId);
         const rect = resolveRoomTileStyle(room, layout);
         return [
             ...occupants.flatMap(explorer => {

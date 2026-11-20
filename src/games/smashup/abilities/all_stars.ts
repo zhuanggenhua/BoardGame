@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
@@ -354,7 +355,7 @@ function buildStandardHandActionOptions(
     return cards.flatMap((card) => {
         if (card.uid === excludedCardUid) return [];
         const def = getCardDef(card.defId) as ActionCardDef | undefined;
-        if (def?.type !== 'action' || def.subtype !== 'standard') return [];
+        if (!isRulesStandardAction(def)) return [];
 
         const actionName = def.name ?? card.defId;
         const targets = collectLegalActionPlayTargets(core, playerId, {
@@ -415,7 +416,7 @@ function executeNonInfiniteLoopAction(
     targetMinionUid?: string,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const def = getCardDef(card.defId) as ActionCardDef | undefined;
-    if (def?.type !== 'action' || def.subtype !== 'standard') {
+    if (!isRulesStandardAction(def)) {
         return { state, events: [] };
     }
 

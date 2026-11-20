@@ -250,8 +250,11 @@ const buildCurrentInteractionActions = (
     const sourceId = typeof currentInteraction.data?.sourceId === 'string'
         ? currentInteraction.data.sourceId
         : '';
-    const isUnavailableTurnHandAction = (candidateId: string): boolean => {
-        if (sourceId !== QIDAHEN_TURN_RESOLUTION_CHOICE || !candidateId.startsWith('hand-action:')) {
+    const isUnavailableTurnOption = (candidateId: string): boolean => {
+        if (sourceId !== QIDAHEN_TURN_RESOLUTION_CHOICE) return false;
+        // The troop picker offers humans a way back to the map. AI already picked its source.
+        if (candidateId === 'back' && currentInteraction.data?.multi) return true;
+        if (!candidateId.startsWith('hand-action:')) {
             return false;
         }
         const actionId = candidateId.slice('hand-action:'.length);
@@ -275,7 +278,7 @@ const buildCurrentInteractionActions = (
                 && typedDecision.sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE
                 ? {
                     ...typedDecision,
-                    candidates: typedDecision.candidates.filter((candidate) => !isUnavailableTurnHandAction(candidate.id)),
+                    candidates: typedDecision.candidates.filter((candidate) => !isUnavailableTurnOption(candidate.id)),
                 }
                 : typedDecision;
             for (const action of buildAiLegalActionsFromInteractionDecision(filteredDecision)) {
@@ -293,7 +296,7 @@ const buildCurrentInteractionActions = (
             label?: string;
             disabled?: boolean;
             value?: unknown;
-        } => typeof option?.id === 'string' && option.disabled !== true && !isUnavailableTurnHandAction(option.id))
+        } => typeof option?.id === 'string' && option.disabled !== true && !isUnavailableTurnOption(option.id))
         : [];
     if (options.length <= 0) {
         return [];

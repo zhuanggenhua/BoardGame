@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "重构后的同局教程、关键界面和退场",
+      "status": "PASS",
+      "baselineSource": "第 8 版同局教程的正式浏览器媒体，内部职责复核",
+      "preservedInformation": "保留胜利条件、两侧法师面板、当前阶段、准备牌与私密信息、结算反馈。",
+      "preservedActions": "保留守卫、施法、回看规则、移动与召唤、响应与退场后的正式输入。",
+      "changes": "开场把威胁、守卫目标和选中后的实际按钮接起来。后续提示随真实选择和结果切换。",
+      "duplicateDecision": "回退、确认计划与不行动仍用正式控件。自动交接只接续已经教过的空窗口。",
+      "changeAuthority": "用户要求按成熟教程的玩家顺序重构，在同一盘插入规则与操作。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-single-match-free-play-20261119\\01-第五回合单局开场.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-single-match-free-play-20261119\\22-对新灰狼施放兽性觉醒.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-course-r12-20261120\\01-第五回合单局开场.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-course-r12-20261120\\21-对新灰狼施放兽性觉醒.png"
+      ]
+    },
+    {
+      "requirement": "较矮窗口的读盘、存档恢复和自主对战",
+      "status": "PASS",
+      "baselineSource": "第 8 版 1366×768 游戏内规则释义和计划草稿恢复画面，内部职责复核",
+      "preservedInformation": "保留法术书、准备位、公开法力及规则释义的原有栏目。",
+      "preservedActions": "保留选牌、关闭规则、返回本局和恢复未确认计划。",
+      "changes": "查阅规则、恢复草稿、后段恢复与退出引导时仍在原棋盘。响应避开主操作。",
+      "duplicateDecision": "按真实会话恢复正式状态和草稿，继续用原计划按钮。",
+      "changeAuthority": "用户要求按实际视口复验关键布局并保留迭代证据。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-single-match-free-play-20261119\\紧凑窗口-14-较矮窗口查阅规则释义.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-single-match-free-play-20261119\\紧凑窗口-15-较矮窗口恢复同一局和未确认计划草稿.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-course-r12-20261120\\较矮窗口-13-较矮窗口查阅规则释义.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars\\tutorial-course-r12-20261120\\较矮窗口-14-较矮窗口恢复同一局和未确认计划草稿.png"
+      ]
+    }
+  ]
+}

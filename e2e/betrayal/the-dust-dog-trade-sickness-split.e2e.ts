@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustDogTradeSicknessSplitRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -118,7 +119,7 @@ test('灰尘态下选中狗交易目标后不会被交换疾病入口抢走', as
     await page.getByTestId('betrayal-room-floor-up').click();
     await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0'), '狗交易目标必须从地图上的远距队友 token 本体选择').toBeVisible();
     await expect(page.getByTestId('betrayal-room-occupant-target-outline-upper-landing-0'), '狗交易目标高亮必须贴合远距队友 token').toHaveAttribute('data-highlight-shape', 'pentagon');
-    await page.getByTestId('betrayal-room-occupant-upper-landing-0').click();
+    await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-upper-landing-0'));
     await expect(page.getByTestId('betrayal-action-trade'), '狗交易牌和远距目标都已选中后，底部按钮必须切为确认交易方案').toContainText('提交方案');
     await expect(page.getByTestId('betrayal-action-trade')).toBeEnabled();
     await saveScreenshot(page, TARGET_SELECTED_SCREENSHOT);

@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createMedicalKitUseReadyRuntimeCore,
     createRuntimeCore,
     initBetrayalContext,
@@ -167,7 +168,7 @@ test.describe('山屋惊魂属性后果预览', () => {
             'data-highlight-shape',
             'pentagon',
         );
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
 
         const healPreview = page.getByTestId('betrayal-inventory-heal-preview');
         await expect(healPreview).toBeVisible();

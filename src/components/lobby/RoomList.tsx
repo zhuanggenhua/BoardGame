@@ -5,8 +5,7 @@ import { RoomPlayerName } from './RoomPlayerName';
 import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel, type RoomItem } from './roomActions';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
-interface RoomListProps extends RoomPrimaryActionsProps {
-    showPrimaryActions?: boolean;
+interface RoomListContentProps {
     roomItems: RoomItem[];
     gameManifest?: GameManifestEntry | null;
     gameTranslationNamespace?: string;
@@ -14,32 +13,32 @@ interface RoomListProps extends RoomPrimaryActionsProps {
     connectionError?: boolean;
     onRetryConnection?: () => void;
     onJoinRequest: (matchID: string, gameName?: string) => void;
-    onSpectate: (matchID: string) => void;
+    onSpectate?: (matchID: string) => void;
 }
 
-export const RoomList = ({
-    showPrimaryActions = true,
-    roomItems,
-    gameManifest,
-    gameTranslationNamespace,
-    activeMatch,
-    isActionLoading,
-    isLobbyLoading,
-    connectionError = false,
-    onRetryConnection,
-    onJoinRoom,
-    onJoinRequest,
-    onAction,
-    onForceExitLocal,
-    onOpenCreateRoom,
-    onSpectate,
-}: RoomListProps) => {
+type RoomListProps = RoomListContentProps & (
+    | (RoomPrimaryActionsProps & { showPrimaryActions?: true })
+    | (Partial<RoomPrimaryActionsProps> & { showPrimaryActions: false })
+);
+
+export const RoomList = (props: RoomListProps) => {
+    const {
+        roomItems,
+        gameManifest,
+        gameTranslationNamespace,
+        isLobbyLoading,
+        connectionError = false,
+        onRetryConnection,
+        onJoinRequest,
+        onAction,
+        onForceExitLocal,
+        onSpectate,
+    } = props;
     const { t } = useTranslation(gameTranslationNamespace ? ['lobby', gameTranslationNamespace] : ['lobby']);
 
     return (
         <>
-            {showPrimaryActions && <RoomPrimaryActions activeMatch={activeMatch} isActionLoading={isActionLoading}
-                onJoinRoom={onJoinRoom} onAction={onAction} onForceExitLocal={onForceExitLocal} onOpenCreateRoom={onOpenCreateRoom} />}
+            {props.showPrimaryActions !== false && <RoomPrimaryActions {...props} />}
 
             {/* 房间列表 */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
@@ -156,7 +155,7 @@ export const RoomList = ({
                             </div>
 
                             <div data-room-actions className="flex gap-2">
-                                {room.canReconnect && room.myPlayerID && room.myCredentials && (
+                                {onAction && room.canReconnect && room.myPlayerID && room.myCredentials && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -172,7 +171,7 @@ export const RoomList = ({
                                         {room.isHost ? t('actions.destroy') : t('actions.leave')}
                                     </button>
                                 )}
-                                {room.isMyRoom && !room.canReconnect && (
+                                {onForceExitLocal && room.isMyRoom && !room.canReconnect && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -186,7 +185,7 @@ export const RoomList = ({
                                 )}
 
                                 {/* 满员房间：显示观战按钮（眼睛图标） */}
-                                {room.isFull && !room.canReconnect && (
+                                {onSpectate && room.isFull && !room.canReconnect && (
                                     <button
                                         type="button"
                                         onClick={(e) => {

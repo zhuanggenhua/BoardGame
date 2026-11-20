@@ -5,6 +5,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioReadyToTraitorVictoryRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -46,7 +47,7 @@ test.describe('山屋惊魂第一剧本叛徒线', () => {
         await expect(heroMapTarget, '叛徒收尾攻击主路径必须点击地图上的英雄 token 本体').toBeVisible();
         await expect(heroMapTarget, '英雄 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId('betrayal-room-occupant-target-outline-ground-north-1'), '英雄 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
-        await heroMapTarget.click();
+        await clickBetrayalSceneFigure(heroMapTarget);
 
         const attackCore = await page.evaluate(() => {
             const harness = (window as Window & {

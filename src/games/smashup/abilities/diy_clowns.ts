@@ -27,6 +27,7 @@ import {
 } from '../domain/abilityRuntime';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
+import { isRulesStandardAction } from '../domain/standardAction';
 import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 import { collectLegalActionPlayTargets } from '../domain/playLegality';
 import { registerTrigger, type TriggerContext, type TriggerResult } from '../domain/ongoingEffects';
@@ -71,7 +72,7 @@ function getCardName(defId: string): string {
 
 function isStandardAction(card: CardInstance): boolean {
     const def = getCardDef(card.defId);
-    return def?.type === 'action' && def.subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 function isAction(card: CardInstance): boolean {

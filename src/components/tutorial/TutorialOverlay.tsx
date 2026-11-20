@@ -152,6 +152,17 @@ const escapeTutorialTargetSelector = (value: string): string => {
   return value.replace(/["\\]/g, "\\$&");
 };
 
+function getTutorialElementRect(element: Element): DOMRect {
+  const bounds = element.getAttribute('data-tutorial-screen-bounds');
+  if (bounds) {
+    const [left, top, right, bottom] = bounds.split(',').map(Number);
+    if ([left, top, right, bottom].every(Number.isFinite) && right > left && bottom > top) {
+      return new DOMRect(left, top, right - left, bottom - top);
+    }
+  }
+  return element.getBoundingClientRect();
+}
+
 const hasPreviousVisibleTutorialStep = (
   steps: TutorialStepSnapshot[],
   currentIndex: number,
@@ -267,9 +278,7 @@ export const TutorialOverlay: React.FC = () => {
           ? currentStep.compactAvoidOverlapSelectors ?? []
           : []),
       ].flatMap((selector) =>
-        Array.from(document.querySelectorAll(selector)).map((element) =>
-          element.getBoundingClientRect(),
-        ),
+        Array.from(document.querySelectorAll(selector), getTutorialElementRect),
       );
       const geometry = JSON.stringify({
         highlight: highlightRect && [highlightRect.left, highlightRect.top, highlightRect.right, highlightRect.bottom, highlightRect.width, highlightRect.height],
@@ -890,10 +899,10 @@ export const TutorialOverlay: React.FC = () => {
           document.getElementById(highlightTarget) ||
           document.querySelector(`[data-testid="${escapedHighlightTarget}"]`);
         if (el) {
-          const rect = el.getBoundingClientRect();
+          const rect = getTutorialElementRect(el);
           const anchorId = currentStep.tooltipAnchorTarget;
           const anchor = anchorId ? document.querySelector(`[data-tutorial-id="${escapeTutorialTargetSelector(anchorId)}"], [data-testid="${escapeTutorialTargetSelector(anchorId)}"]`) || document.getElementById(anchorId) : null;
-          applyLayout(rect, anchor?.getBoundingClientRect() ?? rect);
+          applyLayout(rect, anchor ? getTutorialElementRect(anchor) : rect);
           if (!hasAutoScrolledRef.current) {
             const tolerance = 50;
             const inView =

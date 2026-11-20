@@ -9,7 +9,7 @@ import { GAME_SERVER_MANIFEST_BY_ID } from '../manifest.server';
 import { hasGameImplementation, loadGameImplementation } from '../registry';
 
 describe('fantasyrealms manifest integration', () => {
-    it('fantasyrealms 已进入生成清单，并作为 enabled 游戏暴露本地入口', () => {
+    it('fantasyrealms 已进入生成清单，并作为 enabled 游戏接入在线服务', () => {
         expect(GAME_MANIFEST_BY_ID.fantasyrealms).toBeDefined();
         expect(GAME_MANIFEST_BY_ID.fantasyrealms?.enabled).toBe(true);
         expect(GAME_MANIFEST_BY_ID.fantasyrealms?.thumbnailPath).toBe('fantasyrealms/thumbnails/cover');
@@ -30,7 +30,7 @@ describe('fantasyrealms manifest integration', () => {
         const game = getGameById('fantasyrealms');
         expect(game).toBeDefined();
         expect(game?.enabled).toBe(true);
-        expect(game?.allowLocalMode).toBe(true);
+        expect(game?.allowLocalMode).toBe(false);
         expect(game?.playerOptions).toEqual([2, 3, 4, 5, 6]);
 
         expect(hasGameImplementation('fantasyrealms')).toBe(true);

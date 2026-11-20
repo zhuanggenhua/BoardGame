@@ -1,4 +1,5 @@
 import { projectFateHand } from '../domain/handView';
+import { hasFateDefeat } from '../domain/mechanics';
 import { projectFatePlayedCards, projectFateSkillCards, visibleFatePower, visibleFateServantClass } from '../domain/playerView';
 import type { FateDominationCore, PlayerState } from '../domain/types';
 import { FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID } from '../data';
@@ -12,6 +13,7 @@ export function projectFatePlayer(core: FateDominationCore, playerId: string, vi
     return {
         player,
         power: player.publicView?.power ?? visibleFatePower(core, playerId, viewerId),
+        defeated: hasFateDefeat(core, playerId),
         own,
         master: FATE_MASTER_BY_ID[player.masterId],
         servant: servantVisible ? FATE_SERVANT_BY_ID[player.servantId] : undefined,

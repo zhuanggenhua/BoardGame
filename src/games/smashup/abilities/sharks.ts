@@ -142,6 +142,7 @@ function destroyTarget(
         reason: string;
         now: number;
         sourcePlayerId: PlayerId;
+        sourceCardUid?: string;
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
@@ -156,6 +157,7 @@ function destroyTarget(
         reason: params.reason,
         now: params.now,
         sourcePlayerId: params.sourcePlayerId,
+        sourceCardUid: params.sourceCardUid,
         sourceDefId: params.sourceDefId,
         sourceControllerId: params.sourceControllerId,
         sourceBaseIndex: params.sourceBaseIndex,
@@ -364,6 +366,7 @@ const sharksMegalodonBeforeScoringPromptProgram = createPromptProgram<SharksMega
                 reason: 'sharks_megalodon_before_scoring',
                 now: timestamp,
                 sourcePlayerId: playerId,
+                sourceCardUid: context.source.uid,
                 sourceDefId: 'sharks_megalodon',
                 sourceControllerId: playerId,
                 sourceBaseIndex: context.source.baseIndex,
@@ -455,6 +458,7 @@ const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAft
             reason: context.sourceId,
             now: timestamp,
             sourcePlayerId: playerId,
+            sourceCardUid: context.sourceKind === 'nonAction' ? context.movedMinionUid : undefined,
             sourceDefId: context.sourceDefId,
             sourceControllerId: context.sourceDefId ? playerId : undefined,
             sourceBaseIndex: context.destinationBaseIndex,

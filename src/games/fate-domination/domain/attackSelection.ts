@@ -1,9 +1,10 @@
 import {canPlayAttack} from './movement';
-import { fateBattlefieldSkillIds, isFateTerritoryCreation } from './battlefieldAttacks';
+import { fateBattlefieldSkillIds, isFateResidualSkill, isFateTerritoryCreation } from './battlefieldAttacks';
 import {FATE_ATTACK_BY_ID, FATE_SERVANT_BY_ID} from '../data';
 import type {PlayerState, AttackCardDefinition, SkillDefinition, FateDominationCore, ConfirmAttackCommand} from './types';
 
 export interface FateAttackSelection { cardIds: readonly string[]; faceDownIds: readonly string[]; }
+export const FATE_MIN_MANA_TO_PLAY_SKILL_ATTACK = 8;
 
 /** Read-only draft projection. Neither the authoritative state nor its arrays are mutated. */
 export function projectFateAttackSelection(core:FateDominationCore, playerId:string, selection:FateAttackSelection):FateDominationCore {
@@ -27,6 +28,17 @@ export function resolveFateAttackConfirmation(core:FateDominationCore, playerId:
 
 /** One rule projection for normal attacks from either the hand or servant skill area. */
 type FateAttack = { kind: 'hand' | 'skill'; definition: AttackCardDefinition; skill?: SkillDefinition };
+
+export function hasFateSpecialAttack(player: PlayerState, cardIds: readonly string[], faceDownIds: readonly string[] = []): boolean {
+    return cardIds.some(id => !faceDownIds.includes(id)
+        && resolveFateAttack(player, id)?.definition.type?.split('/').includes('特殊'));
+}
+
+export function fatePlayedSpecialAttackThisRound(player: PlayerState): boolean {
+    // 旧存档未记录已离场牌，只能从仍激活的本轮明置攻击恢复。
+    return player.playedSpecialAttackThisRound ?? hasFateSpecialAttack(player,
+        [...player.activeAttackIds, ...player.activeSkills.filter(id => !isFateResidualSkill(id))], player.faceDownAttackIds);
+}
 
 export function resolveFateAttack(player: PlayerState, id: string): FateAttack | undefined {
     const card=player.hand.find(card=>card.id===id);
@@ -76,7 +88,7 @@ export function canSelectFateAttack(core:import('./types').FateDominationCore,pl
  if(!player.locationId)return {valid:false,error:'notDeployed'};
  if(faceDown)return attack.kind==='hand'?{valid:true}:{valid:false,error:'skillCannotBeFaceDown'};
  const hasLancelotLowManaException=player.skills.some(skill=>skill.id.split(':')[0]==='sc_lance_2');
- if(attack.kind==='skill'&&((player.mana<8&&!hasLancelotLowManaException)||player.activeSkills.includes(id)||fateBattlefieldSkillIds(core,playerId).includes(id)))return {valid:false,error:'skillAttackUnavailable'};
+ if(attack.kind==='skill'&&((player.mana<FATE_MIN_MANA_TO_PLAY_SKILL_ATTACK&&!hasLancelotLowManaException)||player.activeSkills.includes(id)||fateBattlefieldSkillIds(core,playerId).includes(id)))return {valid:false,error:'skillAttackUnavailable'};
  return canPlayAttack(core,playerId,attack.definition);
 }
 export function hasAffordableFateFaceUpAttack(core:import('./types').FateDominationCore,playerId:string):boolean {

@@ -4,7 +4,7 @@ import { createSimpleChoiceFromTimingOpportunity } from '../../../engine/systems
 import type { EngineSystem } from '../../../engine/systems/types';
 import type { Opportunity, TimingPoint } from '../../../engine/TimingOpportunity';
 import type { Command, GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import { FATE_ATTACK_BY_ID, FATE_SERVANTS } from '../data';
+import { FATE_ATTACK_BY_ID } from '../data';
 import { canUseFateAbility } from './mechanics';
 import { fateAbilityUsageKey } from './abilitySource';
 import { resolveFatePlayerAbility } from './abilityRegistry';
@@ -16,12 +16,10 @@ import type {
     FateDominationCore,
     FateDominationEvent,
     FateRidingChoiceRequestedEvent,
-    PlayerState,
 } from './types';
 
 export const FATE_RIDING_CHOICE_SOURCE = 'fate:riding-choice';
 export const FATE_RIDING_FRAME_KIND = 'fate:riding-choice';
-const RIDING_SKILL_BASE_ID = 'sc_iskandar_1';
 const VERIFIED_SPECIAL_BASIC_TYPES: Record<string, string> = {
     cardPreparation: '远隔操作',
     cardSurveil: '疾行',
@@ -102,11 +100,6 @@ export function isFateBasicAttackDefinition(definition: { id: string; type?: str
     return definition.desc === '基础攻击卡牌' && BASIC_ATTACK_TYPES.has(printedBasicType(definition) ?? '');
 }
 
-function ridingSkillId(player: PlayerState): string | undefined {
-    if (FATE_SERVANTS.find(servant => servant.id === player.servantId)?.trueName !== '伊斯坎达尔') return undefined;
-    return player.skills.find(skill => skill.id.split(':')[0] === RIDING_SKILL_BASE_ID)?.id;
-}
-
 function isRidingDefinition(core: FateDominationCore, playerId: string, skillId: string): boolean {
     return resolveFatePlayerAbility(core, playerId, skillId)?.effects.some(effect => effect.type === 'riding') === true;
 }
@@ -115,7 +108,7 @@ function liveRidingContext(core: FateDominationCore, context: FateRidingChoiceCo
     const player = core.players[context.playerId];
     if (!player || player.eliminated || core.currentPlayerId !== context.playerId || core.phase !== 'action'
         || core.round !== context.round || !player.activeSkills.includes(context.skillId)
-        || ridingSkillId(player) !== context.skillId || !isRidingDefinition(core, context.playerId, context.skillId)) return false;
+        || !isRidingDefinition(core, context.playerId, context.skillId)) return false;
     const usageKey = fateAbilityUsageKey(context.skillId, 'action');
     return !player.usedAbilityIds.includes(context.skillId)
         && !player.usedAbilityIds.includes(usageKey)
@@ -186,6 +179,22 @@ function exactPayloadKeys(payload: unknown, keys: string[]): payload is Record<s
     return values.length === keys.length && values.every((key, index) => key === [...keys].sort()[index]);
 }
 
+function resolveRidingCards(
+    { playerId, skillId }: Pick<FateRidingChoiceContext, 'playerId' | 'skillId'>,
+    cardIds: string[],
+    manaSpent: number,
+    meta: { timestamp: number; sourceCommandType?: string },
+): FateDominationEvent[] {
+    return [
+        {
+            type: 'FATE_ABILITY_USED',
+            payload: { playerId, skillId, usageKey: fateAbilityUsageKey(skillId, 'action'), manaSpent: 0 },
+            ...meta,
+        },
+        { type: 'FATE_RIDING_CARDS_PLAYED', payload: { playerId, skillId, cardIds: [...cardIds], manaSpent }, ...meta },
+    ];
+}
+
 export function fateRidingChoiceOpportunities(
     event: FateRidingChoiceRequestedEvent,
     timing: TimingPoint,
@@ -199,6 +208,18 @@ export function fateRidingChoiceOpportunities(
     const sourceRef = { kind: 'event' as const, id: FATE_RIDING_CHOICE_SOURCE, ownerId: playerId, controllerId: playerId };
     const lifecycle = { round, playerId, skillId, generation, frameId };
     const candidates = fateRidingCandidates(core, playerId);
+    // 已主动发动且只能追加零张时，直接结算，避免打开没有可选卡的阻塞交互。
+    if (!candidates.some(card => (fateAttackManaCost(player, card.id) ?? Infinity) <= player.mana)) {
+        const events = resolveRidingCards(context, [], 0, {
+            sourceCommandType: event.sourceCommandType,
+            timestamp: event.timestamp,
+        });
+        return [{
+            id: `${interactionId}:zero`, timing, sourceRef, controllerId: playerId,
+            class: 'mandatory', condition: true, resolution: { type: 'events', events },
+            visibility: { scope: 'controller' },
+        }];
+    }
     return [
         {
             id: `${interactionId}:frame`, timing, sourceRef, controllerId: playerId,
@@ -246,8 +267,9 @@ export function fateRidingDrawOpportunities(
     const cardIds = Array.isArray(payload.cardIds) ? payload.cardIds.filter((id): id is string => typeof id === 'string') : [];
     if (!playerId || !cardIds.length) return [];
     const player = core.players[playerId];
-    const skillId = player && ridingSkillId(player);
-    if (!player || !skillId || !player.activeSkills.includes(skillId) || !cardIds.includes(skillId)) return [];
+    if (!player) return [];
+    const skillId = cardIds.find(id => player.activeSkills.includes(id) && isRidingDefinition(core, playerId, id));
+    if (!skillId) return [];
     const faceDown = new Set(Array.isArray(payload.faceDownIds) ? payload.faceDownIds : []);
     const pairedBasic = cardIds.some(cardId => cardId !== skillId && !faceDown.has(cardId)
         && isFateBasicAttackDefinition(resolveFateAttack(player, cardId)?.definition ?? { id: '', type: undefined }));
@@ -364,12 +386,8 @@ export function createFateRidingChoiceSystems(): EngineSystem<FateDominationCore
                     const cardIds = ids as string[];
                     const manaSpent = calculateFateRidingSelectionCost(state.core, context.playerId, cardIds);
                     if (manaSpent === undefined) throw new Error('Fate Riding selection lost its live card cost');
-                    const usageKey = fateAbilityUsageKey(context.skillId, 'action');
                     const timestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
-                    generated.push(
-                        { type: 'FATE_ABILITY_USED', payload: { playerId: context.playerId, skillId: context.skillId, usageKey, manaSpent: 0 }, sourceCommandType: 'SYS_INTERACTION_RESPOND', timestamp },
-                        { type: 'FATE_RIDING_CARDS_PLAYED', payload: { playerId: context.playerId, skillId: context.skillId, cardIds: [...cardIds], manaSpent }, sourceCommandType: 'SYS_INTERACTION_RESPOND', timestamp },
-                    );
+                    generated.push(...resolveRidingCards(context, cardIds, manaSpent, { sourceCommandType: 'SYS_INTERACTION_RESPOND', timestamp }));
                     completedFrames.push(context.frameId);
                 }
                 let nextState = state;

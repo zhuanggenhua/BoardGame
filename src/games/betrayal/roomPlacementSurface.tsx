@@ -95,7 +95,7 @@ export function BetrayalRoomPlacementSurface({
       data-room-placement-slot={preview.slotId}
       data-room-orientation-turns={selectedOrientationTurns}
       data-room-entry-edge={connectingEdge}
-      className="pointer-events-auto absolute top-3 z-[70] rounded-[10px] border border-[rgba(238,204,126,0.50)] bg-[rgba(10,12,10,0.88)] p-3 text-[#ead7a5] shadow-[0_14px_34px_rgba(0,0,0,0.44),0_0_24px_rgba(238,204,126,0.20)] backdrop-blur-md"
+      className="pointer-events-auto absolute bottom-24 z-[70] rounded-[10px] border border-[rgba(238,204,126,0.50)] bg-[rgba(10,12,10,0.88)] p-3 text-[#ead7a5] shadow-[0_14px_34px_rgba(0,0,0,0.44),0_0_24px_rgba(238,204,126,0.20)] backdrop-blur-md"
       style={{
         left: "384px",
         width: "300px",

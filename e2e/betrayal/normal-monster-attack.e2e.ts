@@ -9,6 +9,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -239,7 +240,7 @@ test.describe('山屋惊魂普通怪物正式攻击命令真实入口', () => {
         await expect(monsterAttackAction).toContainText('取消攻击');
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('测试怪物');
         await expect(monsterToken).toHaveAttribute('data-direct-target', 'true');
-        await monsterToken.click();
+        await clickBetrayalSceneFigure(monsterToken);
         await expect(heroTargetToken).toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${NORMAL_MONSTER_ROOM_ID}-0`)).toHaveAttribute('data-highlight-shape', 'pentagon');
         await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${NORMAL_MONSTER_ROOM_ID}-2`)).toHaveCount(0);
@@ -248,7 +249,7 @@ test.describe('山屋惊魂普通怪物正式攻击命令真实入口', () => {
         await saveScreenshot(page, TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
-        await heroTargetToken.click();
+        await clickBetrayalSceneFigure(heroTargetToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('测试怪物');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');

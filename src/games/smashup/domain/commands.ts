@@ -98,6 +98,7 @@ export interface SmashUpImmediateExtraValidationContext {
     playerId: string;
     restrictToBase?: number;
     restrictToMinionUid?: string;
+    restrictToOpponentMinionAction?: boolean;
     restrictToCardUid?: string;
     restrictToCardDefId?: string;
     restrictToBaseModifier?: boolean;
@@ -1123,6 +1124,15 @@ export function validate(
                 return { valid: false, error: '该额外行动只能打出指定卡牌' };
             }
             const immediateExtraAction = getImmediateExtraContext(options, command.playerId, 'action');
+            if (immediateExtraAction?.restrictToOpponentMinionAction) {
+                const isPlayedOnMinion = def.type === 'fusion'
+                    ? def.actionSubtype === 'ongoing' && def.actionOngoingTarget === 'minion'
+                    : def.subtype === 'ongoing' && def.ongoingTarget === 'minion';
+                const target = core.bases[command.payload.targetBaseIndex ?? -1]?.minions.find(minion => minion.uid === command.payload.targetMinionUid);
+                if (!isPlayedOnMinion || !target || target.controller === command.playerId) {
+                    return { valid: false, error: '该额外行动只能打在另一位玩家的随从上' };
+                }
+            }
             const immediateExtraActionValidation = validateImmediateExtraActionUse(immediateExtraAction, {
                 cardUid: card.uid,
                 defId: card.defId,

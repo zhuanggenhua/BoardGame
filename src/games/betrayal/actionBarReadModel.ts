@@ -115,6 +115,7 @@ export function resolveBetrayalBoardActionItems({
 }: BetrayalBoardActionItemsInput): BetrayalBoardActionItems {
   const isHauntPrimaryAction =
     phase === "haunt" && hauntAction !== null && !hasSelectedInventoryCard;
+  const isWaitingToUse = !hasSelectedInventoryCard && !isViewerTurn;
   const visibleActionDisabledReason = (() => {
     if (hasSelectedInventoryCard && selectedCardUseDisabled) {
       return selectedCardUseDisabledReason;
@@ -177,12 +178,12 @@ export function resolveBetrayalBoardActionItems({
     {
       id: "use",
       label: isHauntPrimaryAction ? hauntAction.label : t("board.actions.use"),
-      disabled: hasPendingPlayerAgreement
+      disabled: hasPendingPlayerAgreement || isWaitingToUse
         ? true
         : isHauntPrimaryAction
           ? Boolean(hauntAction.disabledReason)
           : currentExplorerInventoryCount === 0 || selectedCardUseDisabled,
-      description: isHauntPrimaryAction
+      description: isWaitingToUse ? t("board.status.waitForCurrentPlayer") : isHauntPrimaryAction
         ? (hauntAction.disabledReason ?? undefined)
         : selectedCardUseDisabled
           ? (selectedCardUseDisabledReason ?? undefined)

@@ -15,6 +15,7 @@ import type { AiSeatController } from './types';
 import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../../shared/roomSetup';
 
 const STORAGE_PREFIX = 'local_ai_match_preferences:';
+type LocalMatchSetup = Pick<GameManifestEntry, 'id' | 'ai' | 'playerOptions' | 'setupOptions'>;
 
 export interface LocalMatchPreferences {
     numPlayers: number;
@@ -40,7 +41,7 @@ export function readStoredLocalMatchPreferences(
     }
 }
 
-export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEntry): LocalMatchPreferences {
+export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEntry | LocalMatchSetup): LocalMatchPreferences {
     const defaultSetupSelections = getDefaultSetupSelections(gameManifest);
     const playerOptions = resolveAllowedPlayerCountsForGame({
         gameManifest,
@@ -67,7 +68,7 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
 }
 
 export function normalizeLocalMatchPreferences(
-    gameManifest: GameManifestEntry,
+    gameManifest: GameManifestEntry | LocalMatchSetup,
     raw: Record<string, unknown> | null | undefined,
 ): LocalMatchPreferences {
     const defaults = createDefaultLocalMatchPreferences(gameManifest);

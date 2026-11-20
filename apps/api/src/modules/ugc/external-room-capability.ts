@@ -1,11 +1,12 @@
 import { readFile, stat } from 'node:fs/promises';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { EXTERNAL_ROOM_CONNECT, EXTERNAL_ROOM_VERSION } from '../../../../../src/shared/externalRoom';
 import { SANDBOXED_WEB_GAME_PATH, type ExternalGame } from '../../../../../src/shared/externalGames';
+import { readExternalRoomSetup } from './external-room-setup';
 
 const GAME_DIRECTORY = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const REVISION = /^[a-f0-9]{64}$/;
-type RoomSupport = Pick<ExternalGame, 'roomProtocol' | 'roomAdapter'>;
+type RoomSupport = Pick<ExternalGame, 'roomProtocol' | 'roomAdapter' | 'roomSetup'>;
 const detected = new Map<string, Promise<RoomSupport>>();
 
 // 仅检查本机托管的不可变版本。已上线的 ZIP 同样可识别，无需重新投稿。
@@ -48,7 +49,7 @@ async function inspectRoomSupport(directory: string, entry: string): Promise<Roo
         const text = await readFile(path, 'utf8');
         if (/\.html?$/i.test(url.pathname) && [...text.matchAll(/<meta\b[^>]*>/gi)].some(([tag]) =>
             /\bname\s*=\s*["']boardgame-room-sdk["']/i.test(tag) && /\bcontent\s*=\s*["']1["']/i.test(tag))) {
-            return { roomProtocol: EXTERNAL_ROOM_VERSION };
+            return { roomProtocol: EXTERNAL_ROOM_VERSION, roomSetup: await readExternalRoomSetup(dirname(path)) };
         }
         sdk ||= text.includes(EXTERNAL_ROOM_CONNECT) && text.includes('MessageChannel');
         nativeLobby ||= text.includes('id="oh-create"') && text.includes('id="oh-start"') && text.includes('onlineHost(body, prof)');

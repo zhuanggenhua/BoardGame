@@ -1,4 +1,4 @@
-import { fateLateClimax, fateNoblePhantasmsForbidden } from './environmentRules';
+import { fateLateClimax, fateNoblePhantasmsForbidden, fateSituationClosesLocation } from './environmentRules';
 import {
     canEffectMove,
     canEnterLocation as canEnterMovementLocation,
@@ -130,7 +130,7 @@ export function canEnterLocation(
     locationId: LocationId,
     mode: MovementMode = 'normal',
 ): MovementCheck {
-    if(fateLateClimax(core.situation)&&['shinto','recon'].includes(locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
+    if(fateSituationClosesLocation(core.situation,locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
     const locks = activeLocationLocks(core, locationId, playerId).filter((modifier) => !modifier.bypassModes?.includes(mode));
     const location = core.battlefield[locationId];
     const blocker = locks.find((modifier) => modifier.denyEnter);
@@ -149,7 +149,7 @@ export function canLeaveLocation(
     locationId: LocationId,
     mode: MovementMode = 'normal',
 ): MovementCheck {
-    if(fateLateClimax(core.situation)&&['shinto','recon'].includes(locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
+    if(fateSituationClosesLocation(core.situation,locationId))return canEnterMovementLocation({allowed:false,failure:{code:'cannotEnterLocation',source:core.situation.id}});
     const locks = activeLocationLocks(core, locationId, playerId).filter((modifier) => !modifier.bypassModes?.includes(mode));
     const blocker = locks.find((modifier) => modifier.denyLeave);
     if (hasIntrinsicBoundary(core, locationId) || blocker) {

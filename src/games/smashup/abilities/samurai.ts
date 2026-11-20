@@ -248,11 +248,14 @@ export function registerSamuraiAbilities(): void {
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
     });
-    registerTrigger('base_sakura_garden', 'onMinionDestroyed', samuraiSakuraGardenTrigger, {
+    // 已保存的对局可能仍有旧的消灭触发；实际抽牌统一交给进入弃牌堆的触发。
+    registerTrigger('base_sakura_garden', 'onMinionDestroyed', () => [], {
         sourceScope: 'triggerBase',
+        canTrigger: () => false,
     });
     registerTrigger('base_sakura_garden', 'onMinionDiscardedFromBase', samuraiSakuraGardenTrigger, {
         sourceScope: 'triggerBase',
+        canTrigger: ctx => Boolean(ctx.triggerMinion) && !firstSakuraGardenDiscard(ctx),
     });
 
     registerBaseAbility('base_shoguns_palace', 'onMinionPlayed', samuraiBaseShogunsPalaceOnMinionPlayed, {
@@ -909,15 +912,19 @@ function canTriggerSamuraiWayOfTheWarrior(ctx: TriggerContext): boolean {
     return !sourceCardUid || ctx.sourceCardUid === sourceCardUid;
 }
 
+function firstSakuraGardenDiscard(ctx: TriggerContext) {
+    return ctx.state.turnDestroyedMinions?.find(record => (
+        record.baseIndex === ctx.baseIndex
+        && (record.controller ?? record.owner) === ctx.triggerMinion?.controller
+    ));
+}
+
 function samuraiSakuraGardenTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.triggerMinion) return [];
-    const controllerId = ctx.triggerMinion.controller;
-    const alreadyTriggered = (ctx.state.turnDestroyedMinions ?? []).some(record => (
-        record.baseIndex === ctx.baseIndex
-        && (record.controller ?? record.owner) === controllerId
-    ));
-    if (alreadyTriggered) return [];
-    return buildStandardDrawEvents(ctx.state, controllerId, 1, ctx.random, ctx.now);
+    const firstDiscard = firstSakuraGardenDiscard(ctx);
+    // 运行到这里时可能已记下当前随从的离场，只有更早的离场才能取消本次抽牌。
+    if (firstDiscard && firstDiscard.uid !== ctx.triggerMinion.uid) return [];
+    return buildStandardDrawEvents(ctx.state, ctx.triggerMinion.controller, 1, ctx.random, ctx.now);
 }
 
 function samuraiBaseShogunsPalaceOnMinionPlayed(ctx: BaseAbilityContext): AbilityResult {

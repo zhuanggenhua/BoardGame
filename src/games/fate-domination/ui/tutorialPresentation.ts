@@ -11,6 +11,7 @@ interface VisibleTutorialUi {
     discard: boolean;
     deck?: boolean;
     postBattle?: boolean;
+    chariotChoice?: boolean;
     attackStaged?: boolean;
     ridingSelectionCount?: number;
     publicCards?: boolean;
@@ -33,7 +34,7 @@ export function presentFateTutorial(tutorial: TutorialState, ui: VisibleTutorial
     const step = tutorial.step as FateTutorialStep;
     const expected = step.fateCommand;
     const hide = () => ({ ...tutorial, step: { ...step, hideOverlay:true, highlightTarget:undefined } });
-    if (ui.inspection || ui.detail || ui.seal || ui.discard || ui.deck || ui.postBattle || (ui.publicCards && step.id.startsWith('ui-public-cards')) || (ui.attackStaged && expected?.type==='CONFIRM_ATTACK')) return hide();
+    if (ui.inspection || ui.detail || ui.seal || ui.discard || ui.deck || ui.postBattle || ui.chariotChoice || (ui.publicCards && step.id.startsWith('ui-public-cards')) || (ui.attackStaged && expected?.type==='CONFIRM_ATTACK')) return hide();
     if (ui.movement && expected?.type==='MOVE_PLAYER') return {...tutorial,step:{...step,highlightTarget:`fate-location-${String(expected.payload.locationId)}`,highlightFrame:'none'}};
     if(expected?.type==='SYS_INTERACTION_RESPOND' && Array.isArray(expected.payload.optionIds) && (ui.ridingSelectionCount??0)>=expected.payload.optionIds.length)return hide();
     return tutorial;

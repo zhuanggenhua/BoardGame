@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="boardgame-room-sdk" content="1">
+    <title>房间 SDK 示例</title>
+    <style>
+        body { margin: 0; background: #e0eadb; color: #223e38; font: 16px/1.5 system-ui, sans-serif; }
+        main { display: grid; justify-items: center; gap: 12px; padding: 28px 16px; text-align: center; }
+        h1, p, ul { margin: 0; }
+        ul { padding: 0; list-style-position: inside; }
+        #room-id { overflow-wrap: anywhere; }
+        #board { display: grid; gap: 4px; width: min(50vw, 28dvh); aspect-ratio: 1; }
+        #board[hidden] { display: none; }
+        #board > span { background: #f7f9f2; border: 1px solid #48796a; }
+        button { min-height: 44px; padding: 6px 16px; font: inherit; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>房间 SDK 示例</h1>
+    <p id="status" role="status">正在连接平台房间…</p>
+    <p id="sdk-release" hidden></p>
+    <p id="room-id" hidden></p>
+    <p id="player" hidden></p>
+    <ul id="seats" aria-label="玩家名单" hidden></ul>
+    <p id="size" hidden></p>
+    <div id="board" aria-label="棋盘" hidden></div>
+    <button id="room-ready" type="button" hidden>准备</button>
+</main>
+<script>
+const status = document.getElementById('status');
+const readyButton = document.getElementById('room-ready');
+const sdk = window.BoardGameRoomSDK;
+const platformOrigin = document.querySelector('meta[name="boardgame-platform-origin"]')?.content;
+
+function showText(id, value) {
+    const field = document.getElementById(id);
+    field.textContent = value;
+    field.hidden = false;
+}
+
+function showError(message) {
+    status.textContent = '房间连接失败 · ' + message;
+    readyButton.hidden = true;
+}
+
+async function connect() {
+    if (sdk?.version !== 1 || !platformOrigin) {
+        status.textContent = '请从易桌游的「创建房间」或「加入」打开这个示例。';
+        return;
+    }
+
+    let started = false;
+    function render(room) {
+        const me = room.players.find(player => player.seatId === room.seatId);
+        const seats = document.getElementById('seats');
+        const size = room.settings.board === 'expanded' ? 5 : 3;
+        showText('sdk-release', 'SDK ' + sdk.release);
+        showText('room-id', '房间 ' + room.roomId);
+        showText('player', me.displayName + (me.seatId === room.hostSeatId ? ' · 房主' : ' · 访客'));
+        showText('size', '棋盘尺寸：' + size + ' × ' + size);
+        seats.replaceChildren(...room.players.map(player => {
+            const row = document.createElement('li');
+            row.textContent = player.displayName + (player.ready ? ' · 已准备' : ' · 未准备');
+            return row;
+        }));
+        seats.hidden = false;
+
+        const board = document.getElementById('board');
+        board.hidden = false;
+        board.style.gridTemplateColumns = 'repeat(' + size + ', 1fr)';
+        board.replaceChildren(...Array.from({ length: size * size }, () => document.createElement('span')));
+        status.textContent = started ? '对局已开始' : '等待开局 · ' + room.players.length + '/' + room.capacity;
+        readyButton.textContent = me.ready ? '取消准备' : '准备';
+        readyButton.hidden = started || room.players.length !== room.capacity;
+    }
+
+    const client = sdk.createClient({
+        platformOrigin,
+        onRoom: render,
+        onStart(room) {
+            started = true;
+            render(room);
+        },
+        onClose: showError,
+    });
+    render(await client.ready);
+    readyButton.addEventListener('click', () => {
+        const room = client.room;
+        const me = room?.players.find(player => player.seatId === room.seatId);
+        if (me) client.setReady(!me.ready);
+    });
+}
+
+connect().catch(error => showError(error.message));
+</script>
+</body>
+</html>

@@ -464,7 +464,7 @@ export function CharacterSelectScreen({
               </div>
             </div>
             <div>
-              <div className="flex h-full flex-col items-center justify-center px-4 py-3 text-center">
+              <div className="flex h-full flex-col items-center justify-center py-3 pl-4 pr-24 text-center">
                 <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">
                   {t("board.characterSelect.playersLabel")}
                 </div>

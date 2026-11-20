@@ -27,7 +27,7 @@ function buildFactEvent(state: MatchState<QidahenCore>, frame: QidahenTurnResolu
         const rawRoll = random.d(character.number);
         fact = { ...fact, rawRoll, outcome: getQidahenCharacterJudgementOutcome(state.core, fact.task, rawRoll).outcome };
     }
-    return { type: 'TURN_RESOLUTION_APPLIED', timestamp, payload: { frameId: frame.id, factionId: frame.metadata.qidahenTurn.factionId, fromStep: frame.metadata.qidahenTurn.step, fact } };
+    return { type: 'TURN_RESOLUTION_APPLIED', timestamp, payload: { frameId: frame.id, factionId: frame.metadata.qidahenTurn.factionId, fromStep: frame.metadata.qidahenTurn.step, factKind: fact.kind, fact } };
 }
 
 export function createQidahenTurnResolutionSystem(): EngineSystem<QidahenCore> {

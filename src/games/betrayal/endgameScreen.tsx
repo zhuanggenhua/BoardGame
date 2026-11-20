@@ -11,6 +11,7 @@ import {
   resolveEndgameNarrationSectionId,
 } from "./scenarioReader";
 import { resolveEndgameExplorerName } from "./playerPresentation";
+import { resolveLivingHeroExplorers } from "./hauntScenarioReadModel";
 import { TRAIT_LABEL_LOCAL } from "./traitTrackSurface";
 import { BETRAYAL_TRAIT_MARKER_ASSETS } from "./traitAssets";
 import {
@@ -74,6 +75,9 @@ export function EndgameScreen({
         result.survivorsEscaped.includes(explorer.playerId),
       )
     : allExplorers.slice(0, Math.max(1, allExplorers.length - 1));
+  const survivorRoster = result?.hauntId === "mummy-rampage"
+    ? resolveLivingHeroExplorers(core)
+    : survivors;
   const traitor = result && !hauntWon
     ? (allExplorers.find(
         (explorer) => explorer.playerId === result.traitorPlayerId,
@@ -288,9 +292,10 @@ export function EndgameScreen({
                   {survivorsTitle}
                 </div>
                 <div className="mt-4 space-y-2">
-                  {survivors.map((explorer) => (
+                  {survivorRoster.map((explorer) => (
                     <div
                       key={explorer.playerId}
+                      data-testid={`betrayal-endgame-survivor-${explorer.playerId}`}
                       className="relative grid grid-cols-[50px_1fr_38px] items-center gap-3 border-y border-[rgba(126,102,61,0.3)] bg-[linear-gradient(180deg,rgba(15,21,19,0.34),rgba(8,11,10,0.42))] px-2 py-2"
                     >
                       <div className="relative grid h-[50px] w-[50px] place-items-center overflow-hidden rounded-full border border-[rgba(177,151,92,0.3)] bg-[radial-gradient(circle_at_50%_38%,rgba(61,89,72,0.18),rgba(8,11,10,0.74)_72%)]">
@@ -667,7 +672,7 @@ export function EndgameScreen({
                   </div>
                   <div className="px-2">
                     <Search size={28} className="mx-auto text-[#c3a166]" />
-                    <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">
+                    <div data-testid="betrayal-endgame-events-drawn" className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">
                       {eventsDrawnCount}
                     </div>
                     <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">

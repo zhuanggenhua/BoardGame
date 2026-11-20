@@ -32,6 +32,7 @@ export interface BetrayalTopPromptStackSurfaceProps {
   tradeAgreementState: string;
   tradeBannerStatusText: string;
   mummyReward: BetrayalTopPromptRewardSummary | null;
+  mummyStealResult?: string | null;
   helpingHandsReward: BetrayalTopPromptRewardSummary | null;
   helpingHandsMonsterTurnStatus: BetrayalTopPromptMonsterTurnSummary | null;
   showHelpingHandsTrollAttack: boolean;
@@ -182,6 +183,7 @@ export function BetrayalTopPromptStackSurface({
   tradeAgreementState,
   tradeBannerStatusText,
   mummyReward,
+  mummyStealResult,
   helpingHandsReward,
   helpingHandsMonsterTurnStatus,
   showHelpingHandsTrollAttack,
@@ -232,6 +234,11 @@ export function BetrayalTopPromptStackSurface({
       ) : null}
       {mummyReward ? (
         <RewardBanner kind="mummy" reward={mummyReward} />
+      ) : null}
+      {mummyStealResult ? (
+        <div data-testid="betrayal-mummy-steal-result" role="status" className={resolveRewardBannerClassName()}>
+          {mummyStealResult}
+        </div>
       ) : null}
       {helpingHandsReward ? (
         <RewardBanner

@@ -2,6 +2,7 @@ import type { MatchState } from '../../../engine/types';
 import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
 import { validate, type SmashUpValidateOptions } from './commands';
 import { execute } from './reducer';
+import { reduceCardTransferredEvent } from './reduce';
 import {
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
@@ -23,6 +24,7 @@ import {
     SU_EVENTS,
     type ActionCardDef,
     type CardInstance,
+    type CardTransferredEvent,
     type FusionCardDef,
     type LimitModifiedEvent,
     type SmashUpCore,
@@ -42,7 +44,7 @@ type ImmediateExtraMinionPayload = ImmediateExtraLimitPayload & { limitType: 'mi
 type ImmediateExtraActionPayload = ImmediateExtraLimitPayload & { limitType: 'action' };
 
 type ImmediateMinionCardSource = 'hand' | 'deck' | 'stored' | 'discard';
-type ImmediateActionCardSource = 'hand' | 'stored' | 'discard';
+type ImmediateActionCardSource = 'hand' | 'stored' | 'discard' | 'borrowed-hand';
 
 type ImmediateMinionCardChoice =
     | { cardUid: string; defId: string; source?: ImmediateMinionCardSource }
@@ -74,10 +76,12 @@ function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
         payload.delta,
         payload.restrictToBase ?? '__any_base__',
         payload.restrictToMinionUid ?? '__any_minion__',
+        payload.restrictToOpponentMinionAction ? 'opponent_minion_action' : '__any_action_target__',
         payload.restrictToCardUid ?? '__any_card_uid__',
         payload.restrictToCardDefId ?? '__any_card_def__',
         payload.restrictToBaseModifier ? 'base_modifier_only' : 'any_action_kind',
         payload.allowSkip === false ? 'mandatory_play' : 'optional_play',
+        payload.borrowActionFromPlayerId ?? '__no_borrowing__',
         payload.specificCardUid ?? '__any_card__',
         payload.sameNameDefId ?? '__any_name__',
         payload.sameNameOnly ? 'same_name' : 'not_same_name',
@@ -118,6 +122,7 @@ function buildImmediateExtraValidateOptions(
                 playerId: extra.playerId,
                 ...(extra.restrictToBase !== undefined ? { restrictToBase: extra.restrictToBase } : {}),
                 ...(extra.restrictToMinionUid !== undefined ? { restrictToMinionUid: extra.restrictToMinionUid } : {}),
+                ...(extra.restrictToOpponentMinionAction ? { restrictToOpponentMinionAction: true } : {}),
                 ...(extra.restrictToCardUid !== undefined ? { restrictToCardUid: extra.restrictToCardUid } : {}),
                 ...(extra.restrictToCardDefId !== undefined ? { restrictToCardDefId: extra.restrictToCardDefId } : {}),
                 ...(extra.restrictToBaseModifier ? { restrictToBaseModifier: true } : {}),
@@ -163,6 +168,7 @@ function buildImmediateActionPlayPayload(
         cardUid: choice.cardUid,
         targetBaseIndex,
         targetMinionUid,
+        ...(extra.borrowActionFromPlayerId !== undefined ? { consumesNormalLimit: false } : {}),
         ...(choice.source === 'stored' ? { fromStored: true } : {}),
         ...(choice.source === 'discard'
             ? {
@@ -322,11 +328,14 @@ function buildImmediateExtraActionCardOptions(
             if (!def) return [];
             if (extra.restrictToBaseModifier && !isBaseModifierActionLike(def)) return [];
 
+            const choice = { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateActionCardChoice;
+            const play = getImmediateActionPlayState(state, extra, choice);
+            if (!play) return [];
             const targetMode = getActionPlayTargetMode(def);
             if (extra.restrictToMinionUid && targetMode !== 'minion') return [];
             const playable = (() => {
                 if (targetMode === 'none') {
-                    return validate(state, {
+                    return validate(play.state, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra),
@@ -343,7 +352,7 @@ function buildImmediateExtraActionCardOptions(
                                 }),
                             );
                         const validation = !blockedByBaseRestriction && !blockedByWindowRestriction
-                            ? validate(state, {
+                            ? validate(play.state, {
                                 type: SU_COMMANDS.PLAY_ACTION,
                                 playerId: extra.playerId,
                                 payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra, baseIndex),
@@ -364,7 +373,7 @@ function buildImmediateExtraActionCardOptions(
                     if (extra.specialActionWindow && isOperationRestricted(state.core, baseIndex, extra.playerId, 'play_action', {
                         activationWindow: extra.specialActionWindow,
                     })) return false;
-                    return base.minions.some(minion => validate(state, {
+                    return base.minions.some(minion => validate(play.state, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra, baseIndex, minion.uid),
@@ -377,14 +386,21 @@ function buildImmediateExtraActionCardOptions(
             return [{
                 id: `${idPrefix}-${index}`,
                 label: def.name ?? card.defId,
-                value: { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateActionCardChoice,
+                ...(extra.borrowActionFromPlayerId !== undefined ? {
+                    labelKey: source === 'borrowed-hand' ? 'ui.immediate_extra_action_borrowed_card' : 'ui.immediate_extra_action_own_card',
+                    labelParams: { card: `cards.${card.defId}.name` },
+                    displayCard: { defId: card.defId, cardUid: card.uid },
+                } : {}),
+                value: choice,
                 displayMode: 'card' as const,
                 _source: source,
             }];
         });
     const options = [
         ...buildActionOptions(player.hand, 'hand', 'card'),
-        ...buildActionOptions(player.storedCards ?? [], 'stored', 'stored-card'),
+        ...(extra.borrowActionFromPlayerId === undefined
+            ? buildActionOptions(player.storedCards ?? [], 'stored', 'stored-card')
+            : buildActionOptions(state.core.players[extra.borrowActionFromPlayerId]?.hand ?? [], 'borrowed-hand', 'borrowed-card')),
         ...(extra.allowFromDiscard ? buildActionOptions(player.discard, 'discard', 'discard-card') : []),
     ];
 
@@ -393,11 +409,37 @@ function buildImmediateExtraActionCardOptions(
         : [...options, createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
 }
 
+function getImmediateActionPlayState(
+    state: MatchState<SmashUpCore>,
+    extra: ImmediateExtraActionPayload,
+    choice: ImmediateActionCardChoice,
+    timestamp = 0,
+): { state: MatchState<SmashUpCore>; transfer?: CardTransferredEvent } | undefined {
+    if (choice.source !== 'borrowed-hand') return { state };
+    const fromPlayerId = extra.borrowActionFromPlayerId;
+    if (fromPlayerId === undefined || fromPlayerId === extra.playerId) return undefined;
+    const card = state.core.players[fromPlayerId]?.hand.find(candidate =>
+        candidate.uid === choice.cardUid && candidate.defId === choice.defId && isCardActionLike(candidate),
+    );
+    if (!card) return undefined;
+    const transfer: CardTransferredEvent = {
+        type: SU_EVENTS.CARD_TRANSFERRED,
+        payload: {
+            cardUid: card.uid, defId: card.defId, fromPlayerId, toPlayerId: extra.playerId,
+            reason: extra.reason,
+        },
+        timestamp,
+    };
+    return { state: { ...state, core: reduceCardTransferredEvent(state.core, transfer) }, transfer };
+}
+
 function buildImmediateExtraActionBaseOptions(
     state: MatchState<SmashUpCore>,
     extra: ImmediateExtraActionPayload,
     choice: ImmediateActionCardChoice,
 ) {
+    const play = getImmediateActionPlayState(state, extra, choice);
+    if (!play) return [];
     const validateOptions = buildImmediateExtraValidateOptions(extra);
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
@@ -405,7 +447,7 @@ function buildImmediateExtraActionBaseOptions(
         .filter(candidate => !extra.specialActionWindow || !isOperationRestricted(state.core, candidate.baseIndex, extra.playerId, 'play_action', {
             activationWindow: extra.specialActionWindow,
         }))
-        .filter(candidate => validate(state, {
+        .filter(candidate => validate(play.state, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: extra.playerId,
             payload: buildImmediateActionPlayPayload(choice, extra, candidate.baseIndex),
@@ -419,6 +461,8 @@ function buildImmediateExtraActionMinionOptions(
     extra: ImmediateExtraActionPayload,
     choice: ImmediateActionCardChoice,
 ) {
+    const play = getImmediateActionPlayState(state, extra, choice);
+    if (!play) return [];
     const validateOptions = buildImmediateExtraValidateOptions(extra);
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
 
@@ -431,7 +475,7 @@ function buildImmediateExtraActionMinionOptions(
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
             if (extra.restrictToMinionUid && minion.uid !== extra.restrictToMinionUid) continue;
-            if (!validate(state, {
+            if (!validate(play.state, {
                 type: SU_COMMANDS.PLAY_ACTION,
                 playerId: extra.playerId,
                 payload: buildImmediateActionPlayPayload(choice, extra, baseIndex, minion.uid),
@@ -549,8 +593,10 @@ function executeImmediateExtraActionPlay(
     if (extra.restrictToBaseModifier && !isBaseModifierActionLike(choiceDef)) {
         return { matchState: state, events: [] };
     }
+    const play = getImmediateActionPlayState(state, extra, choice, timestamp);
+    if (!play) return { matchState: state, events: [] };
     const validateOptions = buildImmediateExtraValidateOptions(extra);
-    const validation = validate(state, {
+    const validation = validate(play.state, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId: extra.playerId,
         payload: buildImmediateActionPlayPayload(choice, extra, targetBaseIndex, targetMinionUid),
@@ -559,17 +605,27 @@ function executeImmediateExtraActionPlay(
         return { matchState: state, events: [] };
     }
 
-    const execState: MatchState<SmashUpCore> = { ...state, sys: { ...state.sys } };
-    const events = execute(execState, {
+    const execState: MatchState<SmashUpCore> = { ...play.state, sys: { ...state.sys } };
+    const playedEvents = execute(execState, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId: extra.playerId,
         payload: buildImmediateActionPlayPayload(choice, extra, targetBaseIndex, targetMinionUid),
         timestamp,
-    }, random);
-    const needsBankedExtra = choice.source !== 'stored' && choice.source !== 'discard';
+    }, random, { destroyAttachedActionAtTurnEnd: extra.destroyAttachedActionAtTurnEnd });
+    if (playedEvents.length === 0) return { matchState: state, events: [] };
+    const events = extra.borrowActionFromPlayerId === undefined ? playedEvents : playedEvents.map(event =>
+        event.type === SU_EVENTS.ACTION_PLAYED && event.payload.cardUid === choice.cardUid
+            ? { ...event, payload: { ...event.payload, returnToOwnerAtTurnEnd: extra.reason } }
+            : event,
+    );
+    const needsBankedExtra = extra.borrowActionFromPlayerId === undefined && choice.source !== 'stored' && choice.source !== 'discard';
     return {
-        matchState: execState,
-        events: [...(needsBankedExtra ? [grantExtraAction(extra.playerId, extra.reason, timestamp)] : []), ...events],
+        matchState: { ...execState, core: state.core },
+        events: [
+            ...(play.transfer ? [play.transfer] : []),
+            ...(needsBankedExtra ? [grantExtraAction(extra.playerId, extra.reason, timestamp)] : []),
+            ...events,
+        ],
     };
 }
 
@@ -839,13 +895,14 @@ const immediateExtraActionPromptProgram = createPromptProgram<ImmediateExtraActi
         const interaction = createAbilityRuntimeSimpleChoice(
             `smashup_immediate_extra_${immediateExtraPromptCounter++}`,
             context.extra.playerId,
-            '立刻打出一张额外战术，或放弃这次机会',
+            context.extra.allowSkip === false ? '立刻打出一张额外战术' : '立刻打出一张额外战术，或放弃这次机会',
             buildImmediateExtraActionCardOptions(context.matchState, context.extra) as any[],
             {
                 sourceId: 'smashup_immediate_extra_action',
-                targetType: 'hand',
+                targetType: context.extra.borrowActionFromPlayerId !== undefined ? 'generic' : 'hand',
+                ...(context.extra.borrowActionFromPlayerId !== undefined ? { genericIntent: 'card-pool' as const } : {}),
                 autoResolveIfSingle: false,
-                titleKey: 'ui.immediate_extra_action_title',
+                titleKey: context.extra.allowSkip === false ? 'ui.immediate_extra_action_required_title' : 'ui.immediate_extra_action_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
@@ -936,6 +993,11 @@ export function queueImmediateExtraPlayInteractions(
         if (processedImmediateExtraEvents.has(eventKey)) continue;
         processedImmediateExtraEvents.add(eventKey);
         const payload = event.payload as ImmediateExtraLimitPayload;
+        if (payload.limitType === 'action' && payload.allowSkip === false
+            && !nextState.sys.interaction?.current && !(nextState.sys.interaction?.queue?.length)
+            && buildImmediateExtraActionCardOptions(nextState, { ...payload, limitType: 'action' }).length === 0) {
+            continue;
+        }
         const result = payload.limitType === 'minion'
             ? executeAbilityProgram(immediateExtraMinionPromptProgram, {
                 matchState: nextState,

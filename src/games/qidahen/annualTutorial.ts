@@ -95,6 +95,7 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         payChoice('dispatch-payment', 'dispatch-payment', ['deck-ming-11']),
         { ...mapChoice('dispatch-source', 'dispatch-source', ['city-region-15']), position: 'bottom', tooltipMaxWidth: 220, tooltipArrow: 'anchor' },
         { ...mapChoice('dispatch-troops', 'dispatch-troops', [...sourceInfantry, sourceArtillery], 'city-region-15'),
+            advanceOnEvents: [{ type: turnFact, match: { fromStep: 'dispatch-troops', factKind: 'select-dispatch-troops' } }],
             position: 'top', tooltipMaxWidth: 380,
             avoidOverlapSelectors: [...PROTECTED_UI, '[data-testid="qidahen-map-population-city-region-7"]', '[data-testid="qidahen-map-population-city-region-9"]'],
             tooltipArrow: 'anchor',

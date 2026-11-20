@@ -5,6 +5,7 @@ import type { MapScenePoint } from '../../engine/mapRenderer/types';
 const MIN_ZOOM = .55;
 const MAX_ZOOM = 2.4;
 const DRAG_THRESHOLD = 6;
+const INSPECT_HOLD_MS = 480;
 const INITIAL_BEARING = MathUtils.degToRad(9);
 const INITIAL_TILT = MathUtils.degToRad(32);
 const DISTANCE = 1800;
@@ -17,7 +18,9 @@ export function createBetrayalRoomCamera(
         onManualInteraction: () => void;
         onZoomChange: (zoom: number) => void;
         onChange: (width: number, height: number) => void;
-        onTapFigure: (point: Vector2, target: EventTarget | null) => boolean;
+        onTapObject: (point: Vector2, target: EventTarget | null) => boolean;
+        onHoverObject: (point: Vector2 | undefined, target?: EventTarget | null) => void;
+        onInspectObject: (point: Vector2, target: EventTarget | null) => boolean;
     },
 ) {
     const camera = new OrthographicCamera(-1, 1, 1, -1, .1, 8000);
@@ -30,6 +33,13 @@ export function createBetrayalRoomCamera(
     let dragging = false;
     let rotating = false;
     let suppressClick = false;
+    let inspectTimer = 0;
+    let consumeInspectClick = false;
+
+    function cancelInspect() {
+        window.clearTimeout(inspectTimer);
+        inspectTimer = 0;
+    }
 
     function syncCamera() {
         const altitude = Math.cos(tilt) * DISTANCE;
@@ -139,17 +149,32 @@ export function createBetrayalRoomCamera(
         if (!viewport.width || (event.button !== 0 && event.button !== 2)) return;
         const point = localPoint(event);
         const screen = new Vector2(event.clientX, event.clientY);
+        cancelInspect();
         if (!pointers.size) {
             suppressClick = false;
             dragging = false;
             rotating = event.button === 2;
+            if (event.pointerType === 'touch') {
+                const target = event.target;
+                inspectTimer = window.setTimeout(() => {
+                    if (!dragging && pointers.size === 1 && options.onInspectObject(toNdc(point), target)) {
+                        suppressClick = true;
+                        consumeInspectClick = true;
+                        host.setPointerCapture(event.pointerId);
+                    }
+                }, INSPECT_HOLD_MS);
+            }
         }
         pointers.set(event.pointerId, { start: screen, screen, point });
     }
 
     function pointerMove(event: PointerEvent) {
         const pointer = pointers.get(event.pointerId);
-        if (!pointer || !viewport.width) return;
+        if (!viewport.width) return;
+        if (!pointer) {
+            if (event.pointerType === 'mouse') options.onHoverObject(toNdc(localPoint(event)), event.target);
+            return;
+        }
         const next = localPoint(event);
         const screen = new Vector2(event.clientX, event.clientY);
         const previous = pointer.point;
@@ -157,6 +182,8 @@ export function createBetrayalRoomCamera(
         if (!dragging && (screen.distanceTo(pointer.start) >= DRAG_THRESHOLD || pointers.size > 1)) {
             dragging = true;
             suppressClick = true;
+            cancelInspect();
+            options.onHoverObject(undefined);
             options.onManualInteraction();
         }
         if (dragging && !host.hasPointerCapture(event.pointerId)) host.setPointerCapture(event.pointerId);
@@ -183,11 +210,16 @@ export function createBetrayalRoomCamera(
     }
 
     function pointerEnd(event: PointerEvent) {
+        cancelInspect();
+        if (event.type === 'pointerup' && event.button === 2 && pointers.has(event.pointerId) && !dragging) {
+            options.onInspectObject(toNdc(localPoint(event)), event.target);
+        }
         pointers.delete(event.pointerId);
     }
 
     function pointerLeave(event: PointerEvent) {
         if (!host.hasPointerCapture(event.pointerId)) pointerEnd(event);
+        options.onHoverObject(undefined);
     }
 
     function wheel(event: WheelEvent) {
@@ -202,7 +234,7 @@ export function createBetrayalRoomCamera(
 
     function click(event: MouseEvent) {
         if (!event.detail) return;
-        if (suppressClick || options.onTapFigure(toNdc(localPoint(event)), event.target)) {
+        if (suppressClick || options.onTapObject(toNdc(localPoint(event)), event.target)) {
             suppressClick = false;
             event.preventDefault();
             event.stopPropagation();
@@ -213,6 +245,15 @@ export function createBetrayalRoomCamera(
         event.preventDefault();
         if (dragging) event.stopPropagation();
     };
+    const clearInspectClick = () => { consumeInspectClick = false; };
+    const blockReleaseClick = (event: MouseEvent) => {
+        if (!consumeInspectClick || !event.detail) return;
+        clearInspectClick();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    };
+    host.ownerDocument.addEventListener('pointerdown', clearInspectClick, true);
+    host.ownerDocument.addEventListener('click', blockReleaseClick, true);
     host.addEventListener('pointerdown', pointerDown);
     host.addEventListener('pointermove', pointerMove);
     host.addEventListener('pointerup', pointerEnd);
@@ -225,6 +266,9 @@ export function createBetrayalRoomCamera(
     return {
         camera, useBounds, focus,
         dispose() {
+            cancelInspect();
+            host.ownerDocument.removeEventListener('pointerdown', clearInspectClick, true);
+            host.ownerDocument.removeEventListener('click', blockReleaseClick, true);
             host.removeEventListener('pointerdown', pointerDown);
             host.removeEventListener('pointermove', pointerMove);
             host.removeEventListener('pointerup', pointerEnd);

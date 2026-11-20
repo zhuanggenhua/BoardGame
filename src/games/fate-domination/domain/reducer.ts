@@ -2,10 +2,11 @@ import { afterFateLocationResolved, fateResidualDeploymentRewards, isFateFieldAt
 import { prepareFatePostBattleEvents } from './postBattleChoice';
 import { resolveFateAbilitySource, fateAbilityUsageKey } from './abilitySource';
 import { reduceFateRound } from './roundLifecycle';
-import { fateLocationResults } from './battleAwards';
-import {nextFateDeploymentSlot,fateDeploymentManaGain} from './deployment';
-import {resolveFateAttack,resolveFateAttackConfirmation,selectedFateAttackCost} from './attackSelection';
-import { FATE_DEFAULT_HAND_LIMIT, capFateMana } from './rules';
+import { applyFateBattleScoreAdjustment, fateLocationResults } from './battleAwards';
+import {nextFateDeploymentSlot,fateDeploymentManaGain,fateOccupiedDeploymentSlots} from './deployment';
+import {hasFateSpecialAttack,resolveFateAttack,resolveFateAttackConfirmation,selectedFateAttackCost} from './attackSelection';
+import { fatePreBattleDefeatEvents } from './preBattleEffects';
+import { FATE_DEFAULT_HAND_LIMIT, FATE_MANA_PER_COMMAND_SPELL, capFateMana } from './rules';
 import { calculateFatePower } from './power';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID } from '../data';
@@ -29,6 +30,14 @@ import {
 } from './mechanics';
 
 const eventMeta = (command: FateDominationCommand) => ({ sourceCommandType: command.type, timestamp: typeof command.timestamp === 'number' ? command.timestamp : 0 });
+
+function fateActionTurnAfterPass(core: FateDominationCore, passingId: string) {
+    const activeIds = core.turnOrder.filter(id => core.players[id].locationId && !core.players[id].eliminated);
+    return {
+        nextActionId: activeIds.find(id => id !== passingId && !core.players[id].hasPassedAction),
+        firstBattleId: activeIds[0] ?? core.currentPlayerId,
+    };
+}
 
 const removePlayerFromBattlefield = (
     battlefield: FateDominationCore['battlefield'],
@@ -71,7 +80,11 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
             if (!resolution.valid || !resolution.path || resolution.cost === null) return [];
             return [{ type: 'PLAYER_MOVED', payload: { playerId: command.playerId, from, to: command.payload.locationId, path: [...resolution.path], mode: resolution.mode, manaSpent: resolution.cost }, ...meta }];
         }
-        case 'PASS_ACTION': return [{ type: 'ACTION_PASSED', payload: { playerId: command.playerId }, ...meta }];
+        case 'PASS_ACTION': {
+            const pass = { type: 'ACTION_PASSED' as const, payload: { playerId: command.playerId }, ...meta };
+            return fateActionTurnAfterPass(core, command.playerId).nextActionId
+                ? [pass] : [...fatePreBattleDefeatEvents(core, meta), pass];
+        }
         case 'PLAY_SKILL': {
             const skill = resolveFateAbilitySource(core.players[command.playerId],command.payload.skillId)!.skill;
             const definition = resolveFatePlayerAbility(core,command.playerId,skill.id);
@@ -208,7 +221,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
             return { ...state, players: { ...state.players, [player.id]: {
                 ...player,
                 commandSpells,
-                mana: capFateMana(player.masterId, player.mana + (event.payload.effect === 'mana' ? 4 : 0)),
+                mana: capFateMana(player.masterId, player.mana + (event.payload.effect === 'mana' ? FATE_MANA_PER_COMMAND_SPELL : 0)),
                 isRevealed: player.isRevealed || releasesLancelotName,
                 revealedSkillIds: releasesLancelotName
                     ? [...new Set([...player.revealedSkillIds, ...servantSkillIds])]
@@ -281,6 +294,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
                     ...player,
                     locationId: event.payload.locationId,
                     deploymentSlot: event.payload.deploymentSlot,
+                    secondaryDeploymentSlot: undefined,
                     mana: capFateMana(player.masterId, player.mana + event.payload.manaGain + residual),
                     victoryPoints: player.victoryPoints + residual * 2,
                 },
@@ -293,13 +307,32 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
                 actionNotice: '已部署，仍可使用前哨能力；完成后结束本人的前哨阶段。',
             };
         }
-        case 'PLAYER_MOVED': { const player = state.players[event.payload.playerId]; const battlefield = { ...state.battlefield }; battlefield[event.payload.from] = { ...battlefield[event.payload.from], playerIds: battlefield[event.payload.from].playerIds.filter((id) => id !== event.payload.playerId) }; battlefield[event.payload.to] = { ...battlefield[event.payload.to], playerIds: [...battlefield[event.payload.to].playerIds, event.payload.playerId] }; return { ...state, battlefield, players: { ...state.players, [event.payload.playerId]: { ...player, locationId: event.payload.to, deploymentSlot: null, normalMoveCompleted: player.normalMoveCompleted || event.payload.mode === 'normal', mana: player.mana - event.payload.manaSpent } }, actionCount: state.actionCount + 1, actionNotice: `已移动至${battlefield[event.payload.to].label}。` }; }
+        case 'PLAYER_MOVED': {
+            const { playerId, from, to, mode, manaSpent, claimBattlefieldTerrain } = event.payload;
+            const player = state.players[playerId];
+            const battlefield = { ...state.battlefield };
+            battlefield[from] = { ...battlefield[from], playerIds: battlefield[from].playerIds.filter(id => id !== playerId) };
+            const destination = battlefield[to];
+            battlefield[to] = { ...destination, playerIds: [...destination.playerIds, playerId] };
+            const claim = claimBattlefieldTerrain && (to === 'miyama' || to === 'shinto');
+            const players = { ...state.players, [playerId]: {
+                ...player, locationId: to, deploymentSlot: claim ? 0 : null, secondaryDeploymentSlot: claim ? 1 : undefined,
+                normalMoveCompleted: player.normalMoveCompleted || mode === 'normal', mana: player.mana - manaSpent,
+            } };
+            if (claim) {
+                for (const id of destination.playerIds) {
+                    if (fateOccupiedDeploymentSlots(players[id]).length) {
+                        players[id] = { ...players[id], deploymentSlot: null, secondaryDeploymentSlot: undefined };
+                    }
+                }
+            }
+            return { ...state, battlefield, players, actionCount: state.actionCount + 1, actionNotice: `已移动至${destination.label}。` };
+        }
         case 'ACTION_PASSED': {
             const players = { ...state.players, [event.payload.playerId]: { ...state.players[event.payload.playerId], hasPassedAction: true, selectedAttackIds: [], selectedFaceDownIds: [] } };
-            const activeIds = state.turnOrder.filter((id) => players[id].locationId && !players[id].eliminated);
-            const nextPlayerId = activeIds.find((id) => !players[id].hasPassedAction);
-            const allPassed = !nextPlayerId;
-            return { ...state, players, phase: allPassed ? 'battle' : state.phase, currentPlayerId: nextPlayerId ?? activeIds[0] ?? state.currentPlayerId, phaseCompletedPlayerIds: allPassed ? [] : state.phaseCompletedPlayerIds, currentTurnIndex: state.turnOrder.indexOf(nextPlayerId ?? activeIds[0] ?? state.currentPlayerId), pendingChoice: allPassed ? { kind: 'battle' } : { kind: 'attack-cards', playerId: nextPlayerId, minimum: 2, maximum: 2 }, actionNotice: allPassed ? '所有玩家结束行动，进入战斗阶段。' : '已结束行动，轮到下一位玩家。' };
+            const { nextActionId, firstBattleId } = fateActionTurnAfterPass(state, event.payload.playerId);
+            const currentPlayerId = nextActionId ?? firstBattleId;
+            return { ...state, players, phase: nextActionId ? state.phase : 'battle', currentPlayerId, phaseCompletedPlayerIds: nextActionId ? state.phaseCompletedPlayerIds : [], currentTurnIndex: state.turnOrder.indexOf(currentPlayerId), pendingChoice: nextActionId ? { kind: 'attack-cards', playerId: nextActionId, minimum: 2, maximum: 2 } : { kind: 'battle' }, actionNotice: nextActionId ? '已结束行动，轮到下一位玩家。' : '所有玩家结束行动，进入战斗阶段。' };
         }
         case 'FATE_POST_BATTLE_STARTED':
             if(!state.battleResolution)throw new Error('Post-battle choice requires an active battle resolution');
@@ -312,6 +345,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
             const player=state.players[event.payload.playerId];
             return {...state,players:{...state.players,[player.id]:{...player,mana:capFateMana(player.masterId,player.mana+event.payload.amount)}}};
         }
+        case 'FATE_BATTLE_SCORE_ADJUSTED': return applyFateBattleScoreAdjustment(state, event);
         case 'FATE_CARDS_DRAWN': {
             const player=state.players[event.payload.playerId];
             return {...state,players:{...state.players,[player.id]:{...player,hand:[...player.hand,...event.payload.drawn],deck:event.payload.deck,discard:event.payload.discard}}};
@@ -331,6 +365,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
                         ...player,
                         mana: player.mana - event.payload.manaSpent,
                         activeAttackIds: [...player.activeAttackIds, ...event.payload.cardIds],
+                        ...(hasFateSpecialAttack(player, event.payload.cardIds) && { playedSpecialAttackThisRound: true }),
                     },
                 },
                 actionNotice: `坐骑召唤：明置打出${event.payload.cardIds.length}张手牌。`,
@@ -346,6 +381,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
                     ...player,
                     mana: player.mana - event.payload.manaSpent,
                     activeSkills: [...player.activeSkills, event.payload.skillId],
+                    ...(hasFateSpecialAttack(player, [event.payload.skillId]) && { playedSpecialAttackThisRound: true }),
                     usedAbilityIds: [...player.usedAbilityIds, event.payload.skillId],
                 },
             };
@@ -512,6 +548,7 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
             const revealsName=skills.some(id=>player.skills.find(skill=>skill.id===id)?.desc?.includes('【真名解放】'));
             const playedPiercingSpear = skills.some(id => id.split(':')[0] === 'sc_cu_1');
             const updatedPlayer = { ...player, mana: player.mana - event.payload.manaSpent, selectedAttackIds: [], selectedFaceDownIds: [],
+                ...(hasFateSpecialAttack(player, event.payload.cardIds, event.payload.faceDownIds) && { playedSpecialAttackThisRound: true }),
                 ...(playedPiercingSpear && { piercingSpearPlays: (player.piercingSpearPlays ?? 0) + 1 }),
                 faceDownAttackIds: [...(player.faceDownAttackIds ?? []), ...(event.payload.faceDownIds ?? [])],
                 forcedRevealedHand: event.payload.revealHand ? [...player.hand] : player.forcedRevealedHand,

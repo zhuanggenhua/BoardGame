@@ -44,7 +44,7 @@ import { createSimpleChoice, queueInteraction, type PromptOption } from '../../.
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerBaseAbility, registerExtended as registerExtendedBase, type BaseAbilityContext } from './baseAbilities';
 import { registerProtection, registerTrigger } from './ongoingEffects';
-import type { ProtectionCheckContext } from './ongoingEffects';
+import type { ProtectionCheckContext, TriggerContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
 import { getPlayerLabel } from './utils';
 import {
@@ -1203,6 +1203,7 @@ export function registerExpansionBaseAbilities(): void {
                     ownerId,
                     controllerId,
                     destroyerId: trigCtx.destroyerId,
+                    destroySource: trigCtx.destroySource,
                 },
             },
         });
@@ -1923,6 +1924,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             ownerId?: string;
             controllerId?: string;
             destroyerId?: string;
+            destroySource?: TriggerContext['destroySource'];
         }>(iData);
         const minionUid = selected.minionUid ?? ctx?.minionUid;
         const minionDefId = selected.minionDefId ?? ctx?.minionDefId;
@@ -1959,13 +1961,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionDefId,
                     fromBaseIndex,
                     destroyerId,
+                    sourceCardUid: ctx?.destroySource?.sourceCardUid,
                     reason: '九命之屋：玩家选择不拯救',
                     now: timestamp,
-                    sourcePlayerId: playerId,
-                    sourceDefId: 'base_house_of_nine_lives',
-                    sourceControllerId: playerId,
-                    sourceBaseIndex: houseBaseIndex,
-                    sourceKind: 'nonAction',
+                    sourcePlayerId: ctx?.destroySource?.sourcePlayerId ?? playerId,
+                    sourceDefId: ctx?.destroySource?.sourceDefId,
+                    sourceControllerId: ctx?.destroySource?.sourceControllerId ?? ctx?.destroySource?.sourcePlayerId ?? playerId,
+                    sourceBaseIndex: ctx?.destroySource?.sourceBaseIndex,
+                    sourceKind: ctx?.destroySource?.sourceKind,
                     targetSnapshot: {
                         ownerId,
                         controllerId,

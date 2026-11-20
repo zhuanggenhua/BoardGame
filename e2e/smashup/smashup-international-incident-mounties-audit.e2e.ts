@@ -353,6 +353,63 @@ function createBringEmInOnlineSceneState(baseState: any): any {
 }
 
 test.describe('大杀四方国际事件骑警真实入口审计', () => {
+  test('手牌中的嗯？在首张行动后出现可选响应', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'mounties,sumo_wrestlers', p1: 'musketeers,luchadors', skipFactionSelect: true, seed: 20261125 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [
+          { uid: 'eh-first-action', defId: 'sumo_wrestlers_performance_prize', type: 'action', owner: '0' },
+          { uid: 'eh-in-hand', defId: 'mounties_eh', type: 'action', owner: '0' },
+        ],
+        deck: [], discard: [], factions: ['mounties', 'sumo_wrestlers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['musketeers', 'luchadors'] },
+      bases: [{ defId: 'base_the_factory', minions: [{ uid: 'eh-own', defId: 'mounties_dudlee', owner: '0', controller: '0', power: 2 }] }],
+    });
+    await game.playCard('sumo_wrestlers_performance_prize');
+    await game.screenshot('骑警-首张行动后手牌嗯的响应', testInfo);
+    await game.waitForInteraction('smashup_reaction_choose', 10000);
+    const options = await game.getInteractionOptions();
+    expect(options.some(option => JSON.stringify(option).includes('mounties_eh'))).toBe(true);
+  });
+
+  test('带进来可以附着己方随从并在其移动后放置指示物', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { p0: 'mounties,sumo_wrestlers', p1: 'musketeers,luchadors', skipFactionSelect: true, seed: 20261124 }, 45000);
+    await game.setupScene({
+      gameId: 'smashup', currentPlayer: '0', phase: 'playCards',
+      player0: {
+        hand: [{ uid: 'bring-own', defId: 'mounties_bring_em_in', type: 'action', owner: '0' }],
+        deck: [], discard: [], factions: ['mounties', 'sumo_wrestlers'], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+      },
+      player1: { hand: [], deck: [], discard: [], factions: ['musketeers', 'luchadors'] },
+      bases: [
+        { defId: 'base_the_factory', minions: [{ uid: 'bring-own-target', defId: 'mounties_dudlee', owner: '0', controller: '0', power: 2 }] },
+        { defId: 'base_the_homeworld', minions: [{ uid: 'bring-enemy', defId: 'musketeers_young_musketeer', owner: '1', controller: '1', power: 3 }] },
+      ],
+    });
+    await page.locator('[data-card-uid="bring-own"]').click();
+    await expect(page.locator('[data-minion-uid="bring-own-target"]')).toHaveAttribute('data-highlighted', 'true');
+    await game.screenshot('骑警-带进来可选择己方随从', testInfo);
+    await page.locator('[data-minion-uid="bring-own-target"]').click({ force: true });
+    await game.waitForNoInteraction(10000);
+    await dismissSpotlightIfPresent(page);
+    await page.locator('[data-minion-uid="bring-own-target"]').click({ force: true });
+    await game.waitForInteraction('mounties_dudlee_destination', 10000);
+    await game.selectInteractionOptionBy(option => optionValue(option).baseIndex === 1, '达德利移到对手随从所在基地');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const target = state.core.bases[1].minions.find((minion: { uid: string }) => minion.uid === 'bring-own-target');
+      return { counters: target?.powerCounters, attached: target?.attachedActions?.some((action: { uid: string }) => action.uid === 'bring-own') };
+    }).toEqual({ counters: 1, attached: true });
+    await game.screenshot('骑警-己方随从移动后获得指示物', testInfo);
+  });
+
   test('达德利从真实随从入口移动到有对手随从的其它基地并获得 +1', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
     await setChineseLocale(page.context());

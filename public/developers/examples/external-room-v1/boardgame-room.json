@@ -1,0 +1,14 @@
+{
+  "playerCounts": [2, 4],
+  "fields": [
+    {
+      "id": "board",
+      "label": "棋盘尺寸",
+      "defaultValue": "compact",
+      "options": [
+        { "value": "compact", "label": "3 × 3" },
+        { "value": "expanded", "label": "5 × 5" }
+      ]
+    }
+  ]
+}

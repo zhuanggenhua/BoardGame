@@ -76,7 +76,7 @@ describe('国际事件四派系代表性玩法行为', () => {
         }
     });
 
-    it('相扑新人天赋在真实对局中必须选择弃牌和承接随从，不自动取第一项', () => {
+    it('相扑新人打出能力必须选择弃牌和承接随从，不自动取第一项', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -93,7 +93,7 @@ describe('国际事件四派系代表性玩法行为', () => {
             ])],
         });
 
-        const result = invokeRegisteredAbilityContract('sumo_wrestlers_rookie_sumo', 'talent', {
+        const result = invokeRegisteredAbilityContract('sumo_wrestlers_rookie_sumo', 'onPlay', {
             state: core,
             matchState: makeMatchState(core),
             playerId: '0',
@@ -155,7 +155,7 @@ describe('国际事件四派系代表性玩法行为', () => {
             ])],
         });
 
-        const result = invokeRegisteredAbilityContract('sumo_wrestlers_rookie_sumo', 'talent', {
+        const result = invokeRegisteredAbilityContract('sumo_wrestlers_rookie_sumo', 'onPlay', {
             state: core,
             matchState: makeMatchState(core),
             playerId: '0',
@@ -267,7 +267,7 @@ describe('国际事件四派系代表性玩法行为', () => {
             ]), makeBase('base_heya_training_stable', []), makeBase('base_the_dohyo', [])],
         });
 
-        const skipResult = invokeRegisteredAbilityContract('sumo_wrestlers_third_tier', 'talent', {
+        const skipResult = invokeRegisteredAbilityContract('sumo_wrestlers_third_tier', 'onPlay', {
             state: core,
             matchState: makeMatchState(core),
             playerId: '0',
@@ -291,7 +291,7 @@ describe('国际事件四派系代表性玩法行为', () => {
         expect(skipped.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
         expect(skipped.finalState.core.players['0'].hand).toHaveLength(0);
 
-        const moveResult = invokeRegisteredAbilityContract('sumo_wrestlers_third_tier', 'talent', {
+        const moveResult = invokeRegisteredAbilityContract('sumo_wrestlers_third_tier', 'onPlay', {
             state: core,
             matchState: makeMatchState(core),
             playerId: '0',
@@ -2234,7 +2234,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             FIXED_RANDOM,
         );
         expect(afterStewChoice.success, afterStewChoice.error).toBe(true);
-        const afterStew = afterStewChoice.finalState.core;
+        const afterSecondStewChoice = respondToPromptOption(
+            afterStewChoice.finalState,
+            option => option.value?.minionUid === 'rookie',
+            '炖肉将第二个指示物也放在相扑新人上',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(afterSecondStewChoice.success, afterSecondStewChoice.error).toBe(true);
+        const afterStew = afterSecondStewChoice.finalState.core;
         expect(afterStew.players['0'].hand).toHaveLength(0);
         expect(afterStew.players['0'].discard.map(card => card.uid)).toEqual(['stew-card-a', 'stew-card-b']);
         expect(afterStew.bases[0].minions[0].powerCounters).toBe(2);
@@ -2602,7 +2610,10 @@ describe('国际事件四派系代表性玩法行为', () => {
             now: 50,
         });
         expect(result.matchState).toBeDefined();
-        const skippedDestroy = respondToPromptOptions(result.matchState!, [], '0', FIXED_RANDOM);
+        const selectedTarget = respondToPromptOption(result.matchState!, option => option.value?.minionUid === 'target', '逆转选择目标', '0', FIXED_RANDOM);
+        expect(selectedTarget.success, selectedTarget.error).toBe(true);
+        expect(selectedTarget.finalState.core.bases[0].minions[1].controller).toBe('0');
+        const skippedDestroy = respondToPromptOptions(selectedTarget.finalState, [], '0', FIXED_RANDOM);
         expect(skippedDestroy.success, skippedDestroy.error).toBe(true);
         expect(skippedDestroy.events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(false);
         const controlled = skippedDestroy.finalState.core;
@@ -2670,10 +2681,13 @@ describe('国际事件四派系代表性玩法行为', () => {
             now: 53,
         });
         expect(multiActionResult.matchState).toBeDefined();
-        const selectedActionIds = getPromptOptions(getFirstPrompt(multiActionResult.matchState!))
+        const selectedTarget = respondToPromptOption(multiActionResult.matchState!, option => option.value?.minionUid === 'target', '逆转选择目标', '0', FIXED_RANDOM);
+        expect(selectedTarget.success, selectedTarget.error).toBe(true);
+        expect(selectedTarget.finalState.core.bases[0].minions[1].controller).toBe('0');
+        const selectedActionIds = getPromptOptions(getFirstPrompt(selectedTarget.finalState))
             .filter(option => ['quick', 'smart'].includes(option.value?.cardUid))
             .map(option => option.id);
-        const selectedActions = respondToPromptOptions(multiActionResult.matchState!, selectedActionIds, '0', FIXED_RANDOM);
+        const selectedActions = respondToPromptOptions(selectedTarget.finalState, selectedActionIds, '0', FIXED_RANDOM);
         expect(selectedActions.success, selectedActions.error).toBe(true);
         const afterMultiAction = selectedActions.finalState.core;
         expect(afterMultiAction.bases[0].minions[1].controller).toBe('0');
@@ -3338,17 +3352,15 @@ describe('国际事件四派系代表性玩法行为', () => {
         const spiritPrompt = getFirstPrompt(fightingSpiritResult.matchState!);
         const spiritTarget = getPromptOptions(spiritPrompt).find(option => option.value?.minionUid === 'sumo-a');
         expect(spiritTarget).toBeDefined();
+        const afterSpiritDraw = applyEvents(fightingSpirit, fightingSpiritResult.events);
+        expect(afterSpiritDraw.players['0'].hand.map(card => card.uid)).toEqual(['spirit-draw-a', 'spirit-draw-b']);
         const afterSpiritChoice = respondToPromptOptions(
-            fightingSpiritResult.matchState!,
+            { ...fightingSpiritResult.matchState!, core: afterSpiritDraw },
             [spiritTarget!.id],
             '0',
             FIXED_RANDOM,
         );
         expect(afterSpiritChoice.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: expect.objectContaining({ playerId: '0', cardUids: ['spirit-draw-a', 'spirit-draw-b'] }),
-            }),
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({ minionUid: 'sumo-a', amount: 2, reason: 'sumo_wrestlers_fighting_spirit_prize' }),
@@ -3370,7 +3382,7 @@ describe('国际事件四派系代表性玩法行为', () => {
             .filter(option => ['sumo-a', 'sumo-b'].includes(option.value?.minionUid))
             .map(option => option.id);
         const afterSplitSpirit = respondToPromptOptions(
-            splitSpiritResult.matchState!,
+            { ...splitSpiritResult.matchState!, core: applyEvents(fightingSpirit, splitSpiritResult.events) },
             splitSpiritTargets,
             '0',
             FIXED_RANDOM,

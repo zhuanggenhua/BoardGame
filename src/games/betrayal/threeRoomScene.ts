@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { createRoomInteractionRim, createThreeRoomOutline, paintRoomInteraction, type SceneHighlight } from './threeRoomOutline';
 import { collectSpriteMotionPhases, resolveSpriteMotionFrame } from '../../engine/mapRenderer/spriteMotionModel';
 import type {
     MapSceneSprite, MapSceneSpriteMotionPhaseCallback,
@@ -11,10 +12,43 @@ export interface SceneFigureAsset {
     mirrorX?: boolean;
 }
 
+export interface ScenePath {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    kind: 'move' | 'attack';
+}
+
+export interface SceneMarker {
+    sprite: MapSceneSprite;
+    ownerFigureId?: string;
+    selectable: boolean;
+    highlight?: SceneHighlight;
+}
+
+export interface GirlMarkerTransfer {
+    id: string;
+    targetFigureId: string;
+    durationMs: number;
+    onComplete: (id: string) => void;
+}
+
+export function resolveCarriedGirlMarker(figureId: string) {
+    return figureId.startsWith('monster:')
+        ? { size: 42, x: -20, z: 26, elevation: 24, tilt: Math.PI / 5 }
+        : { size: 42, x: 34, z: 24, elevation: 0, tilt: 0 };
+}
+
 interface ScenePresentation {
     sprites: readonly MapSceneSprite[];
     discoveredRoomIds: ReadonlySet<string>;
     figures: ReadonlyMap<string, SceneFigureAsset>;
+    paths: readonly ScenePath[];
+    markers: readonly SceneMarker[];
+    girlTransfer?: GirlMarkerTransfer;
+    hauntFocusRoomId?: string;
+    interactionBlocked: boolean;
     onMotionComplete?: (spriteId: string, motionId: string) => void;
     onMotionPhase?: MapSceneSpriteMotionPhaseCallback;
 }
@@ -23,6 +57,8 @@ interface SceneNode {
     key: string;
     root: THREE.Group;
     figure?: FigureLevels;
+    rim?: ReturnType<typeof createRoomInteractionRim>;
+    hitSurface: Mesh;
     face: THREE.MeshBasicMaterial;
     materials: MaterialState[];
     artwork: Promise<unknown>;
@@ -40,7 +76,7 @@ type Mesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
 type MaterialState = Pick<THREE.Material, 'transparent' | 'depthWrite' | 'opacity'> & { material: THREE.Material };
 type FigureCounts = { explorers: number; monsters: number; detail: number; triangles: number };
 type FigureSources = { detail: THREE.Object3D; table?: THREE.Object3D };
-type FigureLevel = { object: THREE.Object3D; triangles: number };
+type FigureLevel = { object: THREE.Object3D; meshes: Mesh[]; triangles: number };
 type FigureLevels = { detail: FigureLevel; table?: FigureLevel };
 
 const TILE_DEPTH = 7;
@@ -131,9 +167,20 @@ export function createBetrayalThreeScene(
     renderer: THREE.WebGLRenderer,
     camera: THREE.OrthographicCamera,
     onStateChange: (status: 'ready' | 'error', models: FigureCounts) => void,
+    onGirlTransferFrame?: () => void,
 ) {
     const scene = new THREE.Scene();
     const nodes = new Map<string, SceneNode>();
+    const outlines = createThreeRoomOutline(renderer);
+    const pathGroup = new THREE.Group();
+    scene.add(pathGroup);
+    const pathMaterials = {
+        move: new THREE.MeshBasicMaterial({ color: 0x83daae, transparent: true, opacity: .72, depthWrite: false }),
+        attack: new THREE.MeshBasicMaterial({ color: 0xff826c, transparent: true, opacity: .88, depthWrite: false }),
+    };
+    let paths: readonly ScenePath[] | undefined;
+    let highlights = new Map<string, SceneHighlight>();
+    let hovered: string | undefined;
     const textures = new Map<string, Promise<THREE.Texture>>();
     const models = new Map<string, Promise<FigureSources>>();
     const progressRing = new THREE.Mesh(
@@ -195,7 +242,8 @@ export function createBetrayalThreeScene(
         const ownedMeshes: Mesh[] = [];
         const modelMaterials = new Map<THREE.Material, THREE.Material>();
         const monster = sprite.id.startsWith('monster:');
-        const entity = sprite.id.startsWith('player:') || monster;
+        const marker = sprite.id.startsWith('marker:');
+        const entity = sprite.id.startsWith('player:') || monster || marker;
         const { width, height, border, frame } = sprite;
         const size = Math.min(width, height);
         const addMesh = (geometry: THREE.BufferGeometry, material: THREE.Material) => {
@@ -213,6 +261,7 @@ export function createBetrayalThreeScene(
         const baseDiameter = size * (monster ? .84 : .74);
         let tokenBase: Mesh | undefined;
         let modelBase: Mesh | undefined;
+        let roomBody: Mesh | undefined;
         let monsterBaseTop: Mesh | undefined;
         if (entity) {
             tokenBase = addDisk(size, DISK_HEIGHT / 2 + 1, border?.color ?? 0xccb980);
@@ -229,14 +278,20 @@ export function createBetrayalThreeScene(
             const board = addMesh(new THREE.BoxGeometry(width, TILE_DEPTH, height),
                 new THREE.MeshStandardMaterial({ color: 0x40372d, roughness: 1 }));
             board.position.y = -TILE_DEPTH / 2;
+            roomBody = board;
         }
-        const faceMaterial = new THREE.MeshBasicMaterial({ color: entity ? 0x272521 : 0x514437 });
+        const faceMaterial = new THREE.MeshBasicMaterial({
+            color: entity ? 0x272521 : 0x514437,
+            ...(marker ? { alphaTest: .18 } : {}),
+        });
         const faceGeometry = entity ? createTokenFace(sprite, size) : new THREE.PlaneGeometry(width, height);
         const face = addMesh(faceGeometry.rotateX(-Math.PI / 2), faceMaterial);
         face.position.y = entity ? DISK_HEIGHT + 1.05 : 0.1;
+        const rim = entity ? undefined : createRoomInteractionRim(width, height);
+        if (rim) root.add(rim);
         let alive = true;
         const node: SceneNode = {
-            key, root, face: faceMaterial, artworkReady: false,
+            key, root, rim, hitSurface: roomBody ?? modelBase ?? tokenBase ?? face, face: faceMaterial, artworkReady: false,
             materials: ownedMeshes.map(mesh => materialState(mesh.material)),
             artwork: loadTexture(sprite.textureUrls).then(texture => {
                 if (!alive) return;
@@ -254,11 +309,17 @@ export function createBetrayalThreeScene(
                 renderSoon();
             }).catch(error => {
                 if (!entity) throw error;
+                if (marker) {
+                    root.visible = false;
+                    return;
+                }
                 node.artworkReady = true;
             }),
             dispose: () => {
                 alive = false;
                 if (frame) faceMaterial.map?.dispose();
+                rim?.geometry.dispose();
+                rim?.material.dispose();
                 for (const mesh of ownedMeshes) {
                     mesh.geometry.dispose();
                     mesh.material.dispose();
@@ -280,10 +341,12 @@ export function createBetrayalThreeScene(
             const anchor = new THREE.Vector3(center.x, bounds.min.y, center.z);
             const createLevel = (original: THREE.Object3D): FigureLevel => {
                 const model = original.clone();
+                const meshes: Mesh[] = [];
                 let triangles = 0;
                 model.traverse(object => {
                     if (!(object instanceof THREE.Mesh)) return;
                     const mesh = object as Mesh;
+                    meshes.push(mesh);
                     let material = modelMaterials.get(mesh.material);
                     if (!material) {
                         material = mesh.material.clone();
@@ -295,7 +358,7 @@ export function createBetrayalThreeScene(
                 });
                 model.position.sub(anchor);
                 figure.add(model);
-                return { object: model, triangles };
+                return { object: model, meshes, triangles };
             };
             figure.scale.setScalar(scale);
             if (asset.mirrorX) figure.scale.x = -scale;
@@ -333,13 +396,24 @@ export function createBetrayalThreeScene(
         onStateChange('ready', counts);
     }
 
+    let girlMotion: { id: string; from: THREE.Vector3; tilt: number; startedAt: number } | undefined;
+    let completedGirlTransferId: string | undefined;
+    const transferEnd = new THREE.Vector3();
+
+    function finishGirlTransfer(transfer: GirlMarkerTransfer) {
+        if (completedGirlTransferId === transfer.id) return;
+        completedGirlTransferId = transfer.id;
+        transfer.onComplete(transfer.id);
+    }
+
     function draw(now: number) {
         animation = 0;
         if (disposed || !presentation) return;
-        const { sprites, discoveredRoomIds, onMotionComplete, onMotionPhase } = presentation;
+        const { sprites, discoveredRoomIds, girlTransfer, hauntFocusRoomId, interactionBlocked, onMotionComplete, onMotionPhase } = presentation;
         let moving = false;
         let detailChanged = false;
         const afterDraw: (() => void)[] = [];
+        const figureHighlights = new Map<THREE.Object3D, SceneHighlight>();
         progressRing.visible = false;
         revealGlow.visible = false;
         for (const sprite of sprites) {
@@ -399,12 +473,59 @@ export function createBetrayalThreeScene(
                 original.material.depthWrite = original.depthWrite && opacity === 1;
             }
             const isRoom = !sprite.id.startsWith('player:') && !sprite.id.startsWith('monster:');
+            const state = highlights.get(sprite.id);
+            const interaction = interactionBlocked ? undefined : sprite.id === hovered && state !== 'hostile'
+                ? state === 'candidate' || state === 'selected' ? 'selected' : 'candidate'
+                : state;
+            if (node.rim) paintRoomInteraction(node.rim, interaction);
+            if (node.figure && interaction && opacity > .5) {
+                for (const mesh of activeFigureLevel(node.figure).meshes) figureHighlights.set(mesh, interaction);
+            }
             if (isRoom) {
                 const light = discoveredRoomIds.has(sprite.id) ? 1 : .63;
-                if (node.face.map) node.face.color.setScalar(light * reveal);
+                const focusAttenuation = hauntFocusRoomId && hauntFocusRoomId !== sprite.id ? .62 : 1;
+                if (node.face.map) node.face.color.setScalar(light * reveal * focusAttenuation);
+            }
+        }
+        if (!girlTransfer) girlMotion = undefined;
+        let drewGirlTransfer = false;
+        for (const marker of presentation.markers) {
+            const node = nodes.get(marker.sprite.id);
+            if (!node) continue;
+            const owner = marker.ownerFigureId && nodes.get(marker.ownerFigureId);
+            const { x, y, width, height } = marker.sprite;
+            const attachment = owner && marker.ownerFigureId ? resolveCarriedGirlMarker(marker.ownerFigureId) : null;
+            const receiver = girlTransfer && nodes.get(girlTransfer.targetFigureId);
+            if (girlTransfer && marker.sprite.id === 'marker:mummy-girl' && receiver && node.artworkReady) {
+                if (girlMotion?.id !== girlTransfer.id) {
+                    girlMotion = { id: girlTransfer.id, from: node.root.position.clone(), tilt: node.root.rotation.x, startedAt: now };
+                }
+                const destination = resolveCarriedGirlMarker(girlTransfer.targetFigureId);
+                transferEnd.set(destination.x, destination.elevation, destination.z).add(receiver.root.position);
+                const progress = girlTransfer.durationMs ? Math.min(1, (now - girlMotion.startedAt) / girlTransfer.durationMs) : 1;
+                const eased = progress * progress * (3 - 2 * progress);
+                node.root.position.lerpVectors(girlMotion.from, transferEnd, eased);
+                node.root.position.y += 14 * Math.sin(Math.PI * eased);
+                node.root.rotation.x = THREE.MathUtils.lerp(girlMotion.tilt, destination.tilt, eased);
+                node.root.scale.setScalar(THREE.MathUtils.lerp(1, destination.size / width, eased));
+                drewGirlTransfer = true;
+                moving ||= progress < 1;
+                if (progress === 1) afterDraw.push(() => finishGirlTransfer(girlTransfer));
+            } else {
+                node.root.position.set(x + width / 2, attachment?.elevation ?? 0, y + height / 2);
+                node.root.rotation.x = attachment?.tilt ?? 0;
+                node.root.scale.setScalar(1);
+                if (owner) node.root.position.add(owner.root.position);
+            }
+            const state = !interactionBlocked && (hovered === marker.sprite.id ? 'selected' : marker.highlight);
+            if (node.artworkReady && state) {
+                for (const object of node.root.children) figureHighlights.set(object, state);
             }
         }
         renderer.render(scene, camera);
+        outlines.render(scene, camera, figureHighlights);
+        if (drewGirlTransfer) onGirlTransferFrame?.();
+        if (girlTransfer && !drewGirlTransfer && ready) afterDraw.push(() => finishGirlTransfer(girlTransfer));
         if (ready && detailChanged) reportReady();
         afterDraw.forEach(callback => callback());
         if (moving) renderSoon();
@@ -416,14 +537,19 @@ export function createBetrayalThreeScene(
 
     function update(next: ScenePresentation) {
         presentation = next;
+        if (paths !== next.paths) {
+            paths = next.paths;
+            replacePaths(paths);
+        }
         const currentGeneration = ++generation;
-        const ids = new Set(next.sprites.map(sprite => sprite.id));
+        const sprites = [...next.sprites, ...next.markers.map(marker => marker.sprite)];
+        const ids = new Set(sprites.map(sprite => sprite.id));
         for (const [id, node] of nodes) {
             if (ids.has(id)) continue;
             node.dispose();
             nodes.delete(id);
         }
-        for (const sprite of next.sprites) {
+        for (const sprite of sprites) {
             const model = next.figures.get(sprite.id);
             const key = JSON.stringify([sprite.textureUrls, sprite.frame, sprite.width, sprite.height, sprite.border, model]);
             const existing = nodes.get(sprite.id);
@@ -444,14 +570,57 @@ export function createBetrayalThreeScene(
         renderSoon();
     }
 
+    function replacePaths(segments: readonly ScenePath[]) {
+        for (const mesh of pathGroup.children as Mesh[]) mesh.geometry.dispose();
+        pathGroup.clear();
+        for (const { x1, y1, x2, y2, kind } of segments) {
+            const length = Math.hypot(x2 - x1, y2 - y1);
+            const line = new THREE.Mesh(new THREE.PlaneGeometry(length, kind === 'attack' ? 4 : 3).rotateX(-Math.PI / 2),
+                pathMaterials[kind]);
+            line.position.set((x1 + x2) / 2, .6, (y1 + y2) / 2);
+            line.rotation.y = -Math.atan2(y2 - y1, x2 - x1);
+            pathGroup.add(line);
+        }
+    }
+
     const raycaster = new THREE.Raycaster();
-    function pickFigure(ndc: THREE.Vector2) {
+    function projectBounds(object: THREE.Object3D) {
+        const box = new THREE.Box3().setFromObject(object);
+        if (box.isEmpty()) return undefined;
+        const point = new THREE.Vector3();
+        const screen = new THREE.Box2();
+        for (const x of [box.min.x, box.max.x]) {
+            for (const y of [box.min.y, box.max.y]) {
+                for (const z of [box.min.z, box.max.z]) {
+                    point.set(x, y, z).project(camera);
+                    screen.expandByPoint(new THREE.Vector2((point.x + 1) / 2, (1 - point.y) / 2));
+                }
+            }
+        }
+        // A world AABB corner can project far above the visible model in a tilted view.
+        box.getCenter(point);
+        point.y = box.max.y;
+        point.project(camera);
+        return { min: screen.min, max: screen.max, headY: (1 - point.y) / 2 };
+    }
+
+    function pickObject(ndc: THREE.Vector2, scope: 'all' | 'figure' | 'room' = 'all') {
         raycaster.setFromCamera(ndc, camera);
-        const figures = [...nodes.entries()].flatMap(([id, node]) => node.figure ? [{ id, figure: activeFigureLevel(node.figure).object }] : []);
         let nearest = Infinity;
         let picked: string | undefined;
-        for (const { id, figure } of figures) {
-            const hit = raycaster.intersectObject(figure, true)[0];
+        for (const [id, node] of nodes) {
+            if (scope === 'all' && id.startsWith('marker:') && node.artworkReady &&
+                presentation?.markers.some(marker => marker.sprite.id === id && marker.selectable)) {
+                const hit = raycaster.intersectObject(node.hitSurface, false)[0];
+                if (hit && hit.distance < nearest) {
+                    nearest = hit.distance;
+                    picked = id;
+                }
+                continue;
+            }
+            if (node.figure ? scope === 'room' : scope === 'figure' || !node.rim) continue;
+            const targets = node.figure ? [activeFigureLevel(node.figure).object, node.hitSurface] : [node.hitSurface];
+            const hit = raycaster.intersectObjects(targets, Boolean(node.figure))[0];
             if (!hit || hit.distance >= nearest) continue;
             nearest = hit.distance;
             picked = id;
@@ -460,7 +629,41 @@ export function createBetrayalThreeScene(
     }
 
     return {
-        update, renderSoon, pickFigure,
+        update, renderSoon, pickObject,
+        completePendingGirlTransfer() {
+            if (presentation?.girlTransfer) finishGirlTransfer(presentation.girlTransfer);
+        },
+        setHighlights(next: Map<string, SceneHighlight>) {
+            highlights = next;
+            renderSoon();
+        },
+        setHovered(id: string | undefined) {
+            if (id === hovered) return;
+            hovered = id;
+            renderSoon();
+        },
+        hasFigure(id: string) { return Boolean(nodes.get(id)?.figure); },
+        getMarkerScreenBounds(id: string) {
+            const node = nodes.get(id);
+            return node?.artworkReady ? projectBounds(node.hitSurface) : undefined;
+        },
+        getFigureScreenBounds(id: string) {
+            const node = nodes.get(id);
+            return node?.figure ? projectBounds(activeFigureLevel(node.figure).object) : undefined;
+        },
+        getFigureHitPoint(id: string) {
+            const figure = nodes.get(id)?.figure;
+            if (!figure) return undefined;
+            const model = activeFigureLevel(figure).object;
+            const bounds = new THREE.Box3().setFromObject(model);
+            const point = bounds.getCenter(new THREE.Vector3());
+            for (const fraction of [.65, .48, .8, .33, .18]) {
+                point.y = THREE.MathUtils.lerp(bounds.min.y, bounds.max.y, fraction);
+                const projected = point.clone().project(camera);
+                if (pickObject(new THREE.Vector2(projected.x, projected.y), 'figure') === id) return projected;
+            }
+            return undefined;
+        },
         dispose() {
             disposed = true;
             cancelAnimationFrame(animation);
@@ -472,6 +675,9 @@ export function createBetrayalThreeScene(
             revealGlow.geometry.dispose();
             revealGlow.material.map?.dispose();
             revealGlow.material.dispose();
+            replacePaths([]);
+            Object.values(pathMaterials).forEach(material => material.dispose());
+            outlines.dispose();
         },
     };
 }

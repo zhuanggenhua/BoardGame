@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustAttackWeaponDeathRuntimeCore,
     type DustAttackWeaponE2ECardId,
     initBetrayalContext,
@@ -280,7 +281,7 @@ test.describe('山屋惊魂作祟3灰尘攻击武器致死完整链', () => {
             );
 
             await setHarnessRandomQueue(page, weaponCase.randomQueue);
-            await defenderToken.click();
+            await clickBetrayalSceneFigure(defenderToken);
             const pendingState = await waitForPendingWeaponDamage(page, weaponCase);
             const defenderAllocationCore = await readHarnessCore(page);
 

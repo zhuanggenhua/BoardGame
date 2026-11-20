@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -59,6 +60,8 @@ type PrincessesDestroyMinionPromptContext = PrincessesRuntimePromptContext & {
     reason: 'princesses_apricot' | 'princesses_skillet' | 'princesses_skillet_pod';
     targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
     drawCount?: number;
+    sourceCardUid?: string;
+    sourceBaseIndex?: number;
 };
 
 type PrincessesDiscardSelectionPromptContext = PrincessesRuntimePromptContext & {
@@ -271,7 +274,7 @@ function princessesWoodlandHelpersPod(ctx: TriggerContext): TriggerResult | Smas
     const discardOwnerId = discardOwnerEntry?.[0] as PlayerId | undefined;
     const card = discardOwnerEntry?.[1].discard.find(entry => entry.uid === cardUid);
     const cardDef = card ? getCardDef(card.defId) : undefined;
-    if (!discardOwnerId || !card || card.type !== 'action' || cardDef?.type !== 'action' || cardDef.subtype !== 'standard') {
+    if (!discardOwnerId || !card || card.type !== 'action' || !isRulesStandardAction(cardDef)) {
         return [];
     }
 
@@ -303,7 +306,7 @@ function canTriggerPrincessesWoodlandHelpers(ctx: TriggerContext, standardOnly =
     if (!card || card.type !== 'action') return false;
     if (!standardOnly) return true;
     const cardDef = getCardDef(card.defId);
-    return cardDef?.type === 'action' && cardDef.subtype === 'standard';
+    return isRulesStandardAction(cardDef);
 }
 
 function princessesSleepingBeautyOnDestroyed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
@@ -508,6 +511,8 @@ function createPrincessesApricotContext(ctx: AbilityContext): PrincessesDestroyM
         playerId: ctx.playerId,
         now: ctx.now,
         sourceDefId: ctx.defId,
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: ctx.baseIndex,
         sourceId: 'princesses_apricot',
         title: '杏子公主：选择这里另一个玩家的一个力量为 2 或更小的仆从',
         reason: 'princesses_apricot',
@@ -698,8 +703,10 @@ const princessesDestroyMinionPromptProgram = createPromptProgram<PrincessesDestr
                     fromBaseIndex: selected.baseIndex,
                     destroyerId: playerId,
                     sourcePlayerId: playerId,
+                    sourceCardUid: context.sourceCardUid,
                     sourceDefId: context.sourceDefId,
                     sourceControllerId: playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
                     reason: context.reason,
                     now: timestamp,
                 }),

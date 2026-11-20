@@ -2,9 +2,9 @@ import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../engine/systems/InteractionSystem';
 import type { MatchState, TutorialAiAction, TutorialCollection, TutorialManifest, TutorialStepSnapshot } from '../../engine/types';
 import { MAGE_WARS_COMMANDS as commands, MAGE_WARS_EVENTS as events, type MageWarsCore } from './domain';
-import { MAGE_WARS_MAGE_ABILITY_IDS, STATUS_TOKEN_IDS } from './domain/ids';
+import { MAGE_WARS_MAGE_ABILITY_IDS, MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS } from './domain/ids';
 import { buildMageWarsCoursePasses, isMageWarsCourseGoal, type MageWarsCourseGoal } from './tutorialCourseFlow';
-import { MAGE_WARS_TUTORIAL_UNICORN as unicorn, MAGE_WARS_TUTORIAL_WOLF as wolf } from './tutorialStart';
+import { MAGE_WARS_TUTORIAL_PLAYER as learner, MAGE_WARS_TUTORIAL_UNICORN as unicorn, MAGE_WARS_TUTORIAL_WOLF as wolf } from './tutorialStart';
 
 const secondWolf = 'mwobj-0-2819-2';
 const cleric = 'mwobj-1-2811-1';
@@ -18,6 +18,78 @@ const mage = (id: string) => `mw-mage-entity-${id}`;
 const action = (commandType: string, playerId: string, payload = {}): TutorialAiAction => ({ commandType, playerId, payload });
 const advance = (playerId: string) => action(FLOW_COMMANDS.ADVANCE_PHASE, playerId);
 const text = (id: string) => `game-mage-wars:tutorial.singleMatch.${id}`;
+
+type MageWarsTutorialSelection = {
+    selectedObjectId: string | null;
+    selectedMageId: string | null;
+    selectedSpellCardId: number | null;
+    plannedSpells: readonly number[];
+    pendingAnimation: boolean;
+};
+
+export function getMageWarsTutorialPresentation(
+    step: TutorialStepSnapshot | null | undefined,
+    { selectedObjectId, selectedMageId, selectedSpellCardId, plannedSpells, pendingAnimation }: MageWarsTutorialSelection,
+): TutorialStepSnapshot | undefined {
+    if (step?.id === 'guard-wolf' && selectedObjectId === wolf) {
+        return {
+            ...step,
+            content: text('confirm-guard-wolf'),
+            tooltipAnchorTarget: 'mw-selected-unit-guard',
+            tooltipArrow: 'anchor',
+            hideActionHint: true,
+        };
+    }
+    if (step?.id === 'heal-wolf' && pendingAnimation) {
+        return {
+            ...step,
+            content: text('observe-healing-roll'),
+            highlightTarget: field(wolf),
+            hideActionHint: true,
+            avoidOverlapSelectors: [
+                '[data-testid="mage-wars-fx-healing-number"]',
+                '[data-testid="mage-wars-fx-attack-dice-content"]',
+                '[data-testid="mage-wars-fx-attack-dice-summary"]',
+                '[data-tutorial-id="mw-self-hud"]',
+                '[data-tutorial-id="mw-phase-progress"]',
+                '[data-tutorial-id="mw-spellbook"]',
+            ],
+        };
+    }
+    if (step?.id === 'heal-wolf' && selectedSpellCardId === 3402) {
+        return {
+            ...step,
+            content: text('choose-heal-target'),
+            highlightTarget: field(wolf),
+            tooltipAnchorTarget: field(wolf),
+            tooltipArrow: 'anchor',
+            hideActionHint: true,
+        };
+    }
+    if (step?.id === 'plan-summon' && plannedSpells.includes(2819) && plannedSpells.includes(3403)) {
+        return { ...step, content: text('confirm-summon-plan'), hideActionHint: true };
+    }
+    const [source, destination] = step?.allowedTargets ?? [];
+    if (step && source && destination && !pendingAnimation) {
+        const isSpellTarget = selectedSpellCardId !== null && source === prepared(selectedSpellCardId);
+        const isMoveTarget = (step.allowedCommands?.includes(commands.MOVE_MAGE) && selectedMageId !== null && source === mage(selectedMageId))
+            || (step.allowedCommands?.includes(commands.MOVE_ARENA_OBJECT) && selectedObjectId !== null && source === field(selectedObjectId));
+        if (isSpellTarget || isMoveTarget) {
+            return {
+                ...step,
+                content: step.id === 'summon-second-wolf' ? text('choose-summon-zone') : step.content,
+                highlightTarget: destination,
+                tooltipArrow: 'anchor',
+                hideActionHint: true,
+            };
+        }
+    }
+    if (step?.aiActions?.length && !step.requireAction) {
+        return { ...step, requireAction: true, hideActionHint: true };
+    }
+    return undefined;
+}
+
 const activation = (id: string, highlightTarget: string | undefined, command: string, event: string, match?: Record<string, unknown>): TutorialStepSnapshot => ({
     id, content: text(id), highlightTarget, position: 'top', requireAction: true,
     allowedCommands: [command], advanceOnEvents: [{ type: event, ...(match ? { match } : {}) }],
@@ -56,6 +128,13 @@ const finishAction = (id: string, phase: string) => activation(
 
 const plans = new Map<string, readonly number[]>();
 const links = new Map<string, { goal: MageWarsCourseGoal; plans?: Record<string, number[]> }>();
+const phaseTransitions = {
+    planning: 'course-to-planning',
+    deployment: 'course-to-deployment',
+    initiativeQuickcast: 'course-to-quickcast',
+    creatureAction: 'course-to-action',
+    upkeep: 'course-to-upkeep',
+};
 const plan = (id: string, ...cards: number[]): TutorialStepSnapshot => {
     plans.set(id, cards);
     return {
@@ -67,10 +146,10 @@ const plan = (id: string, ...cards: number[]): TutorialStepSnapshot => {
         ],
     };
 };
-const link = (id: string, round: number, phase: string, actor?: string, plansForRound?: Record<string, number[]>): TutorialStepSnapshot => {
+const link = (id: string, round: number, phase: keyof typeof phaseTransitions, actor?: string, plansForRound?: Record<string, number[]>): TutorialStepSnapshot => {
     links.set(id, { goal: { round, phase, actor }, plans: plansForRound });
     return {
-        ...explain(id, 'mw-stage'), content: text('continueRound'), allowedCommands: [
+        ...explain(id, 'mw-stage'), content: text(phaseTransitions[phase]), allowedCommands: [
             commands.PLAN_SPELLS, commands.CREATURE_NO_ACTION, FLOW_COMMANDS.ADVANCE_PHASE,
         ],
         aiDelayMs: 0,
@@ -79,12 +158,19 @@ const link = (id: string, round: number, phase: string, actor?: string, plansFor
 export const getMageWarsTutorialPlan = (stepId: string | undefined) => stepId ? plans.get(stepId) : undefined;
 
 const dialogue: TutorialStepSnapshot[] = [
-    targets(activation('guard-wolf', field(wolf), commands.GUARD, events.GUARD_GAINED, { targetObjectId: wolf }), field(wolf)),
+    {
+        ...targets(activation('guard-wolf', field(wolf), commands.GUARD, events.GUARD_GAINED, { targetObjectId: wolf }), field(wolf)),
+        avoidOverlapSelectors: [
+            `[data-tutorial-id="${mage(learner)}"]`,
+            `[data-tutorial-object-id="${field(unicorn)}"]`,
+            '[data-tutorial-id="mw-selected-unit-guard"]',
+            '[data-tutorial-id="mw-phase-progress"]',
+            '[data-tutorial-id="mw-spellbook"]',
+            '.mw-phase-tooltip',
+        ],
+    },
     animated({ ...cast('heal-wolf', 3402, [field(wolf)], events.SPELL_HEALING_ROLLED), randomPolicy: { mode: 'sequence', values: [2, 2, 2, 2, 1] } }),
     explain('healing-result', field(wolf)),
-    explain('check-discard', 'mw-discard'),
-    explain('opponent-public-view', 'mw-opponent-view-toggle'),
-    explain('back-to-self-view', 'mw-back-to-self-view'),
     animated(opponent('unicorn-attacks', [advance('0'), action(commands.DECLARE_OBJECT_ATTACK, '1', {
         attackerObjectId: unicorn, attackProfileId: 'attack-0', targetObjectId: wolf,
     })], events.COUNTERSTRIKE_AVAILABLE, field(wolf))),
@@ -92,6 +178,7 @@ const dialogue: TutorialStepSnapshot[] = [
     opponent('enemy-turn-ends', [advance('1')], events.PHASE_WINDOW_COMPLETED, 'mw-stage', { phase: 'creatureAction' }),
     activation('pass-final', 'mw-turn-end', FLOW_COMMANDS.ADVANCE_PHASE, events.TURN_ADVANCED),
     link('reach-round-six', 6, 'planning'),
+    explain('check-discard', 'mw-discard'),
     {
         ...legend('spell-card-reading', 'mw-spellbook', 'mage-wars/references/compressed/spell-card-legend', 'spellCardLegend'),
         avoidOverlapSelectors: hudReadingRegions,
@@ -113,6 +200,7 @@ const dialogue: TutorialStepSnapshot[] = [
     cast('rouse-second-wolf', 3403, [field(secondWolf)], events.ARENA_OBJECT_ROUSED),
     finishAction('end-summon-action', 'creatureAction'),
     targets(activation('move-new-wolf', field(secondWolf), commands.MOVE_ARENA_OBJECT, events.ARENA_OBJECT_MOVED, { objectId: secondWolf, toZoneId: 'b3' }), field(secondWolf), zone('b3')),
+    finishAction('end-new-wolf-action', 'creatureAction'),
     link('prepare-wall-round', 7, 'planning'),
     plan('plan-wall-and-push', 25700, 3425),
     link('reach-wall-turn', 7, 'creatureAction', '0'),
@@ -120,6 +208,9 @@ const dialogue: TutorialStepSnapshot[] = [
     cast('place-wall', 25700, ['mw-wall-edge-b1-b2'], events.WALL_SUMMONED),
     opponent('priestess-nears-wall', [advance('0'), action(commands.MOVE_MAGE, '1', { toZoneId: 'b1' }), advance('1')],
         events.PHASE_WINDOW_COMPLETED, 'mw-mage-entity-1', { phase: 'creatureAction', playerId: '1' }),
+    targets(activation('skip-wolf-action', field(wolf), commands.CREATURE_NO_ACTION, events.CREATURE_NO_ACTION, { objectId: wolf }),
+        field(wolf), 'mw-turn-end'),
+    explain('pass-repeated-windows', 'mw-stage'),
     link('prepare-push-round', 8, 'planning'),
     plan('plan-push', 3425),
     link('reach-push-turn', 8, 'creatureAction', '0'),
@@ -153,15 +244,33 @@ const dialogue: TutorialStepSnapshot[] = [
         abilityId: MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_QUICK, manaCost: 2,
         targetObjectId: cleric, statusTokenIds: [STATUS_TOKEN_IDS.DAZE],
     })], events.MAGE_ABILITY_RESOLVED, field(cleric)),
+    link('reach-cleric-heal', 11, 'creatureAction', '1'),
+    opponent('cleric-heals-unicorn', [action(commands.USE_ARENA_OBJECT_ABILITY, '1', {
+        abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT, objectId: cleric, manaCost: 0,
+        targetObjectId: unicorn,
+    }), advance('1')], events.PHASE_WINDOW_COMPLETED, field(unicorn), { phase: 'creatureAction', playerId: '1' }),
+    link('reach-unicorn-wound', 11, 'creatureAction', '1'),
+    animated({
+        ...opponent('unicorn-wounds-wolf', [action(commands.DECLARE_OBJECT_ATTACK, '1', {
+            attackerObjectId: unicorn, attackProfileId: 'attack-0', targetObjectId: wolf,
+        })], events.ARENA_OBJECT_ATTACK_DECLARED, field(wolf), { attackerObjectId: unicorn }),
+        randomPolicy: { mode: 'sequence', values: [6, 6, 6] },
+    }),
     link('prepare-wand-round', 12, 'planning'),
     plan('plan-wand', 3725),
     link('reach-wand-window', 12, 'initiativeQuickcast', '0'),
     cast('bind-wand', 3725, [mage('0'), 'mw-bound-card-3408']),
-    link('reach-rebind-window', 13, 'initiativeQuickcast', '0', { '1': [1815] }),
+    link('reach-first-bound-cast', 13, 'initiativeQuickcast', '0', { '1': [1815] }),
+    animated(targets(activation('cast-bound-major-heal', field(wand), commands.CAST_SPELL, events.SPELL_HEALING_ROLLED),
+        field(wand), field(wolf))),
     targets(activation('rebind-wand', field(wand), commands.USE_ARENA_OBJECT_ABILITY, events.ARENA_OBJECT_ABILITY_RESOLVED), field(wand), 'mw-bound-card-3402'),
     opponent('attach-essence-drain', [advance('0'), action(commands.CAST_SPELL, '1', {
         spellCardId: 1815, manaCost: 6, targetObjectId: secondWolf,
     })], events.SPELL_CAST_RESOLVED, field(secondWolf), { spellCardId: 1815 }),
+    link('reach-unicorn-bite', 13, 'creatureAction', '1'),
+    animated(opponent('unicorn-bites-wolf', [action(commands.DECLARE_OBJECT_ATTACK, '1', {
+        attackerObjectId: unicorn, attackProfileId: 'attack-0', targetObjectId: wolf,
+    })], events.ARENA_OBJECT_ATTACK_DECLARED, field(wolf), { attackerObjectId: unicorn })),
     link('reach-first-upkeep', 14, 'upkeep'),
     respond('first-upkeep', 'mw.upkeep-cost.choice'),
     plan('plan-lair', 2218),
@@ -174,15 +283,20 @@ const dialogue: TutorialStepSnapshot[] = [
         field(lair), 'mw-spellbook-card-2812', 'mw-spellbook-category-all', 'mw-spellbook-category-creature',
         'mw-spellbook-next-page', 'mw-spellbook-previous-page',
     ),
-    link('reach-lair-deployment', 15, 'deployment', '0'),
+    link('reach-lair-deployment', 15, 'deployment', '0', { '1': [3722] }),
     animated(targets(activation('deploy-fox', field(lair), commands.CAST_SPELL, events.ARENA_OBJECT_SUMMONED), field(lair), zone('a2'))),
     link('reach-bound-cast', 15, 'initiativeQuickcast', '0'),
-    animated(activation('cast-bound-heal', field(wand), commands.CAST_SPELL, events.SPELL_HEALING_ROLLED)),
+    animated(targets(activation('cast-bound-heal', field(wand), commands.CAST_SPELL, events.SPELL_HEALING_ROLLED),
+        field(wand), field(wolf))),
+    opponent('opponent-equips-bow', [advance('0'), action(commands.CAST_SPELL, '1', { spellCardId: 3722, manaCost: 8, targetPlayerId: '1' })],
+        events.SPELL_CAST_RESOLVED, mage('1'), { spellCardId: 3722 }),
     link('prepare-defense-round', 16, 'planning'),
+    opponent('opponent-prepares-spell', [action(commands.PLAN_SPELLS, '1', { spellCardIds: [3408] })],
+        events.SPELLS_PLANNED, 'mw-opponent-prepared', { playerId: '1' }),
+    explain('opponent-public-view', 'mw-opponent-view-toggle'),
+    explain('back-to-self-view', 'mw-back-to-self-view'),
     plan('plan-defense', 1809),
-    link('reach-bow-window', 16, 'initiativeQuickcast', '1', { '1': [3722] }),
-    opponent('opponent-equips-bow', [action(commands.CAST_SPELL, '1', { spellCardId: 3722, manaCost: 8, targetPlayerId: '1' }), advance('1')],
-        events.PHASE_WINDOW_COMPLETED, 'mw-mage-entity-1', { phase: 'initiativeQuickcast', playerId: '1' }),
+    link('reach-bow-window', 16, 'initiativeQuickcast', '0'),
     cast('grant-wolf-defense', 1809, [field(wolf)]),
     link('reach-bow-attack', 16, 'creatureAction', '1'),
     opponent('bow-attacks', [action(commands.DECLARE_EQUIPMENT_ATTACK, '1', {
@@ -200,7 +314,7 @@ const dialogue: TutorialStepSnapshot[] = [
 ];
 
 export const MageWarsTutorial: TutorialManifest = {
-    id: 'mage-wars-basic', revision: 8, playerId: '0', numPlayers: 2,
+    id: 'mage-wars-basic', revision: 12, playerId: '0', numPlayers: 2,
     allowManualSkip: true, closeOnGameOver: true,
     stayOnMatchAfterCompletion: true, continueWithLocalAiAfterCompletion: true,
     randomPolicy: { mode: 'fixed', values: [3] },
@@ -208,7 +322,30 @@ export const MageWarsTutorial: TutorialManifest = {
     resolveStep: (given, step) => {
         const state = given as MatchState<MageWarsCore>;
         const transition = links.get(step.id);
-        if (transition) return { ...step, aiActions: buildMageWarsCoursePasses(state, transition.goal, transition.plans) };
+        if (transition) {
+            const aiActions = buildMageWarsCoursePasses(state, transition.goal, transition.plans);
+            const canCompress =
+                state.core.turnNumber >= 6
+                && transition.goal.round > 6
+                && transition.goal.phase !== 'upkeep'
+                && step.id !== 'prepare-wall-round'
+                && aiActions.length > 0
+                && aiActions.every(({ commandType, playerId }) => playerId !== learner || commandType === FLOW_COMMANDS.ADVANCE_PHASE);
+            if (canCompress) {
+                return {
+                    ...step,
+                    infoStep: undefined,
+                    highlightTarget: undefined,
+                    aiActions,
+                    hiddenAutomation: {
+                        kind: 'compressed-repeat',
+                        reason: '本局已经实际教学计划、部署、快速施法和行动交接。此处仅执行这些阶段的重复交接与对手输入。',
+                        equivalentStepIds: ['plan-summon', 'pass-deploy', 'pass-priority', 'end-wolf-action', 'pass-final'],
+                    },
+                };
+            }
+            return { ...step, aiActions };
+        }
         return step;
     },
     stepValidator: (given, step) => {

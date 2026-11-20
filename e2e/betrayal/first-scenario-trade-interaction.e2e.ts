@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDogTradeReadyRuntimeCore,
     createExchangeReadyRuntimeCore,
     createTradeReadyRuntimeCore,
@@ -588,7 +589,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_ITEM_SELECTED_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await assertTradeTargetKeepsTeammateCard(page);
@@ -759,12 +760,12 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await page.getByTestId('betrayal-action-trade').click();
         await expect(page.getByTestId('betrayal-trade-flow-banner'), '主动点交易后必须出现交易流程提示').toBeVisible();
         await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveAttribute('data-trade-progress-visible', 'status-only');
-        await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('选择交易方案');
+        await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('点同房间队友');
         await expect(page.locator('[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-item-step"]'), '顶部横幅不能复写对象选择步骤').toHaveCount(0);
         await assertTradeTargetUsesMapToken(page);
         await saveScreenshot(page, MANUAL_TRADE_ENTRY_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await expect(page.getByTestId('betrayal-trade-status'), '点目标后状态必须写明可交易给谁').toContainText('可交易给');
         await expect(page.getByTestId('betrayal-trade-status')).toContainText(TRADE_TARGET_NAME_PATTERN);
         await expect(page.getByTestId('betrayal-trade-banner-status'), '点目标后顶部仍只显示交易状态').toContainText('选择交易方案');
@@ -844,7 +845,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await waitForTradeInventoryAtlas(page);
 
         await page.getByTestId('betrayal-inventory-rope').click();
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后对方持有物区必须出现').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
         await expect(page.getByTestId('betrayal-trade-return-skip'), '空选择不能做成与地图、头骨并列的伪候选按钮').toHaveCount(0);
@@ -958,7 +959,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await waitForTradeInventoryAtlas(page);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await expect(page.getByTestId('betrayal-trade-return-selector'), '只选择对方物品时也必须先显示对方可给出的真实持有物').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
         await expect(page.getByTestId('betrayal-trade-banner-status'), '只选队友但未选任何持有物时只保留交易状态').toContainText('选择交易方案');
@@ -1086,7 +1087,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
 
         await page.getByTestId('betrayal-inventory-rope').click();
         await assertSelectedInventoryCardHasVisibleOutline(page);
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后必须显示对方持有物区').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
         await expect(page.getByTestId('betrayal-trade-return-skip'), '空选择不是一个候选按钮，没选对方持有物就只提交己方已选内容').toHaveCount(0);
@@ -1238,7 +1239,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertDogTradeTargetUsesRemoteMapToken(page);
         await saveScreenshot(page, DOG_TRADE_TARGET_VISIBLE_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-upper-landing-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-upper-landing-1'));
         await expect(page.getByTestId('betrayal-trade-status'), '选中远距队友后必须进入可交易给该玩家的状态').toContainText('可交易给');
         await expect(page.getByTestId('betrayal-trade-status')).toContainText(TRADE_TARGET_NAME_PATTERN);
         await expect(tradeActionPanelItemStep(page), '选择远距目标后必须显示狗交易已选物品').toContainText(/急救包|地图/);

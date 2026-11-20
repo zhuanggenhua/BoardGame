@@ -1,5 +1,5 @@
 import { Schema, type HydratedDocument } from 'mongoose';
-import type { ExternalRoomPlayer, ExternalRoomSignal } from '../../../../../../src/shared/externalRoom';
+import type { ExternalRoomPlayer, ExternalRoomSettings, ExternalRoomSignal } from '../../../../../../src/shared/externalRoom';
 
 export interface ExternalRoomMember extends ExternalRoomPlayer { userId: string }
 
@@ -7,8 +7,11 @@ export class ExternalRoomRecord {
     roomId!: string;
     gameId!: string;
     title!: string;
+    roomName?: string;
+    passwordHash?: string;
     entry!: string;
     capacity!: number;
+    settings?: ExternalRoomSettings;
     started!: boolean;
     native?: boolean;
     members!: ExternalRoomMember[];
@@ -29,8 +32,11 @@ export const ExternalRoomSchema = new Schema<ExternalRoomRecord>({
     roomId: { type: String, unique: true },
     gameId: String,
     title: String,
+    roomName: String,
+    passwordHash: String,
     entry: String,
     capacity: Number,
+    settings: { type: Schema.Types.Mixed },
     started: { type: Boolean, default: false },
     native: Boolean,
     members: [member],

@@ -1,7 +1,7 @@
 import type { MatchState, TutorialAiAction, TutorialStepSnapshot } from '../../engine/types';
 import { isQidahenTacticCardPlayableForPendingBattle } from './domain/commands';
 import { getQidahenPendingBattleActingFaction } from './domain/battleState';
-import { QIDAHEN_DISPATCH_ROSTER_ID } from './ui/dispatchGroupSelection';
+import { QIDAHEN_DISPATCH_QUANTITY_ANCHOR_ID, QIDAHEN_DISPATCH_ROSTER_ID } from './ui/dispatchRosterAnchor';
 import { getQidahenPendingTargetActionForCore, getQidahenPostBattleSelectionForCore } from './domain/interactionSelectionAccessors';
 import { QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID } from './domain/interactionSources';
 import { buildPendingTargetChoiceOptions } from './domain/pendingTargetChoiceOptions';
@@ -53,7 +53,7 @@ export function validateAnnualDispatchTutorialStep(state: MatchState<QidahenCore
     switch (step.id) {
         case 'dispatch-target': {
             const phase = getQidahenTurnResolutionFrame(state)?.metadata.qidahenTurn.step;
-            return phase === 'dispatch-target' || phase === 'dispatch-troops';
+            return phase === 'dispatch-target' || phase === 'dispatch-troops' || (current && phase === 'dispatch-source');
         }
         case 'defender-response':
             return current || Boolean(pending?.battleStep === 'defender-declaration' && actingPlayer(state, pending) !== playerId);
@@ -112,6 +112,7 @@ export function resolveAnnualDispatchTutorialStep(state: MatchState<QidahenCore>
         if (frame.step === 'dispatch-source') {
             const regionId = candidates.find(candidate => candidate.id === 'city-region-15')?.id ?? candidates[0]?.id;
             return { ...step, content: `${TEXT}dispatch-source-dynamic`, allowedTargets: undefined,
+                position: 'bottom', tooltipArrow: 'anchor',
                 highlightTarget: regionId ? `qidahen-map-region-focus-${regionId}` : undefined,
                 tooltipAnchorTarget: regionId ? 'qidahen-map-region-focus-name' : undefined };
         }
@@ -120,7 +121,10 @@ export function resolveAnnualDispatchTutorialStep(state: MatchState<QidahenCore>
             const piece = candidates.find(candidate => regionId && getQidahenDispatchDraftTargets(state.core, frame.factionId, regionId, [candidate.id]).length > 0);
             return { ...step, content: `${TEXT}dispatch-troops-dynamic`, allowedTargets: undefined, recommendedTargets: piece ? [piece.id] : undefined,
                 highlightTarget: QIDAHEN_DISPATCH_ROSTER_ID, highlightFrame: 'none', position: 'top', tooltipArrow: 'anchor',
-                tooltipAnchorTarget: QIDAHEN_DISPATCH_ROSTER_ID,
+                tooltipAnchorTarget: QIDAHEN_DISPATCH_QUANTITY_ANCHOR_ID, tooltipMaxWidth: 240,
+                avoidOverlapSelectors: [...(step.avoidOverlapSelectors ?? []),
+                    `[data-testid="${QIDAHEN_DISPATCH_ROSTER_ID}"]`,
+                    '[data-qidahen-dispatch-source="true"] [data-testid^="qidahen-army-stack-count-"]'],
                 ...(step.id === 'dispatch-target' ? { advanceOnEvents: undefined } : {}) };
         }
         const regionId = candidates.find(candidate => candidate.id === 'city-region-7')?.id

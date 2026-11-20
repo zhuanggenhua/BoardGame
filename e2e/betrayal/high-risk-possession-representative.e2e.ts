@@ -15,6 +15,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     dispatchHarnessCommand,
     expectPhysicalDiceSeparated,
     expectVisiblePhysicalDiceBox,
@@ -507,7 +508,7 @@ const exerciseSkullDeathProtectionFromRealAttack = async (
     await saveScreenshot(page, options.targetScreenshot);
 
     await setHarnessRandomQueue(page, MUMMY_ATTACK_RANDOM_QUEUE);
-    await skullTargetToken.click();
+    await clickBetrayalSceneFigure(skullTargetToken);
 
     const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
     await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });

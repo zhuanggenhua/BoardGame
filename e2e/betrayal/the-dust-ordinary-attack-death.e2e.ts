@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustOrdinaryAttackDeathRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -245,7 +246,7 @@ test.describe('山屋惊魂作祟3灰尘普通攻击致死分配', () => {
         await expect(defenderToken).toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${SHARED_ROOM_ID}-${DEFENDER_ID}`)).toHaveAttribute('data-highlight-shape', 'pentagon');
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.01, 0.01]);
-        await defenderToken.click();
+        await clickBetrayalSceneFigure(defenderToken);
 
         await expect.poll(() => readDustOrdinaryAttackDeathState(page)).toMatchObject({
             phase: 'haunt',
@@ -352,7 +353,7 @@ test.describe('山屋惊魂作祟3灰尘普通攻击致死分配', () => {
         await attackAction.click();
         await expect(defenderToken).toHaveAttribute('data-direct-target', 'true');
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.01, 0.01]);
-        await defenderToken.click();
+        await clickBetrayalSceneFigure(defenderToken);
 
         await expect.poll(() => readDustOrdinaryAttackDeathState(page)).toMatchObject({
             phase: 'haunt',

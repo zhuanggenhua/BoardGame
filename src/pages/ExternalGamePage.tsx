@@ -75,7 +75,7 @@ export default function ExternalGamePage() {
                 <section className="external-summary">
                     <span className="external-eyebrow">{t('platform.externalGamePage.externalGame')}</span><h1>{item.name}</h1>
                     {preview && !item.published && <p className="external-notice">{t('platform.externalGamePage.unpublishedPreview')}</p>}
-                    <p className="external-author"><ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
+                    <p className="external-author"><ExternalGameAuthor author={item.author} uploaderName={item.uploaderName} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
                         isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} /></p>
                     <p className="external-description"><ExternalGameText text={item.description} /></p>
                     <GameRulesDocumentLink document={item.rulesDocument} />

@@ -240,6 +240,8 @@ export interface ActionCardDef {
     id: string;
     type: 'action';
     subtype: ActionSubtype;
+    /** 打出时进入场上（例如自行埋葬）；这类行动不属于规则中的标准行动。 */
+    entersPlayOnPlay?: boolean;
     name: string;
     /** @deprecated 历史英文名，已由 i18n 接管，待清理 */
     nameEn?: string;
@@ -262,6 +264,8 @@ export interface ActionCardDef {
     playNeedsMinion?: boolean;
     /** 正常打出时显式选择随从的控制者约束 */
     playTargetMinionController?: PlayTargetMinionController;
+    /** 目标随从上须已有由出牌玩家控制的行动。 */
+    playTargetMinionRequiresOwnAction?: boolean;
     /** 特殊行动卡是否需要选择目标基地（Me First! 窗口中高亮可选基地） */
     specialNeedsBase?: boolean;
     /**
@@ -418,6 +422,8 @@ export interface MinionOnBase {
     talentUsed: boolean;
     /** 本回合是否为刚打出的随从（回合结束清零） */
     playedThisTurn?: boolean;
+    /** 这个在场实例本回合是否实际消灭过随从；换回合或离场后清除。 */
+    destroyedMinionThisTurn?: boolean;
     /** 附着的行动卡列表（带 owner 追踪） */
     attachedActions: AttachedActionOnMinion[];
     /** 额外元数据（用于 POD 等复杂状态追踪） */
@@ -892,6 +898,8 @@ export interface PendingMunchkinTreasureReward {
 }
 
 export interface SmashUpCore {
+    /** 已实际额外打出的借用牌，在借用者回合结束时归还。 */
+    borrowedActions?: Array<{ cardUid: string; defId: string; borrowerId: PlayerId; ownerId: PlayerId; turnNumber: number; reason: string }>;
     players: Record<PlayerId, PlayerState>;
     /** 固定座位顺序（不随先手/轮转变化），用于 2v2 队伍推导。 */
     seatOrder?: PlayerId[];
@@ -1479,6 +1487,8 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         cardUid: string;
         defId: string;
         ownerId?: PlayerId;
+        /** 效果要求在回合末归还其他玩家拥有的行动，值为效果来源。 */
+        returnToOwnerAtTurnEnd?: string;
         /** 是否为额外行动（不消耗行动次数） */
         isExtraAction?: boolean;
         /** 从埋葬区打出（揭开时使用） */
@@ -1823,6 +1833,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToBase?: number;
         /** 仅 immediate 额外行动：限定只能打到指定随从上。 */
         restrictToMinionUid?: string;
+        /** 立即额外行动必须打在另一位玩家的随从上。 */
+        restrictToOpponentMinionAction?: boolean;
         /** 仅 immediate 额外行动：按计分窗口特殊行动处理，用于保留基地限定和计分窗口限制。 */
         specialActionWindow?: 'meFirst' | 'afterScoring';
         /** 额外行动限定只能打出指定卡牌实例；immediate 直接校验，banked 写入指定额外行动机会 */
@@ -1831,6 +1843,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToCardDefId?: string;
         /** 回合结束时销毁本次指定的附着行动卡。 */
         destroyAttachedActionAtTurnEnd?: boolean;
+        /** 本次立即额外行动也可从已查看的另一位玩家手牌中打出。 */
+        borrowActionFromPlayerId?: PlayerId;
         /** 立即额外行动限定只能打出基地修正（持续行动且目标为基地） */
         restrictToBaseModifier?: boolean;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */

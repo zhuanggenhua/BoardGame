@@ -3070,7 +3070,7 @@ const setupHumanLightTheFuseScenario = async (match: MatchSetup) => {
 
 const setupHumanMercilessPlunderScenario = async (
     match: MatchSetup,
-    options: { withHostUnexpected?: boolean } = {},
+    options: { withHostUnexpected?: boolean; defenderHp?: number } = {},
 ) => {
     await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
         const root = asRecord(state.G ?? state);
@@ -3092,7 +3092,7 @@ const setupHumanMercilessPlunderScenario = async (
             resources: {
                 ...hostResources,
                 [RESOURCE_IDS.CP]: 5,
-                [RESOURCE_IDS.HP]: 50,
+                [RESOURCE_IDS.HP]: options.defenderHp ?? 50,
             },
             tokens: {},
             statusEffects: {},
@@ -10114,7 +10114,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
-    test('真实入口应通过人类面 ultimate 槽位触发并结算无情劫掠的诅咒金币续结链', async ({ browser }, testInfo) => {
+    test('真实入口无情劫掠造成致死伤害后仍可选择金币并结束对局', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupNewHeroMatch(browser, baseURL);
@@ -10122,7 +10122,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            await setupHumanMercilessPlunderScenario(match);
+            await setupHumanMercilessPlunderScenario(match, { defenderHp: 12 });
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
 
@@ -10149,21 +10149,24 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             const acceptCursedCoinButton = guestModal.getByRole('button', { name: /^获得诅咒金币$/ });
             await expect(guestModal).toContainText('是否获得诅咒金币？', { timeout: 10000 });
             await expect(acceptCursedCoinButton).toBeVisible({ timeout: 10000 });
-            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 38);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 0);
+            expect((await readServerRoot(match.matchId, match.guestPage)).sys.gameover).toBeFalsy();
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.PARLEY, 0);
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 0);
             await saveEvidenceScreenshot(match.guestPage, testInfo, '111-guest-human-merciless-plunder-choice');
 
             await acceptCursedCoinButton.click();
 
-            await expect(guestModal).toBeHidden({ timeout: 10000 });
+            await expect(acceptCursedCoinButton).toBeHidden({ timeout: 10000 });
             await waitForAttackResolved(match.matchId, match.guestPage);
             await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.CURSED_COIN, 2);
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.PARLEY, 1);
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 1);
-            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 38);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 0);
             await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 50);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '112-host-human-merciless-plunder-applied');
+            expect((await readServerRoot(match.matchId, match.guestPage)).sys.gameover).toMatchObject({ winner: '1' });
+            await expect(match.guestPage.getByTestId('dt-endgame-title')).toHaveAttribute('data-result', 'victory', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '112-guest-human-merciless-plunder-victory');
         } finally {
             await cleanupDTMatch(match);
         }

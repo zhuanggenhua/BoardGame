@@ -254,8 +254,7 @@ export function sourceIdentityMatches(identity) {
     catch (error) { if (error.code === 'ENOENT') return false; throw error; }
 }
 
-export function readRuntimeSourceIdentity(scope, cwd = process.cwd(), runtime = process.env.PW_SERVER_RUNTIME || 'bundle') {
-    const root = path.join(cwd, 'temp/dev-bundles/e2e-single', scope);
+export function readRuntimeSourceIdentity({ runtime, bundleRoot, cwd = process.cwd() }) {
     if (runtime !== 'bundle') {
         const inputs = [];
         const visit = directory => {
@@ -271,6 +270,6 @@ export function readRuntimeSourceIdentity(scope, cwd = process.cwd(), runtime = 
         if (runtime === 'prebuilt') visit(path.resolve(cwd, process.env.PW_PREBUILT_BUNDLE_ROOT || 'temp/dev-bundles/e2e-single'));
         return captureSourceIdentity(inputs, cwd);
     }
-    const records = ['game/server.mjs', 'api/main.mjs'].map(file => JSON.parse(fs.readFileSync(path.join(root, `${file}.sources.json`), 'utf8')));
+    const records = ['game/server.mjs', 'api/main.mjs'].map(file => JSON.parse(fs.readFileSync(path.join(bundleRoot, `${file}.sources.json`), 'utf8')));
     return { files: records.flatMap(record => record.files), graphs: records.map(record => record.graph).filter(Boolean) };
 }

@@ -15,14 +15,14 @@ export class ExternalRoomsController {
 
     @Post()
     create(@CurrentUser() user: { userId: string } | null, @Headers('x-external-room-guest') guest: string | undefined,
-        @Body() body: { gameId?: string; capacity?: number; nativeName?: unknown; expectedEntry?: unknown }) {
-        return this.rooms.create(roomOwner(user, guest), typeof body?.gameId === 'string' ? body.gameId : '', body?.capacity, body?.nativeName, body?.expectedEntry);
+        @Body() body: { gameId?: string; capacity?: number; nativeName?: unknown; expectedEntry?: unknown; settings?: unknown; roomName?: unknown; password?: unknown }) {
+        return this.rooms.create(roomOwner(user, guest), typeof body?.gameId === 'string' ? body.gameId : '', body ?? {});
     }
 
     @Post(':id/join')
     join(@CurrentUser() user: { userId: string } | null, @Headers('x-external-room-guest') guest: string | undefined,
-        @Param('id') roomId: string, @Body() body: { native?: boolean } | undefined) {
-        return this.rooms.join(roomId, roomOwner(user, guest), body?.native === true);
+        @Param('id') roomId: string, @Body() body: { native?: boolean; password?: unknown } | undefined) {
+        return this.rooms.join(roomId, roomOwner(user, guest), body?.native === true, body?.password);
     }
 
     @Get(':id')

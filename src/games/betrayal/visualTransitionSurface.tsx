@@ -28,6 +28,7 @@ export type BetrayalVisualTransition = {
   sourceRect: BetrayalViewportRect;
   targetRect: BetrayalViewportRect | null;
   targetTestId: string;
+  worldMarkerTargetId?: string;
   fallbackRoomTestId?: string;
   explorer?: BetrayalExplorerSummary;
   monster?: BetrayalMonsterSummary;
@@ -252,7 +253,8 @@ export function BetrayalVisualTransitionLayer({
         data-testid="betrayal-visual-transition-blocker"
         data-transition-kind={transition.kind}
         data-transition-target-testid={transition.targetTestId}
-        data-transition-ready={targetRect ? "true" : "false"}
+        data-transition-ready={targetRect || transition.worldMarkerTargetId ? "true" : "false"}
+        data-transition-renderer={transition.worldMarkerTargetId ? "three" : "overlay"}
         aria-busy="true"
         className="pointer-events-auto fixed inset-0 cursor-wait"
         style={{ zIndex: UI_Z_INDEX.modalOverlay + 40 }}

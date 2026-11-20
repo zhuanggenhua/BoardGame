@@ -12,6 +12,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createJackSpiritMovementRollReadyRuntimeCore,
     expectBetrayalTransitionTargetsLocator,
     initBetrayalContext,
@@ -186,7 +187,7 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
         await expect(monsterMoveAction).toContainText('取消移动');
         await ensureFloorVisible(page, initialJackSpiritFloor);
         await expect(jackSpiritToken).toHaveAttribute('data-direct-target', 'true');
-        await jackSpiritToken.click();
+        await clickBetrayalSceneFigure(jackSpiritToken);
         await ensureFloorVisible(page, target.floor);
         const targetRoom = page.getByTestId(`betrayal-room-${targetRoomId}`);
         await expect(targetRoom).toBeVisible();

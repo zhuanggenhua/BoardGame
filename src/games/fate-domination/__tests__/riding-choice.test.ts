@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { applyPlayerViewToState } from '../../../engine/ai/playerView';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
-import { FATE_SERVANTS } from '../data';
+import { FATE_SERVANT_BY_ID } from '../data';
 import { FateDominationDomain } from '../domain';
 import { isFateBasicAttackDefinition } from '../domain/ridingChoice';
 import type { FateDominationCore } from '../domain';
@@ -11,7 +12,6 @@ import { buildFateAiLegalActions } from '../ai';
 import type { Command, MatchState } from '../../../engine/types';
 
 const playerIds = ['0', '1', '2'];
-const rideSource = 'sc_iskandar_1';
 
 it('旧 WebView 缺少 Object.hasOwn 时仍可识别基础攻击', () => {
     const original = Object.hasOwn;
@@ -25,7 +25,7 @@ it('旧 WebView 缺少 Object.hasOwn 时仍可识别基础攻击', () => {
     expect(result!).toBe(true);
 });
 
-function ridingGame(seed = 'iskandar-riding') {
+function ridingGame(seed = 'iskandar-riding', servantId = 'servant-rider') {
     const random = createSeededRandom(seed);
     let state: MatchState<FateDominationCore> = {
         core: FateDominationDomain.setup(playerIds, random),
@@ -34,11 +34,11 @@ function ridingGame(seed = 'iskandar-riding') {
     state.core.round = 4;
     state.core.phase = 'action';
     state.core.currentPlayerId = '0';
-    const rider = FATE_SERVANTS.find(servant => servant.trueName === '伊斯坎达尔')!;
+    const rider = FATE_SERVANT_BY_ID[servantId];
     const player = state.core.players['0'];
     player.servantId = rider.id;
     player.skills = (rider.skillCards ?? []).map((skill, index) => ({ ...skill, id: `${skill.id}:${index}` }));
-    const ridingSkill = player.skills.find(skill => skill.id.split(':')[0] === rideSource)!;
+    const ridingSkill = player.skills.find(skill => skill.name === '骑乘')!;
     player.activeSkills = [ridingSkill.id];
     player.usedAbilityIds = [];
     player.locationId = 'miyama';
@@ -85,6 +85,33 @@ function ridingGame(seed = 'iskandar-riding') {
         ridingSkillId: ridingSkill.id,
     };
 }
+
+it('美杜莎同批明置骑乘和基础攻击后抽牌，并用骑乘合法动作追加攻击', () => {
+    const game = ridingGame('medusa-riding', 'servant-medusa');
+    const player = game.state.core.players['0'];
+    player.activeSkills = [];
+    player.mana = 8;
+    game.state.core.currentEvents.miyama = [];
+    game.state.core.battlefield.miyama.eventCards = [];
+
+    const confirmed = game.apply({ type: 'CONFIRM_ATTACK', playerId: '0', payload: {
+        cardIds: [game.ridingSkillId, 'b1'], faceDownIds: [], round: 4,
+    } });
+    expect(confirmed.events.filter(event => event.type === 'FATE_CARDS_DRAWN')).toHaveLength(1);
+    expect(game.state.core.players['0'].hand.some(card => card.id === 'drawn')).toBe(true);
+    expect(buildFateAiLegalActions({ state: game.state, playerId: '0' }).map(action => action.commands[0]))
+        .toContainEqual(expect.objectContaining({ type: 'PLAY_SKILL', payload: { skillId: game.ridingSkillId } }));
+
+    game.useRiding();
+    expect(game.respond(['b1']).success).toBe(false);
+    const mana = game.state.core.players['0'].mana;
+    const response = game.respond(['rush3']);
+    expect(response.success).toBe(true);
+    expect(response.state.core.players['0'].activeAttackIds).toEqual(['b1', 'rush3']);
+    expect(response.state.core.players['0'].mana).toBe(mana - 1);
+    expect(buildFateAiLegalActions({ state: response.state, playerId: '0' }).map(action => action.commands[0]))
+        .toContainEqual(expect.objectContaining({ type: 'PASS_ACTION' }));
+});
 
 it('发动骑乘只打开绑定到 ResolutionFrame 的 0–3 手牌选择，不提前消耗次数或魔力', () => {
     const game = ridingGame();
@@ -217,7 +244,7 @@ it('确认会重验候选牌是否仍在可用手牌且整批费用仍可支付'
     expect(unaffordable.state.core.players['0'].activeAttackIds).toEqual([]);
 });
 
-it('固有结界与败退状态会按通用攻击规则排除骑乘候选', () => {
+it('固有结界按通用攻击规则排除骑乘候选', () => {
     const bounded = ridingGame('riding-solid-field-candidate');
     bounded.state.core.battlefield.miyama.eventCards = [{
         id: 'fuyuki_E16', name: '固有结界', assetPath: 'test', victoryPoints: 2, sourceStatus: 'verified',
@@ -226,14 +253,42 @@ it('固有结界与败退状态会按通用攻击规则排除骑乘候选', () =
     const boundedOptions = (bounded.state.sys.interaction.current!.data as { options: Array<{ id: string }> }).options;
     expect(boundedOptions.map(option => option.id)).not.toContain('remote2');
     expect(bounded.respond(['remote2']).success).toBe(false);
+});
 
-    const defeated = ridingGame('riding-defeat-candidate');
-    defeated.state.core.players['0'].defeatMarkers = [{ id: 'defeated', direct: true, duration: 'round-end' }];
-    defeated.useRiding();
-    const defeatedOptions = (defeated.state.sys.interaction.current!.data as { options: Array<{ id: string }> }).options;
-    expect(defeatedOptions).toEqual([]);
-    expect(defeated.respond(['b1']).success).toBe(false);
-    expect(defeated.respond([]).success).toBe(true);
+it.each([
+    { reason: '手牌基本威力过高', servantId: 'servant-medusa' },
+    { reason: '付不起唯一候选', servantId: 'servant-medusa' },
+    { reason: '败北期间不能打出攻击', servantId: 'servant-rider' },
+])('骑乘没有可追加牌时原地结算零张并保留行动权：$reason', ({ reason, servantId }) => {
+    const game = ridingGame('riding-no-playable-card', servantId);
+    const player = game.state.core.players['0'];
+    player.masterId = 'm_shinji';
+    game.state.core.currentEvents.miyama = [];
+    game.state.core.battlefield.miyama.eventCards = [];
+    if (reason === '手牌基本威力过高') {
+        player.hand = player.hand.filter(card => card.id === 'power4' || card.id === 'luck4');
+    } else if (reason === '付不起唯一候选') {
+        player.hand = player.hand.filter(card => card.id === 'rush3');
+        player.mana = 0;
+    } else {
+        player.defeatMarkers = [{ id: 'defeated', direct: true, duration: 'round-end' }];
+    }
+
+    const result = game.useRiding();
+    expect(getCurrentInteractionSummary(result.state).id).toBeUndefined();
+    expect(result.state.core).toMatchObject({ currentPlayerId: '0', phase: 'action' });
+    expect(result.state.core.players['0']).toMatchObject({
+        mana: player.mana,
+        hand: player.hand,
+        activeAttackIds: [],
+        normalAttackPlayed: false,
+        usedAbilityIds: [`${game.ridingSkillId}:action`],
+    });
+    expect(result.events.filter(event => event.type === 'FATE_RIDING_CARDS_PLAYED')).toEqual([expect.objectContaining({
+        payload: { playerId: '0', skillId: game.ridingSkillId, cardIds: [], manaSpent: 0 },
+    })]);
+    const duplicate = game.run({ type: 'PLAY_SKILL', playerId: '0', payload: { skillId: game.ridingSkillId } });
+    expect(duplicate).toMatchObject({ success: false, error: 'abilityAlreadyUsed', events: [] });
 });
 
 it('选择打开后若通用出牌状态变化，提交会原子拒绝并保留交互', () => {

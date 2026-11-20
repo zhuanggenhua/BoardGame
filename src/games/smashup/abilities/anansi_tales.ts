@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
@@ -317,7 +318,7 @@ function buildExtraActionEvent(
 }
 
 function isStandardActionDef(def: ReturnType<typeof getCardDef>): def is ActionCardDef {
-    return def?.type === 'action' && def.subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 function buildActionDefBlockedEvent(
@@ -1371,7 +1372,7 @@ function earOfCorn(ctx: AbilityContext): AbilityResult {
 function deckActionGift(ctx: AbilityContext, sourceId: DeckActionSearchContext['sourceId']): AbilityResult {
     const hasAction = (ctx.state.players[ctx.playerId]?.deck ?? []).some(card => {
         const def = getCardDef(card.defId) as ActionCardDef | undefined;
-        return def?.type === 'action' && def.subtype === 'standard';
+        return isRulesStandardAction(def);
     });
     if (!hasAction || getOtherPlayers(ctx.state, ctx.playerId).length === 0) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(deckActionSearchPromptProgram, {

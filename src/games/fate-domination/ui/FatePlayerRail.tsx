@@ -6,6 +6,7 @@ import './identityArtwork';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { FATE_ATTACK_BY_ID } from '../data';
 import type { FateDominationCore } from '../domain';
+import { resolveLocationKind } from '../domain/movement';
 import { projectFateOpponentCards, projectFatePlayer } from './playerPresentation';
 import {useTranslation} from 'react-i18next';
 interface Props {
@@ -58,6 +59,7 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
     return <aside data-tutorial-id="fate-opponents" className="fd-runtime-player-rail" aria-label={t('ui.playerRail.playerSeats')}>
         <div className="fd-runtime-seat-list">{core.playerIds.filter(id => id !== viewerId).map(id => {
             const view = projectFatePlayer(core, id, viewerId);
+            const inBattlefield = view.player.locationId !== null && resolveLocationKind(view.player.locationId) === 'battlefield';
             const targetable=investigationTargets?.includes(id)===true;
             const chooseTarget = () => onInvestigateTarget?.(id);
             const expanded = selectedId === id && cards !== null;
@@ -69,7 +71,12 @@ export function FatePlayerRail({ core, viewerId, selectedId, nameFor, onSelect, 
                         {view.player.eliminated && <span className="fd-avatar-elimination" aria-hidden="true"/>}
                     </button>
                     <button type="button" className="fd-runtime-seat-summary" aria-disabled={investigationTargets ? !targetable : undefined} aria-expanded={expanded} onClick={investigationTargets ? chooseTarget : () => show(id)}>
-                        <b title={nameFor(id)}><span className="fd-seat-name">{nameFor(id)}</span><strong className="fd-seat-power" aria-label={t('ui.playerRail.totalPower', { name: nameFor(id) })}><small>{t('ui.playerRail.power')}</small>{view.power}</strong>{!view.player.eliminated && core.currentPlayerId === id && <i>{t('ui.playerRail.acting')}</i>}</b>
+                        <b title={nameFor(id)}><span className="fd-seat-name">{nameFor(id)}</span>
+                            {!view.player.eliminated && view.defeated && <strong className="fd-seat-power is-defeated">{t('ui.map.defeated')}</strong>}
+                            {!view.player.eliminated && !view.defeated && inBattlefield &&
+                                <strong className="fd-seat-power" aria-label={t('ui.playerRail.totalPower', { name: nameFor(id) })}><small>{t('ui.playerRail.power')}</small>{view.power}</strong>}
+                            {!view.player.eliminated && core.currentPlayerId === id && <i>{t('ui.playerRail.acting')}</i>}
+                        </b>
                         <span>{t('ui.playerRail.playerStats', { victoryPoints: view.player.victoryPoints, mana: view.player.mana, hand: view.handCount })}</span>
                     </button>
                 </div>

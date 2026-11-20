@@ -477,17 +477,19 @@ export function resolveBetrayalActionCueReadModel({
             roomId: activeRoomId,
           }
         : null;
-  const isMummyGirlRoomFocusAction =
+  const isMummyWeddingRoomFocusAction =
     hauntActionContext?.actionKind === "use" &&
     (hauntActionContext.commandType === BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL ||
-      hauntActionContext.commandType === BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY);
+      hauntActionContext.commandType === BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY ||
+      hauntActionContext.commandType === BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY);
   const canPickUpMummyGirlRoomId =
+    !isMonsterAttackMode &&
     hauntActionContext?.actionKind === "use" &&
     hauntActionContext.commandType === BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL
       ? currentExplorerRoomId
       : null;
   const shouldShowRoomFocusTargetLabel =
-    Boolean(roomFocusState) && !isMummyGirlRoomFocusAction;
+    Boolean(roomFocusState) && !isMummyWeddingRoomFocusAction;
   const selectedTradeTargetPlayerName = selectedTradeTarget
     ? resolvePlayerName(
         selectedTradeTarget.playerId,

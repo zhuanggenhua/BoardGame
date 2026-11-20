@@ -9,6 +9,8 @@ interface PasswordEntryModalProps {
     onClose: () => void;
     onConfirm: (password: string) => void;
     closeOnBackdrop?: boolean;
+    isLoading?: boolean;
+    error?: string;
 }
 
 export const PasswordEntryModal = ({
@@ -16,17 +18,20 @@ export const PasswordEntryModal = ({
     onClose,
     onConfirm,
     closeOnBackdrop = true,
+    isLoading = false,
+    error,
 }: PasswordEntryModalProps) => {
     const { t } = useTranslation('lobby');
     const [password, setPassword] = useState('');
 
     const handleClose = () => {
+        if (isLoading) return;
         setPassword('');
         onClose();
     };
 
     const handleConfirm = () => {
-        if (!password.trim()) return;
+        if (isLoading || !password.trim()) return;
         onConfirm(password.trim());
         setPassword('');
     };
@@ -36,7 +41,7 @@ export const PasswordEntryModal = ({
             {open && (
                 <ModalBase
                     onClose={handleClose}
-                    closeOnBackdrop={closeOnBackdrop}
+                    closeOnBackdrop={closeOnBackdrop && !isLoading}
                     overlayClassName="bg-[#2b2114]/30"
                     preserveKeyboardLayout
                     disableTextEntryAutoscroll
@@ -76,11 +81,13 @@ export const PasswordEntryModal = ({
                                 toggleButtonTestId="room-password-toggle"
                                 toggleButtonClassName="text-parchment-light-text hover:text-parchment-base-text"
                             />
+                            {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
                         </div>
 
                         <div className="shrink-0 flex items-center justify-center gap-3 border-t border-parchment-card-border/20 px-6 py-4 bg-parchment-card-bg">
                             <button
                                 onClick={handleClose}
+                                disabled={isLoading}
                                 className="px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider border border-parchment-card-border/50 text-parchment-base-text bg-parchment-card-bg hover:bg-parchment-base-bg transition-colors rounded-[4px]"
                             >
                                 {t('actions.cancel', 'Cancel')}
@@ -88,10 +95,10 @@ export const PasswordEntryModal = ({
                             <button
                                 data-testid="room-password-confirm"
                                 onClick={handleConfirm}
-                                disabled={!password.trim()}
+                                disabled={isLoading || !password.trim()}
                                 className="px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown transition-colors rounded-[4px] disabled:opacity-50"
                             >
-                                {t('actions.confirm', 'Confirm')}
+                                {isLoading ? t('button.processing') : t('actions.confirm', 'Confirm')}
                             </button>
                         </div>
                     </div>

@@ -366,7 +366,7 @@ const resolveTutorialStep = <TCore>(state: MatchState<TCore>, manifest: Tutorial
     if (!tutorial.step || !manifest.resolveStep) return tutorial;
     const step = manifest.resolveStep(state as MatchState<unknown>, tutorial.step);
     if (step.id !== tutorial.step.id) throw new Error('Tutorial resolveStep must preserve the step id');
-    return { ...tutorial, step, aiActions: step.aiActions };
+    return { ...tutorial, step, aiActions: step.aiActions, allowManualSkip: deriveManualSkip(step, manifest) };
 };
 
 const transitionTutorialStep = <TCore>(

@@ -183,6 +183,7 @@ export const BetrayalPixiRoomViewport = React.forwardRef<HTMLDivElement, {
         <div ref={overlayRef} data-testid="betrayal-room-canvas" inert={!mapReady} aria-hidden={!mapReady} className="pointer-events-none absolute left-0 top-0" style={{ width, height, transformOrigin: '0 0', visibility: mapReady ? 'visible' : 'hidden' }}>
             {children}
         </div>
+        <div data-betrayal-screen-feedback="" className="pointer-events-none absolute inset-0 z-20" />
     </div>;
 });
 BetrayalPixiRoomViewport.displayName = 'BetrayalPixiRoomViewport';

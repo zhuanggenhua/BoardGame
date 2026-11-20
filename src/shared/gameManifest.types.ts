@@ -141,6 +141,7 @@ export interface GameManifestEntry {
     playersKey: string;
     icon: string;
     thumbnailPath?: string;
+    /** 是否开放本地同屏入口，默认关闭。 */
     allowLocalMode?: boolean;
     playerOptions?: number[];
     tags?: string[];

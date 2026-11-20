@@ -14,8 +14,8 @@ const runtime = await startSingleWorkerRuntime({
   logFile: '',
 });
 
-function shutdown(exitCode = 0, reason = '') {
-  runtime.stop(reason);
+async function shutdown(exitCode = 0, reason = '') {
+  await runtime.stop(reason);
   process.exit(exitCode);
 }
 
@@ -26,5 +26,5 @@ try {
   await runtime.failurePromise;
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  shutdown(1, message);
+  await shutdown(1, message);
 }

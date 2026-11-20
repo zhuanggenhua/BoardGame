@@ -6,6 +6,8 @@ const commonType = (types: string[]) => types.length > 0 && [...typesOf(types[0]
 const isBattlefield = (location: LocationId | null) => location === 'miyama' || location === 'shinto';
 export const fateNoblePhantasmsForbidden = (situation: SituationCardDefinition) => ['sit7','sit8','sit9'].includes(situation.id);
 export const fateLateClimax = (situation: SituationCardDefinition) => ['sit12','sit13'].includes(situation.id);
+export const fateSituationClosesLocation = (situation: SituationCardDefinition, locationId: LocationId) =>
+    fateLateClimax(situation) && (locationId === 'shinto' || locationId === 'recon');
 export function fateSituationAttackBonus(situation: SituationCardDefinition, type: string, location: LocationId | null): number {
  if(!isBattlefield(location))return 0;
  const bonus:Record<string,[string,number]>={sit4:['力量',2],sit5:['迅捷',2],sit6:['魔术',2],sit7:['魔术',1],sit8:['迅捷',1],sit9:['力量',1]};

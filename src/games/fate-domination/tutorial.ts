@@ -248,7 +248,7 @@ export function buildFateTutorialPlan(seed=FATE_TUTORIAL_SEED, openingDeployment
         step.tooltipMaxWidth=step.fateCopy?.lessonId==='battlefieldDarkAttack'?384:320;
         // 手牌规则不需要保护未被讲解的地图印刷底图；卡、棋子、读数与席位始终保护。
         // 急行来源课还要读地图箭头和目的地，保留其地图保护。
-        const mapStep=Boolean(step.highlightTarget)&&(step.highlightTarget!=='fate-hand'||step.fateCopy?.lessonId==='actionAbility');
+        const mapStep=Boolean(step.highlightTarget)&&(step.highlightTarget!=='fate-hand'||step.fateCopy?.lessonId==='actionAbility'||step.fateCopy?.lessonId==='chariotTarget');
         step.avoidOverlapSelectors=[...FATE_TUTORIAL_TABLE_PROTECTION,...(mapStep?FATE_TUTORIAL_MAP_PROTECTION:[])];
     }
     return { steps, commands, finalState: state };

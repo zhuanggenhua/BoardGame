@@ -2,7 +2,7 @@ import { fatePostBattleOpportunities } from './postBattleChoice';
 import { fateRidingChoiceOpportunities, fateRidingDrawOpportunities } from './ridingChoice';
 import { fateChariotOpportunities } from './chariotChoice';
 import { fateInvestigationOpportunities } from './investigationChoice';
-import { fateFieldAttackOpportunities } from './battlefieldAttacks';
+import { fateFieldAttackOpportunities, fateRetainedBattlefieldAttacks } from './battlefieldAttacks';
 import { projectFatePlayerView } from './playerView';
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialFateDominationCore } from './setup';
@@ -46,6 +46,7 @@ export const FateDominationDomain: DomainCore<FateDominationCore, FateDomination
         const normalizedCore: FateDominationCore = {
             ...core,
             players,
+            battlefieldAttacks: fateRetainedBattlefieldAttacks(core.battlefieldAttacks, core.situation),
             phaseCompletedPlayerIds,
             initialAttackHandDealtPlayerIds: [...initialAttackHandDealtPlayerIds],
             ruleState: normalizeFateRuleState(core.ruleState),

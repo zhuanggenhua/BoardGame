@@ -8,7 +8,11 @@ import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { BetrayalRoomViewport } from "./threeRoomViewportSurface";
-import type { SceneFigureAsset } from "./threeRoomScene";
+import { resolveCarriedGirlMarker, type GirlMarkerTransfer, type SceneFigureAsset, type SceneMarker, type ScenePath } from "./threeRoomScene";
+import { BETRAYAL_VISUAL_TRANSITION_DURATION_MS } from "./visualTiming";
+import { BETRAYAL_COMMANDS } from "./commands";
+import { GIRL_ROOM_SLOT, resolveRoomEntitySlots } from "./roomEntitySceneModel";
+import mummyGirlGlyph from "./mummyGirlGlyph.svg";
 import { resolveBetrayalRoomSceneSprites, resolveBetrayalEntitySceneSprites } from "./roomSceneModel";
 import type { ZoomPanViewportFitInsets } from "../../components/game/framework/ZoomPanViewport";
 import type { EntityRelation } from "../../engine/primitives";
@@ -84,6 +88,9 @@ type RoomPlacementOrientationOption =
   BetrayalRoomPlacementPreview["orientationOptions"][number];
 
 export interface BetrayalRoomMapSurfaceProps {
+  sceneTutorialCommands?: readonly string[];
+  sceneTutorialTargets?: readonly string[];
+  selectedSceneMonsterMoveId?: string | null;
   eventEntries: EventStreamEntry[];
   rollbackRevision: number;
   onSceneMovementStart: () => void;
@@ -122,6 +129,9 @@ export interface BetrayalRoomMapSurfaceProps {
     readonly BetrayalHauntTokenInstanceSummary[]
   >;
   movingGirlTokenId: string | null;
+  girlTransferId?: string;
+  girlTransferTarget?: string;
+  onGirlTransferComplete: (id: string) => void;
   movingExplorerPlayerId: string | null;
   movingMonsterId: string | null;
   activeHauntTargetGuide: BetrayalRoomMapHauntTargetGuide | null;
@@ -243,6 +253,9 @@ export interface BetrayalRoomMapSurfaceProps {
 }
 
 export function BetrayalRoomMapSurface({
+  sceneTutorialCommands,
+  sceneTutorialTargets,
+  selectedSceneMonsterMoveId,
   eventEntries,
   rollbackRevision,
   onSceneMovementStart,
@@ -278,6 +291,9 @@ export function BetrayalRoomMapSurface({
   roomMonsters,
   visibleHauntTokensByRoomId,
   movingGirlTokenId,
+  girlTransferId,
+  girlTransferTarget,
+  onGirlTransferComplete,
   movingExplorerPlayerId,
   movingMonsterId,
   activeHauntTargetGuide,
@@ -393,18 +409,30 @@ export function BetrayalRoomMapSurface({
     [attackImpactPresentationKey, core],
   );
 
+  const girlRoomId = React.useMemo(() => {
+    for (const [roomId, tokens] of visibleHauntTokensByRoomId) {
+      if (tokens.some(token => token.id === "mummy-girl-token")) return roomId;
+    }
+    return null;
+  }, [visibleHauntTokensByRoomId]);
+  const sceneRooms = React.useMemo(() => pendingRoomPlacementPreview
+    ? visibleRooms.map(room => room.id === pendingRoomPlacementPreview.slotId ? {
+        ...room, ...pendingRoomPlacementPreview.room, state: "discovered" as const,
+        orientationTurns: selectedRoomOrientationTurns,
+      } : room)
+    : visibleRooms, [visibleRooms, pendingRoomPlacementPreview, selectedRoomOrientationTurns]);
   const sceneSprites = React.useMemo(
-    () => [...resolveBetrayalRoomSceneSprites(visibleRooms, roomCanvasLayout, locale),
-      ...resolveBetrayalEntitySceneSprites(visibleRooms, roomOccupants, roomMonsters, roomCanvasLayout, locale, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId)],
-    [visibleRooms, roomCanvasLayout, locale, roomOccupants, roomMonsters, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId],
+    () => [...resolveBetrayalRoomSceneSprites(sceneRooms, roomCanvasLayout, locale),
+      ...resolveBetrayalEntitySceneSprites(visibleRooms, roomOccupants, roomMonsters, roomCanvasLayout, locale, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId, girlRoomId)],
+    [visibleRooms, sceneRooms, roomCanvasLayout, locale, roomOccupants, roomMonsters, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId, girlRoomId],
   );
   const sceneMovement = useSceneMovement({ core, entries: eventEntries, rollbackRevision,
     rooms: visibleRooms, layout: roomCanvasLayout, locale, sprites: sceneSprites,
     onStart: onSceneMovementStart, onEnd: onSceneMovementEnd, onPresented: onSceneMovementPresented, onApproach: onSceneMovementPresented, onRoomRevealActivity });
   const lightingRooms = React.useMemo(() => {
-    const discovered = new Set(visibleRooms.filter(room => room.state === 'discovered').map(room => room.id));
+    const discovered = new Set(sceneRooms.filter(room => room.state === 'discovered').map(room => room.id));
     return sceneSprites.filter(sprite => discovered.has(sprite.id));
-  }, [sceneSprites, visibleRooms]);
+  }, [sceneSprites, sceneRooms]);
   const sceneFigures = React.useMemo(() => {
     const figures = new Map<string, SceneFigureAsset>(
       getAllExplorers(core).map(explorer => [`player:${explorer.playerId}`, { id: explorer.explorerId }]),
@@ -471,6 +499,50 @@ export function BetrayalRoomMapSurface({
     }
     return result;
   }, [moveReachSegments]);
+  const scenePaths = React.useMemo<ScenePath[]>(() => [
+    ...moveReachSegments.filter(segment =>
+      !sceneTutorialTargets || sceneTutorialTargets.includes(segment.targetRoomId),
+    ).map(segment => ({ ...segment, kind: "move" as const })),
+    ...attackLineOfSightSegments.map(segment => ({ ...segment, kind: "attack" as const })),
+  ], [moveReachSegments, attackLineOfSightSegments, sceneTutorialTargets]);
+  const mummyMonsterId = core.scenarioRuntime.mummy?.mummyMonsterId;
+  const girlTransfer = React.useMemo<GirlMarkerTransfer | undefined>(() => girlTransferId && girlTransferTarget ? {
+    id: girlTransferId,
+    targetFigureId: girlTransferTarget,
+    durationMs: reducedSceneMotion ? 0 : BETRAYAL_VISUAL_TRANSITION_DURATION_MS,
+    onComplete: onGirlTransferComplete,
+  } : undefined, [girlTransferId, girlTransferTarget, onGirlTransferComplete, reducedSceneMotion]);
+  const sceneMarkers = React.useMemo<SceneMarker[]>(() => {
+    const room = visibleRooms.find(item => item.id === girlRoomId);
+    const girl = room && visibleHauntTokensByRoomId.get(room.id)?.find(token => token.id === "mummy-girl-token");
+    if (!room || !girl || girl.id === movingGirlTokenId) return [];
+    const ownerFigureId = girl.ownerPlayerId ? `player:${girl.ownerPlayerId}`
+      : girl.status === "held-by-mummy" && mummyMonsterId ? `monster:${mummyMonsterId}` : undefined;
+    const roomRect = resolveRoomTileStyle(room, roomCanvasLayout);
+    const slot = resolveRoomEntitySlots([
+      ...(roomOccupants[room.id] ?? []).map(explorer => `player:${explorer.playerId}`),
+      ...(roomMonsters[room.id] ?? []).map(monster => `monster:${monster.id}`),
+    ], true).get(GIRL_ROOM_SLOT);
+    const attachment = ownerFigureId ? resolveCarriedGirlMarker(ownerFigureId) : null;
+    const size = attachment?.size ?? 56;
+    const selectable = !girlTransfer && girl.status === "placed" && canPickUpMummyGirlRoomId === room.id &&
+      (!sceneTutorialCommands || sceneTutorialCommands.includes(BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL));
+    return [{
+      sprite: {
+        id: "marker:mummy-girl",
+        textureUrls: [mummyGirlGlyph],
+        x: attachment ? attachment.x - size / 2
+          : roomRect.left + (slot ? slot.x + (slot.size - size) / 2 : (roomRect.width - size) / 2),
+        y: attachment ? attachment.z - size / 2
+          : roomRect.top + (slot ? slot.y + (slot.size - size) / 2 : roomRect.height - size - 12),
+        width: size, height: size, border: { color: 0xc49c65, width: 1 },
+      },
+      ownerFigureId, selectable,
+      highlight: selectable ? "candidate"
+        : tutorialHighlightTarget === "betrayal-mummy-carried-girl" ? "selected" : undefined,
+    }];
+  }, [visibleRooms, girlRoomId, visibleHauntTokensByRoomId, movingGirlTokenId, girlTransfer, mummyMonsterId,
+    roomCanvasLayout, roomOccupants, roomMonsters, canPickUpMummyGirlRoomId, sceneTutorialCommands, tutorialHighlightTarget]);
 
   return (
     <div className="relative min-h-0 flex-1" data-room-reveal-active={sceneMovement.roomRevealActive}>
@@ -480,6 +552,11 @@ export function BetrayalRoomMapSurface({
         ref={roomGridRef}
         sprites={sceneMovement.sprites}
         figures={sceneFigures}
+        paths={scenePaths}
+        markers={sceneMarkers}
+        girlTransfer={girlTransfer}
+        hauntFocusRoomId={activeHauntTargetGuide?.roomId ?? undefined}
+        interactionBlocked={hiddenTableChrome}
         lightingRooms={lightingRooms}
         activeExplorerId={`player:${core.currentExplorer.playerId}`}
         onMotionComplete={sceneMovement.complete}
@@ -664,6 +741,21 @@ export function BetrayalRoomMapSurface({
             canSelectDynamiteRoom ||
             canMoveHelpingHandsTrollHandToRoom ||
             canMoveMonsterToRoom;
+          const sceneCommand = canSelectEventRoom
+            ? BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
+            : canSelectBloodFromStoneSetupPlacementRoom
+              ? BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS
+              : canMoveMonsterToRoom
+                ? BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+                : canMoveHelpingHandsTrollHandToRoom
+                  ? BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND
+                  : canMoveToRoom || shouldShowPassiveMoveTarget
+                    ? BETRAYAL_COMMANDS.MOVE_TO_ROOM
+                    : isExploreTarget ? BETRAYAL_COMMANDS.EXPLORE_ROOM : BETRAYAL_COMMANDS.USE_POSSESSION;
+          const sceneRoomAllowed = isPendingRoomPlacementSlot || (isExploreTarget && tutorialMapTargetRoomId === room.id) ||
+            (canSelectRoomFocusAction && isHauntTargetRoom) ||
+            ((!sceneTutorialCommands || sceneTutorialCommands.includes(sceneCommand)) &&
+              (sceneCommand !== BETRAYAL_COMMANDS.MOVE_TO_ROOM || !sceneTutorialTargets || sceneTutorialTargets.includes(room.id)));
           const identityPresentation = resolveRoomIdentityPresentation(room, {
             isDiscovered,
             isExploreTarget,
@@ -673,6 +765,7 @@ export function BetrayalRoomMapSurface({
             <div
               key={room.id}
               data-testid={`betrayal-room-shell-${room.id}`}
+              data-scene-room-shell=""
               data-zoom-pan-target={`betrayal-room-${room.id}`}
               className="group absolute overflow-visible"
               style={{
@@ -699,6 +792,7 @@ export function BetrayalRoomMapSurface({
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
+                  if (canSelectRoom && !sceneRoomAllowed) return;
                   if (canSelectEventRoom) {
                     onSelectEventTargetRoom(room.id);
                     return;
@@ -743,6 +837,16 @@ export function BetrayalRoomMapSurface({
                 }}
                 tabIndex={0}
                 data-testid={`betrayal-room-${room.id}`}
+                data-scene-room-id={room.id}
+                data-scene-action-blocked={!sceneRoomAllowed && canSelectRoom ? "" : undefined}
+                data-scene-highlight={
+                  !sceneRoomAllowed ? undefined : isPendingRoomPlacementSlot || isSelectedInventoryTargetRoom || isSelectedEventChoiceTargetRoom ||
+                  isSelectedActiveMaskTargetRoom || bloodFromStoneSetupPlacementCountForRoom > 0
+                    ? "selected"
+                    : canSelectRoom || isHauntTargetRoom
+                      ? isDynamiteTargetRoom ? "hostile" : "candidate"
+                      : shouldShowPassiveMoveTarget ? "passive" : undefined
+                }
                 data-room-state={room.state}
                 data-room-visual-id={room.visualId}
                 data-move-cost={isReachableRoom ? moveCost : undefined}
@@ -885,6 +989,7 @@ export function BetrayalRoomMapSurface({
                                 ? "bg-[radial-gradient(circle_at_50%_42%,rgba(96,155,125,0.07),transparent_58%)]"
                                 : "bg-[linear-gradient(180deg,rgba(3,6,5,0.02),rgba(3,5,5,0.16))]"
                   }`}
+                  data-scene-legacy-tint=""
                 />
                 {isRoomSelectionTarget ? (
                   <span
@@ -905,6 +1010,7 @@ export function BetrayalRoomMapSurface({
                         : undefined
                     }
                     data-highlight-layer-count="1"
+                    data-scene-legacy-highlight=""
                     data-highlight-style="solid"
                     className={`pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] bg-[rgba(34,197,94,0.07)] ${
                       isSelectedInventoryTargetRoom ||
@@ -920,6 +1026,7 @@ export function BetrayalRoomMapSurface({
                     data-testid={`betrayal-room-focus-card-highlight-${room.id}`}
                     data-highlight-shape="room"
                     data-highlight-layer-count="1"
+                    data-scene-legacy-highlight=""
                     data-highlight-style="solid"
                     className="pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] border-[#86efac] bg-[rgba(34,197,94,0.07)]"
                   />
@@ -985,12 +1092,15 @@ export function BetrayalRoomMapSurface({
                 occupants={occupants}
                 monsters={monsters}
                 visibleGirlToken={visibleGirlToken}
+                sceneTutorialCommands={sceneTutorialCommands}
+                selectedSceneMonsterMoveId={selectedSceneMonsterMoveId}
+                hasGirlRoomSlot={room.id === girlRoomId}
                 canSelectRoom={canSelectRoom}
                 canPickUpMummyGirl={canPickUpMummyGirl}
                 currentExplorerPlayerId={core.currentExplorer.playerId}
                 interactionMode={interactionMode}
                 traitorPlayerId={core.scenarioRuntime.traitorPlayerId}
-                mummyMonsterId={core.scenarioRuntime.mummy?.mummyMonsterId}
+                mummyMonsterId={mummyMonsterId}
                 activeHauntTargetGuide={activeHauntTargetGuide}
                 hauntActionKind={hauntActionKind}
                 selectedInventoryUseEffectMode={selectedInventoryUseEffectMode}
@@ -1071,6 +1181,7 @@ export function BetrayalRoomMapSurface({
                 <span
                   data-testid={`betrayal-room-move-card-highlight-${room.id}`}
                   data-highlight-layer-count="1"
+                  data-scene-legacy-highlight=""
                   data-highlight-style="solid"
                   className="pointer-events-none absolute inset-0 z-20 rounded-[4px] border-[3px] border-[#6aa986] bg-[rgba(106,169,134,0.06)]"
                   title={moveTargetTitle}
@@ -1080,6 +1191,7 @@ export function BetrayalRoomMapSurface({
                 <span
                   data-testid={`betrayal-room-helping-hands-troll-move-target-${room.id}`}
                   data-highlight-layer-count="1"
+                  data-scene-legacy-highlight=""
                   data-highlight-style="solid"
                   className="pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] border-[#9fe1a7] bg-[rgba(159,225,167,0.07)]"
                   title={t("board.status.helpingHandsTrollMoveTarget", {
@@ -1092,6 +1204,7 @@ export function BetrayalRoomMapSurface({
                 <span
                   data-testid={`betrayal-room-monster-move-target-${room.id}`}
                   data-highlight-layer-count="1"
+                  data-scene-legacy-highlight=""
                   data-highlight-style="solid"
                   className="pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] border-[#9fe1a7] bg-[rgba(159,225,167,0.07)]"
                   title={t("board.status.monsterMoveTarget", {
@@ -1113,6 +1226,7 @@ export function BetrayalRoomMapSurface({
                         : "false"
                     }
                     data-highlight-layer-count="1"
+                    data-scene-legacy-highlight=""
                     data-highlight-style="solid"
                     className={`pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] bg-[rgba(34,197,94,0.07)] ${
                       bloodFromStoneSetupPlacementCountForRoom > 0
@@ -1136,13 +1250,14 @@ export function BetrayalRoomMapSurface({
                   ) : null}
                 </>
               ) : null}
-              {isExploreTarget ? (
+              {isExploreTarget && sceneRoomAllowed ? (
                 <span
                   data-testid={`betrayal-room-explore-target-${room.id}`}
                   data-room-placement-selected={
                     isPendingRoomPlacementSlot ? "true" : undefined
                   }
                   data-highlight-layer-count="1"
+                  data-scene-legacy-highlight=""
                   data-highlight-style="solid"
                   className={`pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-[4px] border-[3px] bg-[rgba(34,197,94,0.07)] ${
                     isPendingRoomPlacementSlot
@@ -1165,6 +1280,8 @@ export function BetrayalRoomMapSurface({
                     onOpenRoomPreview(room.id);
                   }}
                   data-testid={`betrayal-room-preview-${room.id}`}
+                  data-scene-room-inspect={room.id}
+                  disabled={hiddenTableChrome}
                   className="pointer-events-auto absolute bottom-2 right-2 z-30 grid h-7 w-7 place-items-center rounded-[5px] border border-[rgba(222,192,133,0.34)] bg-[rgba(7,10,8,0.7)] text-[#f0d29a] opacity-0 shadow-[0_5px_10px_rgba(0,0,0,0.24)] transition group-hover:opacity-78 hover:bg-[rgba(36,28,19,0.88)] hover:opacity-100 focus:opacity-100"
                   title={t("board.rooms.preview")}
                 >

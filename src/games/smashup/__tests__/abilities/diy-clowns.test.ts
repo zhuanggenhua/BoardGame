@@ -4,6 +4,7 @@ import { getDiscardActionPlayOptions } from '../../domain/discardActionPlayabili
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SU_COMMANDS, SU_EVENTS, type TriggerQueuedEvent } from '../../domain/types';
 import {
+    getFirstPrompt,
     getPromptSourceId,
     getSimpleChoicePrompt,
     makeBase,
@@ -21,6 +22,92 @@ describe('DIY 小丑 abilities', () => {
     beforeEach(() => {
         resetAbilityInit();
         initAllAbilities();
+    });
+
+    it('打出沉默小丑时立即选择弃牌堆行动，不能在后续回合持续使用', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('silent', 'diy_clowns_silent_clown', 'minion', '0')],
+                    discard: [makeCard('scarf', 'diy_clowns_colorful_scarf', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [])],
+        }));
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'silent', baseIndex: 0 },
+        });
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'diy_clowns_silent_clown');
+        expect(prompt.options.some(option => option.value?.cardUid === 'scarf')).toBe(true);
+        expect(prompt.options.some(option => option.value?.skip === true)).toBe(true);
+
+        const laterTurn = makeState({
+            players: {
+                '0': makePlayer('0', { discard: [makeCard('later', 'diy_clowns_colorful_scarf', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [makeMinion('silent', 'diy_clowns_silent_clown', '0', 3)])],
+        });
+        expect(getDiscardActionPlayOptions(laterTurn, '0').some(option => option.card.uid === 'later')).toBe(false);
+    });
+
+    it('沉默小丑在本回合已打过额外行动时不再发动', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('silent-after-extra', 'diy_clowns_silent_clown', 'minion', '0')],
+                    discard: [makeCard('scarf-after-extra', 'diy_clowns_colorful_scarf', 'action', '0')],
+                    actionsPlayed: 0,
+                    actionCardsPlayedThisTurn: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [])],
+        }));
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'silent-after-extra', baseIndex: 0 },
+        });
+        expect(result.success, result.error).toBe(true);
+        expect(getPromptSourceId(getFirstPrompt(result.finalState))).not.toBe('diy_clowns_silent_clown');
+        expect(getDiscardActionPlayOptions(result.finalState.core, '0')).toEqual([]);
+    });
+
+    it.each([
+        'ancient_egyptians_you_can_take_it_with_you',
+        'ancient_egyptians_tomb_trap',
+        'ancient_egyptians_blessing_of_anubis',
+        'ancient_egyptians_you_can_take_it_with_you_pod',
+        'ancient_egyptians_tomb_trap_pod',
+        'ancient_egyptians_blessing_of_anubis_pod',
+    ])('滑稽小丑不能从弃牌堆打出自埋行动 %s', (defId) => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('burial', defId, 'action', '0'),
+                        makeCard('normal', 'diy_clowns_colorful_scarf', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [makeMinion('slapstick', 'diy_clowns_slapstick_clown', '0', 5)])],
+        }));
+
+        const options = getDiscardActionPlayOptions(state.core, '0');
+        expect(options.some(option => option.card.uid === 'normal')).toBe(true);
+        expect(options.some(option => option.card.uid === 'burial')).toBe(false);
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'burial', fromDiscard: true, targetBaseIndex: 0 },
+        });
+        expect(result.success).toBe(false);
     });
 
     it('滑稽小丑允许从弃牌堆打出无目标标准行动并消耗通常行动', () => {

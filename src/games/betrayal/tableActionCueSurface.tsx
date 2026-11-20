@@ -58,6 +58,7 @@ export function BetrayalTableActionCueSurface({
   selectedInventoryReplacementRollTotal,
   selectedInventoryHealPreviewExplorer,
   selectedInventoryHealPreviewTraits,
+  healPreviewInSidebar,
   attackWeaponCardStatuses,
   selectedAttackWeaponCardId,
   selectedCorpseLootTarget,
@@ -90,6 +91,7 @@ export function BetrayalTableActionCueSurface({
   selectedInventoryReplacementRollTotal: number | null;
   selectedInventoryHealPreviewExplorer: BetrayalExplorerSummary | null;
   selectedInventoryHealPreviewTraits: BetrayalTraitKey[];
+  healPreviewInSidebar: boolean;
   attackWeaponCardStatuses: BetrayalAttackWeaponCardStatus[];
   selectedAttackWeaponCardId: string | null;
   selectedCorpseLootTarget: BetrayalExplorerSummary | null;
@@ -137,6 +139,31 @@ export function BetrayalTableActionCueSurface({
   if (hidden || !hasVisibleCue) {
     return null;
   }
+
+  const healPreview = selectedInventoryHealPreviewExplorer ? (
+    <div
+      data-testid="betrayal-inventory-heal-preview"
+      data-player-id={selectedInventoryHealPreviewExplorer.playerId}
+      className="grid grid-cols-2 gap-1.5 rounded-[9px] border border-[rgba(211,179,109,0.22)] bg-[rgba(12,14,12,0.86)] p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
+    >
+      <span className="col-span-2 px-2 text-xs font-semibold text-[#ede1c7]">
+        {selectedInventoryHealPreviewExplorer.displayName}
+      </span>
+      {selectedInventoryHealPreviewTraits.map((trait) => (
+        <ExplorerTraitOutcomePreview
+          key={trait}
+          explorer={selectedInventoryHealPreviewExplorer}
+          trait={trait}
+          mode="heal"
+          phase={phase}
+          stepCount={0}
+          locale={locale}
+          t={t}
+          testIdPrefix="betrayal-inventory-heal-preview"
+        />
+      ))}
+    </div>
+  ) : null;
 
   const content = (
     <div
@@ -289,29 +316,7 @@ export function BetrayalTableActionCueSurface({
           })}
         </div>
       ) : null}
-      {selectedInventoryHealPreviewExplorer ? (
-        <div
-          data-testid="betrayal-inventory-heal-preview"
-          data-player-id={selectedInventoryHealPreviewExplorer.playerId}
-          className={`grid grid-cols-2 gap-1.5 rounded-[9px] border border-[rgba(211,179,109,0.22)] bg-[rgba(12,14,12,0.58)] p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)] ${
-            isPortal ? "max-w-[min(620px,calc(100vw-2rem))]" : "max-w-[620px]"
-          }`}
-        >
-          {selectedInventoryHealPreviewTraits.map((trait) => (
-            <ExplorerTraitOutcomePreview
-              key={`heal-preview-${trait}`}
-              explorer={selectedInventoryHealPreviewExplorer}
-              trait={trait}
-              mode="heal"
-              phase={phase}
-              stepCount={0}
-              locale={locale}
-              t={t}
-              testIdPrefix="betrayal-inventory-heal-preview"
-            />
-          ))}
-        </div>
-      ) : null}
+      {!healPreviewInSidebar && healPreview}
       {attackWeaponCardStatuses.length > 0 ? (
         <div
           data-testid="betrayal-attack-weapon-selector"
@@ -502,5 +507,19 @@ export function BetrayalTableActionCueSurface({
     </div>
   );
 
-  return hasExploreDeclarationOptions ? <HudPortal>{content}</HudPortal> : content;
+  return (
+    <>
+      {hasExploreDeclarationOptions ? <HudPortal>{content}</HudPortal> : content}
+      {healPreviewInSidebar && healPreview ? (
+        <HudPortal>
+          <div
+            className="pointer-events-none fixed left-[1.5vw] top-[40vh] w-[min(440px,28vw)]"
+            style={{ zIndex: UI_Z_INDEX.hud + 10 }}
+          >
+            {healPreview}
+          </div>
+        </HudPortal>
+      ) : null}
+    </>
+  );
 }

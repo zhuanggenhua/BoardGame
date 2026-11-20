@@ -116,6 +116,7 @@ export interface PlayerState {
     servantId: string;
     locationId: LocationId | null;
     deploymentSlot: number | null;
+    secondaryDeploymentSlot?: number;
     mana: number;
     victoryPoints: number;
     commandSpells: number;
@@ -137,6 +138,8 @@ export interface PlayerState {
     revealedSkillIds: string[];
     normalAttackPlayed: boolean;
     normalMoveCompleted: boolean;
+    /** 本轮曾明置打出或加入特殊属性攻击，牌离场后仍保留该事实。 */
+    playedSpecialAttackThisRound?: boolean;
     piercingSpearPlays?: number;
     /** 调查选择放回牌库后，下一回合不能再使用调查。 */
     investigationBlockedRound?: number;
@@ -188,6 +191,10 @@ export interface FateBattleResolutionState {
     step: FateBattleResolutionStep;
 }
 
+export interface FateGameResult extends GameOverResult {
+    victoryCondition?: 'excalibur';
+}
+
 export interface FateDominationCore {
     /** Public transport projection: hidden zones expose counts, never card identities. */
     publicView?: { shintoEventCount: number; canViewHiddenShinto?: boolean };
@@ -226,7 +233,7 @@ export interface FateDominationCore {
     ruleState: FateRuleState;
     /** 业务层的战斗结算帧事实；与 sys.resolution 的系统帧一一对应。 */
     battleResolution?: FateBattleResolutionState;
-    gameResult?: GameOverResult;
+    gameResult?: FateGameResult;
 }
 
 export type SelectMasterCommand = Command<'SELECT_MASTER', { masterId: string }>;
@@ -288,7 +295,7 @@ export type AttacksConfirmedEvent = GameEvent<'ATTACKS_CONFIRMED', { playerId: P
 export type CardInspectedEvent = GameEvent<'CARD_INSPECTED', { playerId: PlayerId; cardId: string }>;
 export type PhasePlayerFinishedEvent = GameEvent<'FATE_PHASE_PLAYER_FINISHED', { playerId: PlayerId; nextPlayerId: PlayerId }>;
 export type PhaseAdvancedEvent = GameEvent<'PHASE_ADVANCED', { phase: FatePhase; round: number; currentPlayerId: PlayerId }>;
-export type BattleResolvedEvent = GameEvent<'BATTLE_RESOLVED', { result: BattleResult; nextRound: number; gameResult?: GameOverResult; recycledAttackDecks?: Record<PlayerId, CardInstance[]>; recycledEventDeck?: EventCardDefinition[]; eventDraw?: { drawn: EventCardDefinition[]; deck: EventCardDefinition[]; discard: EventCardDefinition[] } }>;
+export type BattleResolvedEvent = GameEvent<'BATTLE_RESOLVED', { result: BattleResult; nextRound: number; gameResult?: FateGameResult; recycledAttackDecks?: Record<PlayerId, CardInstance[]>; recycledEventDeck?: EventCardDefinition[]; eventDraw?: { drawn: EventCardDefinition[]; deck: EventCardDefinition[]; discard: EventCardDefinition[] } }>;
 export type BattleResolutionStartedEvent = GameEvent<'FATE_BATTLE_RESOLUTION_STARTED', {
     frameId: string;
     round: number;
@@ -301,6 +308,7 @@ export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', {
     path: LocationId[];
     mode: MovementMode;
     manaSpent: number;
+    claimBattlefieldTerrain?: true;
     context?: {
         allowAnyDestination?: boolean;
         ignoreEngagement?: boolean;
@@ -321,6 +329,10 @@ export type FateInvestigationResolvedEvent = GameEvent<'FATE_INVESTIGATION_RESOL
 export type FatePostBattleStartedEvent = GameEvent<'FATE_POST_BATTLE_STARTED', {round:number;frameId:string;recipients:PlayerId[]}>;
 export type FatePostBattleSealChosenEvent = GameEvent<'FATE_POST_BATTLE_SEAL_CHOSEN', {playerId:PlayerId;restore:boolean}>;
 export type FateManaGainedEvent = GameEvent<'FATE_MANA_GAINED', {playerId:PlayerId;amount:number;sourceId:string}>;
+export type FateBattleScoreAdjustedEvent = GameEvent<'FATE_BATTLE_SCORE_ADJUSTED', {
+    sourceId: string;
+    changes: Array<{ playerId: PlayerId; amount: number }>;
+}>;
 export type FateCardsDrawnEvent = GameEvent<'FATE_CARDS_DRAWN', {playerId:PlayerId;drawn:CardInstance[];deck:CardInstance[];discard:CardInstance[]}>;
 export type FateAbilityUnimplementedEvent = GameEvent<'FATE_ABILITY_UNIMPLEMENTED', {
     playerId: PlayerId;
@@ -388,6 +400,7 @@ export type FateDominationEvent =
     | FatePostBattleStartedEvent
     | FatePostBattleSealChosenEvent
     | FateManaGainedEvent
+    | FateBattleScoreAdjustedEvent
     | FateCardsDrawnEvent
     | FateAbilityUsedEvent
     | FateRidingChoiceRequestedEvent

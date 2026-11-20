@@ -176,6 +176,14 @@ export function resolveSmashUpHandPromptUiMode({
     if (!isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID })) return 'none';
     if (targetType !== 'hand') return 'none';
     if (hasEnabledCardOptionOutsideHand(currentPrompt, hand)) return 'overlay';
+    const seenCardUids = new Set<string>();
+    for (const option of (currentPrompt as ButtonOverlayPromptLike)?.options ?? []) {
+        if (option.disabled) continue;
+        const value = option.value as { cardUid?: unknown } | undefined;
+        if (typeof value?.cardUid !== 'string') continue;
+        if (seenCardUids.has(value.cardUid)) return 'overlay';
+        seenCardUids.add(value.cardUid);
+    }
     if (currentPrompt?.multi && !hasEnabledCardOptionInHand(currentPrompt, hand)) return 'overlay';
     return 'direct';
 }

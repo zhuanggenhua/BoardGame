@@ -518,6 +518,7 @@ export function applyBetrayalMummyAttackRewardResolvedState(
     }
     const defender = findExplorerByPlayerId(core, event.payload.defenderPlayerId);
     mummy.pendingAttackReward = undefined;
+    let didSteal = false;
     if (event.payload.choice === 'steal' && defender && event.payload.stolenCardId) {
         if (
             event.payload.stolenCardId === MUMMY_GIRL_STEAL_CARD_ID
@@ -526,9 +527,11 @@ export function applyBetrayalMummyAttackRewardResolvedState(
             mummy.girlRoomId = null;
             mummy.girlHolderPlayerId = null;
             mummy.girlHeldByMummy = true;
+            didSteal = true;
         } else {
             const stolenCard = defender.inventory.find((card) => card.id === event.payload.stolenCardId);
             if (stolenCard) {
+                didSteal = true;
                 defender.inventory = defender.inventory.filter((card) => card.id !== stolenCard.id);
                 mummy.mummyCarriedCards = [
                     ...mummy.mummyCarriedCards.filter((card) => card.id !== stolenCard.id),
@@ -578,6 +581,7 @@ export function applyBetrayalMummyAttackRewardResolvedState(
             syncedCore,
             event.payload.logText,
             event.payload.choice === 'damage' ? 'warning' : 'accent',
+            didSteal ? 'mummy-steal' : undefined,
         ),
     };
     const scenarioCompletedResult = resolveMummyTraitorVictoryResult(loggedCore);

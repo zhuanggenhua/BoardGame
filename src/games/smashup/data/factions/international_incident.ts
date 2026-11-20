@@ -22,9 +22,9 @@ export const SUMO_WRESTLERS_ACTIONS: ActionCardDef[] = [
 
 export const SUMO_WRESTLERS_MINIONS: MinionCardDef[] = [
     { id: 'sumo_wrestlers_yokozuna', type: 'minion', name: '横纲', nameEn: 'Yokozuna', faction: SUMO, power: 6, abilityTags: ['ongoing', 'talent'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 } },
-    { id: 'sumo_wrestlers_third_tier', type: 'minion', name: '关胁', nameEn: 'Third Tier', faction: SUMO, power: 3, abilityTags: ['talent'], count: 3, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 } },
+    { id: 'sumo_wrestlers_third_tier', type: 'minion', name: '关胁', nameEn: 'Third Tier', faction: SUMO, power: 3, abilityTags: ['onPlay'], count: 3, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 } },
     { id: 'sumo_wrestlers_top_tier', type: 'minion', name: '大关', nameEn: 'Top Tier', faction: SUMO, power: 4, abilityTags: ['ongoing'], count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 } },
-    { id: 'sumo_wrestlers_rookie_sumo', type: 'minion', name: '相扑新人', nameEn: 'Rookie Sumo', faction: SUMO, power: 2, abilityTags: ['talent'], count: 4, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 11 } },
+    { id: 'sumo_wrestlers_rookie_sumo', type: 'minion', name: '相扑新人', nameEn: 'Rookie Sumo', faction: SUMO, power: 2, abilityTags: ['onPlay'], count: 4, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 11 } },
 ];
 
 export const MUSKETEERS_ACTIONS: ActionCardDef[] = [
@@ -49,7 +49,7 @@ export const MUSKETEERS_MINIONS: MinionCardDef[] = [
 
 export const MOUNTIES_ACTIONS: ActionCardDef[] = [
     { id: 'mounties_eh', type: 'action', subtype: 'special', name: '嗯？', nameEn: 'Eh?', faction: MOUNTIES, abilityTags: ['special'], count: 1, specialTiming: 'triggered', playNeedsMinion: true, playTargetMinionController: 'self', activatableAbilities: [{ kind: 'special', zone: 'discard', window: 'playCards' }], previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 26 } },
-    { id: 'mounties_bring_em_in', type: 'action', subtype: 'ongoing', name: '带进来', nameEn: "Bring 'Em In", faction: MOUNTIES, abilityTags: ['ongoing'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'opponent', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 27 } },
+    { id: 'mounties_bring_em_in', type: 'action', subtype: 'ongoing', name: '带进来', nameEn: "Bring 'Em In", faction: MOUNTIES, abilityTags: ['ongoing'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'any', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 27 } },
     { id: 'mounties_when_calls_the_badge', type: 'action', subtype: 'standard', name: '呼叫警徽', nameEn: 'When Calls the Badge', faction: MOUNTIES, abilityTags: ['onPlay', 'special'], count: 1, responseWindowTiming: 'beforeScoring', responseWindowNeedsBase: true, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 31 } },
     { id: 'mounties_always_get_our_man', type: 'action', subtype: 'standard', name: '总是抓住我们的人', nameEn: 'Always Get Our Man', faction: MOUNTIES, abilityTags: ['onPlay'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 33 } },
     { id: 'mounties_battle_moose', type: 'action', subtype: 'ongoing', name: '战斗麋鹿', nameEn: 'Battle Moose', faction: MOUNTIES, abilityTags: ['ongoing'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'self', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 34 } },
@@ -69,7 +69,7 @@ export const LUCHADORS_ACTIONS: ActionCardDef[] = [
     { id: 'luchadors_quick_set_up', type: 'action', subtype: 'ongoing', name: '快速 Set-Up', nameEn: 'Quick Set-Up', faction: LUCHADORS, abilityTags: ['onPlay', 'ongoing', 'extra'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'opponent', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 38 } },
     { id: 'luchadors_smart_set_up', type: 'action', subtype: 'ongoing', name: '聪明 Set-Up', nameEn: 'Smart Set-Up', faction: LUCHADORS, abilityTags: ['ongoing'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'opponent', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 39 } },
     { id: 'luchadors_reversal', type: 'action', subtype: 'special', name: '逆转', nameEn: 'Reversal', faction: LUCHADORS, abilityTags: ['special'], count: 1, specialTiming: 'beforeScoring', specialNeedsBase: true, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 41 } },
-    { id: 'luchadors_pin', type: 'action', subtype: 'ongoing', name: '压制', nameEn: 'Pin', faction: LUCHADORS, abilityTags: ['ongoing'], count: 2, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'any', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 42 } },
+    { id: 'luchadors_pin', type: 'action', subtype: 'ongoing', name: '压制', nameEn: 'Pin', faction: LUCHADORS, abilityTags: ['ongoing'], count: 2, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'any', playTargetMinionRequiresOwnAction: true, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 42 } },
     { id: 'luchadors_powerful_set_up', type: 'action', subtype: 'ongoing', name: '强力 Set-Up', nameEn: 'Powerful Set-Up', faction: LUCHADORS, abilityTags: ['ongoing'], count: 1, ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'opponent', previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 44 } },
     { id: 'luchadors_tag_team', type: 'action', subtype: 'standard', name: '团队标记', nameEn: 'Tag-Team', faction: LUCHADORS, abilityTags: ['onPlay', 'extra'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 45 } },
     { id: 'luchadors_out_for_the_count', type: 'action', subtype: 'standard', name: '点名出局', nameEn: 'Out for the Count', faction: LUCHADORS, abilityTags: ['onPlay'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 47 } },

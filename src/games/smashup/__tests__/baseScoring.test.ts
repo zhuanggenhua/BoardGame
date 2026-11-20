@@ -36,6 +36,7 @@ import {
     getPromptPlayerId,
     getPromptSourceId,
     getOptionalSimpleChoicePrompt,
+    makeMatchState,
     scoreBaseViaFlow,
     getSimpleChoicePrompt,
 } from './helpers';
@@ -484,10 +485,7 @@ describe('基地记分与力量计算', () => {
                 }],
             };
 
-            const matchState = {
-                core: updatedState,
-                sys: { interaction: { current: undefined, queue: [] } },
-            } as any;
+            const matchState = makeMatchState(updatedState);
 
             const result = scoreBaseViaFlow(staleState, 0, [], '0', 1000, undefined, matchState);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;

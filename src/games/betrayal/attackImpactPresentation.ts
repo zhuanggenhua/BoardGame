@@ -100,7 +100,9 @@ export function resolveAttackImpactByPlayerId(
     impactByPlayerId.set(defenderImpact.playerId, defenderImpact);
   }
 
-  const attacker = explorers.find(
+  // Older saved monster rolls identify their source in the roll ID.
+  const isMonsterAttacker = Boolean(attack.attackerMonsterId) || recentRoll.id.includes("-normal-attack-");
+  const attacker = isMonsterAttacker ? undefined : explorers.find(
     (explorer) => explorer.playerId === recentRoll.playerId,
   );
   const attackerImpact = buildAttackImpactState({

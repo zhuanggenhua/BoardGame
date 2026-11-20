@@ -6,6 +6,7 @@ import {
   useImpactFeedback,
 } from "../../components/common/animations";
 import type { BetrayalTraitKey } from "./game";
+import { BetrayalScreenFeedback } from "./screenFeedback";
 import {
   BETRAYAL_ATTACK_IMPACT_COMPLETE_MS,
   BETRAYAL_ATTACK_IMPACT_FLASH_RESET_MS,
@@ -56,10 +57,7 @@ export function BetrayalAttackImpactSurface({
     impact.losses.reduce((sum, entry) => sum + entry.amount, 0),
   );
   const testId = `betrayal-attack-impact-${surface}-${impact.playerId}`;
-  const lossLabels =
-    impact.losses.length > 0
-      ? impact.losses
-      : [{ trait: primaryTrait, amount: damageAmount }];
+  const FloatingRoot = surface === "map" ? BetrayalScreenFeedback : React.Fragment;
 
   React.useEffect(() => {
     trigger(damageAmount);
@@ -121,11 +119,12 @@ export function BetrayalAttackImpactSurface({
           />
         </span>
       </span>
+      <FloatingRoot>
       <span
         data-testid={`betrayal-attack-impact-floating-${surface}-${impact.playerId}`}
         className="betrayal-attack-impact-floating"
       >
-        {lossLabels.map((entry, index) => {
+        {impact.losses.map((entry, index) => {
           const tone = TRAIT_DAMAGE_TONE[entry.trait];
           return (
             <span
@@ -142,6 +141,7 @@ export function BetrayalAttackImpactSurface({
           );
         })}
       </span>
+      </FloatingRoot>
     </div>
   );
 }

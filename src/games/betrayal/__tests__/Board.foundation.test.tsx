@@ -2898,7 +2898,9 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('木乃伊横行叛徒可从牌桌主动作拾起女孩并交给木乃伊', async () => {
-        const { core, traitorRoomId } = createMummyTraitorActionBoardCore();
+        const { core, traitorRoomId } = createMummyTraitorActionBoardCore({
+            inventory: [{ id: 'holy-symbol-2', name: '圣符', kind: 'omen' }],
+        });
 
         renderMummyTraitorActionBoard(core);
 
@@ -2932,7 +2934,7 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId(girlTokenId)).toHaveAttribute('data-token-placement', 'explorer');
             expect(screen.getByTestId(`betrayal-girl-svg-token-${traitorRoomId}`)).toHaveAttribute(
                 'data-token-visual-size',
-                '54',
+                '38',
             );
             expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('交出女孩');
             expect(screen.queryByTestId('betrayal-room-focus-target')).not.toBeInTheDocument();
@@ -3382,7 +3384,7 @@ describe('Betrayal Board foundation', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('木乃伊移动');
-            expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('可移动 0 间');
+            expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('木乃伊可瞬移到任意已发现房间');
         });
         expectEventRollConfirmButtonStyle(screen.getByTestId('betrayal-roll-continue'));
         fireEvent.click(screen.getByTestId('betrayal-roll-continue'));

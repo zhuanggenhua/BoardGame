@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDustFeverishAttackReadyRuntimeCore,
     createDustFeverishNaturalMonsterTurnBeforeRollRuntimeCore,
     initBetrayalContext,
@@ -230,7 +231,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
         await expect(monsterAttackAction).toContainText('取消攻击');
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('先点发动攻击的怪物');
         await expect(feverishToken).toHaveAttribute('data-direct-target', 'true');
-        await feverishToken.click();
+        await clickBetrayalSceneFigure(feverishToken);
         await expect(heroTargetToken).toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${FEVERISH_START_ROOM_ID}-${HERO_TARGET_PLAYER_ID}`)).toHaveAttribute('data-highlight-shape', 'pentagon');
         await saveScreenshot(page, ATTACK_TARGET_SCREENSHOT);
@@ -239,7 +240,7 @@ test.describe('山屋惊魂作祟3灰尘狂热病患自然怪物回合', () => {
             0.5, 0.01, 0.01, 0.01, 0.01, 0.01,
             0.01, 0.01, 0.01, 0.01, 0.01,
         ]);
-        await heroTargetToken.click();
+        await clickBetrayalSceneFigure(heroTargetToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('狂热病患');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');

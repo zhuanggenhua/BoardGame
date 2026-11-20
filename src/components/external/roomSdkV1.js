@@ -1,5 +1,6 @@
 (function () {
 const ROOM_PROTOCOL_VERSION = 1;
+const ROOM_SDK_RELEASE = '1.0.0';
 const ROOM_CONNECT_MESSAGE = 'boardgame:room-connect';
 const MAX_SIGNAL_LENGTH = 65_536;
 
@@ -20,7 +21,10 @@ function toRoom(value) {
         players.push(Object.freeze({ seatId: player.seatId, displayName: player.displayName, ready: player.ready }));
     }
     if (!seats.has(value.seatId) || !seats.has(value.hostSeatId)) return null;
-    return Object.freeze({ roomId: value.roomId, seatId: value.seatId, hostSeatId: value.hostSeatId, players: Object.freeze(players) });
+    const capacity = Number.isInteger(value.capacity) && value.capacity >= players.length && value.capacity <= 32
+        ? value.capacity : undefined;
+    const settings = Object.freeze({ ...value.settings });
+    return Object.freeze({ roomId: value.roomId, seatId: value.seatId, hostSeatId: value.hostSeatId, players: Object.freeze(players), capacity, settings });
 }
 
 function createBoardGameRoomClient({ platformOrigin, timeoutMs = 5000, onRoom, onSignal, onStart, onClose } = {}) {
@@ -105,6 +109,7 @@ function createBoardGameRoomClient({ platformOrigin, timeoutMs = 5000, onRoom, o
 
 window.BoardGameRoomSDK = Object.freeze({
     version: ROOM_PROTOCOL_VERSION,
+    release: ROOM_SDK_RELEASE,
     createClient: createBoardGameRoomClient,
 });
 })();

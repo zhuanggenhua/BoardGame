@@ -10,6 +10,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createFirstScenarioHauntRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -241,7 +242,7 @@ test.describe('山屋惊魂多怪物同组移动真实入口', () => {
         await expect(monsterMoveAction).toContainText('取消移动');
         await expect(firstMonsterToken).toHaveAttribute('data-direct-target', 'true');
         await expect(secondMonsterToken).toHaveAttribute('data-direct-target', 'true');
-        await firstMonsterToken.click();
+        await clickBetrayalSceneFigure(firstMonsterToken);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.targetRoomId}`)).toBeVisible();
         await saveScreenshot(page, FIRST_TARGET_SCREENSHOT);
 
@@ -264,7 +265,7 @@ test.describe('山屋惊魂多怪物同组移动真实入口', () => {
         const firstMovedToken = page.getByTestId(`betrayal-room-monster-${fixture.targetRoomId}-${NORMAL_MONSTER_A_ID}`);
         await expect(firstMovedToken).not.toHaveAttribute('data-direct-target', 'true');
         await expect(secondMonsterToken).toHaveAttribute('data-direct-target', 'true');
-        await secondMonsterToken.click();
+        await clickBetrayalSceneFigure(secondMonsterToken);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.targetRoomId}`)).toBeVisible();
         await saveScreenshot(page, SECOND_READY_SCREENSHOT);
 

@@ -6,6 +6,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createDogTradeReadyRuntimeCore,
     createExchangeReadyRuntimeCore,
     initBetrayalContext,
@@ -137,7 +138,7 @@ test.describe('山屋惊魂交易牌面禁用原因', () => {
         });
         await saveScreenshot(page, NORMAL_GIVE_DISABLED_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await expect(page.getByTestId('betrayal-trade-return-selector')).toBeVisible();
         await waitForAtlasByTestIds(page, ['betrayal-trade-return-card-map', 'betrayal-trade-return-card-skull']);
         await expect(page.getByTestId('betrayal-trade-return-card-map'), '对方已用地图仍应保留牌面但不能交易').toBeDisabled();

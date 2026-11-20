@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, matchPath, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -34,8 +34,10 @@ import { GlobalHUD } from './components/system/GlobalHUD';
 import { CONFIG_REVIEW_PAGE_ROUTES, ConfigReviewRoutePage } from './pages/ConfigReviewRoutes';
 import { useOnlineMatchRouteMissingGuard } from './pages/useOnlineMatchRouteMissingGuard';
 import { PcAltObjectMagnifier } from './components/system/PcAltObjectMagnifier';
+import { isTestEnvironment } from './engine/testing/environment';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
+const EXTERNAL_ROOM_SDK_GUIDE_PATH = '/developers/external-room-sdk';
 
 // 页面级懒加载：首页是默认入口，保留同步加载避免首屏闪出路由级 loading 文案
 const MatchRoom = React.lazy(() => import('./pages/MatchRoomWithAudio'));
@@ -83,6 +85,18 @@ const OnlineMatchRoomRoute = ({ fallback }: { fallback: React.ReactNode }) => {
   );
 };
 
+const LocalMatchRoomRoute = ({ fallback }: { fallback: React.ReactNode }) => {
+  const { gameId } = useParams();
+  const game = gameId ? GAME_MANIFEST_BY_ID[gameId] : undefined;
+  if (!game?.enabled || game.allowLocalMode !== true) return <Navigate to="/" replace />;
+
+  return (
+    <React.Suspense fallback={fallback}>
+      <LocalMatchRoom />
+    </React.Suspense>
+  );
+};
+
 const queryClient = new QueryClient();
 
 const resolveBuiltInGameMobileEntry = (gameId: string): GameMobileEntry | undefined => (
@@ -110,6 +124,7 @@ const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => im
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const ExternalGamePage = React.lazy(() => import('./pages/ExternalGamePage'));
+const ExternalRoomSdkGuidePage = React.lazy(() => import('./pages/ExternalRoomSdkGuidePage'));
 const ExternalRoomPage = React.lazy(() => import('./pages/ExternalRoomPage'));
 const NativeExternalRoomPage = React.lazy(() => import('./pages/NativeExternalRoomPage'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
@@ -142,6 +157,7 @@ const AppRouteChrome = ({
 }) => {
   const location = useLocation();
   const isPlayRoute = location.pathname.startsWith('/play/');
+  const isSdkGuideRoute = Boolean(matchPath(EXTERNAL_ROOM_SDK_GUIDE_PATH, location.pathname));
 
   return (
     <>
@@ -159,7 +175,7 @@ const AppRouteChrome = ({
       <TextEntryAutoScrollAgent />
       <MobileTextEntryProxyLayer />
       <ViewportDebugProbe />
-      {!isPlayRoute ? <GlobalHUD feedbackGameOptions={feedbackGameOptions} /> : null}
+      {!isPlayRoute && !isSdkGuideRoute ? <GlobalHUD feedbackGameOptions={feedbackGameOptions} /> : null}
       <ModalStackRoot />
       <React.Suspense fallback={null}>
         <LazyToastViewport />
@@ -282,6 +298,7 @@ const AppContent = () => {
                       )}
                     />
                     <Route path="/external/:gameId" element={<React.Suspense fallback={playRouteFallback}><ExternalGamePage /></React.Suspense>} />
+                    <Route path={EXTERNAL_ROOM_SDK_GUIDE_PATH} element={<React.Suspense fallback={playRouteFallback}><ExternalRoomSdkGuidePage /></React.Suspense>} />
                     <Route path="/external/rooms/:roomId" element={<React.Suspense fallback={playRouteFallback}><ExternalRoomPage /></React.Suspense>} />
                     <Route path="/external/native-room/:roomId" element={<React.Suspense fallback={playRouteFallback}><NativeExternalRoomPage /></React.Suspense>} />
                     <Route
@@ -292,20 +309,16 @@ const AppContent = () => {
                     />
                     <Route
                       path="/play/:gameId/local"
-                      element={(
-                        <React.Suspense fallback={playRouteFallback}>
-                          <LocalMatchRoom />
-                        </React.Suspense>
-                      )}
+                      element={<LocalMatchRoomRoute fallback={playRouteFallback} />}
                     />
-                    {/* E2E 测试路由：使用 TestMatchRoom + TestHarness 框架进行状态注入测试 */}
+                    {/* 旧直链只用于显式启动了测试环境的开发浏览器。 */}
                     <Route
                       path="/play/:gameId"
-                      element={(
+                      element={ENABLE_INTERNAL_DEVTOOLS && isTestEnvironment() ? (
                         <React.Suspense fallback={playRouteFallback}>
                           <TestMatchRoom />
                         </React.Suspense>
-                      )}
+                      ) : <Navigate to="/" replace />}
                     />
                     {/* /test 路由已废弃，使用新的 TestHarness 框架（/play/:gameId + setupScene） */}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsSlicer && (

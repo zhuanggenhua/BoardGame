@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 /**
  * 大杀四方 - 泰坦能力接入
  *
@@ -607,14 +608,14 @@ function playTitanFromSetAside(ctx: AbilityContext, reason: string): AbilityResu
 
 function isStandardAction(defId: string): boolean {
     const def = getCardDef(defId);
-    return def?.type === 'action' && (def as ActionCardDef).subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 type CreampuffActionTargetMode = 'none' | 'base' | 'minion';
 
 function getCreampuffActionTargetMode(defId: string): CreampuffActionTargetMode | undefined {
     const def = getCardDef(defId) as ActionCardDef | undefined;
-    if (!def || def.type !== 'action' || def.subtype !== 'standard') return undefined;
+    if (!isRulesStandardAction(def)) return undefined;
     if (actionLikeNeedsPlayMinion(def)) return 'minion';
     if (actionLikeNeedsPlayBase(def)) return 'base';
     return 'none';

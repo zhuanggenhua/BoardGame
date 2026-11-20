@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { initContext } from '../helpers/common';
+import { createFateLobbyMatch } from './onlineFateLobby';
 
 test('自行选择御主和从者后才能完成准备', async ({page, context}, testInfo) => {
     test.setTimeout(180000);
     await initContext(context, { skipImageGate: false });
     await context.addInitScript(() => localStorage.setItem('i18nextLng', 'zh-CN'));
-    await page.goto('/play/fate-domination?players=3&playerID=0&seed=identity-choice', {waitUntil:'domcontentloaded'});
+    await page.goto('/?game=fate-domination', {waitUntil:'domcontentloaded'});
+    const { read } = await createFateLobbyMatch(page);
     const confirm = page.getByTestId('fate-domination-primary-action');
     await expect(page.getByRole('tab', {name:'御主', exact:true})).toBeVisible({timeout:45000});
     await expect(confirm).toBeDisabled();
@@ -19,4 +21,7 @@ test('自行选择御主和从者后才能完成准备', async ({page, context},
     await page.screenshot({path:testInfo.outputPath('组合完成.png')});
     await confirm.click();
     await expect(page.getByRole('region',{name:'选择御主与从者'})).toHaveCount(0);
+    await expect.poll(async () => (await read()).core.players['0']).toMatchObject({
+        masterId: 'm_waver', servantId: 'servant-saber',
+    });
 });

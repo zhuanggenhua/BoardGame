@@ -1,5 +1,7 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
+import type { ChoiceRequest } from '../../../engine/ChoiceRequest';
 import { getCardDef } from '../data/cards';
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -18,6 +20,7 @@ import {
     createSkipOption,
     findMinionByAttachedCard,
     grantContextualExtraAction,
+    peekDeckTop,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
@@ -65,12 +68,13 @@ function countPlayerCardsAtBase(core: SmashUpCore, playerId: PlayerId, baseIndex
     const base = core.bases[baseIndex];
     if (!base) return 0;
     const minionCards = base.minions.filter(minion => minion.controller === playerId).length;
-    const attachedActions = base.minions.reduce(
-        (total, minion) => total + minion.attachedActions.filter(action => getAttachedActionControllerId(action) === playerId).length,
-        0,
-    );
     const baseActions = base.ongoingActions.filter(action => getOngoingActionControllerId(action) === playerId).length;
-    return minionCards + attachedActions + baseActions;
+    const buriedCards = (base.buriedCards ?? []).filter(card => card.controllerId === playerId).length;
+    const monsters = (base.monsters ?? []).filter(monster => monster.controllerId === playerId).length;
+    const titans = (core.titans ?? []).filter(titan =>
+        titan.controllerId === playerId && titan.location.zone === 'base' && titan.location.baseIndex === baseIndex,
+    ).length;
+    return minionCards + baseActions + buriedCards + monsters + titans;
 }
 
 function baseHasKiller(core: SmashUpCore, baseIndex: number): boolean {
@@ -139,24 +143,6 @@ function findHostByAttachedCardUid(
     return undefined;
 }
 
-function markMacheteHostDestroyedIfAttached(
-    core: SmashUpCore,
-    hostMinionUid: string | undefined,
-    hostBaseIndex: number | undefined,
-    now: number,
-): SmashUpEvent[] {
-    if (!hostMinionUid || hostBaseIndex === undefined) return [];
-    const host = core.bases[hostBaseIndex]?.minions.find(minion => minion.uid === hostMinionUid);
-    if (!host?.attachedActions.some(action => action.defId === 'diy_killers_machete')) return [];
-    return [minionMetadataUpdated(
-        hostMinionUid,
-        hostBaseIndex,
-        { diyKillersMacheteHostDestroyedTurn: core.turnNumber },
-        'diy_killers_machete',
-        now,
-    )];
-}
-
 function cardToDeckTop(
     cardUid: string,
     defId: string,
@@ -217,17 +203,27 @@ function findOwnMovableMinions(core: SmashUpCore, playerId: PlayerId): Array<{ m
     );
 }
 
-function queueKillerFollowupChoice(
+function queueChachaFollowup(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
-    sourceId: string,
+    cardUid: string,
     now: number,
 ): MatchState<SmashUpCore> {
-    const interaction = createSimpleChoice(
-        `${sourceId}_followup_${now}`,
+    const sourceId = 'diy_killers_cha_cha_cha_ha_ha_ha_followup';
+    const requestId = `${sourceId}_followup_${now}`;
+    type FollowupValue = { mode: 'deckTop' | 'extraAction' } | { skip: true };
+    const request: ChoiceRequest<FollowupValue> = {
+        requestId,
+        gameId: 'smashup',
         playerId,
-        '选择后续效果',
-        [
+        kind: 'choose-option',
+        sourceId,
+        selection: { min: 1, max: 1 },
+        // 必须提交其中一项；不执行效果是显式 skip 候选，不允许通过取消绕过决策。
+        skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId },
+        ai: { status: 'shared-policy' },
+        candidates: [
             {
                 id: 'deck-top',
                 label: '放到牌库顶',
@@ -242,9 +238,20 @@ function queueKillerFollowupChoice(
                 value: { mode: 'extraAction' },
                 displayMode: 'button' as const,
             },
+            {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'ui.skip',
+                value: { skip: true },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId, targetType: 'button', titleKey: `ui.${sourceId}_followup_title` },
-    );
+    };
+    const interaction = createSimpleChoiceFromChoiceRequest(request, {
+        title: '选择后续效果', targetType: 'button', buttonIntent: 'mode',
+        titleKey: `ui.${sourceId}_followup_title`,
+    });
+    interaction.data.continuationContext = { cardUid };
     return queueInteraction(matchState, interaction);
 }
 
@@ -266,51 +273,25 @@ function resolveDeckTopOrExtraAction(
     return [];
 }
 
-function queueChachaFollowup(
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    cardUid: string,
-    timestamp: number,
-): MatchState<SmashUpCore> {
-    const next = queueKillerFollowupChoice(state, playerId, 'diy_killers_cha_cha_cha_ha_ha_ha_followup', timestamp);
-    const current = next.sys.interaction?.current;
-    if (!current) return next;
-    return {
-        ...next,
-        sys: {
-            ...next.sys,
-            interaction: {
-                ...next.sys.interaction,
-                current: {
-                    ...current,
-                    data: {
-                        ...(current.data as Record<string, unknown>),
-                        continuationContext: { cardUid },
-                    },
-                },
-            },
-        },
-    };
-}
-
 function diyKillersChacha(ctx: AbilityContext): AbilityResult {
     const movable = findOwnMovableMinions(ctx.state, ctx.playerId);
-    if (movable.length === 0) {
+    const options = buildMinionTargetOptions(
+        movable.map(({ minion, baseIndex }) => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: `${getCardName(minion.defId)} @ ${ctx.state.bases[baseIndex]?.defId ?? baseIndex}`,
+        })),
+        { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'move' },
+    );
+    if (options.length === 0) {
         return { events: [], matchState: queueChachaFollowup(ctx.matchState, ctx.playerId, ctx.cardUid, ctx.now) };
     }
     const interaction = createSimpleChoice(
         `diy_killers_cha_cha_cha_ha_ha_ha_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择要移动的己方仆从',
-        buildMinionTargetOptions(
-            movable.map(({ minion, baseIndex }) => ({
-                uid: minion.uid,
-                defId: minion.defId,
-                baseIndex,
-                label: `${getCardName(minion.defId)} @ ${ctx.state.bases[baseIndex]?.defId ?? baseIndex}`,
-            })),
-            { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'move' },
-        ),
+        options,
         { sourceId: 'diy_killers_cha_cha_cha_ha_ha_ha', targetType: 'minion', titleKey: 'ui.diy_killers_chacha_choose_minion_title' },
     );
     (interaction.data as Record<string, unknown>).continuationContext = { cardUid: ctx.cardUid };
@@ -333,7 +314,7 @@ const chachaChooseMinion: InteractionHandler = (state, playerId, value, _data, _
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
                 fromBaseIndex,
-                toBaseIndex: baseIndex,
+                baseIndex,
                 toBaseDefId: base.defId,
             },
             displayMode: 'card' as const,
@@ -356,17 +337,17 @@ const chachaChooseBase: InteractionHandler = (state, playerId, value, data, _ran
         minionUid?: string;
         minionDefId?: string;
         fromBaseIndex?: number;
-        toBaseIndex?: number;
+        baseIndex?: number;
         toBaseDefId?: string;
     } | undefined;
-    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.baseIndex === undefined) {
         return { state, events: [] };
     }
     const events = buildValidatedBaseMoveEvents(state, {
         minionUid: selected.minionUid,
         minionDefId: selected.minionDefId,
         fromBaseIndex: selected.fromBaseIndex,
-        toBaseIndex: selected.toBaseIndex,
+        toBaseIndex: selected.baseIndex,
         toBaseDefId: selected.toBaseDefId,
         reason: 'diy_killers_cha_cha_cha_ha_ha_ha',
         now: timestamp,
@@ -399,7 +380,7 @@ function diyKillersGoodBoy(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '选择从弃牌堆回手的仆从',
         buildCardOptions(minions),
-        { sourceId: 'diy_killers_good_boy', targetType: 'discard_minion', titleKey: 'ui.diy_killers_good_boy_title', autoResolveIfSingle: false },
+        { sourceId: 'diy_killers_good_boy', targetType: 'discard', titleKey: 'ui.diy_killers_good_boy_title', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -437,7 +418,7 @@ const isItOverHandler: InteractionHandler = (state, playerId, value, _data, _ran
             grantContextualExtraAction(
                 { playerId, now: timestamp, matchState: state },
                 'diy_killers_is_it_over',
-                { restrictToCardUid: selected.cardUid, restrictToCardDefId: selected.defId },
+                { restrictToCardUid: selected.cardUid, restrictToCardDefId: selected.defId, playTiming: 'immediate', allowSkip: true },
             ),
         ],
     };
@@ -529,33 +510,48 @@ function drawFirstMatchingDeckCard(
     predicate: (card: CardInstance) => boolean,
     reason: string,
     now: number,
-): SmashUpEvent[] {
+    random: RandomFn,
+): { events: SmashUpEvent[]; card?: CardInstance } {
     const player = core.players[playerId];
-    if (!player) return [];
-    const target = player.deck.find(predicate);
-    if (!target) return [];
-    const rest = player.deck.filter(card => card.uid !== target.uid);
-    return [
+    if (!player) return { events: [] };
+    let deck = player.deck;
+    let preparation: SmashUpEvent[] = [];
+    if (deck.length === 0) {
+        const peeked = peekDeckTop(core, random, playerId, 'none', reason, now);
+        if (!peeked) return { events: [] };
+        preparation = peeked.events.filter(event => event.type === SU_EVENTS.DECK_REORDERED);
+        const rebuild = preparation.find((event): event is DeckReorderedEvent =>
+            event.type === SU_EVENTS.DECK_REORDERED && event.payload.playerId === playerId,
+        );
+        const discardByUid = new Map(player.discard.map(card => [card.uid, card]));
+        deck = (rebuild?.payload.deckUids ?? []).flatMap(uid => {
+            const card = discardByUid.get(uid);
+            return card ? [card] : [];
+        });
+    }
+    const target = deck.find(predicate);
+    if (!target) return { events: preparation };
+    const rest = deck.filter(card => card.uid !== target.uid);
+    return { card: target, events: [
+        ...preparation,
         deckReordered(playerId, [target.uid, ...rest.map(card => card.uid)], now),
         {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId, count: 1, cardUids: [target.uid] },
             timestamp: now,
         } as CardsDrawnEvent,
-    ];
+    ] };
 }
 
 function diyKillersImprovisedWeapon(ctx: AbilityContext): AbilityResult {
-    const events = drawFirstMatchingDeckCard(
+    const { events, card } = drawFirstMatchingDeckCard(
         ctx.state,
         ctx.playerId,
         card => getPlayOnMinionActions([card]).length > 0,
         'diy_killers_improvised_weapon',
         ctx.now,
+        ctx.random,
     );
-    const drawn = events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as CardsDrawnEvent | undefined;
-    const cardUid = drawn?.payload.cardUids[0];
-    const card = cardUid ? ctx.state.players[ctx.playerId]?.deck.find(candidate => candidate.uid === cardUid) : undefined;
     if (!card) return { events };
     return {
         events: [
@@ -566,6 +562,8 @@ function diyKillersImprovisedWeapon(ctx: AbilityContext): AbilityResult {
                 {
                     restrictToCardUid: card.uid,
                     restrictToCardDefId: card.defId,
+                    playTiming: 'immediate',
+                    allowSkip: true,
                     destroyAttachedActionAtTurnEnd: true,
                 },
             ),
@@ -620,7 +618,7 @@ function hasKillerInPlay(core: SmashUpCore, playerId: PlayerId): boolean {
 
 function diyKillersOriginStory(ctx: AbilityContext): AbilityResult {
     const mustDrawKiller = !hasKillerInPlay(ctx.state, ctx.playerId);
-    const drawEvents = drawFirstMatchingDeckCard(
+    const { events: drawEvents } = drawFirstMatchingDeckCard(
         ctx.state,
         ctx.playerId,
         card => {
@@ -629,6 +627,7 @@ function diyKillersOriginStory(ctx: AbilityContext): AbilityResult {
         },
         'diy_killers_origin_story',
         ctx.now,
+        ctx.random,
     );
     return {
         events: [
@@ -739,6 +738,28 @@ function queueLaundryRoomDestroyPrompt(
     return queueInteraction(state, interaction);
 }
 
+function laundryRoomSafeBases(state: MatchState<SmashUpCore>, context: LaundryRoomContext, now: number) {
+    const host = findHostByAttachedCardUid(state.core, context.attachedCardUid);
+    if (!host || host.minion.uid !== context.hostMinionUid || host.minion.controller !== context.hostControllerId) return [];
+    return state.core.bases.flatMap((base, baseIndex) => {
+        if (baseIndex === host.baseIndex || baseHasKiller(state.core, baseIndex)) return [];
+        const events = buildValidatedBaseMoveEvents(state, {
+            minionUid: host.minion.uid,
+            minionDefId: host.minion.defId,
+            fromBaseIndex: host.baseIndex,
+            toBaseIndex: baseIndex,
+            toBaseDefId: base.defId,
+            reason: 'diy_killers_laundry_room_escape',
+            now,
+            sourcePlayerId: context.hostControllerId,
+            sourceDefId: 'diy_killers_laundry_room',
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: host.baseIndex,
+        });
+        return events.some(event => event.type === SU_EVENTS.MINION_MOVED) ? [{ baseIndex, baseDefId: base.defId }] : [];
+    });
+}
+
 function diyKillersLaundryRoomTrigger(ctx: TriggerContext): TriggerResult {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.matchState) return { events: [] };
     if (!ctx.triggerMinionDefId || !isKillerMinion(ctx.triggerMinionDefId)) return { events: [] };
@@ -755,86 +776,81 @@ function diyKillersLaundryRoomTrigger(ctx: TriggerContext): TriggerResult {
         hostControllerId: host.minion.controller,
     };
     const hand = ctx.state.players[host.minion.controller]?.hand ?? [];
-    const safeBases = ctx.state.bases
-        .map((base, baseIndex) => ({ base, baseIndex }))
-        .filter(({ baseIndex }) => baseIndex !== host.baseIndex && !baseHasKiller(ctx.state, baseIndex));
+    const safeBases = laundryRoomSafeBases(ctx.matchState, context, ctx.now);
     if (hand.length === 0 || safeBases.length === 0) {
         return { events: [], matchState: queueLaundryRoomDestroyPrompt(ctx.matchState, ctx.sourceControllerId, context, ctx.now) };
     }
 
-    const interaction = createSimpleChoice(
-        `diy_killers_laundry_room_escape_${ctx.sourceCardUid}_${ctx.now}`,
-        host.minion.controller,
-        '躲藏在洗衣间：弃置一张手牌并移动该仆从，或让其面临摧毁',
-        [
-            createSkipOption('不弃牌移动', 'ui.skip'),
-            ...hand.flatMap(card => safeBases.map(({ base, baseIndex }) => ({
-                id: `escape-${card.uid}-${baseIndex}`,
-                label: `弃置${getCardName(card.defId)}，移动到${base.defId}`,
-                value: {
-                    mode: 'escape',
-                    discardCardUid: card.uid,
-                    minionUid: host.minion.uid,
-                    minionDefId: host.minion.defId,
-                    fromBaseIndex: host.baseIndex,
-                    toBaseIndex: baseIndex,
-                    toBaseDefId: base.defId,
-                },
-                displayMode: 'card' as const,
-            }))),
+    const sourceId = 'diy_killers_laundry_room_escape';
+    const requestId = `${sourceId}_${ctx.sourceCardUid}_${ctx.now}`;
+    const request: ChoiceRequest<{ cardUid?: string; defId?: string; skip?: boolean }> = {
+        requestId, gameId: 'smashup', playerId: context.hostControllerId, kind: 'choose-option', sourceId,
+        selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId },
+        ai: { status: 'shared-policy' },
+        candidates: [
+            { id: 'skip', label: '不逃离', labelKey: 'ui.diy_killers_laundry_room_decline_escape', value: { skip: true }, displayMode: 'button' },
+            ...hand.map(card => ({
+                id: `card-${card.uid}`, label: getCardName(card.defId), labelKey: `cards.${card.defId}.name`,
+                value: { cardUid: card.uid, defId: card.defId }, displayMode: 'card' as const,
+            })),
         ],
-        { sourceId: 'diy_killers_laundry_room_escape', targetType: 'generic', titleKey: 'ui.diy_killers_laundry_room_escape_title' },
-    );
-    (interaction.data as Record<string, unknown>).continuationContext = context;
+    };
+    const interaction = createSimpleChoiceFromChoiceRequest(request, {
+        title: '选择要弃置的手牌逃离，或不逃离并可能被摧毁', titleKey: 'ui.diy_killers_laundry_room_escape_card_title',
+        targetType: 'hand', autoResolveIfSingle: false,
+    });
+    interaction.data.continuationContext = context;
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 const laundryRoomEscapeHandler: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
     const context = data?.continuationContext as LaundryRoomContext | undefined;
     if (!context) return { state, events: [] };
-    const selected = value as {
-        skip?: boolean;
-        mode?: 'escape';
-        discardCardUid?: string;
-        minionUid?: string;
-        minionDefId?: string;
-        fromBaseIndex?: number;
-        toBaseIndex?: number;
-        toBaseDefId?: string;
-    } | undefined;
-    if (
-        selected?.mode === 'escape'
-        && selected.discardCardUid
-        && selected.minionUid === context.hostMinionUid
-        && selected.minionDefId === context.hostMinionDefId
-        && selected.fromBaseIndex === context.sourceBaseIndex
-        && selected.toBaseIndex !== undefined
-        && state.core.players[context.hostControllerId]?.hand.some(card => card.uid === selected.discardCardUid)
-    ) {
-        return {
-            state,
-            events: [
-                discardFromHand(context.hostControllerId, [selected.discardCardUid], timestamp),
-                ...buildValidatedBaseMoveEvents(state, {
-                    minionUid: context.hostMinionUid,
-                    minionDefId: context.hostMinionDefId,
-                    fromBaseIndex: context.sourceBaseIndex,
-                    toBaseIndex: selected.toBaseIndex,
-                    toBaseDefId: selected.toBaseDefId,
-                    reason: 'diy_killers_laundry_room_escape',
-                    now: timestamp,
-                    sourcePlayerId: context.hostControllerId,
-                    sourceDefId: 'diy_killers_laundry_room',
-                    sourceControllerId: context.sourceControllerId,
-                    sourceBaseIndex: context.sourceBaseIndex,
-                }),
-            ],
-        };
-    }
-    return {
-        state: queueLaundryRoomDestroyPrompt(state, context.sourceControllerId, context, timestamp),
-        events: [],
+    const selected = value as { cardUid?: string; skip?: boolean } | undefined;
+    const card = state.core.players[context.hostControllerId]?.hand.find(candidate => candidate.uid === selected?.cardUid);
+    const bases = laundryRoomSafeBases(state, context, timestamp);
+    if (!card || bases.length === 0) return { state: queueLaundryRoomDestroyPrompt(state, context.sourceControllerId, context, timestamp), events: [] };
+    const sourceId = 'diy_killers_laundry_room_escape_base';
+    const requestId = `${sourceId}_${context.attachedCardUid}_${timestamp}`;
+    const request: ChoiceRequest<{ baseIndex?: number; baseDefId?: string; skip?: boolean }> = {
+        requestId, gameId: 'smashup', playerId: context.hostControllerId, kind: 'choose-option', sourceId,
+        selection: { min: 1, max: 1 }, skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId }, ai: { status: 'shared-policy' },
+        candidates: [
+            { id: 'skip', label: '不逃离', labelKey: 'ui.diy_killers_laundry_room_decline_escape', value: { skip: true }, displayMode: 'button' },
+            ...bases.map(base => ({
+                id: `base-${base.baseIndex}`, label: base.baseDefId, labelKey: `cards.${base.baseDefId}.name`,
+                value: base, displayMode: 'card' as const,
+            })),
+        ],
     };
+    const interaction = createSimpleChoiceFromChoiceRequest(request, {
+        title: '选择没有杀人狂的基地', titleKey: 'ui.diy_killers_laundry_room_escape_base_title',
+        targetType: 'base', autoResolveIfSingle: false,
+    });
+    interaction.data.continuationContext = { ...context, discardCardUid: card.uid };
+    return { state: queueInteraction(state, interaction), events: [] };
+};
+
+const laundryRoomEscapeBaseHandler: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
+    const context = data?.continuationContext as (LaundryRoomContext & { discardCardUid?: string }) | undefined;
+    const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean } | undefined;
+    if (!context) return { state, events: [] };
+    const liveBase = laundryRoomSafeBases(state, context, timestamp).find(base => base.baseIndex === selected?.baseIndex && base.baseDefId === selected?.baseDefId);
+    if (!liveBase || !context.discardCardUid || !state.core.players[context.hostControllerId]?.hand.some(card => card.uid === context.discardCardUid)) {
+        return { state: queueLaundryRoomDestroyPrompt(state, context.sourceControllerId, context, timestamp), events: [] };
+    }
+    const moveEvents = buildValidatedBaseMoveEvents(state, {
+        minionUid: context.hostMinionUid, minionDefId: context.hostMinionDefId, fromBaseIndex: context.sourceBaseIndex,
+        toBaseIndex: liveBase.baseIndex, toBaseDefId: liveBase.baseDefId, reason: 'diy_killers_laundry_room_escape', now: timestamp,
+        sourcePlayerId: context.hostControllerId, sourceDefId: 'diy_killers_laundry_room',
+        sourceControllerId: context.sourceControllerId, sourceBaseIndex: context.sourceBaseIndex,
+    });
+    if (!moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)) {
+        return { state: queueLaundryRoomDestroyPrompt(state, context.sourceControllerId, context, timestamp), events: [] };
+    }
+    return { state, events: [discardFromHand(context.hostControllerId, [context.discardCardUid], timestamp), ...moveEvents] };
 };
 
 const laundryRoomDestroyHandler: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
@@ -981,7 +997,7 @@ function diyKillersMacheteTalent(ctx: AbilityContext): AbilityResult {
                 minionUid: host.minion.uid,
                 minionDefId: host.minion.defId,
                 fromBaseIndex: host.baseIndex,
-                toBaseIndex: baseIndex,
+                baseIndex,
                 toBaseDefId: base.defId,
             },
             displayMode: 'card' as const,
@@ -996,10 +1012,10 @@ const macheteHandler: InteractionHandler = (state, playerId, value, _data, _rand
         minionUid?: string;
         minionDefId?: string;
         fromBaseIndex?: number;
-        toBaseIndex?: number;
+        baseIndex?: number;
         toBaseDefId?: string;
     } | undefined;
-    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.baseIndex === undefined) {
         return { state, events: [] };
     }
     return {
@@ -1008,7 +1024,7 @@ const macheteHandler: InteractionHandler = (state, playerId, value, _data, _rand
             minionUid: selected.minionUid,
             minionDefId: selected.minionDefId,
             fromBaseIndex: selected.fromBaseIndex,
-            toBaseIndex: selected.toBaseIndex,
+            toBaseIndex: selected.baseIndex,
             toBaseDefId: selected.toBaseDefId,
             reason: 'diy_killers_machete',
             now: timestamp,
@@ -1092,7 +1108,6 @@ const freddyDestroyHandler: InteractionHandler = (state, playerId, value, data, 
         sourceBaseIndex: selected.baseIndex,
         sourceKind: 'nonAction',
     });
-    events.push(...markMacheteHostDestroyedIfAttached(state.core, context?.sourceCardUid, context?.sourceBaseIndex, timestamp));
     return {
         state,
         events,
@@ -1231,7 +1246,6 @@ const pinheadHandler: InteractionHandler = (state, playerId, value, data, _rando
             sourceBaseIndex: selected.baseIndex,
             sourceKind: 'nonAction',
         });
-        events.push(...markMacheteHostDestroyedIfAttached(state.core, context?.sourceCardUid, context?.sourceBaseIndex, timestamp));
         return {
             state,
             events,
@@ -1303,7 +1317,6 @@ const leatherfaceDestroyHandler: InteractionHandler = (state, playerId, value, d
         sourceBaseIndex: selected.baseIndex,
         sourceKind: 'nonAction',
     }));
-    events.push(...markMacheteHostDestroyedIfAttached(state.core, context?.sourceCardUid, context?.sourceBaseIndex, timestamp));
     return { state, events };
 };
 
@@ -1370,7 +1383,6 @@ const jasonDestroyHandler: InteractionHandler = (state, playerId, value, data, _
         sourceBaseIndex: selected.baseIndex,
         sourceKind: 'nonAction',
     }));
-    events.push(...markMacheteHostDestroyedIfAttached(state.core, context.sourceCardUid, context.sourceBaseIndex, timestamp));
     events.push(addTempPower(context.sourceCardUid, context.sourceBaseIndex, 2, 'diy_killers_jason', timestamp, {
         sourcePlayerId: playerId,
         sourceCardUid: context.sourceCardUid,
@@ -1432,7 +1444,7 @@ function chainsawDestroyTrigger(ctx: TriggerContext): TriggerResult {
                     minionUid: host.minion.uid,
                     minionDefId: host.minion.defId,
                     fromBaseIndex: host.baseIndex,
-                    toBaseIndex: baseIndex,
+                    baseIndex,
                     toBaseDefId: base.defId,
                 },
                 displayMode: 'card' as const,
@@ -1459,10 +1471,10 @@ const chainsawMoveHandler: InteractionHandler = (state, playerId, value, _data, 
         minionUid?: string;
         minionDefId?: string;
         fromBaseIndex?: number;
-        toBaseIndex?: number;
+        baseIndex?: number;
         toBaseDefId?: string;
     } | undefined;
-    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+    if (!selected?.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined || selected.baseIndex === undefined) {
         return { state, events: [] };
     }
     return {
@@ -1471,7 +1483,7 @@ const chainsawMoveHandler: InteractionHandler = (state, playerId, value, _data, 
             minionUid: selected.minionUid,
             minionDefId: selected.minionDefId,
             fromBaseIndex: selected.fromBaseIndex,
-            toBaseIndex: selected.toBaseIndex,
+            toBaseIndex: selected.baseIndex,
             toBaseDefId: selected.toBaseDefId,
             reason: 'diy_killers_chainsaw',
             now: timestamp,
@@ -1500,7 +1512,7 @@ function macheteDestroyTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const host = findHostByAttachedCardUid(ctx.state, ctx.sourceCardUid);
     if (!host || host.baseIndex !== ctx.sourceBaseIndex) return [];
     const base = ctx.state.bases[host.baseIndex];
-    const events = base.minions
+    return base.minions
         .filter(minion => minion.controller === ctx.sourceControllerId)
         .map(minion => addTempPower(minion.uid, host.baseIndex, 1, 'diy_killers_machete', ctx.now, {
             sourcePlayerId: ctx.sourceControllerId,
@@ -1509,13 +1521,12 @@ function macheteDestroyTrigger(ctx: TriggerContext): SmashUpEvent[] {
             sourceControllerId: ctx.sourceControllerId,
             sourceBaseIndex: host.baseIndex,
         }));
-    return events;
 }
 
 function macheteTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return [];
     const host = findHostByAttachedCardUid(ctx.state, ctx.sourceCardUid);
-    if (!host || host.minion.metadata?.diyKillersMacheteHostDestroyedTurn !== ctx.state.turnNumber) return [];
+    if (!host?.minion.destroyedMinionThisTurn) return [];
     return buildValidatedOngoingDetachEvents(ctx.state, {
         cardUid: ctx.sourceCardUid,
         reason: 'diy_killers_machete_return',
@@ -1623,18 +1634,16 @@ const michaelMyersHandler: InteractionHandler = (state, playerId, value, data, _
         sourceBaseIndex: context?.sourceBaseIndex ?? selected.baseIndex,
         sourceKind: 'nonAction',
     });
-    events.push(...markMacheteHostDestroyedIfAttached(state.core, context?.sourceCardUid, context?.sourceBaseIndex, timestamp));
     return {
         state,
         events,
     };
 };
 
-function campCrystalLakePowerTargets(core: SmashUpCore, baseIndex: number, playerId: PlayerId) {
+function campCrystalLakePowerTargets(core: SmashUpCore, baseIndex: number) {
     const base = core.bases[baseIndex];
     if (!base) return [];
     return base.minions
-        .filter(minion => minion.controller === playerId)
         .map(minion => ({
         uid: minion.uid,
         defId: minion.defId,
@@ -1660,7 +1669,7 @@ function campCrystalLakeDestroyTargets(core: SmashUpCore, playerId: PlayerId, ba
 function campCrystalLakeAfterDestroy(ctx: BaseAbilityContext): BaseAbilityResult {
     const amount = ctx.minionPower ?? 0;
     if (!ctx.destroyerId || amount <= 0) return { events: [] };
-    const targets = campCrystalLakePowerTargets(ctx.state, ctx.baseIndex, ctx.destroyerId);
+    const targets = campCrystalLakePowerTargets(ctx.state, ctx.baseIndex);
     if (targets.length === 0) return { events: [] };
     if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
@@ -1800,6 +1809,7 @@ export function registerDiyKillersAbilities(): void {
     registerInteractionHandler('diy_killers_is_it_over', isItOverHandler);
     registerInteractionHandler('diy_killers_oh_no', ohNoHandler);
     registerInteractionHandler('diy_killers_laundry_room_escape', laundryRoomEscapeHandler);
+    registerInteractionHandler('diy_killers_laundry_room_escape_base', laundryRoomEscapeBaseHandler);
     registerInteractionHandler('diy_killers_laundry_room_destroy', laundryRoomDestroyHandler);
     registerInteractionHandler('diy_killers_freddy_krueger_destroy', freddyDestroyHandler);
     registerInteractionHandler('diy_killers_clawed_glove', clawedGloveHandler);
@@ -1879,11 +1889,16 @@ export function registerDiyKillersAbilities(): void {
     registerTrigger('diy_killers_machete', 'onTurnEnd', macheteTurnEnd, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: ctx => {
+            if (!ctx.sourceCardUid) return false;
+            const host = findHostByAttachedCardUid(ctx.state, ctx.sourceCardUid);
+            return Boolean(host?.minion.destroyedMinionThisTurn);
+        },
     });
     registerTrigger('diy_killers_improvised_weapon', 'onTurnEnd', improvisedWeaponTurnEnd, {
         mandatory: true,
         global: true,
-        globalZones: ['discard'],
+        sourceIndependent: true,
         baseScoped: false,
         canTrigger: canTriggerImprovisedWeaponTurnEnd,
     });
@@ -1910,11 +1925,19 @@ export function registerDiyKillersAbilities(): void {
     );
     registerBaseAbility(
         'base_diy_killers_camp_crystal_lake',
+        'onTitanPlayed',
+        campCrystalLakeCardPlayed,
+        { mandatory: false, canTrigger: crystalLakeCanTrigger },
+    );
+    registerBaseAbility(
+        'base_diy_killers_camp_crystal_lake',
         'onActionPlayed',
         campCrystalLakeCardPlayed,
         {
             mandatory: false,
-            canTrigger: crystalLakeCanTrigger,
+            canTrigger: ctx => ctx.actionTargetType === 'base'
+                && ctx.state.bases[ctx.baseIndex]?.ongoingActions.some(action => action.uid === ctx.triggerCardUid) === true
+                && crystalLakeCanTrigger(ctx),
         },
     );
     registerExtended(
@@ -1925,7 +1948,7 @@ export function registerDiyKillersAbilities(): void {
             ownerPlayerId: ctx => ctx.destroyerId,
             canTrigger: ctx => !!ctx.destroyerId
                 && (ctx.minionPower ?? 0) > 0
-                && campCrystalLakePowerTargets(ctx.state, ctx.baseIndex, ctx.destroyerId).length > 0,
+                && campCrystalLakePowerTargets(ctx.state, ctx.baseIndex).length > 0,
         },
     );
 

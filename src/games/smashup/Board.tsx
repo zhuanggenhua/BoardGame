@@ -25,6 +25,7 @@ import { getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
 import { useGameAudio, playDeniedSound, playSound } from '../../lib/audio/useGameAudio';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initSmashUpAtlases } from './ui/cardAtlas';
+import { getReactionHandTriggerOptions } from './ui/reactionHandTriggers';
 
 // 同步注册所有图集（cards1-4 + base1-4，懒解析模式），确保首次渲染时 atlas 注册已就绪
 initSmashUpAtlases();
@@ -776,8 +777,16 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [currentPrompt, currentPromptTargetType, myPlayer?.hand, playerID]);
     const isDirectHandSelectPrompt = handPromptUiMode === 'direct';
     const isReactionChoicePrompt = currentPrompt?.sourceId === 'smashup_reaction_choose';
+    const reactionHandTriggerOptions = useMemo(() => {
+        const optionIds = new Set<string>();
+        const optionIdsByCardUid = new Map<string, string>();
+        if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt || !myPlayer || !core) {
+            return { optionIds, optionIdsByCardUid };
+        }
+        return getReactionHandTriggerOptions(currentPrompt.options, core.triggerQueue ?? [], myPlayer.hand);
+    }, [core?.triggerQueue, currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, myPlayer]);
     const reactionChoicePlayableCardUids = useMemo<Set<string>>(() => {
-        const result = new Set<string>();
+        const result = new Set<string>(reactionHandTriggerOptions.optionIdsByCardUid.keys());
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return result;
         for (const opt of currentPrompt.options) {
             if (opt.disabled) continue;
@@ -786,7 +795,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
         }
         return result;
-    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt]);
+    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, reactionHandTriggerOptions]);
     const reactionChoiceTargetStateByCardUid = useMemo<Map<string, {
         baseIndices: Set<number>;
         minionUids: Set<string>;
@@ -1048,11 +1057,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const reactionChoiceExtraOptions = useMemo(() => {
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => !reactionFieldTriggerSourceOptions.optionIds.has(opt.id) && !isSmashUpReactionHandPlayValue(opt.value) && !isFieldSourceTargetValue(opt.value) && !isFieldSourceActionValue(opt.value)).map(opt => ({
+        return currentPrompt.options.filter(opt => !reactionFieldTriggerSourceOptions.optionIds.has(opt.id) && !reactionHandTriggerOptions.optionIds.has(opt.id) && !isSmashUpReactionHandPlayValue(opt.value) && !isFieldSourceTargetValue(opt.value) && !isFieldSourceActionValue(opt.value)).map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
-    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, reactionFieldTriggerSourceOptions.optionIds, resolvePromptOptionLabel]);
+    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, reactionFieldTriggerSourceOptions.optionIds, reactionHandTriggerOptions.optionIds, resolvePromptOptionLabel]);
 
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
@@ -3243,6 +3252,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
 
         if (isReactionChoicePrompt && isCurrentPromptForPlayer) {
+            const triggerOptionId = reactionHandTriggerOptions.optionIdsByCardUid.get(card.uid);
+            if (triggerOptionId) {
+                respondCurrentPrompt({ optionId: triggerOptionId });
+                return;
+            }
             const targetState = reactionChoiceTargetStateByCardUid.get(card.uid);
             if (!targetState || !reactionChoicePlayableCardUids.has(card.uid)) {
                 playDeniedSound();
@@ -3506,7 +3520,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setPendingHandActionChoiceUid(null);
             setPendingHandActionSpecialMode(null);
         }
-    }, [activeSelectedSetAsideTitanUid, currentPrompt, discardCount, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isCurrentPromptForPlayer, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isMultiDirectHandSelect, isReactionChoicePrompt, isTutorialCommandAllowed, isTutorialTargetAllowed, matchState, multiMinionConstraints.max, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionChoicePlayableCardUids, reactionChoiceTargetStateByCardUid, reactionWindow, resolvePlayableCardMode, respondReactionPlayOption, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
+    }, [activeSelectedSetAsideTitanUid, currentPrompt, discardCount, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isCurrentPromptForPlayer, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isMultiDirectHandSelect, isReactionChoicePrompt, isTutorialCommandAllowed, isTutorialTargetAllowed, matchState, multiMinionConstraints.max, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionChoicePlayableCardUids, reactionChoiceTargetStateByCardUid, reactionHandTriggerOptions.optionIdsByCardUid, reactionWindow, resolvePlayableCardMode, respondReactionPlayOption, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
 
     const confirmFusionPlayAs = useCallback((playAs: 'minion' | 'action') => {
         if (!pendingFusionChoiceUid || !myPlayer) return;
@@ -5409,6 +5423,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             deckSelectHint={selectedDeckExtraCardUid ? t('ui.click_base_to_deploy') : undefined}
                             hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt || isDiscardCardPrompt}
                             autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}
+                            selectionTitle={(isDiscardMinionPrompt || isDiscardCardPrompt) && currentPrompt
+                                ? resolvePromptText(currentPrompt.title, currentPrompt.titleKey, currentPrompt.titleParams, t)
+                                : undefined}
                             playableCards={discardPanelCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
                             selectedUid={isDiscardCardPrompt ? null : discardStripSelectedUid}
                             selectedUids={isMultiDiscardCardSelect ? multiSelectedDiscardCardUids : undefined}

@@ -8,11 +8,11 @@ import { GAME_MANIFEST_BY_ID } from '../manifest';
 import { hasGameImplementation, loadGameImplementation, resolveGameTutorialManifest } from '../registry';
 
 describe('betrayal manifest integration', () => {
-    it('betrayal 会以本地预演入口暴露，并声明手机横屏固定画布适配', async () => {
+    it('betrayal 关闭本地对局入口，并声明手机横屏固定画布适配', async () => {
         const game = getGameById('betrayal');
         expect(game).toBeDefined();
         expect(game?.enabled).toBe(true);
-        expect(game?.allowLocalMode).toBe(true);
+        expect(game?.allowLocalMode).toBe(false);
         expect(game?.playerOptions).toEqual([3, 4, 5, 6]);
         expect(game?.mobileProfile).toBe('landscape-adapted');
         expect(game?.preferredOrientation).toBe('landscape');
@@ -30,7 +30,7 @@ describe('betrayal manifest integration', () => {
         );
 
         expect(GAME_MANIFEST_BY_ID.betrayal).toBeDefined();
-        expect(GAME_MANIFEST_BY_ID.betrayal?.allowLocalMode).toBe(true);
+        expect(GAME_MANIFEST_BY_ID.betrayal?.allowLocalMode).toBe(false);
 
         expect(hasGameImplementation('betrayal')).toBe(true);
         const implementation = await loadGameImplementation('betrayal');

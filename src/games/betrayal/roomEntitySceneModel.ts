@@ -9,8 +9,11 @@ export interface RoomEntitySlot {
 /** Stable identity ordering, shared by Pixi artwork and accessible interaction targets.
  * Over-capacity clusters extend vertically rather than hiding pieces or shrinking their hit areas.
  */
-export function resolveRoomEntitySlots(entityIds: readonly string[]): ReadonlyMap<string, RoomEntitySlot> {
+export const GIRL_ROOM_SLOT = 'token:mummy-girl';
+
+export function resolveRoomEntitySlots(entityIds: readonly string[], hasGirlToken = false): ReadonlyMap<string, RoomEntitySlot> {
     const ids = [...new Set(entityIds)].sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+    if (hasGirlToken && ids.length >= 3) ids.push(GIRL_ROOM_SLOT);
     if (!ids.length) return new Map();
     const columns = Math.min(3, Math.ceil(Math.sqrt(ids.length)));
     const rows = Math.ceil(ids.length / columns);

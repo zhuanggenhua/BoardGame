@@ -58,6 +58,7 @@ export const LUCHADORS_POD_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'minion',
         playNeedsMinion: true,
         playTargetMinionController: 'any',
+        playTargetMinionRequiresOwnAction: true,
         count: 2,
         previewRef: { type: 'atlas', atlasId: LUCHADORS_POD_ATLAS, index: 3 },
     },

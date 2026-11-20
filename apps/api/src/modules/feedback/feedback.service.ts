@@ -1384,6 +1384,21 @@ export class FeedbackService {
                 ?? this.normalizeResolvedMethod(existing.resolvedMethod)
                 ?? this.buildDefaultSystemResolvedMethod(dto)
             : undefined;
+        const incomingEvidence = {
+            actionLog: storageDto.actionLog,
+            stateSnapshot: storageDto.stateSnapshot,
+            diagnosticPacket: storageDto.diagnosticPacket,
+        };
+        // CPU 的聚合文案展示最近一次触发，采样编号和快照也必须来自该次触发。
+        const useLatestEvidence = source === INFRA_CPU_WATCH_SOURCE;
+        const evidence = useLatestEvidence ? incomingEvidence : {
+            actionLog: existing.actionLog ?? incomingEvidence.actionLog,
+            stateSnapshot: existing.stateSnapshot ?? incomingEvidence.stateSnapshot,
+            diagnosticPacket: existing.diagnosticPacket ?? incomingEvidence.diagnosticPacket,
+        };
+        const missingLatestEvidence = useLatestEvidence ? Object.fromEntries(
+            Object.entries(incomingEvidence).filter(([, value]) => value === undefined).map(([key]) => [key, '']),
+        ) : {};
         const updated = await this.feedbackModel.findOneAndUpdate(
             { _id: existing._id, status: { $ne: FeedbackStatus.CLOSED },
                 ...(captureId ? { diagnosticCaptureIds: { $ne: captureId } } : {}) },
@@ -1400,9 +1415,7 @@ export class FeedbackService {
                     gameName: dto.gameName ?? existing.gameName,
                     autoReportKind: dto.autoReportKind ?? existing.autoReportKind,
                     contactInfo: dto.contactInfo ?? existing.contactInfo,
-                    actionLog: existing.actionLog ?? storageDto.actionLog,
-                    stateSnapshot: existing.stateSnapshot ?? storageDto.stateSnapshot,
-                    diagnosticPacket: existing.diagnosticPacket ?? storageDto.diagnosticPacket,
+                    ...evidence,
                     clientContext: storageDto.clientContext ?? existing.clientContext,
                     errorContext: storageDto.errorContext ?? existing.errorContext,
                     incidentKey: aggregationKey,
@@ -1415,6 +1428,7 @@ export class FeedbackService {
                 $inc: {
                     occurrenceCount: 1,
                 },
+                ...(Object.keys(missingLatestEvidence).length > 0 ? { $unset: missingLatestEvidence } : {}),
                 ...(captureId ? { $addToSet: { diagnosticCaptureIds: captureId } } : {}),
             },
             { new: true },

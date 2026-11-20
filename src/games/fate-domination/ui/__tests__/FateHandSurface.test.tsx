@@ -64,9 +64,9 @@ const preparedHandCore = (seed: string, servantId?: string) => {
  return state.core;
 };
 
-it('本人攻击牌区直接显示暂选与已打出实例，零张时仍显示合计威力', () => {
+it('战场攻击牌区直接显示暂选与已打出实例，零张时仍显示合计威力', () => {
  const core=preparedHandCore('inline-played-cards');
- const player=core.players['0'];
+ const player={...core.players['0'],locationId:'miyama' as const};
  const first=player.hand[0];
  const second=player.hand[1];
  const props={power:7,player,skills:[],canSelect:true,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
@@ -109,12 +109,12 @@ it('待打出攻击由卡牌本体撤回到原手牌，检视不会更改选择�
 
 it('0/2/5/10/20 张牌都留在同一直接牌区中，不复制成弹窗牌册', () => {
  const core=preparedHandCore('inline-played-density');
- const props={power:0,player:core.players['0'],skills:[],canSelect:false,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
+ const props={power:0,player:{...core.players['0'],locationId:'miyama' as const},skills:[],canSelect:false,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
  const view=render(<FateHandSurface {...props}/>);
  expect(screen.getByTestId('fate-played-cards').querySelectorAll('[data-card-id]')).toHaveLength(0);
  for (const count of [2,5,10,20]) {
   const cards=Array.from({length:count},(_,index)=>({id:`played-${index+1}`,definitionId:'cardA1'}));
-  view.rerender(<FateHandSurface {...props} player={{...core.players['0'],hand:cards,activeAttackIds:cards.map(card=>card.id)}} power={count*2}/>);
+  view.rerender(<FateHandSurface {...props} player={{...props.player,hand:cards,activeAttackIds:cards.map(card=>card.id)}} power={count*2}/>);
   const row=screen.getByTestId('fate-played-cards');
   expect(row.querySelectorAll('[data-card-id]')).toHaveLength(count);
   expect(Array.from(row.querySelectorAll<HTMLElement>('[data-card-id]')).map(card=>card.dataset.cardId)).toEqual(cards.map(card=>card.id));
@@ -159,9 +159,9 @@ it('骑乘交互更新时清理旧选择',async()=>{
  const first={interactionId:'riding-1',round:2,candidateIds:['b1-instance'],onConfirm:vi.fn(),onCancel:vi.fn()};
  const props={power:0,player,skills:[],canSelect:false,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
  const view=render(<FateHandSurface {...props} ridingChoice={first}/>);
- fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 迫击'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 追击'}));
  view.rerender(<FateHandSurface {...props} ridingChoice={{...first,interactionId:'riding-2',round:3}}/>);
- await waitFor(()=>expect(screen.getByRole('button',{name:'选择坐骑召唤 迫击'})).toHaveAttribute('aria-pressed','false'));
+ await waitFor(()=>expect(screen.getByRole('button',{name:'选择坐骑召唤 追击'})).toHaveAttribute('aria-pressed','false'));
 });
 
 it('选牌焦点随实例从手牌移动到原位出牌区',()=>{

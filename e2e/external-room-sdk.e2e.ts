@@ -1,39 +1,38 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import mongoose from 'mongoose';
-import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { strToU8, zipSync } from 'fflate';
 import { storeWebGameZip } from '../apps/api/src/modules/ugc/external-web-game-host';
 import { test, expect, initHome, login, capture, openPlatformProfile } from './helpers/homeAcceptance';
 
-test('易桌游建房、游客加入、平台开局，SDK 将两人带入同局', async ({ browser, accounts }) => {
+test('易桌游建密码房、游客验证密码、平台开局，SDK 将两人带入同局', async ({ browser, accounts }) => {
     const archive = process.env.EXTERNAL_WEB_ROOM_FIXTURE_ZIP;
     test.skip(!archive || !process.env.EXTERNAL_WEB_GAME_ROOT, '使用作者提供的新版 ZIP 和隔离托管目录');
     test.setTimeout(210_000);
     const db = await mongoose.createConnection(process.env.MONGO_URI!).asPromise();
     const records = db.collection('externalgamerecords');
+    const submissions = db.collection('gamesubmissions');
+    const submissionId = randomUUID();
     const gameId = 'external-' + randomUUID();
     const plainId = 'external-' + randomUUID();
     const hostContext = await browser.newContext({ viewport: { width: 1440, height: 940 } });
     const guestContext = await browser.newContext({ viewport: { width: 1440, height: 940 } });
+    const inviteContext = await browser.newContext({ viewport: { width: 1440, height: 940 } });
+    const roomPassword = 'vale-274';
     hostContext.setDefaultTimeout(15_000);
     guestContext.setDefaultTimeout(15_000);
     try {
-        const zip = await readFile(archive!);
-        const files = unzipSync(zip);
-        files['index.html'] = strToU8(strFromU8(files['index.html']).replace('</head>', '<meta name="boardgame-room-sdk" content="1"></head>'));
-        files['js/platform-room.js'] = strToU8(strFromU8(files['js/platform-room.js'])
-            .replace(/import \{ createBoardGameRoomClient \} from '[^']+';/, 'const createBoardGameRoomClient = window.BoardGameRoomSDK?.createClient;')
-            .replace('if (window.parent === window) return;', 'if (window.parent === window || !createBoardGameRoomClient) return;'));
-        const entry = await storeWebGameZip(randomUUID(), process.env.EXTERNAL_WEB_ROOM_TEST_BUNDLED_SDK === 'true' ? zip : Buffer.from(zipSync(files)));
+        const entry = await storeWebGameZip(randomUUID(), await readFile(archive!));
         const plainEntry = await storeWebGameZip(randomUUID(), Buffer.from(zipSync({ 'index.html': strToU8('<title>单人网页</title>') })));
         const metadata = { webZipName: 'game.zip', minPlayers: 2, maxPlayers: 4, category: 'card', published: true,
             embedStatus: 'allowed', embedReason: '', author: '', description: '狩猎并驯服神话生灵。', rules: '', coverUrl: '',
             createdAt: new Date(), updatedAt: new Date() };
-        await records.insertMany([{ ...metadata, gameId, name: '永恒之谷', url: entry, coverUrl: new URL('assets/cards/0.jpg', entry).href },
+        await submissions.insertOne({ submissionId, ownerId: accounts.alice.id });
+        await records.insertMany([{ ...metadata, gameId, submissionId, name: '永恒之谷', url: entry, coverUrl: new URL('assets/cards/0.jpg', entry).href },
             { ...metadata, gameId: plainId, name: '单人网页测试', url: plainEntry }]);
         const host = await hostContext.newPage();
         const guest = await guestContext.newPage();
-        await Promise.all([initHome(host), initHome(guest)]);
+        await initHome(host);
         await login(host, accounts.alice);
 
         await host.locator(`[data-game-id="${plainId}"] .platform-game-open`).click();
@@ -48,31 +47,77 @@ test('易桌游建房、游客加入、平台开局，SDK 将两人带入同局'
         await expect(actions.nth(1)).toHaveText('开始游戏');
         const create = details.getByTestId('external-game-create-room');
         await expect(create).toBeVisible();
+        await expect(details.getByText('上传者', { exact: false })).toHaveCount(0);
         await capture(host, '房主01-平台游戏详情');
-        await guest.locator(`[data-game-id="${gameId}"] .platform-game-open`).click();
-        const guestDetails = guest.getByRole('dialog', { name: '永恒之谷', exact: true });
-        const roomList = guestDetails.getByRole('region', { name: '房间', exact: true });
-        await expect(roomList.getByText('暂无可加入的房间')).toBeVisible();
+        await details.getByTestId('game-details-author-button-mobile').click();
+        const author = host.getByTestId('game-details-author-modal');
+        await expect(author).toContainText(`上传者：${accounts.alice.username}`);
+        await capture(host, '作者信息-上传者只在作者弹窗');
+        await author.getByRole('button', { name: '关闭', exact: true }).click();
         await create.click();
-        const form = host.getByRole('dialog', { name: '创建房间', exact: true });
+        const form = host.getByTestId('create-room-modal');
         await expect(form).toBeVisible();
-        await form.getByRole('combobox').selectOption('2');
-        await capture(host, '房主02-易桌游建房');
-        await form.locator('button[type=submit]').click();
+        await form.getByTestId('create-room-name-input').fill('永恒之谷联机桌');
+        await expect(form.getByText('游戏人数', { exact: true })).toHaveCount(0);
+        await expect(form.getByRole('button', { name: /^\d+人$/ })).toHaveCount(0);
+        await form.getByTestId('create-room-password-input').fill(roomPassword);
+        await capture(host, '房主02-只有房间名称和平台密码');
+        const createResponse = host.waitForResponse(response => response.url().endsWith('/ugc/external-rooms') && response.request().method() === 'POST');
+        await form.getByTestId('create-room-confirm-button').click();
+        const created = await createResponse;
+        expect(created.ok()).toBeTruthy();
+        expect(await created.text()).not.toContain(roomPassword);
         await expect(host).toHaveURL(/\/external\/rooms\/[\da-f-]+/);
         const start = host.getByRole('button', { name: '开始对局', exact: true });
         await expect(start).toBeDisabled();
-        await capture(host, '房主03-平台房间等待访客');
+        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+        await expect(host.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
+        await capture(host, '房主03-在游戏里等待访客');
 
+        const invite = await host.getByRole('textbox', { name: '邀请链接', exact: true }).inputValue();
+        expect(invite).not.toContain(roomPassword);
+        await inviteContext.addInitScript(() => localStorage.setItem('i18nextLng', 'zh-CN'));
+        const invited = await inviteContext.newPage();
+        await invited.goto(invite);
+        const invitePassword = invited.getByTestId('room-password-modal');
+        await expect(invitePassword).toBeVisible();
+        await expect(invited.locator('.external-player iframe')).toHaveCount(0);
+        await capture(invited, '访客邀请链接也要求密码');
+        await invitePassword.getByTestId('room-password-input').fill(roomPassword);
+        await invitePassword.getByTestId('room-password-confirm').click();
+        await expect(invited.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
+        await invited.getByRole('button', { name: '返回', exact: true }).click();
+        await expect(invited).toHaveURL(/\?game=/);
+        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+
+        await initHome(guest);
+        await expect(guest.locator('.external-player iframe')).toHaveCount(0);
+        await capture(guest, '访客00-来到易桌游发现页');
+        await guest.locator(`[data-game-id="${gameId}"] .platform-game-open`).click();
+        const guestDetails = guest.getByRole('dialog', { name: '永恒之谷', exact: true });
+        const roomList = guestDetails.getByRole('region', { name: '房间', exact: true });
+        await expect(roomList.getByText('永恒之谷联机桌', { exact: true })).toBeVisible();
         await expect(roomList.getByText(accounts.alice.username, { exact: false })).toBeVisible({ timeout: 20_000 });
         await capture(guest, '访客01-平台列表加入');
-        await roomList.getByRole('link', { name: '加入房间', exact: true }).click();
+        await roomList.getByRole('button', { name: '加入', exact: true }).click();
+        const passwordModal = guest.getByTestId('room-password-modal');
+        await expect(passwordModal).toBeVisible();
+        await expect(guestDetails).toBeVisible();
+        await passwordModal.getByTestId('room-password-input').fill('wrong-pass');
+        await passwordModal.getByTestId('room-password-confirm').click();
+        await expect(passwordModal.getByRole('alert')).toHaveText('房间密码错误');
+        await expect(guest.locator('.external-player iframe')).toHaveCount(0);
+        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+        await capture(guest, '访客密码错误仍在平台列表');
+        await passwordModal.getByTestId('room-password-input').fill(roomPassword);
+        await passwordModal.getByTestId('room-password-confirm').click();
         await expect(guest).toHaveURL(/\/external\/rooms\/[\da-f-]+/);
         await expect(guest.getByTestId('auth-login-account-input')).toHaveCount(0);
         await expect(start).toBeEnabled({ timeout: 45_000 });
         await expect(guest.locator('.external-room-seats')).toContainText('游客');
-        await capture(guest, '访客02-易桌游房间两人就绪');
-        await capture(host, '房主04-易桌游房间可开局');
+        await expect(guest.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
+        await capture(guest, '访客02-在游戏里等待开局');
+        await capture(host, '房主04-游戏画面中可开局');
         await start.click();
         const namesByPage: string[][] = [];
         for (const page of [guest, host]) {
@@ -89,13 +134,14 @@ test('易桌游建房、游客加入、平台开局，SDK 将两人带入同局'
         await capture(guest, '访客03-从易桌游进入对局');
         await capture(host, '房主05-从易桌游进入同局');
     } finally {
-        await Promise.allSettled([guestContext.close(), hostContext.close()]);
+        await Promise.allSettled([guestContext.close(), hostContext.close(), inviteContext.close()]);
         await records.deleteMany({ gameId: { $in: [gameId, plainId] } });
+        await submissions.deleteOne({ submissionId });
         await db.close();
     }
 });
 
-test('投稿人在易桌游删除已收录投稿，公开目录同步下架', async ({ browser, accounts }) => {
+test('投稿人在上传页删除已收录投稿，公开目录同步下架', async ({ browser, accounts }) => {
     test.skip(!process.env.EXTERNAL_WEB_GAME_ROOT, '使用隔离托管目录验证下架');
     const db = await mongoose.createConnection(process.env.MONGO_URI!).asPromise();
     const submissions = db.collection('gamesubmissions');
@@ -115,9 +161,17 @@ test('投稿人在易桌游删除已收录投稿，公开目录同步下架', as
         await openPlatformProfile(page);
         await page.getByRole('button', { name: '我的投稿', exact: true }).click();
         const row = page.locator('.creator-row').filter({ hasText: game.name });
-        const remove = row.getByRole('button', { name: '删除投稿' });
+        await expect(row.getByRole('button', { name: '删除投稿' })).toBeVisible();
+        await row.getByRole('button', { name: '编辑投稿' }).click();
+        const editor = page.locator('.platform-upload-form');
+        await expect(editor.getByRole('heading', { name: game.name })).toBeVisible();
+        const guide = editor.getByRole('link', { name: '下载房间 SDK 接入指南' });
+        const guideResponse = await page.request.get((await guide.getAttribute('href'))!);
+        expect(guideResponse.ok()).toBeTruthy();
+        expect(await guideResponse.text()).toContain('window.BoardGameRoomSDK');
+        const remove = editor.getByRole('button', { name: '删除投稿' });
         await expect(remove).toBeVisible();
-        await capture(page, '投稿01-我的投稿删除入口');
+        await capture(page, '投稿01-上传页删除入口和SDK指南');
         await remove.click();
         const dialog = page.locator('[data-platform-dialog="confirm"]');
         await expect(dialog).toContainText('从平台目录下架');
@@ -125,7 +179,8 @@ test('投稿人在易桌游删除已收录投稿，公开目录同步下架', as
         const deleted = page.waitForResponse(response => response.url().endsWith('/submissions/' + submissionId) && response.request().method() === 'DELETE');
         await dialog.getByRole('button', { name: '删除投稿', exact: true }).click();
         expect((await deleted).ok()).toBeTruthy();
-        await expect(row).toHaveCount(0);
+        await expect(page.locator('.platform-upload-list').getByRole('button', { name: /测试投稿/ })).toHaveCount(0);
+        await expect(editor.getByRole('button', { name: '删除投稿' })).toHaveCount(0);
         const published = await page.request.get('/ugc/external-games/' + gameId);
         expect(published.status()).toBe(404);
         expect((await page.request.get(url)).ok()).toBe(true);

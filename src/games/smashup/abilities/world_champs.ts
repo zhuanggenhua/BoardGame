@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -222,7 +223,7 @@ function isActionDefId(defId?: string): boolean {
 function isStandardActionDefId(defId?: string): boolean {
     if (!defId) return false;
     const def = getCardDef(defId);
-    return !!def && def.type === 'action' && def.subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 function buildMinionMetadataUpdatedEvent(
@@ -1315,7 +1316,7 @@ function canTriggerWorldChampsSmartSetUp(ctx: TriggerContext): boolean {
     if (ctx.baseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return false;
     const sourceBase = ctx.state.bases[ctx.sourceBaseIndex];
     const host = sourceBase?.minions.find(minion => minion.attachedActions.some(action => action.uid === ctx.sourceCardUid));
-    if (!host || host.controller === ctx.sourceControllerId) return false;
+    if (!host) return false;
     const totalPlayedOnBase = ctx.state.turnOrder.reduce(
         (sum, playerId) => sum + (ctx.state.players[playerId]?.minionsPlayedPerBase?.[ctx.baseIndex!] ?? 0),
         0,

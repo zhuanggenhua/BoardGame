@@ -683,6 +683,7 @@ function registerRobotOngoingEffects(): void {
 
         // 找到 Archive 的控制者
         let archiveCount = 0;
+        let destroyedArchiveStillOnBase = false;
         for (const base of trigCtx.state.bases) {
             for (const minion of base.minions) {
                 if (
@@ -690,9 +691,14 @@ function registerRobotOngoingEffects(): void {
                     && minion.controller === trigCtx.playerId
                 ) {
                     archiveCount++;
+                    if (minion.uid === destroyedMinion?.uid) destroyedArchiveStillOnBase = true;
                 }
             }
         }
+        // 排队的反应在随从离场后才结算；本牌自身被消灭也满足卡面条件。
+        if (destroyedMinion?.controller === trigCtx.playerId
+            && matchesDefId(destroyedMinion.defId, 'robot_microbot_archive')
+            && !destroyedArchiveStillOnBase) archiveCount++;
         if (archiveCount === 0) return [];
 
         // 4. "你的微型机" → 被消灭随从必须属于 archive 控制者（控制关系由 trigCtx.playerId 表示）

@@ -14,11 +14,15 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
 
         let status = HttpStatus.INTERNAL_SERVER_ERROR;
         let message = '服务器异常';
+        let code: string | undefined;
 
         if (exception instanceof HttpException) {
             const httpException = exception as HttpException;
             status = httpException.getStatus();
             const responseBody = httpException.getResponse();
+            if (typeof responseBody === 'object' && responseBody !== null && 'code' in responseBody && typeof responseBody.code === 'string') {
+                code = responseBody.code;
+            }
 
             if (typeof responseBody === 'string') {
                 message = responseBody;
@@ -35,6 +39,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         response.status(status).json({
             error: message,
             statusCode: status,
+            ...(code ? { code } : {}),
             path: request?.url,
             timestamp: new Date().toISOString(),
         });

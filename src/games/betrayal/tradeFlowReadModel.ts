@@ -270,7 +270,9 @@ export function resolveBetrayalTradeFlowReadModel({
         })
     : tradeSelectionReady
       ? t("board.status.tradeBannerReady")
-      : t("board.status.tradeBannerDraft");
+      : t(!selectedTradeTargetName && !dogTradeFlowActive
+          ? "board.status.actionCueTradeTarget"
+          : "board.status.tradeBannerDraft");
   const shouldShowActionPanel = Boolean(
     !shouldPauseHauntBoardActions &&
       !hasPendingSicknessExchange &&

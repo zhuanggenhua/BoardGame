@@ -43,6 +43,7 @@ export function cloneEventTemplate(event: EventTemplate): EventTemplate {
 }
 
 export function countDrawnCards(core: BetrayalCore, kind: BetrayalDeckKind): number {
+    if (kind === 'event' && core.eventCardsDrawn !== undefined) return core.eventCardsDrawn;
     return Math.max(0, BETRAYAL_INITIAL_DECK_COUNTS[kind] - core.deckCounts[kind]);
 }
 
@@ -51,11 +52,14 @@ export function resolveEvent(core: BetrayalCore): EventTemplate {
 }
 
 export function buryEventCardToBottom(core: BetrayalCore, eventName: string): void {
+    // Resolved events return to the pile, so its length cannot track completed draws.
+    const drawnIndex = core.eventOrder.findIndex(eventCard => eventCard.name === eventName);
+    if (drawnIndex >= 0) core.eventCardsDrawn = countDrawnCards(core, 'event') + 1;
     if (core.eventOrder.length <= 1) {
         return;
     }
     const deck = core.eventOrder.map(cloneEventTemplate);
-    const index = Math.max(0, deck.findIndex((eventCard) => eventCard.name === eventName));
+    const index = Math.max(0, drawnIndex);
     const [eventCard] = deck.splice(index, 1);
     if (eventCard) {
         deck.push(eventCard);

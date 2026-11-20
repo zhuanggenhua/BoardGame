@@ -83,11 +83,7 @@ function buildMinionAuditOverrides(cardDefId: string, cardUid: string, timing: T
     }
 
     if (cardDefId === 'diy_killers_machete' && timing === 'onTurnEnd') {
-        return {
-            metadata: {
-                diyKillersMacheteHostDestroyedTurn: state.turnNumber,
-            },
-        };
+        return { destroyedMinionThisTurn: true };
     }
 
     if (cardDefId === 'musketeers_all_for_one' && timing === 'onTurnEnd') {

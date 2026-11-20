@@ -5079,7 +5079,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
     });
 
-    it('human 面无情劫掠在真实进攻 pipeline 中会于诅咒金币选择后收口攻击链', () => {
+    it.each([50, 12])('human 面无情劫掠对手剩余 %i 血时应在金币选择后收口攻击链', (defenderHp) => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         setPlayerBoardFace(state, '0', 'normal');
         state.sys.phase = 'offensiveRoll';
@@ -5090,6 +5090,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         state.core.rollConfirmed = true;
         state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
         state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = defenderHp;
         state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
         setCursedPirateDiceValues(state, [6, 6, 6, 6, 6]);
 
@@ -5122,6 +5123,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
         expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
         expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('merciless-plunder');
+        expect(advanced.state.sys.gameover).toBeUndefined();
 
         const prompt = getSimpleChoicePrompt(advanced.state, 'merciless-plunder');
         expect(prompt.playerId).toBe('0');
@@ -5135,7 +5137,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const resolved = respondToPrompt(advanced.state, accept!.id, '0');
         expect(resolved.success).toBe(true);
         expect(resolved.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
-        expect(resolved.state.sys.phase).toBe('main2');
+        if (defenderHp > 12) expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.sys.gameover).toEqual(defenderHp === 12 ? { winner: '0' } : undefined);
         expect(resolved.state.core.pendingAttack).toBeNull();
         expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);

@@ -83,20 +83,25 @@ export interface RoomConfig {
     setupData?: Record<string, unknown>;
 }
 
+export type RoomCreationGame = Pick<GameManifestEntry, 'id' | 'playerOptions' | 'bestPlayers' | 'setupOptions' | 'createRoomSetup' | 'ai'>;
+
 interface CreateRoomModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (config: RoomConfig) => void;
-    gameManifest: GameManifestEntry;
+    gameManifest: RoomCreationGame;
     initialPreferences?: LocalMatchPreferences | null;
     isLoading?: boolean;
     visualStyle?: CreateRoomVisualStyle;
+    showRetention?: boolean;
+    literalSetupLabels?: boolean;
+    error?: string;
 }
 
 const OWNER_PLAYER_ID = '0';
 
 function getEnabledAiController(
-    gameManifest: GameManifestEntry,
+    gameManifest: RoomCreationGame,
     difficulty: AiDifficultyLevel,
     manualFactionSelection: boolean,
     minimumActionDelayMs: number,
@@ -140,7 +145,7 @@ function forceHumanOwnerSeat(seatControllers: Record<string, AiSeatController>):
 function fillNonOwnerSeatsWithAi(args: {
     seatControllers: Record<string, AiSeatController>;
     numPlayers: number;
-    gameManifest: GameManifestEntry;
+    gameManifest: RoomCreationGame;
     difficulty: AiDifficultyLevel;
     manualFactionSelection: boolean;
     minimumActionDelayMs: number;
@@ -336,7 +341,7 @@ const normalizeExtendedSetupSelections = (
 };
 
 const normalizeCreateRoomSetupSelections = (args: {
-    gameManifest: GameManifestEntry;
+    gameManifest: RoomCreationGame;
     setupFields: ReadonlyArray<readonly [string, GameSetupField]>;
     numPlayers: number;
     setupSelections: GameSetupSelections;
@@ -365,9 +370,12 @@ export const CreateRoomModal = ({
     initialPreferences,
     isLoading = false,
     visualStyle = 'default',
+    showRetention = true,
+    literalSetupLabels = false,
+    error,
 }: CreateRoomModalProps) => {
     const gameNamespace = `game-${gameManifest.id}`;
-    const { t } = useTranslation(['lobby', gameNamespace]);
+    const { t } = useTranslation(literalSetupLabels ? ['lobby'] : ['lobby', gameNamespace]);
     const createRoomSetup = gameManifest.createRoomSetup;
     const setupFields = useMemo(
         () => {
@@ -836,7 +844,7 @@ export const CreateRoomModal = ({
                                         </div>
                                     )}
 
-                                    <div>
+                                    {showRetention && <div>
                                         <div className="mb-2 flex items-center justify-between gap-3">
                                             <label className={fieldLabelClassName}>
                                                 {t('createRoom.retention')}
@@ -859,7 +867,7 @@ export const CreateRoomModal = ({
                                                 </option>
                                             ))}
                                         </select>
-                                    </div>
+                                    </div>}
 
                                     {shouldShowSetupOptions ? (
                                         <SetupOptionsFields
@@ -869,8 +877,10 @@ export const CreateRoomModal = ({
                                             t={t}
                                             gameNamespace={gameNamespace}
                                             numPlayers={numPlayers}
+                                            literalLabels={literalSetupLabels}
                                         />
                                     ) : null}
+                                    {error && <p role="alert">{error}</p>}
 
                                     {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                         <div className={isCompactHomeV2Layout ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]' : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3'}>
@@ -1142,7 +1152,7 @@ export const CreateRoomModal = ({
                                     </div>
                                 )}
 
-                                <div>
+                                {showRetention && <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <label className="text-sm font-bold text-black">
                                             {t('createRoom.retention')}
@@ -1162,7 +1172,7 @@ export const CreateRoomModal = ({
                                             </option>
                                         ))}
                                     </select>
-                                </div>
+                                </div>}
 
                                 {shouldShowSetupOptions ? (
                                     <SetupOptionsFields
@@ -1172,8 +1182,10 @@ export const CreateRoomModal = ({
                                         t={t}
                                         gameNamespace={gameNamespace}
                                         numPlayers={numPlayers}
+                                        literalLabels={literalSetupLabels}
                                     />
                                 ) : null}
+                                {error && <p role="alert">{error}</p>}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                     <div className="platform-room-ai rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">

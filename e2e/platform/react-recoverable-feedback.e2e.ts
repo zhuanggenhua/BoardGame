@@ -3,7 +3,7 @@ import path from 'node:path';
 import { build } from 'vite';
 import { expect, test } from '../framework';
 
-test('React 并发渲染恢复错误上报底层错误类型和构建位置', async ({ page }, testInfo) => {
+test('React 并发渲染恢复错误上报游戏入口和底层错误位置', async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     const root = testInfo.outputPath('react-recoverable-feedback');
     const out = path.join(root, 'dist');
@@ -24,7 +24,12 @@ test('React 并发渲染恢复错误上报底层错误类型和构建位置', as
         createRoot(document.getElementById('root')).render(<View />);
     `);
     await build({ configFile: false, root, logLevel: 'silent', build: { outDir: out, emptyOutDir: true } });
-    const reports: Array<{ content?: string; errorContext?: { name?: string; causeName?: string; causeSource?: string } }> = [];
+    const gamePath = '/play/summonerwars/local';
+    const reports: Array<{
+        content?: string;
+        clientContext?: { gameId?: string; mode?: string };
+        errorContext?: { name?: string; causeName?: string; causeSource?: string };
+    }> = [];
     await page.route('**/*', async route => {
         const request = route.request();
         const url = new URL(request.url());
@@ -33,7 +38,7 @@ test('React 并发渲染恢复错误上报底层错误类型和构建位置', as
             await route.fulfill({ status: 200, json: { _id: '000000000000000000000001' } });
             return;
         }
-        const relative = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+        const relative = url.pathname === gamePath ? 'index.html' : url.pathname.slice(1);
         if (!/^(index\.html|assets\/[\w.-]+)$/.test(relative)) {
             await route.abort();
             return;
@@ -41,11 +46,12 @@ test('React 并发渲染恢复错误上报底层错误类型和构建位置', as
         const body = await readFile(path.join(out, relative));
         await route.fulfill({ status: 200, body, contentType: relative.endsWith('.html') ? 'text/html' : 'text/javascript' });
     });
-    await page.goto('http://8.148.71.102/');
+    await page.goto(`http://8.148.71.102${gamePath}`);
     await page.getByRole('button', { name: 'start' }).click();
     await expect(page.getByRole('button', { name: 'recovered' })).toBeVisible();
     await expect.poll(() => reports.length).toBe(1);
     expect(reports[0].content).toContain('Minified React error #520');
+    expect(reports[0].clientContext).toMatchObject({ gameId: 'summonerwars', mode: 'local' });
     expect(reports[0].errorContext).toMatchObject({ name: 'Error', causeName: 'TypeError' });
     expect(reports[0].errorContext?.causeSource).toMatch(/^http:\/\/8\.148\.71\.102\/assets\/[\w.-]+\.js:\d+:\d+$/);
 });

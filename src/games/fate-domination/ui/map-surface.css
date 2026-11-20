@@ -3,8 +3,18 @@
 /* 移动选点覆盖手牌停靠区时，只抬高透明地图命中层；地图画布与卡牌仍保持原绘制层级。 */
 .fd-runtime-map-overlay[data-moving="true"] { z-index: 1; }
 .fd-runtime-map-landmark { position:absolute; display:block; pointer-events:none; }
+.fd-victory-track { position:absolute; inset:0; pointer-events:none; }
+.fd-victory-marker { position:absolute; display:flex; align-items:center; transform:translate(-50%,-50%); }
+.fd-victory-portrait { position:relative; display:block; width:auto; height:100%; aspect-ratio:1; }
+.fd-victory-portrait > img { display:block; width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 1px 3px #000a); }
+.fd-victory-marker[data-eliminated="true"] .fd-victory-portrait::after { content:''; position:absolute; inset:calc(50% - 2px) 0 auto; height:4px; background:#ed4d59; transform:rotate(-39deg); }
+.fd-victory-marker-outside { gap:3px; padding-right:3px; border-radius:4px; background:#101717; color:#fff0c0; font:700 18px/1 Arial,sans-serif; white-space:nowrap; }
 .fd-runtime-location { position: absolute; z-index:1; padding: 0; border: 2px solid #ead28f; background: transparent; box-shadow:0 0 12px rgb(235 196 100 / .24); pointer-events: auto; cursor: pointer; }
 .fd-runtime-location:hover { background: rgb(255 255 255 / .32); }
+.fd-runtime-location-recon, .fd-runtime-location-recon:hover { border-color:transparent; background:transparent; box-shadow:none; }
+.fd-recon-target-label { position:absolute; display:grid; place-items:center; transform:translate(-50%,-50%); min-width:130px; min-height:62px; border:2px solid #ead28f; border-radius:4px; background:#16211f; color:#fff2c8; font:bold 28px/1.2 sans-serif; white-space:nowrap; }
+.fd-runtime-location-recon:focus-visible .fd-recon-target-label, .fd-recon-target-label:hover { background:#3e4731; border-color:#fff2c8; }
+.fd-runtime-location-recon.is-tutorial-unavailable .fd-recon-target-label { display:none; }
 .fd-runtime-deployment-slot { border-radius:50%; }
 .fd-runtime-deployment-slot:not(:disabled) { border-color:#fff4c8; background:rgb(161 119 39 / .66); box-shadow:0 0 0 2px #17140e,0 0 0 4px #fff0b9,0 0 15px rgb(235 196 100 / .6); }
 .fd-runtime-deployment-slot:not(:disabled):hover { background:rgb(224 190 109 / .8); }
@@ -13,6 +23,8 @@
 .fd-runtime-deployment-slot:disabled:hover { background:transparent; }
 .fd-runtime-map-card-hit { position: absolute; pointer-events: auto; border: 0; background: transparent; cursor: zoom-in; }
 .fd-runtime-map-card-hit:focus-visible { outline: 4px solid #e2c269; }
+/* 点击选点时卡牌保留自己的命中区；拖放棋子时地点仍承接整块区域。 */
+.fd-runtime-table:not([data-dragging-pawn="true"]) .fd-runtime-map-overlay[data-moving="true"] .fd-runtime-map-card-hit:not(.fd-field-attack) { z-index:2; }
 .fd-field-attack { display:grid; justify-items:stretch; padding:0; z-index:2; background:#121c19; color:#fff0be; box-shadow:0 0 0 2px #c3a466; }
 .fd-field-attack img { width:100%; display:block; }
 .fd-field-attack span { padding:3px; font-size:16px; text-align:center; }
@@ -32,8 +44,10 @@
 .fd-pawn-power { position:absolute; top:50%; transform:translateY(-50%); min-width:38px; padding:3px 6px; border-radius:4px; background:#101717ed; color:#f5dc91; font:bold 25px/1.15 Arial,sans-serif; text-align:center; pointer-events:none; }
 .fd-pawn-power.is-right { left:100%; }
 .fd-pawn-power.is-left { right:100%; }
+.fd-pawn-power.is-defeated { color:#ffb6af; font-size:18px; white-space:nowrap; }
 .fd-runtime-missing-asset { font-size: 12px; padding: 4px; background: #321c14; color: #fff; }
-.fd-runtime-pawn:not(:disabled) { pointer-events:auto; cursor:pointer; }
+button.fd-runtime-pawn:not(:disabled) { pointer-events:auto; cursor:pointer; }
+.fd-terrain-claim { width:52px; height:52px; border:2px solid #e2c269; background:#162e37; pointer-events:none; }
 .fd-runtime-pawn[aria-pressed="true"] { outline:3px solid #ffe6a0; outline-offset:3px; }
 .fd-event-deck-count { position:absolute; padding:5px 10px; border-radius:50%; background:#101717; color:#f7e7bb; font-size:22px; z-index:1; }
 

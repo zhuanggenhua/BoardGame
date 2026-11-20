@@ -47,6 +47,7 @@
     "assets:validate": "node scripts/assets/generate_asset_manifests.js --validate",
     "assets:validate:full": "node scripts/assets/generate_asset_manifests.js --validate --full",
     "preview": "node scripts/infra/vite-cli-safe.mjs preview --config vite.config.ts --configLoader bundle",
+    "preview:local": "node scripts/infra/local-preview.mjs",
     "pdf:md": "node scripts/infra/pdf_to_md.js",
     "compress:images": "node scripts/assets/compress_images.js --mode runtime",
     "compress:runtime-images": "node scripts/assets/compress_images.js --mode runtime",

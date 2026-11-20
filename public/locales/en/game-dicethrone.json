@@ -240,6 +240,7 @@
       "abilities": "The glowing ability meets the dice requirement. Choose Punch for four Fists to deal 8 Normal Damage.",
       "resolveAttack": "Your opponent can defend against a Normal Attack, so damage is not applied yet. Continue to their defense.",
       "opponentDefense": "Your opponent is resolving their defense. See how much damage this attack ultimately deals.",
+      "attack-token-response": "It’s your turn to respond. Spend an available token or pass to continue resolving damage.",
       "sellCardIntro": "During either Main Phase, you may sell cards for 1 CP each, even below the hand limit. Sell Palm Strike now and save 1 CP for your opponent's turn.",
       "sale-branch-recovery": "",
       "response-control": "Switch to Manual Response. When a response window opens, you choose whether to play a card or pass.",

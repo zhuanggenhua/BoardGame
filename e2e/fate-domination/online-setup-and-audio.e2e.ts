@@ -40,9 +40,10 @@ test('正式在线房标记未完角色，并播放背景音乐和实际部署�
     await create.getByTestId('create-room-confirm-button').click();
     await page.waitForURL(/\/play\/fate-domination\/match\/[^/?]+\?playerID=0/);
     const incompleteMaster = page.getByTestId('fate-setup-master-m_rin');
-    await expect(incompleteMaster.getByText('实施中', { exact: true })).toBeVisible();
+    await expect(incompleteMaster.getByTestId('fate-identity-status-m_rin-label')).toHaveText('实施中');
     await expect(incompleteMaster).toBeEnabled();
-    await expect(page.getByTestId('fate-setup-master-m_waver').getByText('实施中', { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('fate-identity-status-m_waver-label')).toHaveText('实施中');
+    await expect(page.getByTestId('fate-identity-status-m_kirei-label')).toHaveText('实施中');
     await incompleteMaster.click();
     await page.screenshot({ path: path.join(evidence.stagingDir, '01-御主实施状态.png') });
     const moonveil = /Fantasy(?:%20| )Vol8(?:%20| )Moonveil(?:%20| )Main\.ogg/i;
@@ -50,7 +51,7 @@ test('正式在线房标记未完角色，并播放背景音乐和实际部署�
     await chooseFateIdentity(page, 'master', 'm_waver');
     await chooseFateIdentity(page, 'servant', 'servant-berserker');
     const incompleteServant = page.getByTestId('fate-setup-servant-servant-berserker');
-    await expect(incompleteServant.getByText('实施中', { exact: true })).toBeVisible();
+    await expect(incompleteServant.getByTestId('fate-identity-status-servant-berserker-label')).toHaveText('实施中');
     await expect(incompleteServant).toBeEnabled();
     await page.screenshot({ path: path.join(evidence.stagingDir, '02-从者实施状态.png') });
     await page.getByTestId('fate-domination-primary-action').click();

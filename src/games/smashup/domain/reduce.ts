@@ -1141,6 +1141,7 @@ export function reduceTurnStartedEvent(
                 powerCounters: m.powerCounters,
                 powerModifier: m.powerModifier + (timedPowerReverts.get(m.uid) ?? 0),
                 talentUsed: m.controller === playerId ? false : m.talentUsed,
+                destroyedMinionThisTurn: undefined,
                 playedThisTurn: m.controller === playerId ? undefined : m.playedThisTurn,
                 tempPowerModifier: 0,
                 attachedActions: m.attachedActions.map(a => {
@@ -1326,6 +1327,7 @@ export function reduceTurnEndedEvent(
         completedExtraTurn,
     } = event.payload;
     const remainingSleepMarked = state.sleepMarkedPlayers?.filter(pid => pid !== playerId);
+    const remainingBorrowedActions = state.borrowedActions?.filter(loan => loan.borrowerId !== playerId || loan.turnNumber !== state.turnNumber);
     let pendingExtraTurns = state.pendingExtraTurns;
     let activeExtraTurn = completedExtraTurn ? undefined : state.activeExtraTurn;
     if (extraTurnPlayerId) {
@@ -1456,6 +1458,7 @@ export function reduceTurnEndedEvent(
     return {
         ...state,
         currentPlayerIndex: nextPlayerIndex,
+        ...(state.borrowedActions ? { borrowedActions: remainingBorrowedActions?.length ? remainingBorrowedActions : undefined } : {}),
         pendingExtraTurns: pendingExtraTurns?.length ? pendingExtraTurns : undefined,
         activeExtraTurn,
         players: updatedPlayers,
@@ -2155,9 +2158,18 @@ export function reduceActionPlayedEvent(
             discard: targetDiscard,
         };
     }
+    const returnReason = event.payload.returnToOwnerAtTurnEnd;
+    const mustReturn = returnReason && movedCard && resolvedOwnerId !== playerId
+        && !state.borrowedActions?.some(loan => loan.cardUid === cardUid && loan.borrowerId === playerId && loan.turnNumber === state.turnNumber);
     return {
         ...state,
         players: nextPlayers,
+        ...(mustReturn ? {
+            borrowedActions: [...(state.borrowedActions ?? []), {
+                cardUid, defId: movedCard.defId, borrowerId: playerId, ownerId: resolvedOwnerId,
+                turnNumber: state.turnNumber, reason: returnReason,
+            }],
+        } : {}),
         cardsPlayedThisTurn: (state.cardsPlayedThisTurn ?? 0) + 1,
         ...(newBases !== state.bases ? { bases: newBases } : {}),
     };
@@ -2452,8 +2464,14 @@ export function reduceMinionDestroyedEvent(
     const base = state.bases[fromBaseIndex];
     const minion = base?.minions.find(m => m.uid === minionUid);
     const newBases = state.bases.map((b, i) => {
-        if (i !== fromBaseIndex) return b;
-        return { ...b, minions: b.minions.filter(m => m.uid !== minionUid) };
+        const nextMinions = b.minions
+            .filter(m => i !== fromBaseIndex || m.uid !== minionUid)
+            .map(m => m.uid === event.payload.sourceCardUid
+                ? { ...m, destroyedMinionThisTurn: true }
+                : m);
+        return nextMinions.length !== b.minions.length || nextMinions.some((m, index) => m !== b.minions[index])
+            ? { ...b, minions: nextMinions }
+            : b;
     });
     // POD 刚柔流寺庙：这里被消灭的随从始终改放拥有者牌库底。
     // 焦油坑：只在同基地本回合第一次随从被消灭时改去向，后续照常进弃牌堆。

@@ -11,22 +11,23 @@ it('正式攻击图集帧与预加载使用同一来源，不把逻辑帧当独�
  expect(fateCardPreview('fate-domination/cards/avenger')).toEqual({type:'image',src:'fate-domination/cards/avenger'});
 });
 
-it('魔术基础攻击与力量超高位共用正式攻击图集帧和预加载图',()=>{
+it('魔术和力量基础攻击用完整的正式图集帧，名称与牌面一致',()=>{
  const frames=[
-  ['attack-magic-low',4],
-  ['attack-magic-mid',5],
-  ['attack-magic-high',6],
-  ['attack-magic-super',7],
-  ['attack-strength-super',11],
+  ['cardA1','低位魔术',4],
+  ['cardA2','中位魔术',5],
+  ['cardA3','高位魔术',6],
+  ['cardA4','超高位魔术',7],
+  ['cardB1','追击',8],
+  ['cardB2','强打',9],
+  ['cardB3','浑身的一击',10],
+  ['cardB4','会心的一击',11],
  ] as const;
- for(const [name,index] of frames){
-  const path=`fate-domination/cards/${name}`;
+ for(const [id,name,index] of frames){
+  const {assetPath:path,name:title}=FATE_ATTACK_BY_ID[id];
+  expect(title).toBe(name);
   expect(fateCardPreview(path)).toEqual({type:'atlas',atlasId:'fate-basic-attacks',index});
   expect(fateCardImageAsset(path)).toBe('fate-domination/cards/basic-attack-atlas');
  }
- expect(FATE_ATTACK_CARDS.filter(card=>['cardA1','cardA2','cardA3','cardA4','cardB4'].includes(card.id)).map(card=>fateCardPreview(card.assetPath))).toEqual(
-  frames.map(([,index])=>({type:'atlas',atlasId:'fate-basic-attacks',index})),
- );
 });
 
 it('当前 33 张牌目录不包含旧 fallback 技能卡',()=>{

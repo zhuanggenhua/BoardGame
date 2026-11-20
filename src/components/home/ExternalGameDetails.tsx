@@ -32,7 +32,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [tab, setTab] = useState<'about'>('about');
+    const [tab, setTab] = useState<'lobby' | 'about'>('lobby');
     const [showRoomDialog, setShowRoomDialog] = useState(false);
     const game = useQuery({ queryKey: ['external-game', gameId], queryFn: () => getExternalGame(gameId), enabled: Boolean(gameId) });
     const item = game.data;
@@ -50,8 +50,11 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
             : game.isError ? <div className="platform-game-details" role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}
                 <button type="button" onClick={onClose}>{t('common:close')}</button></div>
             : <PlatformGameDetails presentation={presentation} title={item.name} description={<ExternalGameText text={item.description} />}
-                thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
-                onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
+                thumbnail={thumbnail} playerOptions={item.roomSetup?.playerCounts ?? playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
+                onClose={onClose} tabs={[
+                    ...(supportsRooms ? [{ id: 'lobby' as const, label: t('tabs.lobby') }] : []),
+                    { id: 'about' as const, label: t('platform.externalGamePage.about') },
+                ]} selectedTab={supportsRooms ? tab : 'about'} onTab={setTab}
                 primaryActions={supportsRooms
                     ? <DetailsPrimaryButton data-testid="external-game-create-room" onClick={() => setShowRoomDialog(true)}>{t('actions.createRoom')}</DetailsPrimaryButton>
                     : nativeBrowser
@@ -67,15 +70,16 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                     <PlatformFavoriteButton gameId={item.gameId} title={item.name} />
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
-                    isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} />}>
+                    uploaderName={item.uploaderName} isOwner={Boolean(user && item.ownerUserId === user.id)}
+                    onManageWorks={() => navigate('/?section=profile&tab=works')} />}>
                 {embed?.restricted && !nativeBrowser && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
                 {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                 {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
-                {supportsRooms && <ExternalRoomList gameId={item.gameId} />}
-                <p>{t('platform.externalGamePage.uploader', { name: item.uploaderName || t('platform.externalGamePage.anonymousUploader') })}</p>
-                <GameRulesDocumentLink document={item.rulesDocument} />
-                {item.rules && <p><ExternalGameText text={item.rules} /></p>}
+                {supportsRooms && tab === 'lobby' ? <ExternalRoomList gameId={item.gameId} /> : <>
+                    <GameRulesDocumentLink document={item.rulesDocument} />
+                    {item.rules && <p><ExternalGameText text={item.rules} /></p>}
+                </>}
             </PlatformGameDetails>}
-        {item && supportsRooms && showRoomDialog && <CreateExternalRoomDialog game={item} onClose={() => setShowRoomDialog(false)} />}
+        {item && supportsRooms && showRoomDialog && <CreateExternalRoomDialog key={item.url} game={item} onClose={() => setShowRoomDialog(false)} />}
     </HomeGameDetailsPresentation>;
 }

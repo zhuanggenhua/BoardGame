@@ -1,6 +1,6 @@
 # Fate/Domination intake
 
-状态：`S0 in_progress`（第一批 FSN+FZ 身份卡与核心规则已锁；剩余对象已进入 authority-summary，仍保留阿尔托莉雅数字概览与 E0 事件正文阻塞）
+状态：`S0 in_progress`（第一批 FSN+FZ 身份卡与核心规则已锁。阿尔托莉雅的 12 张牌组已有 TTS 中文概览补证，CHM 对应数字概览和 E0 事件正文仍待补。）
 
 本目录只承载新游戏的规则、来源、对象全集和数据录入合同。
 当前阶段不创建 Board、runtime UI、正式 manifest 或玩法实现。

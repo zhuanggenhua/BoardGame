@@ -5,6 +5,7 @@ import { createSimpleChoiceFromTimingOpportunity } from '../../../engine/systems
 import type { Opportunity, TimingPoint } from '../../../engine/TimingOpportunity';
 import { completeResolutionFrame, getResolutionFrameById } from '../../../engine/systems/resolutionStack';
 import type { AttacksConfirmedEvent, FateBattlefieldAttack, FateDominationCore, LocationResolvedEvent, PlayerState } from './types';
+import { fateSituationClosesLocation } from './environmentRules';
 
 const PLACE_ON_PLAY = new Set(['sc_gilles_np']);
 const TERRITORY_CREATION = new Set(['sc_gilles_2', 'sc_medea_2']);
@@ -15,6 +16,12 @@ export const isFateResidualSkill = isFateTerritoryCreation;
 export const fateResidualDeploymentRewards = (player: PlayerState) => player.activeSkills.filter(isFateTerritoryCreation).length;
 export const fateBattlefieldSkillIds = (core: FateDominationCore, playerId: string) =>
     (core.battlefieldAttacks ?? []).filter(card => card.playerId === playerId).map(card => card.skillId);
+
+/** 螺湮城教本随其所在战场关闭。旧局加载和换轮共用局势的地点限制。 */
+export const fateRetainedBattlefieldAttacks = (
+    attacks: FateDominationCore['battlefieldAttacks'],
+    situation: FateDominationCore['situation'],
+) => attacks?.filter(card => !fateSituationClosesLocation(situation, card.locationId));
 
 export function afterFateLocationResolved(core: FateDominationCore, { locationId, results }: LocationResolvedEvent['payload']) {
     return core.battlefieldAttacks?.filter(card => card.locationId !== locationId

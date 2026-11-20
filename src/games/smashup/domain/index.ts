@@ -124,6 +124,7 @@ import { buildBaseTargetOptions } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
+import { buildBorrowedActionReturnEvents } from './borrowedActions';
 import {
     appendScoringFrameDeferredPayload,
     clearScoringSession,
@@ -2499,7 +2500,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 }
 
                 const advance = buildTurnEndAdvancePayload(core);
-                return [{
+                return [...buildBorrowedActionReturnEvents(core, pid, now), {
                     type: SU_EVENTS.TURN_ENDED,
                     payload: { playerId: pid, ...advance },
                     timestamp: now,
@@ -2598,7 +2599,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 payload: { playerId: pid, ...advance },
                 timestamp: now,
             };
-            events.push(evt);
+            events.push(...buildBorrowedActionReturnEvents(core, pid, now), evt);
             return events;
         }
 
@@ -4190,6 +4191,27 @@ function postProcessSystemEvents(
                 titanDerived.push(...clashResult.events);
                 for (const clashEvent of clashResult.events) {
                     titanCore = applyPostProcessPrefixEvent(titanCore, clashEvent);
+                }
+            }
+
+            if (event.type === SU_EVENT_TYPES.TITAN_PLAYED) {
+                const sourceEventId = `titan-played:${event.payload.titanUid}:${eventBaseIndex}:${event.timestamp}`;
+                const queuedBase = collectBaseAbilityTriggers({
+                    core: titanCore,
+                    matchState: titanCore === ms.core ? ms : { ...ms, core: titanCore },
+                    timing: 'onTitanPlayed',
+                    ownerPlayerId: event.payload.controllerId,
+                    baseIndex: eventBaseIndex,
+                    triggerCardUid: event.payload.titanUid,
+                    triggerCardDefId: event.payload.defId,
+                    triggerCardOwnerId: event.payload.ownerId,
+                    frameId: `titan-played-frame:${sourceEventId}`,
+                    sourceEventId,
+                    now: event.timestamp,
+                });
+                if (queuedBase) {
+                    titanDerived.push(queuedBase);
+                    titanCore = applyTriggerQueueFactEvent(titanCore, queuedBase);
                 }
             }
         }

@@ -1,7 +1,7 @@
 import { fateKireiForm, resolveFateAbilitySource, fateAbilityUsageKey } from './abilitySource';
 import { legalFateDeploymentSlots } from './deployment';
 import { fateIdentityTaken } from './setup';
-import { fateLateClimax, fateNoblePhantasmsForbidden } from './environmentRules';
+import { fateLateClimax, fateNoblePhantasmsForbidden, fateSituationClosesLocation } from './environmentRules';
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID } from '../data';
 import { FATE_BATTLE_LOCATION_ORDER } from './types';
@@ -11,6 +11,7 @@ import { canUseFateAbility } from './mechanics';
 import { resolveFateAbilityDefinition, resolveFatePlayerAbility } from './abilityRegistry';
 import {resolveFateAttack,resolveFateAttackConfirmation,fateAttackManaCost,selectedFateAttackCost,hasLegalFateNormalPlay,canSelectFateAttack,hasAffordableFateFaceUpAttack} from './attackSelection';
 import { fateChariotTargets } from './chariotEvents';
+import { fateBattleOpponents } from './battleAwards';
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -60,7 +61,7 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
                 || (core.players[command.playerId]?.hand?.length ?? 0) > 0) return fail('identityLocked');
             return FATE_SERVANT_BY_ID[command.payload.servantId] ? ok() : fail('unknownServant');
         case 'DEPLOY_MASTER': {
-            if (fateLateClimax(core.situation) && ['shinto','recon'].includes(command.payload.locationId)) return fail('cannotEnterLocation');
+            if (fateSituationClosesLocation(core.situation, command.payload.locationId)) return fail('cannotEnterLocation');
             if (command.payload.locationId === 'recon') return fail('cannotDeployToRecon');
             if (core.phase !== 'outpost') return fail('wrongPhase');
             if (!isCurrentPlayer(core, command)) return fail('notYourTurn');
@@ -106,6 +107,9 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             if(player.usedAbilityIds.includes(skill.id)||player.usedAbilityIds.includes(fateAbilityUsageKey(skill.id,core.phase)))return fail('abilityAlreadyUsed');
             const abilityPhase = abilityPhaseFor(core.phase);
             if (definition?.trigger && abilityPhase && definition.trigger !== abilityPhase) return fail('wrongPhase');
+            if (definition.climaxOnly && core.round < 9) return fail('climaxRoundRequired');
+            if (definition.effects.some(effect => effect.type === 'direct-defeat-sole-opponent')
+                && fateBattleOpponents(core, player.id).length !== 1) return fail('soleBattleOpponentRequired');
             if (definition.effects.some(effect=>effect.type==='replace-event') && (!command.payload.targetCardId || !fateChariotTargets(core,command.playerId).includes(command.payload.targetCardId))) return fail('eventTargetRequired');
             if (definition.effects.some(effect=>effect.type==='investigate-hand')) {
                 const target=command.payload.targetPlayerId && core.players[command.payload.targetPlayerId];

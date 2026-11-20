@@ -17,6 +17,11 @@ export type FgoBattleActorInput = {
 
 export type FgoBattleRuntimeHandle = { destroy: () => void };
 
+type BattleScreenPoint = { x: number; y: number };
+export type FgoBattleEffect =
+  | { kind: 'strike'; shape: 'slash' | 'thrust'; turnId: number; from: BattleScreenPoint; to: BattleScreenPoint; untilImpact: number }
+  | { kind: 'impact'; turnId: number; at: BattleScreenPoint; flip: boolean };
+
 type Actor = FgoBattleActorInput & {
   actor: SourceActor;
   materials: SourceMaterials;
@@ -36,6 +41,7 @@ const VIEW_HEIGHT = 3.6;
 const FADE_IN_SECONDS = 0.2;
 const FADE_OUT_SECONDS = 0.35;
 const RETURN_SECONDS = 0.3;
+const STRIKE_LEAD_SECONDS = 0.16;
 const ATTACK_IMPACT: Record<string, number> = {
   'servant-saber': 0.65,
   'servant-cu-chulainn': 0.43,
@@ -55,7 +61,7 @@ export function createFgoBattleRuntime(
   inputs: FgoBattleActorInput[],
   laneCount: number,
   onComplete: () => void,
-  onImpact?: (point: { x: number; y: number }) => void,
+  onEffect?: (effect: FgoBattleEffect) => void,
 ): FgoBattleRuntimeHandle | null {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 2000);
@@ -76,7 +82,15 @@ export function createFgoBattleRuntime(
   let elapsed = -FADE_IN_SECONDS;
   let lastTick = 0;
   let duration = 0;
+  let lastStrike: BattleTurn | undefined;
   let lastImpact: BattleTurn | undefined;
+
+  const projectBody = (item: Actor): BattleScreenPoint | undefined => {
+    const bounds = item.actor.bounds(true, true);
+    if (bounds.isEmpty()) return;
+    const point = bounds.getCenter(new THREE.Vector3()).project(camera);
+    return { x: (point.x + 1) * 50, y: (1 - point.y) * 50 };
+  };
 
   const dispose = () => {
     if (destroyed) return;
@@ -256,12 +270,20 @@ export function createFgoBattleRuntime(
         const targetPositions = targets.map(item => [item.playerId, item.actor.root.position.x] as const);
         if (turn === turns[turns.length - 1]) host.dataset.fgoLastFormation = JSON.stringify(targetPositions);
         if (!turn && elapsed >= duration && !host.dataset.fgoFadeFormation) host.dataset.fgoFadeFormation = JSON.stringify(targetPositions);
-        if (turn && turn !== lastImpact && playTime - turn.start >= turn.impactAt) {
-          lastImpact = turn;
-          const targetBounds = turn.target.actor.bounds(true, true);
-          if (!targetBounds.isEmpty()) {
-            const point = targetBounds.getCenter(new THREE.Vector3()).project(camera);
-            onImpact?.({ x: (point.x + 1) * 50, y: (1 - point.y) * 50 });
+        if (turn && onEffect) {
+          const untilImpact = turn.start + turn.impactAt - playTime;
+          if (turn !== lastStrike && untilImpact <= STRIKE_LEAD_SECONDS && untilImpact > 0) {
+            lastStrike = turn;
+            const from = projectBody(turn.attacker);
+            const to = projectBody(turn.target);
+            const shape = turn.attacker.servantId === 'servant-cu-chulainn' && turn.animation === 'attack_q' ? 'thrust' : 'slash';
+            if (from && to) onEffect({ kind: 'strike', shape, turnId: turn.start, from, to, untilImpact });
+          }
+          if (turn !== lastImpact && untilImpact <= 0) {
+            lastImpact = turn;
+            const from = projectBody(turn.attacker);
+            const at = projectBody(turn.target);
+            if (at) onEffect({ kind: 'impact', turnId: turn.start, at, flip: !!from && at.x < from.x });
           }
         }
         renderer.render(scene, camera);

@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ExternalApiError, externalRoomAction, joinExternalRoom, leaveExternalRoom, readExternalRoom } from '../api/external-games';
 import { DetailsPrimaryButton } from '../components/common/DetailsPrimaryButton';
+import { PasswordEntryModal } from '../components/common/overlays/PasswordEntryModal';
 import { ExternalRoomGameFrame } from '../components/external/ExternalRoomGameFrame';
 import { getExternalRoomGuestKey } from '../components/external/nativeRoomGuestKey';
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { useAuth } from '../contexts/AuthContext';
-import { externalRoomRosterKey } from '../shared/externalRoom';
+import { EXTERNAL_ROOM_PASSWORD_REQUIRED, externalRoomRosterKey } from '../shared/externalRoom';
 import './external-game-page.css';
 import './external-room-page.css';
 
@@ -25,6 +26,7 @@ export default function ExternalRoomPage() {
     const navigate = useNavigate();
     const client = useQueryClient();
     const [issue, setIssue] = useState('');
+    const [passwordRoomId, setPasswordRoomId] = useState('');
     const inviteInput = useRef<HTMLInputElement>(null);
     const [enteredLobby, setEnteredLobby] = useState('');
     const autoJoinAttempt = useRef('');
@@ -37,8 +39,11 @@ export default function ExternalRoomPage() {
         refetchInterval: state => state.state.data?.started || roomEnded(state.state.error) ? false : 700,
     });
     const join = useMutation({
-        mutationFn: () => joinExternalRoom(identity, roomId),
+        mutationFn: (password?: string) => joinExternalRoom(identity, roomId, password),
         onSuccess: view => client.setQueryData(roomKey, view),
+        onError: error => {
+            if (error instanceof ExternalApiError && error.code === EXTERNAL_ROOM_PASSWORD_REQUIRED) setPasswordRoomId(roomId);
+        },
     });
     const start = useMutation({
         mutationFn: () => externalRoomAction(identity, roomId, { type: 'start' }),
@@ -50,7 +55,7 @@ export default function ExternalRoomPage() {
     useEffect(() => {
         if (!autoJoin || isLoading || autoJoinAttempt.current === roomId) return;
         autoJoinAttempt.current = roomId;
-        joinNow();
+        joinNow(undefined);
     }, [autoJoin, isLoading, joinNow, roomId]);
     if (view && !view.started && enteredLobby !== roomId) setEnteredLobby(roomId);
     const entered = enteredLobby === roomId;
@@ -75,22 +80,26 @@ export default function ExternalRoomPage() {
     const send = (data: Record<string, unknown>) => {
         void externalRoomAction(identity, roomId, data).catch((error: Error) => setIssue(error.message));
     };
-    if (!view && (isLoading || query.isPending || (autoJoin && !join.isError))) {
+    const needsPassword = passwordRoomId === roomId;
+    if (!view && (isLoading || query.isPending || (autoJoin && !join.isError && !needsPassword))) {
         return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
     }
     if (!view || (roomEnded(query.error) && !view.started)) {
         return <main className="external-page external-room-page">
             <section className="external-summary external-room-panel">
                 <h1>{t('platform.externalRoom.join')}</h1>
-                {(join.error || (query.error instanceof ExternalApiError && query.error.status !== 403)) && <p role="alert">{(join.error ?? query.error)?.message}</p>}
+                {!needsPassword && (join.error || (query.error instanceof ExternalApiError && query.error.status !== 403))
+                    && <p role="alert">{(join.error ?? query.error)?.message}</p>}
                 <div className="external-actions">
                     {!view && <DetailsPrimaryButton className="external-primary" disabled={join.isPending}
-                        onClick={() => join.mutate()}>
+                        onClick={() => join.mutate(undefined)}>
                         {t('platform.externalRoom.join')}
                     </DetailsPrimaryButton>}
                     <Link to={back}>{t('platform.externalGamePage.back')}</Link>
                 </div>
             </section>
+            {needsPassword && <PasswordEntryModal open isLoading={join.isPending} error={join.variables ? join.error?.message : undefined}
+                onClose={() => navigate(back, { replace: true })} onConfirm={password => join.mutate(password)} />}
         </main>;
     }
     const { room, capacity, started } = view;
@@ -118,32 +127,31 @@ export default function ExternalRoomPage() {
         }
     };
     return <main className="external-page external-room-page">
-        {!started && <section className="external-summary external-room-panel">
-            <h1>{view.title}</h1>
-            <label>{t('platform.externalRoom.inviteLink')}
-                <input ref={inviteInput} readOnly value={invite} onFocus={event => event.target.select()} />
-            </label>
-            <p role="status">{t(allReady ? 'platform.externalRoom.waitingToStart' : full ? 'platform.externalRoom.connecting' : 'platform.externalRoom.waiting',
-                { seated: room.players.length, capacity })}</p>
-            <ul className="external-room-seats">
-                {room.players.map(player => <li key={player.seatId}>
-                    <span>{player.displayName}{player.seatId === room.hostSeatId ? ` · ${t('platform.externalRoom.host')}` : ''}</span>
-                    <span>{t(player.ready ? 'platform.externalRoom.ready' : 'platform.externalRoom.notReady')}</span>
-                </li>)}
-            </ul>
-            {(issue || start.error || query.error) && <p role="alert">{start.error?.message || query.error?.message || issue}</p>}
-            <div className="external-actions">
-                {room.seatId === room.hostSeatId && <DetailsPrimaryButton className="external-primary"
-                    onClick={() => start.mutate()} disabled={!allReady || start.isPending}>
-                    {t('platform.externalRoom.start')}
-                </DetailsPrimaryButton>}
-                <button type="button" onClick={copy}>{t('platform.externalRoom.copyInvite')}</button>
-                <button type="button" onClick={() => void leave()}>{t('platform.externalGamePage.back')}</button>
-            </div>
-        </section>}
-        {full && <div className={started ? 'external-player' : 'external-room-preload'} aria-hidden={!started} inert={!started}>
+        <div className={started ? 'external-player' : 'external-player external-room-player'}>
             <ExternalRoomGameFrame key={rosterKey} view={view} send={send} onHandshakeTimeout={onHandshakeTimeout} />
-            {started && <GameHUD mode="external" gameId={view.gameId} onLeave={() => void leave()} />}
-        </div>}
+            {started ? <GameHUD mode="external" gameId={view.gameId} onLeave={() => void leave()} />
+                : <section className="external-room-controls" aria-label={t('platform.externalRoom.list')}>
+                    <div className="external-room-occupancy">
+                        <p role="status">{t(allReady ? 'platform.externalRoom.waitingToStart' : full ? 'platform.externalRoom.connecting' : 'platform.externalRoom.waiting',
+                            { seated: room.players.length, capacity })}</p>
+                        <ul className="external-room-seats">
+                            {room.players.map(player => <li key={player.seatId}>
+                                {player.displayName}{player.seatId === room.hostSeatId ? ` · ${t('platform.externalRoom.host')}` : ''}
+                            </li>)}
+                        </ul>
+                    </div>
+                    <div className="external-actions">
+                        {room.seatId === room.hostSeatId && <DetailsPrimaryButton className="external-primary"
+                            onClick={() => start.mutate()} disabled={!allReady || start.isPending}>
+                            {t('platform.externalRoom.start')}
+                        </DetailsPrimaryButton>}
+                        <input aria-label={t('platform.externalRoom.inviteLink')} ref={inviteInput} readOnly value={invite}
+                            onFocus={event => event.target.select()} />
+                        <button type="button" onClick={copy}>{t('platform.externalRoom.copyInvite')}</button>
+                        <button type="button" onClick={() => void leave()}>{t('platform.externalGamePage.back')}</button>
+                    </div>
+                    {(issue || start.error || query.error) && <p role="alert">{start.error?.message || query.error?.message || issue}</p>}
+                </section>}
+        </div>
     </main>;
 }

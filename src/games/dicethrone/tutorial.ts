@@ -3,6 +3,8 @@ import type { TutorialCollection, TutorialHiddenAutomationContract, TutorialMani
 import { TOKEN_IDS } from './domain/ids';
 import { MONK_CARDS } from './heroes/monk/cards';
 import { DiceThroneDiscardPractice } from './tutorialPractices';
+import type { DiceThroneCore } from './domain/types';
+import { resolveDiceThroneTokenResponseSkipCommand } from './domain/tokenResponseChoiceContract';
 
 const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
     kind: 'setup-precondition',
@@ -79,19 +81,43 @@ const MATCH_PHASE_MAIN2: TutorialEventMatcher = {
 export const DiceThroneTutorial: TutorialManifest = {
     id: 'dicethrone-basic',
     playerId: '0',
-    revision: 19,
+    revision: 20,
     randomPolicy: {
         mode: 'fixed',
         values: [6],
     },
     stepValidator: (state, step) => {
-        const core = state.core as import('./domain/types').DiceThroneCore;
+        const core = state.core as DiceThroneCore;
         if (step.id === 'opponent-token-response') return core.pendingDamage?.responderId === '1';
         if (step.id === 'token-response') return core.pendingDamage?.responderId === '0' && (core.players['0'].tokens[TOKEN_IDS.TAIJI] ?? 0) > 0;
         if (step.id === 'sale-branch-recovery') return !core.players['0'].hand.some(card => card.id === 'card-give-hand');
         if (step.id === 'ability-branch-recovery') return state.sys.phase === 'main2' && !core.pendingAttack;
         if (step.id === 'double-play') return core.players['0'].hand.some(card => card.id === 'card-double');
         return true;
+    },
+    resolveStep: (state, step) => {
+        if (step.id !== 'opponent-defense' && step.id !== 'opponent-token-response') return step;
+        const core = state.core as DiceThroneCore;
+        const current = state.sys.interaction?.current;
+        if (current?.kind === 'dt:token-response' && current.playerId === core.pendingDamage?.responderId) {
+            if (current.playerId === '0') {
+                return {
+                    ...step, aiActions: undefined, aiBatchId: undefined,
+                    content: 'game-dicethrone:tutorial.steps.attack-token-response',
+                    requireAction: true, allowManualSkip: false, infoStep: false,
+                };
+            }
+            const skip = current.playerId === '1' ? resolveDiceThroneTokenResponseSkipCommand(current) : null;
+            if (skip) return {
+                ...step,
+                aiBatchId: current.id,
+                aiActions: [{ commandType: skip.type, playerId: current.playerId, payload: skip.payload }],
+            };
+        }
+        if (step.id === 'opponent-defense' && (!core.pendingAttack || state.sys.phase !== 'defensiveRoll')) {
+            return { ...step, aiActions: undefined, aiBatchId: undefined };
+        }
+        return step;
     },
     steps: withDiceThroneTutorialSurfaces([
         {
@@ -159,12 +185,13 @@ export const DiceThroneTutorial: TutorialManifest = {
         {
             id: 'opponent-defense', randomPolicy: { mode: 'fixed', values: [4] }, content: 'game-dicethrone:tutorial.steps.opponentDefense', position: 'center',
             requireAction: false, allowManualSkip: true, infoStep: true,
+            allowedCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
+            aiBatchId: 'defense-roll',
             aiActions: [
                 { commandType: 'ROLL_DICE', playerId: '1', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },
                 { commandType: 'RESPONSE_PASS', playerId: '0', payload: {} },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: { __tutorialChoiceCandidateId: 'skip' } },
             ],
             autoAdvanceAfterAi: false,
         },
@@ -224,7 +251,6 @@ export const DiceThroneTutorial: TutorialManifest = {
         {
             id: 'opponent-token-response', content: 'game-dicethrone:tutorial.steps.opponent-token-response', position: 'center',
             requireAction: false, allowManualSkip: true, infoStep: true, autoAdvanceAfterAi: false,
-            aiActions: [{ commandType: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: { __tutorialChoiceCandidateId: 'skip' } }],
         },
         {
             id: 'token-response', content: 'game-dicethrone:tutorial.steps.token-response', highlightTarget: 'status-tokens', position: 'left',

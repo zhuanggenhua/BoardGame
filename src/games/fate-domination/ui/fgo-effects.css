@@ -1,7 +1,7 @@
 .fd-fgo-battle-anchor { position:absolute; z-index:4; pointer-events:none; }
 .fd-fgo-battle { position:fixed; pointer-events:none; }
 .fd-fgo-battle-canvas { position:absolute; inset:0; }
-.fd-fgo-impact { position:absolute; width:22%; height:70%; transform:translate(-50%, -50%); pointer-events:none; }
+.fd-fgo-strike, .fd-fgo-impact { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 .fd-fgo-noble { position:fixed; pointer-events:none; inset:0; filter:opacity(1); }
 .fd-fgo-noble-canvas { position:absolute; inset:0; pointer-events:none; }
 .fd-fgo-noble-skip { position:absolute; top:max(1rem, env(safe-area-inset-top)); right:max(1rem, env(safe-area-inset-right)); pointer-events:auto; display:flex; align-items:center; justify-content:center; gap:.4rem; min-width:104px; min-height:44px; padding:.4rem 1rem .4rem 1.25rem; color:#fff; background:rgba(24,24,27,.86); border:0; clip-path:polygon(0 0, 100% 0, 100% 100%, 18% 100%); font-size:18px; font-weight:700; text-shadow:0 1px 2px #000; cursor:pointer; }

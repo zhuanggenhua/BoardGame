@@ -4,6 +4,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createCorpseLootReadyRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -56,7 +57,7 @@ test.describe('山屋惊魂第一剧本搜尸边界', () => {
 
         await page.getByTestId('betrayal-action-trade').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText(/拿走了/);
-        await page.getByTestId('betrayal-room-occupant-hallway-0').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-0'));
         await expect(page.getByTestId('betrayal-corpse-loot-card-selector')).toBeVisible();
         await page.getByTestId('betrayal-corpse-loot-card-corpse-omen-1').click();
         await expect(page.getByTestId('betrayal-corpse-loot-card-corpse-omen-1')).toHaveClass(/underline/);

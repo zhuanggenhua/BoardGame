@@ -1,3 +1,4 @@
+import { isRulesStandardAction } from '../domain/standardAction';
 import type {
  MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
@@ -385,7 +386,7 @@ function runtimeResultToTriggerResult(
 function isStandardActionDefId(defId?: string): boolean {
     if (!defId) return false;
     const def = getCardDef(defId);
-    return !!def && def.type === 'action' && def.subtype === 'standard';
+    return isRulesStandardAction(def);
 }
 
 function normalizeSourceDefIdFromReason(reason?: string): string | undefined {

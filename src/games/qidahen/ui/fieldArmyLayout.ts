@@ -9,7 +9,7 @@ export interface QidahenArmyCallout { tokenId: string; point: Point; anchor: Poi
 export const getArmyStackExtension = (size: number) => 16 * Math.min(1, size / 26);
 
 export const getArmyMapBounds = (point: Point, half: number, extension = 0) => ({
-    left: point.x - half, top: point.y - half, width: half * 2, height: half * 2 + extension,
+    left: point.x - half, top: point.y - half, width: half * 2 + extension * 3 / 8, height: half * 2 + extension,
 });
 
 export const armyMapBoundsSeparate = (a: ReturnType<typeof getArmyMapBounds>, b: ReturnType<typeof getArmyMapBounds>, gap: number) => (

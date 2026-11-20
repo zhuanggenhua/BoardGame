@@ -17,6 +17,7 @@ import { reduce } from './reducer';
 import { playerView } from './view';
 import { discoverDiceThroneTimingOpportunities } from './timingOpportunities';
 import { commitDiceThroneDamagePreventionEvent } from './damagePreventionCommit';
+import { getPendingAttackSettlementStage } from './utils';
 import { isDiceThroneTokenResponseCommandAllowedByContract } from './tokenResponseChoiceContract';
 import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isSkirmishMode, isTeamMode } from './rules';
 import { registerDiceThroneConditions } from '../conditions';
@@ -311,6 +312,11 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
     isGameOver: (state: DiceThroneCore): GameOverResult | undefined => {
         // 在 setup 阶段不进行胜负判定，避免血量未初始化导致误判
         if (!state.hostStarted) return undefined;
+        // 已落地的攻击伤害仍可能有后续选择和效果，等待本次攻击完整结算。
+        const attackStage = getPendingAttackSettlementStage(state.pendingAttack);
+        if (attackStage === 'withDamageChoicePending'
+            || attackStage === 'postDamagePending'
+            || attackStage === 'readyToResolve') return undefined;
 
         if (isTeamMode(state)) {
             const resolveTeamHealth = (teamId: 'A' | 'B') => {

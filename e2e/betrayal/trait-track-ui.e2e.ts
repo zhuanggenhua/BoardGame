@@ -288,27 +288,18 @@ test.describe('山屋惊魂属性轨 UI', () => {
         };
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         await injectCore(page, core);
-        const traitChangeFloating = page.getByTestId('betrayal-room-occupant-trait-change-hallway-0');
+        const screenFeedback = page.locator('[data-betrayal-screen-feedback]');
+        const traitChangeFloating = screenFeedback.getByTestId('betrayal-room-occupant-trait-change-hallway-0');
         await expect(traitChangeFloating).toBeVisible();
         await expect(traitChangeFloating).toContainText('力量');
         await expect(page.getByTestId('betrayal-room-occupant-trait-change-hallway-1')).toHaveCount(0);
-        const floatingAlignment = await page.evaluate(() => {
-            const floating = document.querySelector('[data-testid="betrayal-room-occupant-trait-change-hallway-0"]');
-            const token = document.querySelector('[data-testid="betrayal-explorer-figure-token-0"]');
-            if (!(floating instanceof HTMLElement) || !(token instanceof HTMLElement)) {
-                throw new Error('缺少属性飘字或当前玩家棋子');
-            }
-            const floatingBox = floating.getBoundingClientRect();
-            const tokenBox = token.getBoundingClientRect();
-            return {
-                floatingCenterX: floatingBox.left + floatingBox.width / 2,
-                tokenCenterX: tokenBox.left + tokenBox.width / 2,
-            };
-        });
-        expect(
-            Math.abs(floatingAlignment.floatingCenterX - floatingAlignment.tokenCenterX),
-            '属性飘字必须相对当前棋子水平居中',
-        ).toBeLessThanOrEqual(8);
+        const figure = page.getByTestId('betrayal-room-occupant-hallway-0');
+        await expect(figure).toHaveAttribute('data-three-model', '');
+        const projected = (await figure.getAttribute('data-tutorial-screen-bounds'))!.split(',').map(Number);
+        const label = (await traitChangeFloating.boundingBox())!;
+        expect(Math.abs(label.x + label.width / 2 - (projected[0] + projected[2]) / 2)).toBeLessThanOrEqual(8);
+        await expect(traitChangeFloating).toHaveCSS('font-size', '16px');
+        await expect(page.getByTestId('betrayal-room-canvas').getByTestId('betrayal-room-occupant-trait-change-hallway-0')).toHaveCount(0);
         await saveScreenshot(
             page,
             `${BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR}/05-PC-1920x1080-属性飘字贴棋子居中.jpg`,

@@ -9,6 +9,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createJackSpiritMovementRollReadyRuntimeCore,
     initBetrayalContext,
     injectCore,
@@ -171,14 +172,14 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物动作槽攻击', () =>
         await expect(monsterAttackAction).toContainText('取消攻击');
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('杰克之灵');
         await expect(jackSpiritToken).toHaveAttribute('data-direct-target', 'true');
-        await jackSpiritToken.click();
+        await clickBetrayalSceneFigure(jackSpiritToken);
         await expect(heroTargetToken).toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId('betrayal-room-occupant-target-outline-basement-east-0')).toHaveAttribute('data-highlight-shape', 'pentagon');
         await expect(page.getByTestId('betrayal-bottom-teammate-0')).toContainText('攻击');
         await saveScreenshot(page, TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
-        await heroTargetToken.click();
+        await clickBetrayalSceneFigure(heroTargetToken);
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('杰克之灵');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');

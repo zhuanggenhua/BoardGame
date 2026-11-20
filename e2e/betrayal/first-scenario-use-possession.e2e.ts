@@ -9,6 +9,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickBetrayalSceneFigure,
     createMaskMoveReadyRuntimeCore,
     createMedicalKitUseReadyRuntimeCore,
     createSkeletonKeyMoveReadyRuntimeCore,
@@ -644,7 +645,7 @@ test.describe('山屋惊魂首剧本物品使用交互', () => {
         await saveScreenshot(page, ITEM_SELECTED_SCREENSHOT);
         await saveScreenshot(page, TARGET_AVAILABLE_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await assertMedicalKitTargetSelected(page);
         await saveScreenshot(page, TARGET_SELECTED_SCREENSHOT);
 
@@ -677,7 +678,7 @@ test.describe('山屋惊魂首剧本物品使用交互', () => {
         await assertMaskSelectedNeedsTarget(page);
         await saveScreenshot(page, MASK_SELECTED_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await clickBetrayalSceneFigure(page.getByTestId('betrayal-room-occupant-hallway-1'));
         await assertMaskSelectedNeedsTarget(page);
         await saveScreenshot(page, MASK_TARGET_TOKEN_SCREENSHOT);
 

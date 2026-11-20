@@ -10,6 +10,7 @@ const secondWolf = 'mwobj-0-2819-2';
 const unicorn = 'mwobj-1-2814-1';
 const lair = 'mwobj-0-2218-1';
 const wand = 'mwobj-0-3725-1';
+const bow = 'mwobj-1-3722-1';
 
 const field = (page: Page, id: string) => page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${id}"]`);
 const attached = (page: Page, id: string) => page.locator(`[data-testid="mage-wars-attached-card"][data-object-id="${id}"]`);
@@ -19,12 +20,24 @@ const prepared = (page: Page, id: number) => page.locator(`[data-tutorial-id="mw
 const option = (page: Page, id: string) => page.locator(`[data-testid="mage-wars-interaction-option"][data-option-id="${id}"]`);
 const click = (locator: Locator) => locator.click({ timeout: 15_000 });
 
-async function bookCard(page: Page, cardId: number) {
-    await click(page.getByTestId('mage-wars-spellbook-category-all'));
+const findZoneClickPoint = (locator: Locator) => locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    for (const [rx, ry] of [[0.5, 0.5], [0.25, 0.25], [0.5, 0.25], [0.75, 0.25], [0.25, 0.5], [0.75, 0.5], [0.25, 0.75], [0.5, 0.75], [0.75, 0.75]]) {
+        const x = rect.left + rect.width * rx;
+        const y = rect.top + rect.height * ry;
+        const hit = document.elementFromPoint(x, y);
+        if (hit && element.contains(hit) && !hit.closest('button, [data-testid="tutorial-overlay-card"]')) {
+            return { x, y };
+        }
+    }
+    return null;
+});
+
+async function bookCard(page: Page, cardId: number, category = 'all') {
+    await click(page.getByTestId(`mage-wars-spellbook-category-${category}`));
     const card = page.locator(`[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="${cardId}"]`);
     const next = page.getByTestId('mage-wars-spellbook-next-page');
-    for (let i = 0; i < 14 && !await card.isVisible(); i += 1) {
-        if (await next.isDisabled()) break;
+    while (!await card.isVisible() && !await next.isDisabled()) {
         await click(next);
     }
     await click(card);
@@ -70,6 +83,79 @@ async function snapshot(page: Page) {
     };
 }
 
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, { width: 1054, height: 652 }]) {
+    test(`教程首屏可读与守卫操作 ${viewport.width}×${viewport.height}`, async ({ context, page, baseURL }, info) => {
+        test.setTimeout(120_000);
+        if (!baseURL) throw new Error('教程验收需要正式页面基址');
+        await page.setViewportSize(viewport);
+        await initContext(context, { storageKey: 'mage-wars-tutorial-opening', skipTutorial: false, locale: 'zh-CN', skipImageGate: false, blockCdnAssets: false });
+        const releaseSource = await startSourceSession(context, baseURL);
+        try {
+            await page.goto('/play/mage-wars/tutorial', { waitUntil: 'domcontentloaded' });
+            await waitForFrontendAssets(page, 45_000);
+            const board = page.getByTestId('mage-wars-board');
+            const entry = page.getByTestId('tutorial-catalog-entry-mage-wars-basic');
+            await expect(board.or(entry).first()).toBeVisible({ timeout: 60_000 });
+            if (await entry.isVisible()) await click(entry);
+            const guardStep = page.locator('[data-tutorial-step="guard-wolf"]');
+            const guard = page.getByTestId('mage-wars-selected-unit-guard');
+            await expect(guardStep).toBeVisible();
+            await expect(guard).toHaveCount(0);
+            const arenaViewport = page.getByTestId('mage-wars-arena-viewport');
+            await expect(arenaViewport).toHaveAttribute('data-zoom-pan-target-state', 'settled');
+            const shelf = page.getByTestId('mage-wars-desktop-spellbook-shelf');
+            const prompt = page.getByTestId('tutorial-overlay-card');
+            await expect(prompt).toHaveAttribute('data-tutorial-anchor', `mw-arena-object-${wolf}`);
+            const subjects = [mage(page, '0'), field(page, wolf), field(page, unicorn)];
+            const assertOpeningIsVisible = async (phaseTip?: Locator) => {
+                await expect.poll(async () => {
+                    const [hud, tip, ...bounds] = await Promise.all([shelf, prompt, ...subjects].map((entry) => entry.boundingBox()));
+                    if (!hud || !tip || bounds.some((rect) => rect == null)) return false;
+                    const overlaps = (a: NonNullable<typeof tip>, b: NonNullable<typeof tip>) =>
+                        a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+                    if (overlaps(hud, tip)) return false;
+                    const phaseBounds = await phaseTip?.boundingBox();
+                    if (phaseTip && (!phaseBounds || overlaps(phaseBounds, tip))) return false;
+                    return bounds.every((rect) => rect != null
+                        && rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width
+                        && rect.y + rect.height <= hud.y
+                        && !overlaps(rect, tip) && (!phaseBounds || !overlaps(rect, phaseBounds)));
+                }).toBe(true);
+            };
+            await assertOpeningIsVisible();
+            await page.screenshot({ path: info.outputPath('01-第五回合单局开场.png') });
+            const phase = page.locator('[data-testid="mage-wars-phase-progress-item"][data-phase-id="creatureAction"]');
+            await phase.hover();
+            const phaseTip = page.getByTestId('info-tooltip');
+            await expect(phaseTip).toContainText('行动');
+            await assertOpeningIsVisible(phaseTip);
+            await page.screenshot({ path: info.outputPath('02-阶段悬浮提示.png') });
+            const arena = page.getByTestId('mage-wars-arena-viewport-content');
+            const initialTransform = await arena.evaluate((el) => el.style.transform);
+            await click(field(page, wolf));
+            expect(await arena.evaluate((el) => el.style.transform)).toBe(initialTransform);
+            await assertOpeningIsVisible();
+            await expect(guard).toBeEnabled();
+            await expect(prompt).toHaveAttribute('data-tutorial-anchor', 'mw-selected-unit-guard');
+            await page.screenshot({ path: info.outputPath('03-选中灰狼后显示守卫入口.png') });
+            await click(guard);
+            await expect(page.locator('[data-tutorial-step="heal-wolf"]')).toBeVisible();
+            await expect(field(page, wolf).getByTestId('mage-wars-guard-token-slot')).toBeVisible();
+            await expect.poll(async () => (await readMatch(page))?.core?.objects[wolf]?.guarding).toBe(true);
+            expect(await arena.evaluate((el) => el.style.transform)).toBe(initialTransform);
+            const healCard = prepared(page, 3402);
+            await expect(healCard).toBeInViewport({ ratio: 0.95 });
+            await expect(prompt).toHaveAttribute('data-tutorial-anchor', 'mw-prepared-card-3402');
+            await click(healCard);
+            await expect(field(page, wolf)).toHaveAttribute('data-field-card-role', 'target');
+            await expect(prompt).toHaveAttribute('data-tutorial-anchor', `mw-arena-object-${wolf}`);
+            await writeFile(info.outputPath('source-identity.json'), JSON.stringify(await captureEvidenceSourceIdentity(page, 'mage-wars'), null, 2));
+        } finally {
+            await releaseSource();
+        }
+    });
+}
+
 test('单局教程从守卫到同局自由对战的真实点击链', async ({ context, page, baseURL }, testInfo) => {
     const followToEnd = process.env.PW_MW_TUTORIAL_FOLLOW_TO_END === 'true';
     test.setTimeout(followToEnd ? 720_000 : 420_000);
@@ -99,21 +185,21 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
         expect(uiStates.some((entry) => entry.id === name)).toBe(false);
         imageNumber += 1;
         if (change !== 'animation-phase') {
-            await page.evaluate(async () => {
+            await expect.poll(() => page.evaluate(() => {
                 const panels = document.querySelectorAll('[data-testid="tutorial-overlay-card"],[data-testid="mage-wars-card-magnify-overlay"]');
-                const finiteAnimations = [...panels].flatMap((panel) => panel.getAnimations({ subtree: true })).filter((animation) => (
-                    Number.isFinite(animation.effect?.getComputedTiming().endTime)
+                return [...panels].flatMap((panel) => panel.getAnimations({ subtree: true })).some((animation) => (
+                    animation.playState === 'running' && Number.isFinite(animation.effect?.getComputedTiming().endTime)
                 ));
-                await Promise.allSettled(finiteAnimations.map((animation) => animation.finished));
-            });
+            }), { message: `等待「${name}」的真实动效结束`, timeout: 8_000 }).toBe(false);
         }
         const filename = `${String(imageNumber).padStart(2, '0')}-${name}.png`;
-        const after = await snapshot(page);
-        expect(after.visible.connected, name).toBe(true);
+        const beforeCapture = change === 'animation-phase' ? undefined : await snapshot(page);
         const bytes = await page.screenshot({
             path: testInfo.outputPath('screenshots', filename),
             timeout: 15_000,
         });
+        const after = beforeCapture ?? await snapshot(page);
+        expect(after.visible.connected, name).toBe(true);
         const id = `${after.authoritative.step ?? 'endgame'}-${imageNumber}`;
         steps.push({
             id, action: name, before, after,
@@ -151,6 +237,8 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     const cast = async (id: string, card: number, target: Locator, image: string) => {
         await step(id);
         await click(prepared(page, card));
+        await expect(page.getByTestId('mage-wars-arena-viewport')).toHaveAttribute('data-zoom-pan-target-state', 'settled');
+        await expect(target).toBeInViewport();
         await shot(image);
         await click(target);
     };
@@ -240,12 +328,36 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await click(closePreview);
     await click(healCard);
     await shot('治疗选择受伤灰狼');
-    await click(field(page, wolf));
-    await expect(page.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveText('4');
-    await expect(page.getByTestId('mage-wars-fx-healing-number')).toHaveAttribute('data-healing-amount', '3');
+    await Promise.all([
+        page.waitForFunction(() => {
+            const total = document.querySelector('[data-testid="mage-wars-fx-attack-dice-summary"]');
+            const healed = document.querySelector('[data-testid="mage-wars-fx-healing-number"]');
+            const prompt = document.querySelector('[data-testid="tutorial-overlay-card"]')?.getBoundingClientRect();
+            if (total?.textContent !== '4' || healed?.textContent !== '+3' || Number(getComputedStyle(healed).opacity) <= 0.7) return false;
+            const dice = document.querySelectorAll('[data-testid="mage-wars-fx-attack-dice-content"] [data-roll-animation="settled"]');
+            if (dice.length !== 5) return false;
+            const range = document.createRange();
+            range.selectNodeContents(healed);
+            const number = range.getBoundingClientRect();
+            return number.width > 0 && Boolean(prompt && (
+                number.right <= prompt.left || number.left >= prompt.right
+                || number.bottom <= prompt.top || number.top >= prompt.bottom
+            ));
+        }, undefined, { polling: 'raf', timeout: 5_000 }),
+        click(field(page, wolf)),
+    ]);
     await shot('治疗骰总和四与灰狼飘字加三', 'animation-phase');
     await step('healing-result', '治疗四点实际恢复三点');
     await next();
+    await expect(page.getByTestId('mage-wars-interaction-dock')).toBeVisible();
+    await expect(page.getByTestId('tutorial-next-button')).toHaveCount(0);
+    await step('guard-response');
+    await checkResponseLayout();
+    await shot('守卫后的反击选择');
+    await click(option(page, compact ? 'pass' : 'counterstrike'));
+    await step('pass-final', '最终快速施法按钮');
+    expect((await readMatch(page))?.core?.objects[wolf]?.guarding).toBe(false);
+    await click(page.getByTestId('mage-wars-turn-end'));
     await step('check-discard');
     const discard = page.getByTestId('mage-wars-discard-pile');
     await click(discard.getByRole('button'));
@@ -255,22 +367,12 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await preview.hover();
     await click(closePreview);
     await next();
-    await step('opponent-public-view');
-    await click(page.getByTestId('mage-wars-observe-player-button'));
-    await step('back-to-self-view');
-    await expect(discard).toHaveAttribute('data-discard-owner-role', 'opponent');
-    await shot('对手公开视角保留准备牌隐私');
-    await click(page.getByTestId('mage-wars-back-to-self-view'));
-    await step('guard-response');
-    await checkResponseLayout();
-    await shot('守卫后的反击选择');
-    await click(option(page, 'counterstrike'));
-    await step('pass-final', '最终快速施法按钮');
-    await click(page.getByTestId('mage-wars-turn-end'));
     await readLegend('spell-card-reading', /法术牌图例/, '读牌步骤包含法术牌图例');
+    await step('plan-summon');
+    await expect.poll(async () => Number(await page.getByTestId('mage-wars-desktop-spellbook-shelf').getAttribute('data-visible-card-count')))
+        .toBeGreaterThan(1);
+    await bookCard(page, 2819, 'creature');
     if (compact) {
-        await step('plan-summon');
-        await bookCard(page, 2819);
         await expect(prepared(page, 2819)).toBeVisible();
         const saved = (await readMatch(page))?.core;
         await page.reload({ waitUntil: 'domcontentloaded' });
@@ -283,11 +385,10 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
         expect((await readMatch(page))?.core).toEqual(saved);
         await expect(page.getByTestId('mage-wars-fx-attack-dice')).toHaveCount(0);
         await shot('较矮窗口恢复同一局和未确认计划草稿');
-        await bookCard(page, 3403);
-        await click(page.getByTestId('mage-wars-plan-spells'));
-    } else {
-        await plan('plan-summon', [2819, 3403], '准备召唤与觉醒');
     }
+    await bookCard(page, 3403, 'incantation');
+    await shot('准备召唤与觉醒');
+    await click(page.getByTestId('mage-wars-plan-spells'));
     for (const [id, image] of [['pass-deploy', '结束空部署'], ['pass-priority', '保留优先快速施法']]) {
         await step(id, image);
         await click(page.getByTestId('mage-wars-turn-end'));
@@ -300,22 +401,34 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await step('bite-unicorn');
     await click(field(page, wolf));
     await shot('玩家主动攻击独角兽');
-    await click(field(page, unicorn));
-    await step('end-wolf-action');
-    await click(page.getByTestId('mage-wars-turn-end'));
-    await step('summon-second-wolf');
-    const viewportContent = page.getByTestId('mage-wars-arena-viewport-content');
-    const cameraTransform = () => viewportContent.evaluate((element) => getComputedStyle(element).transform);
-    const originalCamera = await cameraTransform();
-    await zone(page, 'a3').hover();
-    await page.mouse.wheel(0, -80);
-    await expect.poll(cameraTransform).not.toBe(originalCamera);
-    await click(prepared(page, 2819));
-    const cameraBeforeSummon = await cameraTransform();
-    await shot('缩放后仍可点击兽王所在区域召唤');
-    await click(zone(page, 'a3'));
-    await step('rouse-second-wolf');
-    expect(await cameraTransform()).toBe(cameraBeforeSummon);
+    await test.step('攻击独角兽并结束灰狼行动', async () => {
+        await click(field(page, unicorn));
+        await step('end-wolf-action');
+        await click(page.getByTestId('mage-wars-turn-end'));
+    }, { timeout: 55_000 });
+    await test.step('当前缩放下召唤，保持玩家视角', async () => {
+        await step('summon-second-wolf');
+        const viewportContent = page.getByTestId('mage-wars-arena-viewport-content');
+        const cameraTransform = () => viewportContent.evaluate((element) => getComputedStyle(element).transform, undefined, { timeout: 5_000 });
+        const originalCamera = await cameraTransform();
+        await mage(page, '1').hover({ timeout: 10_000 });
+        await page.mouse.wheel(0, -80);
+        await expect.poll(cameraTransform).not.toBe(originalCamera);
+        const summonZone = zone(page, 'a3');
+        const zoomedCamera = await cameraTransform();
+        const wasHittable = await findZoneClickPoint(summonZone);
+        await click(prepared(page, 2819));
+        await expect(summonZone).toHaveAttribute('data-zone-target-scope', 'zone');
+        await expect(page.getByTestId('mage-wars-arena-viewport')).toHaveAttribute('data-zoom-pan-target-state', 'settled');
+        const cameraBeforeSummon = await cameraTransform();
+        if (wasHittable) expect(cameraBeforeSummon).toBe(zoomedCamera);
+        const point = await findZoneClickPoint(summonZone);
+        if (!point) throw new Error('召唤亮起区域在当前缩放和底栏遮挡下无可点位置');
+        await shot('缩放后仍可点击兽王所在区域召唤');
+        await page.mouse.click(point.x, point.y);
+        await step('rouse-second-wolf');
+        expect(await cameraTransform()).toBe(cameraBeforeSummon);
+    }, { timeout: 60_000 });
     await cast('rouse-second-wolf', 3403, field(page, secondWolf), '对新灰狼施放兽性觉醒');
     await step('end-summon-action');
     await click(page.getByTestId('mage-wars-turn-end'));
@@ -323,9 +436,19 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await click(field(page, secondWolf));
     await shot('新灰狼觉醒后移动');
     await click(zone(page, 'b3'));
+    await step('end-new-wolf-action');
+    await click(page.getByTestId('mage-wars-turn-end'));
     await plan('plan-wall-and-push', [25700, 3425], '准备荆棘墙与推斥');
     await moveMage('move-for-wall', 'a2', '兽王移动至墙边施法范围');
     await cast('place-wall', 25700, page.getByTestId('mage-wars-wall-edge-b1-b2'), '荆棘墙选择真实边界');
+    await step('skip-wolf-action');
+    await click(field(page, wolf));
+    const noAction = page.getByTestId('mage-wars-turn-end');
+    await expect(noAction).toHaveAttribute('data-main-action-mode', 'creature-no-action');
+    await shot('选择灰狼放弃一个完整行动');
+    await click(noAction);
+    await step('pass-repeated-windows', '读到重复交接说明后推进至第八回合');
+    await next();
     await plan('plan-push', [3425], '再准备原力推斥');
     await moveMage('move-for-push', 'a1', '兽王靠近对手');
     await step('push-through-wall');
@@ -372,6 +495,8 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await moveMage('approach-cleric', 'a2', '兽王向牧师靠近');
     await plan('plan-fountain', [1710], '准备间歇喷泉');
     await cast('cast-fountain', 1710, field(page, 'mwobj-1-2811-1'), '玩家向牧师施放攻击法术');
+    await step('plan-wand');
+    expect((await readMatch(page))?.core?.objects[wolf]?.damage).toBeGreaterThanOrEqual(5);
     await plan('plan-wand', [3725], '准备法师魔杖');
     await step('bind-wand');
     await click(prepared(page, 3725));
@@ -380,6 +505,11 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await expect(firstBinding.locator('img')).toBeVisible();
     await shot('法师魔杖首绑选择');
     await click(firstBinding);
+    await step('cast-bound-major-heal');
+    await click(attached(page, wand));
+    await click(page.getByTestId('mage-wars-selected-bound-spell-cast'));
+    await shot('从法师魔杖施放初次绑定的单体治疗');
+    await click(field(page, wolf));
     await step('rebind-wand');
     await click(attached(page, wand));
     await click(page.locator('[data-testid^="mage-wars-selected-object-ability-"]').filter({ hasText: '重新绑定' }));
@@ -394,6 +524,35 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await step('second-upkeep', '精华汲取第二次放弃');
     await click(option(page, 'destroy'));
     await step('plan-lair-fox');
+    if (compact) {
+        const beforeLateRestore = await readMatch(page);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await waitForFrontendAssets(page, 45_000);
+        await expect(page.getByText('继续上次教程？')).toBeVisible({ timeout: 30_000 });
+        await click(page.getByRole('button', { name: '从上次继续' }));
+        await waitForTestHarness(page, 20_000);
+        await step('plan-lair-fox');
+        expect((await readMatch(page))?.core).toEqual(beforeLateRestore?.core);
+        await expect(page.getByTestId('mage-wars-fx-attack-dice')).toHaveCount(0);
+        const restoredCardImages = [
+            field(page, lair),
+            field(page, wolf),
+            mage(page, '0'),
+            mage(page, '1'),
+            page.getByTestId('mage-wars-desktop-spellbook-shelf'),
+        ];
+        await expect.poll(async () => {
+            const ready = await Promise.all(restoredCardImages.map((container) => (
+                container.locator('img[data-card-atlas-img="true"]').evaluateAll((images) => (
+                    images.length > 0 && images.every((image) => (
+                        image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+                    ))
+                ))
+            )));
+            return ready.every(Boolean);
+        }, { timeout: 15_000, message: '恢复后等待巢穴、法师和可见法术书的真实牌图' }).toBe(true);
+        await shot('较矮窗口从第十五回合恢复巢穴计划');
+    }
     await click(field(page, lair));
     await bookCard(page, 2812);
     await step('deploy-fox');
@@ -405,6 +564,17 @@ test('单局教程从守卫到同局自由对战的真实点击链', async ({ co
     await click(page.getByTestId('mage-wars-selected-bound-spell-cast'));
     await shot('从法师魔杖施放次级治疗');
     await click(field(page, wolf));
+    await step('opponent-public-view');
+    await expect(attached(page, bow)).toBeVisible();
+    const opponentPlans = page.getByTestId('mage-wars-opponent-prepared-mirror');
+    await expect(opponentPlans).toContainText('对手已计划 1');
+    await click(page.getByTestId('mage-wars-observe-player-button'));
+    await step('back-to-self-view');
+    await expect(discard).toHaveAttribute('data-discard-owner-role', 'opponent');
+    await expect(opponentPlans).toContainText('对手已计划 1');
+    await expect(opponentPlans).not.toContainText('单体治疗');
+    await shot('查看女祭司公开长弓与准备牌隐私');
+    await click(page.getByTestId('mage-wars-back-to-self-view'));
     await plan('plan-defense', [1809], '准备灵蛇反射');
     await cast('grant-wolf-defense', 1809, field(page, wolf), '为灰狼施放灵蛇反射');
     await step('bow-defense');

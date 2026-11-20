@@ -50,7 +50,7 @@ describe('年度教程按正式调度和战斗状态分支', () => {
         const troops = resolveAnnualDispatchTutorialStep(state, mapStep('dispatch-troops'));
         expect(troops.allowedTargets).toBeUndefined();
         expect(troops.highlightTarget).toBe('qidahen-dispatch-roster');
-        expect(troops.tooltipAnchorTarget).toBe(troops.highlightTarget);
+        expect(troops.tooltipAnchorTarget).toBe('qidahen-dispatch-quantity-anchor');
         const back = resolveAnnualDispatchTutorialStep(state, mapStep('dispatch-target'));
         expect(back.content).toContain('dispatch-troops-dynamic');
         expect(back.advanceOnEvents).toBeUndefined();

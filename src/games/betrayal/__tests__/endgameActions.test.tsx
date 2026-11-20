@@ -45,6 +45,9 @@ describe('山屋惊魂终局操作', () => {
         const { rerender } = render(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={winner} />);
         fireEvent.click(screen.getByTestId('betrayal-endgame-ending-continue'));
         expect(screen.getAllByText('胜利', { exact: true })).toHaveLength(2);
+        expect(core.endgameResult?.survivorsEscaped).toEqual([]);
+        expect(screen.getByTestId(`betrayal-endgame-survivor-${loser}`)).toBeTruthy();
+        expect(screen.queryByTestId(`betrayal-endgame-survivor-${winner}`)).toBeNull();
         rerender(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={loser} />);
         expect(screen.getAllByText('失败', { exact: true })).toHaveLength(2);
         rerender(<EndgameScreen core={core} effectiveLocale="zh-CN" viewerPlayerId={null} />);

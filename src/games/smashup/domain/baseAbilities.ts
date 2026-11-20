@@ -64,6 +64,7 @@ import {
 /** 基地能力触发时机 */
 export type BaseTriggerTiming =
     | 'onMinionPlayed'    // 随从入场时
+    | 'onTitanPlayed'     // 泰坦打出到基地时
     | 'beforeScoring'     // 记分前
     | 'whenScoring'       // 计分时
     | 'afterScoring'      // 记分后

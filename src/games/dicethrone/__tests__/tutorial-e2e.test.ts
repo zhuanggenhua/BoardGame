@@ -95,6 +95,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         label: string,
     ): MatchState<DiceThroneCore> => {
         let s = state;
+        const batchId = s.sys.tutorial.step?.aiBatchId;
         for (let i = 0; i < aiActions.length; i++) {
             const action = aiActions[i];
             const pid = action.playerId ?? s.core.activePlayerId;
@@ -123,7 +124,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
             }
             s = result.state;
         }
-        s = exec(s, TUTORIAL_COMMANDS.AI_CONSUMED, '0', { stepId }, `${label}: consumeAi`);
+        s = exec(s, TUTORIAL_COMMANDS.AI_CONSUMED, '0', { stepId, batchId }, `${label}: consumeAi`);
         return s;
     };
 
@@ -153,7 +154,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
     };
 
     /** 每步执行清单要求的正式动作，并断言资源与真实规则结果。 */
-    const walk = (useTaiji: boolean, stopAt = 'income-result') => {
+    const walk = (useTaiji: boolean, stopAt = 'income-result', seedAttackTaiji = false) => {
         let s = start();
         const visited = new Set<string>();
         for (let guard = 0; guard < manifest.steps.length + 15; guard++) {
@@ -164,7 +165,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 expect(step.aiActions.every(action => action.playerId === '1' || (step.id === 'opponent-defense' && action.playerId === '0'))).toBe(true);
                 s = consumeAiActions(s, step.id, step.aiActions, step.id);
                 if (step.id === stopAt && s.sys.tutorial.step?.id === step.id && !s.sys.tutorial.step.aiActions?.length) return { state: s, visited };
-                if (s.sys.tutorial.step?.id === step.id) s = nextStep(s, step.id, step.autoAdvanceAfterAi ? 'auto' : 'manual');
+                if (s.sys.tutorial.step?.id === step.id && !s.sys.tutorial.step.aiActions?.length) s = nextStep(s, step.id, step.autoAdvanceAfterAi ? 'auto' : 'manual');
                 continue;
             }
             if (step.infoStep) {
@@ -194,6 +195,9 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
                 case 'advance':
                 case 'resolve-attack':
                 case 'defense-resolve':
+                    if (step.id === 'resolve-attack' && seedAttackTaiji) {
+                        s.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+                    }
                     s = exec(s, 'ADVANCE_PHASE', '0');
                     if (step.id === 'resolve-attack') expect(s.core.pendingAttack).toMatchObject({ sourceAbilityId: 'fist-technique-2-4', isDefendable: true });
                     break;
@@ -288,6 +292,28 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         state = recovery.state as MatchState<DiceThroneCore>;
         expect(state.sys.tutorial.step?.id).toBe('sell-card-intro');
         expect(state.core).toEqual(original);
+    });
+
+    it('对手防御时玩家有太极，等待玩家响应后才自动处理对手的响应', () => {
+        const { state } = walk(true, 'opponent-defense', true);
+        const pending = state.core.pendingDamage;
+        expect(pending?.responderId).toBe('0');
+        expect(getCurrentInteractionSummary(state)).toMatchObject({ kind: 'dt:token-response', playerId: '0' });
+        expect(() => injectTutorialInteractionId({
+            state, commandType: 'SKIP_TOKEN_RESPONSE', payload: { __tutorialChoiceCandidateId: 'skip' },
+            tutorialPlayerId: '1', isTutorialAiCommand: true,
+        })).toThrow('教程 AI 候选 skip 属于玩家 1，但当前交互属于玩家 0');
+        expect(state.sys.tutorial.step?.aiActions).toBeUndefined();
+        expect(tryExec(state, TUTORIAL_COMMANDS.NEXT, '0', { reason: 'manual' }).success).toBe(false);
+
+        let next = exec(state, 'SKIP_TOKEN_RESPONSE', '0', { pendingDamageId: pending?.id });
+        expect(next.core.pendingDamage?.responderId).toBe('1');
+        const step = next.sys.tutorial.step!;
+        expect(step.aiActions).toEqual([expect.objectContaining({ commandType: 'SKIP_TOKEN_RESPONSE', playerId: '1' })]);
+        next = consumeAiActions(next, step.id, step.aiActions!, step.id);
+        expect(next.core.pendingDamage).toBeUndefined();
+        expect(next.sys.phase).toBe('main2');
+        expect(nextStep(next, step.id).sys.tutorial.step?.id).toBe('sell-card-intro');
     });
 
     it('可以合法不发动能力，恢复同一骰面后仍能亲手选择进攻', () => {

@@ -61,6 +61,7 @@ export function GameAuthorInfo({ authorName, actions, triggerContent, triggerCla
 
 interface ExternalGameAuthorProps {
     author: string;
+    uploaderName?: string | null;
     authorProfileUrl?: string;
     gameId: string;
     gameName: string;
@@ -69,7 +70,7 @@ interface ExternalGameAuthorProps {
 }
 
 /** 外站作者：复用原生作者弹层，只在弹层里补主页和认领。 */
-export function ExternalGameAuthor({ author, authorProfileUrl, gameId, gameName, isOwner, onManageWorks }: ExternalGameAuthorProps) {
+export function ExternalGameAuthor({ author, uploaderName, authorProfileUrl, gameId, gameName, isOwner, onManageWorks }: ExternalGameAuthorProps) {
     const { t } = useTranslation('lobby');
     const { user, token } = useAuth();
     const [claimOpen, setClaimOpen] = useState(false);
@@ -89,6 +90,9 @@ export function ExternalGameAuthor({ author, authorProfileUrl, gameId, gameName,
         : null;
     return <>
         <GameAuthorInfo authorName={label} actions={close => <>
+            {uploaderName && uploaderName !== author && <p className="text-sm text-parchment-light-text">
+                {t('platform.externalGamePage.uploader', { name: uploaderName })}
+            </p>}
             {authorProfileUrl && <a className="platform-author-profile-link" href={authorProfileUrl} target="_blank" rel="noopener noreferrer">{authorProfileUrl}</a>}
             {isOwner
                 ? <button type="button" className={actionClassName} onClick={() => { close(); onManageWorks(); }}>{t('authorInfo.manageWorks')}</button>

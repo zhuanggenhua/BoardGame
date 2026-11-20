@@ -10,6 +10,7 @@ import type {
 } from "./game";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import { inferMonsterDefinitionId } from "./monsterReadModel";
+import mummyGirlGlyph from "./mummyGirlGlyph.svg";
 
 export function ExplorerFigureToken({
   explorer,
@@ -22,6 +23,7 @@ export function ExplorerFigureToken({
   sceneArtwork = false,
   targetHighlight = false,
   targetHighlightSelected = false,
+  sceneHighlightAllowed = true,
   targetHighlightTestId,
 }: {
   explorer: BetrayalExplorerSummary;
@@ -34,6 +36,7 @@ export function ExplorerFigureToken({
   sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightSelected?: boolean;
+  sceneHighlightAllowed?: boolean;
   targetHighlightTestId?: string;
 }) {
   const tokenAsset = explorer.tokenAsset;
@@ -82,6 +85,7 @@ export function ExplorerFigureToken({
       data-token-state={hasOfficialToken ? "official" : "missing-official-token"}
       data-token-tone={tone}
       data-target-highlight={targetHighlight ? "true" : undefined}
+      data-scene-highlight={sceneArtwork && targetHighlight && sceneHighlightAllowed ? targetHighlightSelected ? "selected" : "candidate" : undefined}
       aria-label={
         hasOfficialToken ? label : `${label}：${missingTokenLabel}`
       }
@@ -98,6 +102,7 @@ export function ExplorerFigureToken({
           data-highlight-layer-count="1"
           data-highlight-style="solid"
           data-highlight-anchor="token-surface"
+          data-scene-legacy-highlight=""
           data-selected={targetHighlightSelected ? "true" : "false"}
           aria-hidden="true"
           viewBox="0 0 100 108"
@@ -162,6 +167,7 @@ export function MonsterBoardToken({
   sceneArtwork = false,
   targetHighlight = false,
   targetHighlightRole = "target",
+  sceneHighlightAllowed = true,
   targetHighlightRelation,
   targetHighlightTestId,
 }: {
@@ -174,6 +180,7 @@ export function MonsterBoardToken({
   sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightRole?: "target" | "source";
+  sceneHighlightAllowed?: boolean;
   targetHighlightRelation?: EntityRelation;
   targetHighlightTestId?: string;
 }) {
@@ -215,6 +222,9 @@ export function MonsterBoardToken({
       data-testid={`${testIdPrefix}-${monster.id}`}
       data-monster-status={status}
       data-target-highlight={targetHighlight ? "true" : undefined}
+      data-scene-highlight={sceneArtwork && targetHighlight && sceneHighlightAllowed
+        ? targetHighlightRole === "source" ? "selected" : isHostileHighlight ? "hostile" : "candidate"
+        : undefined}
       data-token-role={isMummyToken ? "mummy-map-token" : "monster-map-token"}
     >
       {targetHighlight ? (
@@ -231,6 +241,7 @@ export function MonsterBoardToken({
           data-highlight-layer-count="1"
           data-highlight-style="solid"
           data-highlight-anchor="token-surface"
+          data-scene-legacy-highlight=""
           aria-hidden="true"
           viewBox={`0 0 ${tokenSurfaceSize} ${tokenSurfaceSize}`}
         >
@@ -331,13 +342,15 @@ export function GirlBoardToken({
       ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
       : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
   const isMummyAttachment = attachedTo === "mummy";
-  const isMummyCarryDisplay = displaySize === "mummy-carry";
-  const tokenSizePx = isMummyCarryDisplay ? 38 : 54;
+  const isCarried = attachedTo !== "room";
+  const tokenSizePx = isCarried ? 38 : 54;
   const unit = (
     <span
-      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyCarryDisplay ? "p-[2px]" : "p-[4px]"} ${isMummyAttachment ? "shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isCarried ? "p-[2px]" : "p-[4px]"} ${isMummyAttachment ? "shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
       style={{ width: tokenSizePx, height: tokenSizePx }}
       data-testid={unitTestId}
+      data-scene-marker-visual="marker:mummy-girl"
+      data-tutorial-id={isMummyAttachment ? "betrayal-mummy-carried-girl" : undefined}
       data-token-attachment={attachedTo}
       data-token-display-size={displaySize}
       data-token-asset={tokenAsset ?? undefined}
@@ -354,31 +367,7 @@ export function GirlBoardToken({
           className="pointer-events-none h-full w-full scale-[1.34] object-contain brightness-0 contrast-150"
         />
       ) : (
-        <svg
-          viewBox="0 0 48 48"
-          className="h-full w-full"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M14 18.5c0-6.2 4.3-10.5 10-10.5s10 4.3 10 10.5c0 2.4-.7 4.7-2.1 6.5H16.1A11.5 11.5 0 0 1 14 18.5Z"
-            fill="#4a122f"
-            stroke="#ffd8ef"
-            strokeWidth="1.5"
-          />
-          <circle cx="24" cy="20" r="6.7" fill="#ffe1ef" stroke="#4a122f" strokeWidth="1.4" />
-          <path
-            d="M18.5 29.2c1.6-2.2 3.4-3.1 5.5-3.1s3.9.9 5.5 3.1l4.2 10.3H14.3l4.2-10.3Z"
-            fill="#f5a6d4"
-            stroke="#4a122f"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <path d="M17.8 30.2 13.5 35M30.2 30.2l4.3 4.8" stroke="#ffe1ef" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="21.8" cy="19.7" r="0.8" fill="#4a122f" />
-          <circle cx="26.2" cy="19.7" r="0.8" fill="#4a122f" />
-          <path d="M22 23.2c1.2.8 2.8.8 4 0" stroke="#a73570" strokeWidth="1" strokeLinecap="round" />
-        </svg>
+        <img src={mummyGirlGlyph} alt="" draggable={false} className="h-full w-full" />
       )}
     </span>
   );
@@ -388,6 +377,7 @@ export function GirlBoardToken({
       <button
         type="button"
         data-testid={`${testIdPrefix}-${token.roomId ?? "unknown"}-${token.id}`}
+        data-scene-marker-id="marker:mummy-girl"
         data-token-kind={token.kind}
         data-token-status={status}
         data-token-placement={attachedTo}

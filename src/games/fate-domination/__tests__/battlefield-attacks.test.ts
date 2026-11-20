@@ -66,6 +66,56 @@ it('海魔使用真实交互付款，拒绝他席和重放，放置后随地点�
     expect(closed.state.core.players['0'].activeSkills).not.toContain(skillId);
 });
 
+it.each(['workshop', 'recon'] as const)('螺湮城教本在非战场 %s 打出后立即关闭', (locationId) => {
+    const { state, run, confirm } = fixture();
+    const player = state.core.players['0'];
+    const skillId = 'sc_gilles_np:0';
+    player.locationId = locationId;
+    state.core.battlefield.miyama.playerIds = [];
+    state.core.battlefield[locationId].playerIds = ['0'];
+
+    const played = confirm(skillId);
+    expect(played.success, played.error).toBe(true);
+    expect(played.state.core.players['0'].mana).toBe(4);
+    expect(played.state.core.players['0'].isRevealed).toBe(true);
+    expect(played.state.core.players['0'].activeSkills).not.toContain(skillId);
+    expect(played.state.core.battlefieldAttacks ?? []).toEqual([]);
+    expect(played.state.sys.interaction.current).toBeUndefined();
+
+    if (locationId === 'workshop') {
+        const moved = run(played.state, '0', 'MOVE_PLAYER', { locationId: 'miyama' });
+        expect(moved.success, moved.error).toBe(true);
+        expect(moved.state.core.players['0'].activeSkills).not.toContain(skillId);
+        expect(moved.state.core.battlefieldAttacks ?? []).toEqual([]);
+    }
+});
+
+it.each(['workshop', 'recon'] as const)('螺湮城教本在非战场 %s 打出后立即关闭', (locationId) => {
+    const { state, run, confirm } = fixture();
+    const skillId = 'sc_gilles_np:0';
+    state.core.players['0'].locationId = locationId;
+    state.core.players['0'].hand = [{ id: 'basic', definitionId: 'cardSurveil' }];
+    state.core.battlefield.miyama.playerIds = [];
+    state.core.battlefield[locationId].playerIds = ['0'];
+    state.core.currentEvents = { miyama: [], shinto: [] };
+
+    const played = confirm(skillId);
+    expect(played.success, played.error).toBe(true);
+    expect(played.state.core.players['0'].mana).toBe(3);
+    expect(played.state.core.players['0'].isRevealed).toBe(true);
+    expect(played.state.core.players['0'].activeSkills).not.toContain(skillId);
+    expect(played.state.core.battlefieldAttacks ?? []).toEqual([]);
+    expect(played.state.sys.interaction.current).toBeFalsy();
+
+    if (locationId === 'workshop') {
+        const moved = run(played.state, '0', 'PLAY_SKILL', { skillId: 'basic', targetLocationId: 'miyama' });
+        expect(moved.success, moved.error).toBe(true);
+        expect(moved.state.core.players['0'].locationId).toBe('miyama');
+        expect(moved.state.core.players['0'].activeSkills).not.toContain(skillId);
+        expect(moved.state.core.battlefieldAttacks ?? []).toEqual([]);
+    }
+});
+
 it('阵地建造按回合扣费，留在攻击区并在次回合进工房领取收益', () => {
     const { confirm } = fixture();
     const skillId = 'sc_gilles_2:0';
@@ -82,4 +132,41 @@ it('阵地建造按回合扣费，留在攻击区并在次回合进工房领取�
     const deployed = FateDominationDomain.reduce(next, { type: 'MASTER_DEPLOYED', payload: { playerId: '0', locationId: 'workshop', manaGain: 1, deploymentSlot: 1 }, timestamp: 3 });
     expect(deployed.players['0'].mana).toBe(values.mana + 2);
     expect(deployed.players['0'].victoryPoints).toBe(values.victoryPoints + 2);
+});
+
+it.each([
+    { locationId: 'shinto', remains: false },
+    { locationId: 'miyama', remains: true },
+] as const)('螺湮城教本保留到第9回合，第10回合仅在未关闭的战场保留（$locationId）', ({ locationId, remains }) => {
+    const { state, run, confirm } = fixture();
+    const { core } = state;
+    const skillId = 'sc_gilles_np:0';
+    core.round = 8;
+    core.battlefield.miyama.playerIds = [];
+    core.battlefield[locationId].playerIds = ['0'];
+    core.battlefield[locationId].eventCards = [];
+    core.players['0'].locationId = locationId;
+
+    const started = confirm(skillId);
+    expect(started.success, started.error).toBe(true);
+    const place = createRespondToPromptCommand(started.state, { playerId: '0', optionId: 'place' });
+    const placed = run(started.state, '0', place.type, place.payload);
+    expect(placed.success, placed.error).toBe(true);
+    const attack = { playerId: '0', skillId, locationId };
+    expect(placed.state.core.battlefieldAttacks).toEqual([attack]);
+    const result = emptyFateBattleResult('0');
+    const ninth = FateDominationDomain.reduce(placed.state.core, {
+        type: 'BATTLE_RESOLVED', payload: { result, nextRound: 9 }, timestamp: 1,
+    });
+    expect(ninth.situation.id).toBe('sit11');
+    expect(ninth.battlefieldAttacks).toEqual([attack]);
+    const tenth = FateDominationDomain.reduce(ninth, {
+        type: 'BATTLE_RESOLVED', payload: { result, nextRound: 10 }, timestamp: 2,
+    });
+    expect(tenth.situation.id).toBe('sit12');
+    expect(tenth.battlefieldAttacks).toEqual(remains ? [attack] : []);
+    expect(tenth.players['0'].skills.map(skill => skill.id)).toContain(skillId);
+
+    const legacy = { ...placed.state, core: { ...tenth, battlefieldAttacks: [attack] } };
+    expect(FateDominationDomain.normalizeRuntimeState!(legacy).core.battlefieldAttacks).toEqual(remains ? [attack] : []);
 });
