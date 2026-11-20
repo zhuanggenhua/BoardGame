@@ -570,6 +570,37 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(played.finalState.core.bases[0].minions).toEqual([expect.objectContaining({ uid: 'borrowed-minion', owner: '0', controller: '0' })]);
     });
 
+    it.each(['minion', 'action'] as const)('收集故事允许把融合牌作为 %s 打出', (playAs) => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', { hand: [{ uid: 'borrowed-fusion', defId: 'geckos_kc_smith', type: 'fusion', owner: '0' }] }),
+            },
+            bases: [makeBase('base_the_factory')],
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 29,
+        });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        const selected = respondToPromptOption(viewed.finalState, option => option.value?.cardUid === 'borrowed-fusion', '选择融合牌', '0', FIXED_RANDOM);
+        const mode = respondToPromptOption(selected.finalState, option => option.value?.playAs === playAs, '选择融合牌打出方式', '0', FIXED_RANDOM);
+        expect(mode.success, mode.error).toBe(true);
+        const played = playAs === 'minion'
+            ? respondToPromptOption(mode.finalState, option => option.value?.baseIndex === 0, '选择基地', '0', FIXED_RANDOM)
+            : mode;
+        expect(played.success, played.error).toBe(true);
+        expect(played.finalState.core.players['1'].hand).toEqual([]);
+        if (playAs === 'minion') {
+            expect(played.finalState.core.bases[0].minions).toEqual([expect.objectContaining({ uid: 'borrowed-fusion', basePower: 3 })]);
+            expect(played.finalState.core.players['0'].actionLimit).toBe(2);
+        } else {
+            expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toContain('borrowed-fusion');
+            expect(played.finalState.core.bases[0].minions).toEqual([]);
+            expect(played.finalState.core.players['0'].minionLimit).toBe(2);
+        }
+    });
+
     it('收集故事选择另一名玩家手中自己拥有的附着行动后，应能选择目标并打出', () => {
         const core = makeState({
             players: {
@@ -611,6 +642,33 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(played.finalState.core.bases[0].minions[0].powerCounters ?? 0).toBe(0);
         expect(played.events.some(event => event.type === SU_EVENTS.CARD_TRANSFERRED)).toBe(false);
         expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toContain('borrowed');
+    });
+
+    it('收集故事额外打出的标准行动开放正常的对手反制窗口', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-a', 'wizard_neophyte', 'minion', '0')] }),
+                '1': makePlayer('1', { hand: [
+                    makeCard('borrowed', 'wizard_mystic_studies', 'action', '0'),
+                    makeCard('counter', 'geeks_force_of_wil', 'action', '1'),
+                ] }),
+            },
+            bases: [makeBase('base_the_factory')],
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_collecting_stories', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'collecting',
+            defId: 'anansi_tales_collecting_stories', baseIndex: 0, random: FIXED_RANDOM, now: 30,
+        });
+        const viewed = respondToPromptOption(result.matchState!, option => option.value?.targetPlayerId === '1', '查看玩家手牌', '0', FIXED_RANDOM);
+        const played = respondToPromptOption(viewed.finalState, option => option.value?.cardUid === 'borrowed', '额外打出行动', '0', FIXED_RANDOM);
+        const counterPrompt = getSimpleChoicePrompt(played.finalState, 'smashup_action_counter_choose');
+        expect(counterPrompt.playerId).toBe('1');
+        expect(getPromptOptions(counterPrompt).some(option => option.value?.cardUid === 'counter')).toBe(true);
+        expect(played.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('draw-a');
+        const countered = respondToPromptOption(played.finalState, option => option.value?.cardUid === 'counter', '反制行动', '1', FIXED_RANDOM);
+        expect(countered.success, countered.error).toBe(true);
+        expect(countered.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('draw-a');
+        expect(countered.finalState.core.players['0'].discard.map(card => card.uid)).toContain('borrowed');
     });
 
     it('收集故事会从另一名玩家手中额外打出自己拥有的行动', () => {

@@ -7,6 +7,7 @@ import { FateDominationDomain } from '../domain';
 import type { FateDominationCore } from '../domain';
 import { engineConfig } from '../game';
 import { buildFateAiLegalActions, chooseFateAiAction, projectFateAiActionOutcome } from '../ai';
+import { fateAbilityUsageKey } from '../domain/abilitySource';
 import { FATE_EVENTS, FATE_SERVANT_BY_ID, FATE_SITUATIONS } from '../data';
 import { visibleFatePower } from '../domain/playerView';
 import { FATE_CHARIOT_CHOICE } from '../domain/chariotChoice';
@@ -42,6 +43,41 @@ it('电脑等待当前玩家完成准备，轮到自己时按开局分配的身�
     const current = context(game.state, '0');
     const decision = chooseFateAiAction(current)!;
     expect(current.legalActions.find(action => action.actionId === decision.actionId)?.commands[0].type).toBe('ADVANCE_PHASE');
+});
+
+it.each([
+    { situation: '公开且仍可发动的枪', used: false, opponentCount: 1, protect: true },
+    { situation: '已经发动的枪', used: true, opponentCount: 1, protect: false },
+    { situation: '枪手同场有两名对手', used: false, opponentCount: 2, protect: false },
+])('AI 面对$situation，按实际败北风险决定是否发动幸运', ({ used, opponentCount, protect }) => {
+    const game = match('fate-ai-lucky-protection');
+    const { core } = game.state;
+    core.phase = 'battle';
+    core.round = 4;
+    core.situation = FATE_SITUATIONS.find(card => card.id === 'sit1')!;
+    core.battlefield.miyama.playerIds = opponentCount === 1 ? ['0', '1'] : ids;
+    const [saber, lancer, other] = ids.map(id => core.players[id]);
+    const luckyId = 'luck-0';
+    Object.assign(saber, { locationId: 'miyama', hand: [{ id: luckyId, definitionId: 'cardluck' }], activeAttackIds: [luckyId] });
+    const spear = { ...FATE_SERVANT_BY_ID['servant-cu-chulainn'].skillCards![0], id: 'sc_cu_1:0' };
+    Object.assign(lancer, {
+        servantId: 'servant-cu-chulainn', locationId: 'miyama', isRevealed: true,
+        skills: [spear], activeSkills: [spear.id], usedAbilityIds: used ? [fateAbilityUsageKey(spear.id, 'battle')] : [],
+    });
+    other.locationId = opponentCount === 1 ? 'shinto' : 'miyama';
+    const decision = context(game.state, '0');
+    const choice = chooseFateAiAction(decision);
+    const command = decision.legalActions.find(candidate => candidate.actionId === choice?.actionId)?.commands[0];
+    expect(command).toEqual(protect ? { type: 'PLAY_SKILL', payload: { skillId: luckyId } } : { type: 'ADVANCE_PHASE', payload: {} });
+    if (protect) {
+        game.send(command!.type, '0', command!.payload);
+        const attacker = context(game.state, '1');
+        const attack = attacker.legalActions.find(action => action.commands[0].type === 'PLAY_SKILL')!;
+        expect(projectFateAiActionOutcome({ context: attacker, action: attack })).toMatchObject({ hasMeaningfulEffect: false, utilityDelta: 0 });
+        game.send('PLAY_SKILL', '1', { skillId: spear.id });
+        expect(game.state.core.players['0'].defeatMarkers).toEqual([]);
+        expect(game.state.sys.actionLog.entries.some(entry => entry.kind === 'FATE_DEFEAT_PREVENTED' && entry.actorId === '0')).toBe(true);
+    }
 });
 
 it.each([

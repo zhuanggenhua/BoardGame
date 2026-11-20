@@ -2097,8 +2097,9 @@ export function reduceActionPlayedEvent(
     })();
     const defId = card?.defId ?? buriedLookup?.buried.defId ?? (event.payload as any).defId;
     const def = defId ? getCardDef(defId) : undefined;
-    const isOngoing = def && def.type === 'action' && (def as ActionCardDef).subtype === 'ongoing';
-    const isSpecial = def && def.type === 'action' && (def as ActionCardDef).subtype === 'special';
+    const actionSubtype = def?.type === 'fusion' ? def.actionSubtype : def?.type === 'action' ? def.subtype : undefined;
+    const isOngoing = actionSubtype === 'ongoing';
+    const isSpecial = actionSubtype === 'special';
     const wasExtraActionPlay = isExtraAction === true || player.actionsPlayed >= 1;
     const specificExtraActionPlay = findSpecificExtraActionPlay(player, {
         cardUid,

@@ -9,6 +9,7 @@ import { FATE_LOCATION_ORDER } from './domain';
 import { legalFateDeploymentSlots } from './domain/deployment';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
 import { applyFateBattleScoreAdjustment, fateBattleOpponents, fatePostBattleScoreEvents } from './domain/battleAwards';
+import { canSufferFateDefeat, hasFateDefeat } from './domain/mechanics';
 import { fatePreBattleDefeatEvents } from './domain/preBattleEffects';
 import { visibleFatePower } from './domain/playerView';
 import { calculateFateRidingSelectionCost, fateRidingCandidates, isFateRidingChoice, validateFateRidingChoiceCommand } from './domain/ridingChoice';
@@ -18,7 +19,7 @@ import { isFateFieldAttackChoice, validFateFieldAttackResponse } from './domain/
 import { fateChariotTargets } from './domain/chariotEvents';
 import { FATE_INVESTIGATION_KEEP, isFateInvestigationChoice, validFateInvestigationResponse } from './domain/investigationChoice';
 import { FATE_SERVANTS } from './data';
-import type { FateDominationEvent, PlayerState } from './domain/types';
+import type { FateDefeatDeclaredEvent, FateDominationEvent, PlayerState } from './domain/types';
 import { canPlanFateFinalBattle, fatePenultimateBattleUtility } from './aiEndgame';
 
 type State = MatchState<FateDominationCore>;
@@ -188,8 +189,13 @@ function bestFateAttackUtility(context: AiDecisionContext): number {
     return best;
 }
 
+function fateAiDefeatCanResolve(core: FateDominationCore, { payload }: FateDefeatDeclaredEvent) {
+    return canSufferFateDefeat(core, payload.playerId, payload.sourceId, payload.direct, payload.unpreventable).allowed;
+}
+
 function applyFateAiPreview(before: FateDominationCore, events: readonly FateDominationEvent[], playerId: string) {
-    const next = events.reduce((core, event) => FateDominationDomain.reduce(core, event), before);
+    const next = events.reduce((core, event) => event.type === 'FATE_DEFEAT_DECLARED' && !fateAiDefeatCanResolve(core, event)
+        ? core : FateDominationDomain.reduce(core, event), before);
     const affectsRivalPower = events.some(event =>
         (event.type === 'PLAYER_MOVED' && event.payload.claimBattlefieldTerrain)
         || (event.type === 'FATE_RULE_MODIFIER_ATTACHED' && event.payload.modifier.kind === 'power-transform'
@@ -204,6 +210,21 @@ function applyFateAiPreview(before: FateDominationCore, events: readonly FateDom
         players[rivalId] = { ...rival, publicView: { ...rival.publicView, power: rival.publicView.power + delta } };
     }
     return { ...next, players };
+}
+
+function fateAiProtectionBlocksVisibleDefeat(state: State, protectedCore: FateDominationCore, playerId: string) {
+    if (hasFateDefeat(state.core, playerId)) return false;
+    const random = createSeededRandom('fate-ai-defeat-preview');
+    // 只预演本席已知的明置来源，并用正式校验排除已经发动或失去目标的能力。
+    return fateBattleOpponents(state.core, playerId).some(rivalId => state.core.players[rivalId].activeSkills.some(skillId => {
+        const ability = resolveFatePlayerAbility(state.core, rivalId, skillId);
+        if (!ability?.effects.some(effect => effect.type === 'direct-defeat-sole-opponent')) return false;
+        const command = { type: 'PLAY_SKILL' as const, playerId: rivalId, payload: { skillId } };
+        if (!FateDominationDomain.validate(state, command).valid) return false;
+        return FateDominationDomain.execute(state, command, random).some(event => event.type === 'FATE_DEFEAT_DECLARED'
+            && event.payload.playerId === playerId && fateAiDefeatCanResolve(state.core, event)
+            && !fateAiDefeatCanResolve(protectedCore, event));
+    }));
 }
 
 function previewFateBattleBuffs(state: State, core: FateDominationCore, playerId: string) {
@@ -260,10 +281,13 @@ export function projectFateAiActionOutcome({ context, action: candidate }: { con
         const { playerId } = context;
         const { skillId } = command.payload;
         const meta = { timestamp: 0, sourceCommandType: command.type };
+        if (ability.effects.some(effect => effect.type === 'direct-defeat-protection') && fateAiProtectionBlocksVisibleDefeat(state, next, playerId)) {
+            return { status: 'succeeded', utilityDelta: 1, hasMeaningfulEffect: true, eventTypes: events.map(event => event.type) };
+        }
         if (ability.effects.some(effect => effect.type === 'pre-battle-defeat-without-special')) {
             // 以已公开的特殊属性做当前局面预测。其他席还可能在行动结束前出牌或移动。
             const predictions = fatePreBattleDefeatEvents(next, meta).filter(event => event.payload.sourceId === skillId);
-            const afterBattleStart = predictions.reduce((core, event) => FateDominationDomain.reduce(core, event), next);
+            const afterBattleStart = applyFateAiPreview(next, predictions, playerId);
             const newlyDefeated = Object.values(afterBattleStart.players).filter(player =>
                 player.defeatMarkers.length > 0 && next.players[player.id].defeatMarkers.length === 0).length;
             return { status: 'succeeded', utilityDelta: utility(afterBattleStart, playerId) - utility(state.core, playerId) + newlyDefeated * 4,

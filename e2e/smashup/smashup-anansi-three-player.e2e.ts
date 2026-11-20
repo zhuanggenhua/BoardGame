@@ -144,4 +144,5 @@ test('收集故事从对手手牌打出属于自己的附着行动', async ({ pa
     const state = await game.getState();
     return state.core.bases[0].minions[0].attachedActions.some((card: { uid: string }) => card.uid === 'borrowed-ongoing');
   }).toBe(true);
+  await game.screenshot('收集故事-附着行动完成', testInfo);
 });
