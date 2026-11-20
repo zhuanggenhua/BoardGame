@@ -88,7 +88,8 @@ describe('外部游戏投稿 HTTP 与本地持久化', () => {
         const updated = await api().put(endpoint).auth(alice.token, { type: 'bearer' }).send(updatedDraft);
         expect(updated.status, JSON.stringify(updated.body)).toBe(200);
         expect(updated.body).toMatchObject({ name: updatedDraft.name, description: updatedDraft.description });
-        await api().post(`${endpoint}/submit`).auth(alice.token, { type: 'bearer' }).expect(400);
+        await api().post(`${endpoint}/submit`).auth(alice.token, { type: 'bearer' }).expect(201);
+        await api().post(`${endpoint}/withdraw`).auth(alice.token, { type: 'bearer' }).expect(201);
         const uploaded = await api().post(`${endpoint}/cover`).auth(alice.token, { type: 'bearer' })
             .attach('file', cover, { filename: 'cover.png', contentType: 'image/png' }).expect(201);
         const file = join(storageRoot, 'ugc', alice.id, `submission-${id}`, uploaded.body.coverUrl.split('/').at(-1));
