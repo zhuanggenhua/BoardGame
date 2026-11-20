@@ -753,6 +753,32 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(giftedAction.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['selected-action']);
     });
 
+    it('完美的礼物覆盖选中行动自己的去向，只选择一次接收者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0', { deck: [
+                    makeCard('selected-action', 'anansi_tales_let_it_be_full_and_eat', 'action', '0'),
+                    makeCard('draw-a', 'wizard_neophyte', 'minion', '0'),
+                    makeCard('draw-b', 'wizard_neophyte', 'minion', '0'),
+                ] }),
+                '1': makePlayer('1'), '2': makePlayer('2'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('anansi_tales_the_perfect_gift', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'perfect-gift',
+            defId: 'anansi_tales_the_perfect_gift', baseIndex: 0, random: FIXED_RANDOM, now: 40,
+        });
+        const chosen = respondToPromptOption(result.matchState!, option => option.value?.cardUid === 'selected-action', '选择行动', '0', FIXED_RANDOM);
+        expect(getSimpleChoicePrompt(chosen.finalState, 'anansi_tales_the_perfect_gift_gift')).toBeTruthy();
+        const gifted = respondToPromptOption(chosen.finalState, option => option.value?.targetPlayerId === '2', '选择接收者', '0', FIXED_RANDOM);
+        expect(gifted.success, gifted.error).toBe(true);
+        expect(gifted.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+        expect(gifted.finalState.core.players['1'].hand).toEqual([]);
+        expect(gifted.finalState.core.players['2'].hand.map(card => card.uid)).toEqual(['selected-action']);
+        expect(gifted.finalState.sys.interaction?.current).toBeFalsy();
+    });
+
     it('蜘蛛阿南西会锁定本回合再次打出同名行动', () => {
         const core = makeState({
             players: {

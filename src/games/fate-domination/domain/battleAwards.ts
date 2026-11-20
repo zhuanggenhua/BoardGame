@@ -84,7 +84,9 @@ export function fateFinalResult(core: FateDominationCore, results: BattleResult[
     const tied = eligible.filter(id => scores[id] === highest);
     if (tied.length === 1) return { winner: tied[0], scores };
     const miyamaWinners = tied.filter(id => results.some(result => result.playerId === id && result.locationId === 'miyama' && result.status === 'representative-win'));
-    return miyamaWinners.length === 1 ? { winner: miyamaWinners[0], scores } : { winners: [], draw: false, scores };
+    return miyamaWinners.length === 1
+        ? { winner: miyamaWinners[0], scores, victoryCondition: 'miyama-tiebreak' }
+        : { winners: [], draw: false, scores };
 }
 
 export function fateExcaliburWasInvoked(player: PlayerState): boolean {

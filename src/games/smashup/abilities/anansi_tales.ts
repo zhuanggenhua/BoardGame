@@ -33,8 +33,6 @@ import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { createCardObjectRef, createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import { getEffectiveBreakpoint, registerCustomBreakpointModifiers } from '../domain/ongoingModifiers';
 import {
-    actionLikeNeedsPlayBase,
-    actionLikeNeedsPlayMinion,
     isCardActionLike,
     isCardMinionLike,
 } from '../domain/utils';
@@ -45,7 +43,6 @@ import type {
     BaseMetadataUpdatedEvent,
     CardInstance,
     DeckReorderedEvent,
-    MinionCardDef,
     MinionPlayedEvent,
     SmashUpCore,
     SmashUpEvent,

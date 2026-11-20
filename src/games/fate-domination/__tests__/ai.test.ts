@@ -290,6 +290,40 @@ it('合法但零收益的消耗能力不会优先于正式结束行动', () => {
     expect(ctx.legalActions.find(action => action.actionId === selected.actionId)?.commands[0].type).not.toBe('PLAY_SKILL');
 });
 
+it.each([
+    { rivalCard: undefined, result: '独胜', expected: 4 },
+    { rivalCard: 'cardB1', result: '并列获胜', expected: 3 },
+    { rivalCard: 'cardB4', result: '落后', expected: 0 },
+])('AI 远隔操作在$result时比较获胜奖励，实际结算 $expected 战果', ({ rivalCard, expected }) => {
+    const game = match('fate-ai-battle-reward');
+    const { core } = game.state;
+    core.phase = 'battle';
+    core.round = 4;
+    core.situation = FATE_SITUATIONS.find(card => card.id === 'sit1')!;
+    core.battlefield.miyama.playerIds = ['0', '1'];
+    core.battlefield.miyama.eventCards = [];
+    core.currentEvents = { miyama: [], shinto: [] };
+    Object.assign(core.players['0'], {
+        locationId: 'miyama', hand: [{ id: 'remote', definitionId: 'cardPreparation' }], activeAttackIds: ['remote'],
+    });
+    Object.assign(core.players['1'], {
+        locationId: 'miyama', hand: rivalCard ? [{ id: 'rival-attack', definitionId: rivalCard }] : [],
+        activeAttackIds: rivalCard ? ['rival-attack'] : [],
+    });
+    const ctx = context(game.state, '0');
+    const candidate = ctx.legalActions.find(action => action.commands[0].type === 'PLAY_SKILL')!;
+    expect(projectFateAiActionOutcome({ context: ctx, action: candidate })).toMatchObject({
+        hasMeaningfulEffect: expected > 0, utilityDelta: expected > 0 ? 200 : 0,
+    });
+    const chosen = ctx.legalActions.find(action => action.actionId === chooseFateAiAction(ctx)?.actionId)!.commands[0];
+    expect(chosen.type).toBe(expected > 0 ? 'PLAY_SKILL' : 'ADVANCE_PHASE');
+    if (chosen.type === 'PLAY_SKILL') game.send(chosen.type, '0', chosen.payload);
+    for (const id of ids) game.send('ADVANCE_PHASE', id);
+    for (const locationId of ['miyama', 'shinto', 'recon']) game.send('RESOLVE_LOCATION', '2', { locationId });
+    expect(game.state.core.players['0'].victoryPoints).toBe(expected);
+    if (rivalCard === 'cardB1') expect(game.state.core.players['1'].victoryPoints).toBe(1);
+});
+
 it.each([true, false])('石化之魔眼按已公开的特殊攻击选择发动（对手均已打出=%s）', allProtected => {
     const game = match('fate-ai-medusa-eyes');
     const { core } = game.state;

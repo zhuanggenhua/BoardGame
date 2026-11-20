@@ -1331,7 +1331,8 @@ const MapToken: React.FC<{
     const idleOutline = tokenScale < 1
         ? `0 0 0 ${1.5 * tokenScale}px ${UI_STYLE.mapIvory}, 0 0 0 ${3 * tokenScale}px ${UI_STYLE.mapInk}, 0 2px 6px ${UI_STYLE.shadow}`
         : MAP_TOKEN_IDLE_OUTLINE;
-    const tokenOutline = resolvedBoxShadow ?? idleOutline;
+    const stackOutline = `0 0 0 ${tokenScale}px ${UI_STYLE.mapInk}`;
+    const tokenOutline = resolvedBoxShadow ?? (stackCount > 1 ? stackOutline : idleOutline);
     const stackDescription = stackCount > 1 ? t('board.map.armyStack', { amount: stackCount }) : undefined;
     const tokenDescription = [regionTitle ?? regionChoice?.label, stackDescription,
         isArmyToken && revealFront && unitLevel != null ? t('board.map.unitLevel', { level: unitLevel }) : undefined].filter(Boolean).join(' · ') || undefined;
@@ -1437,7 +1438,7 @@ const MapToken: React.FC<{
                 <QidahenArmyStackFaces quantity={stackCount} scale={tokenScale} rotation={token.rotationDeg}
                     imageSrc={showTokenImage ? tokenImageSrc : undefined}
                     backColor={!showTokenImage ? armyHiddenBackColorByFaction[token.faction] : undefined}
-                    faceOutline={`inset 0 0 0 ${tokenScale}px ${UI_STYLE.mapInk}, inset 0 0 0 ${2 * tokenScale}px ${UI_STYLE.mapIvory}`} />
+                    faceOutline={`inset ${stackOutline}`} />
             </span> : null}
             {stackSize > 1 ? <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20"
                 style={{ transform: `rotate(${-(token.rotationDeg ?? 0)}deg)` }}>

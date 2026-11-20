@@ -7,25 +7,28 @@ import { fateLocationResults } from '../domain/battleAwards';
 import { engineConfig } from '../game';
 
 it.each([
-    { won: true, withChoice: false },
-    { won: false, withChoice: false },
-    { won: true, withChoice: true },
-])('突穿死翔之枪按交战人数加战果（胜利=$won，战后选择=$withChoice）', ({ won, withChoice }) => {
+    { round: 11, won: true, withChoice: false, initialScores: [12, 12, 12] },
+    { round: 11, won: false, withChoice: false, initialScores: [12, 12, 12] },
+    { round: 11, won: true, withChoice: true, initialScores: [12, 12, 12] },
+    { round: 10, won: true, withChoice: false, initialScores: [5, 10, 8], expectedScores: [9, 8, 6] },
+    { round: 11, won: true, withChoice: false, initialScores: [7, 13, 12], expectedScores: [11, 11, 10] },
+])('突穿死翔之枪用扣分后的战果作第 $round 日结算（胜利=$won，战后选择=$withChoice，起始战果=$initialScores）', ({ round, won, withChoice, initialScores, expectedScores }) => {
     const playerIds = ['0', '1', '2'];
     const random = createSeededRandom('soaring-spear');
     const core = FateDominationDomain.setup(playerIds, random);
     let state = { core, sys: createInitialSystemState(playerIds, engineConfig.systems, 'soaring-spear') };
-    core.round = 11;
+    core.round = round;
     core.phase = 'battle';
     core.currentPlayerId = '0';
     core.turnOrder = playerIds;
-    core.situation = FATE_SITUATIONS.find(card => card.id === 'sit13')!;
+    core.situation = FATE_SITUATIONS.find(card => card.id === (round === 11 ? 'sit13' : 'sit12'))!;
     core.currentEvents = { miyama: [], shinto: [] };
     for (const location of Object.values(core.battlefield)) location.eventCards = [];
     core.battlefield.miyama.playerIds = playerIds;
-    for (const player of Object.values(core.players)) {
+    for (const [index, player] of Object.values(core.players).entries()) {
         player.locationId = 'miyama';
-        player.victoryPoints = 12;
+        player.masterId = ['m_waver', 'm_rin', 'm_iliya'][index];
+        player.victoryPoints = initialScores[index];
         player.commandSpells = 2;
     }
     if (withChoice) {
@@ -56,13 +59,13 @@ it.each([
     };
     const use = submit({ type: 'PLAY_SKILL', playerId: '0', payload: { skillId: spear.id } });
     expect(use.some(event => event.type === 'FATE_BATTLE_SCORE_ADJUSTED')).toBe(false);
-    expect(state.core.players['0'].victoryPoints).toBe(12);
+    expect(state.core.players['0'].victoryPoints).toBe(initialScores[0]);
     for (const playerId of playerIds) submit({ type: 'ADVANCE_PHASE', playerId, payload: {} });
     const finish = (['miyama', 'shinto', 'recon'] as const).flatMap(locationId =>
         submit({ type: 'RESOLVE_LOCATION', playerId: state.core.currentPlayerId, payload: { locationId } }));
     if (withChoice) {
         expect(state.core.battleResolution?.step).toBe('after-battle');
-        expect(state.core.players['0'].victoryPoints).toBe(12);
+        expect(state.core.players['0'].victoryPoints).toBe(initialScores[0]);
         expect(finish.some(event => event.type === 'FATE_BATTLE_SCORE_ADJUSTED')).toBe(false);
         const choice = state.sys.interaction.current!;
         expect(choice.playerId).toBe('0');
@@ -74,13 +77,19 @@ it.each([
         sourceId: spear.id,
         changes: [{ playerId: '0', amount: 2 }, ...(won ? [{ playerId: '1', amount: -2 }, { playerId: '2', amount: -2 }] : [])],
     } })]);
-    expect(state.core.phase).toBe('complete');
-    const scores = Object.fromEntries(playerIds.map(id => [id,
-        12 + (expectedAwards.find(result => result.playerId === id)?.totalVictoryPoints ?? 0)
+    const scores = Object.fromEntries(playerIds.map((id, index) => [id,
+        expectedScores?.[index] ?? initialScores[index] + (expectedAwards.find(result => result.playerId === id)?.totalVictoryPoints ?? 0)
         + (id === '0' ? 2 : won ? -2 : 0),
     ]));
     expect(Object.fromEntries(playerIds.map(id => [id, state.core.players[id].victoryPoints]))).toEqual(scores);
-    expect(state.core.gameResult?.scores).toEqual(scores);
+    if (round === 10) {
+        expect(state.core).toMatchObject({ phase: 'preparation', round: 11 });
+        expect(playerIds.filter(id => state.core.players[id].eliminated)).toEqual(['2']);
+    } else {
+        expect(state.core.phase).toBe('complete');
+        expect(state.core.gameResult?.scores).toEqual(scores);
+        if (expectedScores) expect(state.core.gameResult?.winner).toBe('0');
+    }
     expect(state.sys.actionLog.entries.filter(entry => entry.kind === 'FATE_BATTLE_SCORE_ADJUSTED').map(entry => entry.actorId))
         .toEqual(won ? playerIds : ['0']);
 });

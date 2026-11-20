@@ -781,6 +781,25 @@ describe('格林童话代表性玩法行为', () => {
         expect(played.finalState.core.players['0'].deck).toEqual([]);
     });
 
+    it('团队合作可根据其他派系随从的牌名引用检索匹配随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('guard-copy', 'aladdin_palace_guard', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_gingerbread_house', [makeMinion('guard-in-play', 'aladdin_palace_guard', '0', 2)])],
+        });
+        const result = invokeRegisteredAbilityContract('grimms_fairy_tales_teamwork', 'onPlay', {
+            state: core, matchState: makeMatchState(core), playerId: '0', cardUid: 'teamwork',
+            defId: 'grimms_fairy_tales_teamwork', baseIndex: 0, random: FIXED_RANDOM, now: 82,
+        });
+        expect(result.matchState?.sys.interaction?.current).toBeTruthy();
+        const selected = respondToPromptOption(result.matchState!, option => option.value?.minionUid === 'guard-in-play', '选择王宫守卫', '0', FIXED_RANDOM);
+        const returned = respondToPromptOption(selected.finalState, option => option.value?.cardUid === 'guard-copy' && option.value?.mode === 'toHand', '检索王宫守卫', '0', FIXED_RANDOM);
+        expect(returned.success, returned.error).toBe(true);
+        expect(returned.finalState.core.players['0'].hand.map(card => card.uid)).toContain('guard-copy');
+    });
+
     it('团队合作也可将匹配的弃牌堆随从加入手牌', () => {
         const core = makeState({
             players: {

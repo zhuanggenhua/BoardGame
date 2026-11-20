@@ -8,7 +8,7 @@ import type { FateDominationCommand, FateDominationCore } from './domain';
 import { FATE_LOCATION_ORDER } from './domain';
 import { legalFateDeploymentSlots } from './domain/deployment';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
-import { applyFateBattleScoreAdjustment, fateBattleOpponents, fatePostBattleScoreEvents } from './domain/battleAwards';
+import { applyFateBattleScoreAdjustment, fateBattleOpponents, fateLocationResults, fatePostBattleScoreEvents } from './domain/battleAwards';
 import { canSufferFateDefeat, hasFateDefeat } from './domain/mechanics';
 import { fatePreBattleDefeatEvents } from './domain/preBattleEffects';
 import { visibleFatePower } from './domain/playerView';
@@ -128,6 +128,13 @@ function visibleRivalPowerDelta(before: FateDominationCore, after: FateDominatio
 // 并列首位的玩家平分战果，单改事件战果不会拉开并列双方差距。
 function chariotRewardDirection(core: FateDominationCore, playerId: string): number {
     return Math.sign(visibleFatePower(core, playerId, playerId) - visibleOppositionPower(core, playerId, -Infinity));
+}
+
+function forecastFateBattleResults(core: FateDominationCore, playerId: string) {
+    const location = core.players[playerId].locationId;
+    if (location !== 'miyama' && location !== 'shinto') return [];
+    return fateLocationResults(core, location, id =>
+        (id === playerId ? undefined : core.players[id].publicView?.power) ?? visibleFatePower(core, id, playerId));
 }
 
 function fateAiResourceUtility(player: PlayerState) {
@@ -293,16 +300,19 @@ export function projectFateAiActionOutcome({ context, action: candidate }: { con
             return { status: 'succeeded', utilityDelta: utility(afterBattleStart, playerId) - utility(state.core, playerId) + newlyDefeated * 4,
                 hasMeaningfulEffect: newlyDefeated > 0, eventTypes: events.map(event => event.type) };
         }
-        if (ability.effects.some(effect => effect.type === 'post-battle-score-per-opponent')) {
-            const won = !next.players[playerId].defeatMarkers.length && chariotRewardDirection(next, playerId) >= 0;
-            const predictions = fatePostBattleScoreEvents(next, won ? [{ playerId, status: 'representative-win' }] : [], meta)
+        if (ability.effects.some(effect => effect.type === 'battle-win-reward' || effect.type === 'post-battle-score-per-opponent')) {
+            const before = forecastFateBattleResults(state.core, playerId).find(result => result.playerId === playerId);
+            const results = forecastFateBattleResults(next, playerId);
+            const after = results.find(result => result.playerId === playerId);
+            const gain = (after?.totalVictoryPoints ?? 0) - (before?.totalVictoryPoints ?? 0);
+            const predictions = fatePostBattleScoreEvents(next, results, meta)
                 .filter(event => event.payload.sourceId === skillId);
             const afterBattle = predictions.reduce(applyFateBattleScoreAdjustment, next);
             const bestRivalScore = (core: FateDominationCore) => Math.max(0, ...Object.values(core.players)
                 .filter(player => playerId !== player.id && !player.eliminated).map(player => player.victoryPoints));
             const rivalDelta = bestRivalScore(state.core) - bestRivalScore(afterBattle);
-            return { status: 'succeeded', utilityDelta: utility(afterBattle, playerId) - utility(state.core, playerId) + rivalDelta * 100,
-                hasMeaningfulEffect: predictions.length > 0, eventTypes: events.map(event => event.type) };
+            return { status: 'succeeded', utilityDelta: utility(afterBattle, playerId) - utility(state.core, playerId) + (gain + rivalDelta) * 100,
+                hasMeaningfulEffect: gain > 0 || predictions.length > 0, eventTypes: events.map(event => event.type) };
         }
     }
     const actingPlayer = state.core.players[context.playerId];

@@ -192,7 +192,7 @@ export interface FateBattleResolutionState {
 }
 
 export interface FateGameResult extends GameOverResult {
-    victoryCondition?: 'excalibur';
+    victoryCondition?: 'excalibur' | 'miyama-tiebreak';
 }
 
 export interface FateDominationCore {

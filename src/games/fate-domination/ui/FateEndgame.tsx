@@ -10,6 +10,11 @@ interface Props extends Omit<EndgameOverlayProps, 'result' | 'renderContent'> {
     victoryCondition?: FateGameResult['victoryCondition'];
 }
 
+const victoryReasonKeys = {
+    excalibur: 'ui.endgame.excaliburVictory',
+    'miyama-tiebreak': 'ui.endgame.miyamaTiebreakVictory',
+} as const;
+
 function FateResult({ result, nameFor, victoryCondition }: Pick<Props, 'nameFor' | 'victoryCondition'> & { result: GameOverResult }) {
     const { t } = useTranslation('game-fate-domination');
     const winners = result.winners ?? (result.winner !== undefined ? [result.winner] : []);
@@ -18,7 +23,7 @@ function FateResult({ result, nameFor, victoryCondition }: Pick<Props, 'nameFor'
         : t('ui.endgame.allMastersDefeated');
     return <section className="fd-endgame-results" aria-label={t('ui.endgame.results')}>
         <h2>{title}</h2>
-        {victoryCondition === 'excalibur' && <p className="fd-endgame-victory-condition">{t('ui.endgame.excaliburVictory')}</p>}
+        {victoryCondition && <p className="fd-endgame-victory-condition">{t(victoryReasonKeys[victoryCondition])}</p>}
         <ol aria-label={t('ui.endgame.finalScores')}>
             {Object.entries(result.scores ?? {}).sort((a, b) => b[1] - a[1]).map(([id, score]) =>
                 <li key={id} data-winner={winners.includes(id) || undefined}>

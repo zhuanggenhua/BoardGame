@@ -58,6 +58,43 @@ async function networkAi(seed:string,controllers:Record<string,AiSeatController>
 }
 const controllers:Record<string,AiSeatController>={'0':{type:'human'},'1':{type:'local-ai',minimumActionDelayMs:0},'2':{type:'local-ai',minimumActionDelayMs:0}};
 
+it.each([
+    { card: undefined, result: '独胜', scores: { '0': 0, '1': 4, '2': 0 } },
+    { card: 'cardB1', result: '并列获胜', scores: { '0': 1, '1': 3, '2': 0 } },
+    { card: 'cardB4', result: '落后', scores: { '0': 2, '1': 0, '2': 0 } },
+])('在线 AI 远隔操作按$result决定发动，正式终局计入个人奖励', async ({ card, result, scores }) => {
+    await networkAi(`battle-win-reward-${result}`, controllers, state => {
+        const { core } = state;
+        core.phase = 'battle';
+        core.round = 11;
+        core.situation = FATE_SITUATIONS.find(situation => situation.id === 'sit13')!;
+        core.currentEvents = { miyama: [], shinto: [] };
+        core.battlefield.miyama.playerIds = ['0', '1'];
+        for (const location of Object.values(core.battlefield)) location.eventCards = [];
+
+        for (const [id, servantId, definition] of [['0', 'servant-saber', card], ['1', 'servant-medusa', 'cardPreparation']] as const) {
+            const deck = createFateAttackDeck(id, servantId);
+            const played = definition ? [deck.find(instance => instance.definitionId === definition)!] : [];
+            Object.assign(core.players[id], {
+                servantId, skills: [], isRevealed: false, locationId: 'miyama', deploymentSlot: null,
+                hand: played, deck: deck.filter(instance => !played.includes(instance)), activeAttackIds: played.map(instance => instance.id),
+            });
+        }
+        core.players['2'].eliminated = true;
+        return state;
+    }, async ({ read, send, client }) => {
+        const abilityId = (await read()).core.players['1'].activeAttackIds[0];
+        await send('ADVANCE_PHASE');
+        await expect.poll(() => (client.latestState as State | undefined)?.core.phase, { timeout: 15_000 }).toBe('complete');
+        const { core, sys } = await read();
+        const uses = sys.eventStream.entries.filter(({ event }) => event.type === 'FATE_ABILITY_USED'
+            && (event as FateAbilityUsedEvent).payload.skillId === abilityId);
+        expect(uses).toHaveLength(scores['1'] > 0 ? 1 : 0);
+        expect(core.gameResult?.scores).toEqual(scores);
+        expect((client.latestState as State).core.gameResult?.scores).toEqual(scores);
+    });
+}, 30_000);
+
 async function finishNetworkFateMatch({ read, stateId, send, client }: NetworkFateMatch, clientId: string, observe?: (state: State) => void) {
     for (let humanCommands = 0; humanCommands < 200; humanCommands++) {
         await expect.poll(async () => {
