@@ -42,6 +42,7 @@ function toPromptMultiConfig(selection: ChoiceRequestSelectionBounds): PromptMul
         min: selection.min,
         max: selection.max,
         ordered: selection.ordered,
+        distinctValueKeys: selection.distinctValueKeys,
     };
 }
 
@@ -68,6 +69,7 @@ function toAiDecisionDescriptor<TValue>(request: ChoiceRequest<TValue>): AiDecis
             min: request.selection.min,
             max: request.selection.max,
             ordered: request.selection.ordered,
+            distinctValueKeys: request.selection.distinctValueKeys,
             maxGeneratedSelections: request.selection.maxGeneratedSelections,
         },
         skipPolicy: toAiDecisionSkipPolicy(request.skipPolicy),

@@ -170,7 +170,7 @@ export function paintFateBattleFx(ctx: CanvasRenderingContext2D, effect: FgoBatt
     const dy = (effect.to.y - effect.from.y) * height / 100;
     // 亮刃覆盖交战区域，体积随地图高度和双方间距变化。
     const span = Math.min(width * 0.66, Math.max(height * 1.54, Math.hypot(dx, dy) * 1.14));
-    ctx.translate(effect.to.x * width / 100, effect.to.y * height / 100);
+    ctx.translate(effect.at.x * width / 100, effect.at.y * height / 100);
     ctx.scale(dx < 0 ? -span : span, height);
     // 库丘林的直刺以平举枪动画出手，尾迹沿武器水平延伸。
     if (effect.shape === 'thrust') thrust(ctx, time, Math.abs(dx) / span);

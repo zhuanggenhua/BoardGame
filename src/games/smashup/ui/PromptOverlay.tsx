@@ -17,6 +17,7 @@ import { logger } from '../../../lib/logger';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import { INTERACTION_COMMANDS, asSimpleChoice, type InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
+import { hasDistinctSelectionValues } from '../../../engine/selectionConstraints';
 import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
@@ -604,10 +605,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         setSelectedIds([]);
     }, [promptRenderKey]);
 
-    const canSubmitMulti = useMemo(
-        () => isMyPrompt && selectedIds.length >= minSelections,
-        [isMyPrompt, minSelections, selectedIds.length],
+    const hasValidMultiSelection = hasDistinctSelectionValues(
+        (prompt?.options ?? []).filter(option => selectedIds.includes(option.id)),
+        prompt?.multi?.distinctValueKeys,
     );
+    const canSubmitMulti = isMyPrompt && selectedIds.length >= minSelections && hasValidMultiSelection;
 
     // 检测卡牌展示模式：只要有卡牌选项就使用卡牌模式
     const cardOptionCount = useMemo(() => {
@@ -676,7 +678,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 通用跳过选项检测：自动分离 id === 'skip' 的选项，渲染为独立按钮
     const skipOption = useMemo(() => resolvedOptions.find(opt => opt.id === 'skip'), [resolvedOptions]);
     const nonSkipOptions = useMemo(() => resolvedOptions.filter(opt => opt.id !== 'skip'), [resolvedOptions]);
-    const showBulkSelectControl = isMulti && !isOrderedMulti && nonSkipOptions.length > 2;
+    const showBulkSelectControl = isMulti && !isOrderedMulti && !prompt?.multi?.distinctValueKeys?.length && nonSkipOptions.length > 2;
     const useCompactMultiTextMode = isMulti && !useCardMode && hasOptions && nonSkipOptions.length <= 2;
     const rawSlider = (prompt as { slider?: unknown } | undefined)?.slider;
     const sliderConfig = useMemo(() => parseSliderConfig({ slider: rawSlider }), [promptRenderKey, rawSlider]);
@@ -1836,6 +1838,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             )}
 
                             <div className="flex flex-wrap items-center justify-center gap-2">
+                                {isMulti && !hasValidMultiSelection && (
+                                    <span className="text-sm text-amber-200">{t('ui.selection_contains_duplicates', { defaultValue: '选择中有重复对象，请调整后确认' })}</span>
+                                )}
                                 {isMulti && selectedIds.length > 0 && (
                                     <GameButton
                                         variant="secondary"

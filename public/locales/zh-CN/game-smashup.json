@@ -275,6 +275,7 @@
     "selected_count_with_max": "已选 {{count}} / {{max}}",
     "selected_minimum": "，至少 {{min}}",
     "clear_selection": "清空选择",
+    "selection_contains_duplicates": "选择中有重复对象，请调整后确认",
     "reaction_select_hand_or_pass": "点高亮手牌响应，或让过",
     "reaction_select_target_after_hand": "点高亮目标打出响应牌",
     "select_max_available": "选满可选",

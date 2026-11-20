@@ -7,6 +7,7 @@
 
 import type { GameEvent, MatchState, PlayerId } from '../types';
 import { resolveCommandTimestamp } from '../utils';
+import { hasDistinctSelectionValues } from '../selectionConstraints';
 import {
     getFreshSimpleChoiceOptions,
     getSimpleChoiceResponseValidationMode,
@@ -175,6 +176,9 @@ function handleSimpleChoiceRespond<TCore>(
         }
         if (!selectedSingleRecovery && maxSelections !== undefined && uniqueIds.length > maxSelections) {
             return { halt: true, error: `最多选择 ${maxSelections} 项` };
+        }
+        if (!selectedSingleRecovery && !hasDistinctSelectionValues(selectedOptions, data.multi?.distinctValueKeys)) {
+            return { halt: true, error: '选择中存在重复对象' };
         }
     } else {
         if (typeof payload.optionId !== 'string') {

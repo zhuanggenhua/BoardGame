@@ -36,6 +36,7 @@ import {
     createTimingOpportunitySystem,
 } from '../../engine';
 import { executePipeline, type PipelineConfig } from '../../engine/pipeline';
+import { hasDistinctSelectionValues } from '../../engine/selectionConstraints';
 import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type PromptMultiConfig, type SimpleChoiceData } from '../../engine/systems/InteractionSystem';
 import { SmashUpDomain, smashUpFlowHooks } from './domain';
 import {
@@ -1611,7 +1612,8 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
             .filter((combination) => {
                 if (combination.length === 0) return false;
                 const controlOptionCount = combination.filter((option) => isInteractionControlValue(option.value)).length;
-                return controlOptionCount === 0 || (controlOptionCount === 1 && combination.length === 1);
+                return (controlOptionCount === 0 || (controlOptionCount === 1 && combination.length === 1))
+                    && hasDistinctSelectionValues(combination, data.multi?.distinctValueKeys);
             });
         actions.push(...combinations.map((combination, index) => {
             const optionIds = combination.map((option) => option.id);

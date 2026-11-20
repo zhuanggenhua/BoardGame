@@ -1,6 +1,7 @@
 import { isRulesStandardAction } from '../domain/standardAction';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -227,11 +228,11 @@ function buildGiftCardOptions(
     const targets = getOtherPlayers(state, playerId);
     const hand = state.players[playerId]?.hand ?? [];
     const options: PromptOption<GiftCardChoice>[] = [];
-    for (const [cardIndex, card] of hand.entries()) {
+    for (const card of hand) {
         if (card.uid === excludeCardUid) continue;
         for (const targetPlayerId of targets) {
             options.push({
-                id: `gift-${cardIndex}-${targetPlayerId}`,
+                id: `gift-${card.uid}-${targetPlayerId}`,
                 label: `${getCardLabel(card.defId)} → ${getPlayerLabel(state, targetPlayerId)}`,
                 value: { cardUid: card.uid, defId: card.defId, targetPlayerId },
                 displayMode: 'card',
@@ -536,23 +537,39 @@ const giftCardsPromptProgram = createPromptProgram<GiftCardsContext>({
     ],
     buildInteraction: (context) => {
         const options = buildGiftCardOptions(context.matchState.core, context.playerId, context.excludeCardUid);
-        const cappedMax = Math.min(context.maxCards, options.length);
+        const cappedMax = Math.min(context.maxCards, new Set(options.map(option => option.value.cardUid)).size);
         const minCards = Math.min(context.minCards, cappedMax);
-        return createAbilityRuntimeSimpleChoice(
-            `${context.sourceId}_${context.now}`,
-            context.playerId,
-            context.title,
-            context.minCards === 0
-                ? [...options, createSkipOption()]
-                : options,
-            {
-                sourceId: context.sourceId,
-                targetType: 'hand',
-                multi: context.maxCards > 1 ? { min: minCards, max: cappedMax } : undefined,
-                autoResolveIfSingle: false,
-                responseValidationMode: 'live',
+        const requestId = `${context.sourceId}_${context.now}`;
+        const candidates = context.minCards === 0 ? [...options, createSkipOption()] : options;
+        const isMulti = context.maxCards > 1;
+        return createSimpleChoiceFromChoiceRequest<GiftCardChoice>({
+            requestId,
+            gameId: 'smashup',
+            playerId: context.playerId,
+            ownerFrameId: context.matchState.sys.resolution?.activeFrameId,
+            kind: 'choose-option',
+            sourceId: context.sourceId,
+            candidates,
+            selection: {
+                min: isMulti ? minCards : 1,
+                max: isMulti ? cappedMax : 1,
+                ...(isMulti ? { distinctValueKeys: context.onePerOtherPlayer ? ['cardUid', 'targetPlayerId'] : ['cardUid'] } : {}),
             },
-        );
+            skipPolicy: context.minCards === 0 ? 'optional' : 'forbidden',
+            ...(context.minCards === 0 ? {
+                recoveryAction: {
+                    label: '跳过',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { interactionId: requestId, optionId: 'skip' } }],
+                },
+            } : {}),
+            resolution: { type: 'interaction-response' },
+            ai: { status: 'shared-policy' },
+        }, {
+            title: context.title,
+            targetType: 'hand',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        });
     },
     onResolve: (args) => {
         const { context, state, value, timestamp } = args;

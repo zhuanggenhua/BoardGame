@@ -57,6 +57,25 @@ const createTargetChoiceRequest = (): ChoiceRequest<{ targetId: string }> => ({
 });
 
 describe('ChoiceRequest', () => {
+    it('候选组合的业务字段互斥时只投影合法组合，且非法组合不占生成限额', () => {
+        const request: ChoiceRequest<{ card: string; target: string }> = {
+            requestId: 'gift-combinations', playerId: '0', ownerFrameId: 'frame', kind: 'choose-option',
+            selection: { min: 2, max: 2, distinctValueKeys: ['card', 'target'], maxGeneratedSelections: 1 },
+            skipPolicy: 'forbidden', resolution: { type: 'interaction-response' }, ai: { status: 'shared-policy' },
+            candidates: [
+                { id: 'a1', value: { card: 'a', target: '1' } },
+                { id: 'a2', value: { card: 'a', target: '2' } },
+                { id: 'b1', value: { card: 'b', target: '1' } },
+                { id: 'b2', value: { card: 'b', target: '2' } },
+            ],
+        };
+        const result = projectChoiceRequestToAiLegalActions(request);
+        expect(result.diagnostics.filter(diagnostic => diagnostic.severity === 'error')).toEqual([]);
+        expect(result.actions).toHaveLength(1);
+        expect(result.actions[0].commands[0].payload).toEqual({ interactionId: 'gift-combinations', optionIds: ['a1', 'b2'] });
+        expect(createSimpleChoiceFromChoiceRequest(request, { title: '选择' }).data.multi?.distinctValueKeys).toEqual(['card', 'target']);
+    });
+
     it('从 Choice Request 生成 AI legalActions，并保留显式跳过动作', () => {
         const request = createTargetChoiceRequest();
         const result = projectChoiceRequestToAiLegalActions(request);

@@ -5,6 +5,7 @@ import { FateDominationDomain } from '../domain';
 import { fateFinalResult, fateLocationResults } from '../domain/battleAwards';
 import { calculateFatePower } from '../domain/power';
 import { engineConfig } from '../game';
+import { FATE_BATTLE_LOCATION_ORDER, type LocationResolvedEvent } from '../domain/types';
 
 const playerIds = ['0', '1', '2'];
 
@@ -28,7 +29,12 @@ function fightWithExcalibur(round: number) {
     core.battlefield.miyama.playerIds = ['0', '1'];
     const activate = () => executePipeline({ domain: FateDominationDomain, systems: engineConfig.systems },
         { core, sys }, { type: 'PLAY_SKILL', playerId: '0', payload: { skillId: skill.id } }, random, playerIds);
-    return { core, activate };
+    const resolve = (state = { core, sys }) => executePipeline({ domain: FateDominationDomain, systems: engineConfig.systems }, {
+        ...state,
+        core: { ...state.core, battleResolution: { frameId: 'test-excalibur-locations', round, step: 'locations',
+            locationIds: [...FATE_BATTLE_LOCATION_ORDER], resolvedLocationIds: [] } },
+    }, { type: 'RESOLVE_LOCATION', playerId: '0', payload: { locationId: 'miyama' } }, random, playerIds);
+    return { core, activate, resolve };
 }
 
 it('第8天无法发动誓约胜利之剑的战斗能力，第9天发动后合计威力加4', () => {
@@ -55,4 +61,12 @@ it('第11天发动誓约胜利之剑并赢得战斗后，即使战果落后也�
     const ordinary = fateFinalResult(active, fateLocationResults(active, 'miyama'));
     expect(ordinary.winner).toBe('1');
     expect(ordinary.victoryCondition).toBeUndefined();
+});
+
+it('宝具演出只由已发动的誓约胜利之剑触发，明置打出和解放真名不足以触发', () => {
+    const { activate, resolve } = fightWithExcalibur(11);
+    const stages = [resolve(), resolve(activate().state)];
+    for (const result of stages) expect(result.success, result.error).toBe(true);
+    const cues = stages.map(result => (result.events.find(event => event.type === 'LOCATION_RESOLVED') as LocationResolvedEvent).payload.noblePlayerIds);
+    expect(cues).toEqual([[], ['0']]);
 });

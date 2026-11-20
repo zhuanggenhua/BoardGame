@@ -207,6 +207,8 @@ type UnsatisfiableSimpleChoiceReason =
 export interface PromptMultiConfig {
     min?: number;
     max?: number;
+    /** 一批候选的 value 中，这些字段分别不得重复。 */
+    distinctValueKeys?: string[];
     /**
      * 是否要求保留选择顺序。
      * - false / undefined: 视为无序多选（组合语义）

@@ -19,7 +19,7 @@ export type FgoBattleRuntimeHandle = { destroy: () => void };
 
 type BattleScreenPoint = { x: number; y: number };
 export type FgoBattleEffect =
-  | { kind: 'strike'; shape: 'slash' | 'thrust'; turnId: number; from: BattleScreenPoint; to: BattleScreenPoint; untilImpact: number }
+  | { kind: 'strike'; shape: 'slash' | 'thrust'; turnId: number; from: BattleScreenPoint; to: BattleScreenPoint; at: BattleScreenPoint; untilImpact: number }
   | { kind: 'impact'; turnId: number; at: BattleScreenPoint; flip: boolean };
 
 type Actor = FgoBattleActorInput & {
@@ -34,7 +34,7 @@ type Actor = FgoBattleActorInput & {
   laneX: number;
   travel: number;
 };
-type BattleTurn = { attacker: Actor; target: Actor; animation: string; start: number; duration: number; impactAt: number; returnAt: number; travel: number; lanes: Map<Actor, number> };
+type BattleTurn = { attacker: Actor; target: Actor; animation: string; start: number; duration: number; impactAt: number; returnAt: number; travel: number; lanes: Map<Actor, number>; shape: 'slash' | 'thrust'; thrustHeight?: number };
 
 const MODEL_HEIGHT = 2.4;
 const VIEW_HEIGHT = 3.6;
@@ -42,6 +42,7 @@ const FADE_IN_SECONDS = 0.2;
 const FADE_OUT_SECONDS = 0.35;
 const RETURN_SECONDS = 0.3;
 const STRIKE_LEAD_SECONDS = 0.16;
+const BODY_CONTACT_NODES = ['en_body', 'en_body 1', 'en_body 2'];
 const ATTACK_IMPACT: Record<string, number> = {
   'servant-saber': 0.65,
   'servant-cu-chulainn': 0.43,
@@ -85,11 +86,21 @@ export function createFgoBattleRuntime(
   let lastStrike: BattleTurn | undefined;
   let lastImpact: BattleTurn | undefined;
 
-  const projectBody = (item: Actor): BattleScreenPoint | undefined => {
-    const bounds = item.actor.bounds(true, true);
-    if (bounds.isEmpty()) return;
-    const point = bounds.getCenter(new THREE.Vector3()).project(camera);
+  const projectPoint = (point: THREE.Vector3): BattleScreenPoint => {
+    point.project(camera);
     return { x: (point.x + 1) * 50, y: (1 - point.y) * 50 };
+  };
+  const bodyCenter = (item: Actor): THREE.Vector3 | undefined => {
+    const bounds = item.actor.bounds(true, true);
+    return bounds.isEmpty() ? undefined : bounds.getCenter(new THREE.Vector3());
+  };
+  const projectContact = (turn: BattleTurn, center: THREE.Vector3): BattleScreenPoint => {
+    const rig = turn.target.actor;
+    const marker = BODY_CONTACT_NODES.map(name => rig.node(name))
+      .find(node => node && node.matrixWorld.getMaxScaleOnAxis() > rig.root.scale.x * 0.001001);
+    const point = marker?.getWorldPosition(new THREE.Vector3()) ?? center.clone();
+    if (turn.thrustHeight !== undefined) point.y = turn.thrustHeight;
+    return projectPoint(point);
   };
 
   const dispose = () => {
@@ -184,6 +195,11 @@ export function createFgoBattleRuntime(
       lastAnimation.set(attacker.playerId, clip.name);
       const impactAt = clip.duration * attacker.impact;
       pose(attacker, impactAt, clip.name);
+      const shape = attacker.servantId === 'servant-cu-chulainn' && clip.name === 'attack_q' ? 'thrust' : 'slash';
+      // 直刺高度取命中帧的枪身，同一次攻击的轨迹和火花使用同一高度。
+      const thrustHeight = shape === 'thrust'
+        ? attacker.actor.node('en_weapon_R')?.getWorldPosition(new THREE.Vector3()).y
+        : undefined;
       const attackBounds = attacker.actor.bounds(true, true);
       target.actor.root.position.x = target.homeX + lanes.get(target)! - target.laneX;
       pose(target, 0, 'wait');
@@ -198,7 +214,7 @@ export function createFgoBattleRuntime(
         : Math.min(0, Math.max(-distance, gap));
       const returnAt = Math.max(clip.duration, impactAt + target.duration);
       const turnDuration = returnAt + RETURN_SECONDS;
-      turns.push({ attacker, target, animation: clip.name, start: duration, duration: turnDuration, impactAt, returnAt, travel, lanes });
+      turns.push({ attacker, target, animation: clip.name, start: duration, duration: turnDuration, impactAt, returnAt, travel, lanes, shape, thrustHeight });
       duration += turnDuration;
       pose(attacker, 0, 'wait');
       }
@@ -274,16 +290,22 @@ export function createFgoBattleRuntime(
           const untilImpact = turn.start + turn.impactAt - playTime;
           if (turn !== lastStrike && untilImpact <= STRIKE_LEAD_SECONDS && untilImpact > 0) {
             lastStrike = turn;
-            const from = projectBody(turn.attacker);
-            const to = projectBody(turn.target);
-            const shape = turn.attacker.servantId === 'servant-cu-chulainn' && turn.animation === 'attack_q' ? 'thrust' : 'slash';
-            if (from && to) onEffect({ kind: 'strike', shape, turnId: turn.start, from, to, untilImpact });
+            const attackerCenter = bodyCenter(turn.attacker);
+            const targetCenter = bodyCenter(turn.target);
+            if (attackerCenter && targetCenter) {
+              const at = projectContact(turn, targetCenter);
+              onEffect({ kind: 'strike', shape: turn.shape, turnId: turn.start, from: projectPoint(attackerCenter), to: projectPoint(targetCenter), at, untilImpact });
+            }
           }
           if (turn !== lastImpact && untilImpact <= 0) {
             lastImpact = turn;
-            const from = projectBody(turn.attacker);
-            const at = projectBody(turn.target);
-            if (at) onEffect({ kind: 'impact', turnId: turn.start, at, flip: !!from && at.x < from.x });
+            const attackerCenter = bodyCenter(turn.attacker);
+            const targetCenter = bodyCenter(turn.target);
+            if (targetCenter) {
+              const at = projectContact(turn, targetCenter);
+              const targetX = projectPoint(targetCenter).x;
+              onEffect({ kind: 'impact', turnId: turn.start, at, flip: !!attackerCenter && targetX < projectPoint(attackerCenter).x });
+            }
           }
         }
         renderer.render(scene, camera);

@@ -63,6 +63,7 @@ export interface ChoiceRequestSelectionBounds {
     min: number;
     max: number;
     ordered?: boolean;
+    distinctValueKeys?: string[];
     maxGeneratedSelections?: number;
 }
 
@@ -266,6 +267,7 @@ function normalizeSelection(selection: ChoiceRequestSelectionBounds): AiSelectio
         min: selection.min,
         max: selection.max,
         ordered: selection.ordered === true,
+        distinctValueKeys: selection.distinctValueKeys,
         maxGeneratedSelections: selection.maxGeneratedSelections ?? DEFAULT_MAX_GENERATED_SELECTIONS,
     };
 }
@@ -274,6 +276,7 @@ function toAiDecisionCandidate<TValue>(candidate: ChoiceRequestCandidate<TValue>
     return {
         id: candidate.id,
         label: candidate.label,
+        value: candidate.value,
         disabled: candidate.disabled === true || candidate.stale === true,
         disabledReason: candidate.disabledReason,
         aiHints: candidate.aiHints,

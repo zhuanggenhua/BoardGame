@@ -1,6 +1,7 @@
 import type { PlayerId } from '../types';
 import { createAiLegalActionId } from './context';
 import type { AiActionMetadata, AiCommandSpec, AiHint, AiLegalAction } from './types';
+import { hasDistinctSelectionValues } from '../selectionConstraints';
 
 export type AiDecisionKind =
     | 'select-player'
@@ -32,6 +33,7 @@ export interface AiSelectionBounds {
     min: number;
     max: number;
     ordered?: boolean;
+    distinctValueKeys?: string[];
     maxGeneratedSelections?: number;
 }
 
@@ -39,6 +41,7 @@ export type AiDecisionSkipPolicy = 'forbidden' | 'optional' | 'required';
 
 export interface AiDecisionCandidate {
     id: string;
+    value?: unknown;
     label?: string;
     disabled?: boolean;
     disabledReason?: string;
@@ -171,6 +174,7 @@ const normalizeSelectionBounds = (
         min,
         max,
         ordered: bounds.ordered === true,
+        distinctValueKeys: bounds.distinctValueKeys,
         maxGeneratedSelections: bounds.maxGeneratedSelections ?? DEFAULT_MAX_GENERATED_SELECTIONS,
     };
 };
@@ -180,6 +184,7 @@ const enumerateUnorderedSelections = <T>(
     min: number,
     max: number,
     limit: number,
+    isValid: (selection: T[]) => boolean,
 ): T[][] => {
     const results: T[][] = [];
     const path: T[] = [];
@@ -193,7 +198,7 @@ const enumerateUnorderedSelections = <T>(
 
         for (let index = startIndex; index < candidates.length; index += 1) {
             path.push(candidates[index]);
-            dfs(index + 1);
+            if (isValid(path)) dfs(index + 1);
             path.pop();
             if (results.length >= limit) return;
         }
@@ -208,6 +213,7 @@ const enumerateOrderedSelections = <T>(
     min: number,
     max: number,
     limit: number,
+    isValid: (selection: T[]) => boolean,
 ): T[][] => {
     const results: T[][] = [];
     const path: T[] = [];
@@ -224,7 +230,7 @@ const enumerateOrderedSelections = <T>(
             if (used.has(index)) continue;
             used.add(index);
             path.push(candidates[index]);
-            dfs();
+            if (isValid(path)) dfs();
             path.pop();
             used.delete(index);
             if (results.length >= limit) return;
@@ -246,9 +252,11 @@ export function enumerateAiDecisionSelections<TCandidate extends AiDecisionCandi
     if (normalizedBounds.min > normalizedBounds.max || limit === 0) return [];
     if (normalizedBounds.max === 0) return [[]];
 
+    const isValid = (selection: TCandidate[]) => hasDistinctSelectionValues(selection, normalizedBounds.distinctValueKeys);
+
     return normalizedBounds.ordered
-        ? enumerateOrderedSelections(availableCandidates, normalizedBounds.min, normalizedBounds.max, limit)
-        : enumerateUnorderedSelections(availableCandidates, normalizedBounds.min, normalizedBounds.max, limit);
+        ? enumerateOrderedSelections(availableCandidates, normalizedBounds.min, normalizedBounds.max, limit, isValid)
+        : enumerateUnorderedSelections(availableCandidates, normalizedBounds.min, normalizedBounds.max, limit, isValid);
 }
 
 const defaultSelectionLabel = <TCandidate extends AiDecisionCandidate>(

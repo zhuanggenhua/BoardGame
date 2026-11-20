@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { buildSmashUpAiLegalActions } from '../../ai';
 import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../../domain/abilityRuntime';
 import { collectTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
@@ -339,6 +340,34 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(playerOneChoice).toBeDefined();
         expect(playerTwoChoice).toBeDefined();
         const giftedToPlayerTwoUid = playerTwoChoice!.value.cardUid as string;
+
+        const sameCardOtherPlayer = prompt.options.find((option: any) => (
+            option.value?.cardUid === 'hand-card' && option.value?.targetPlayerId === '2'
+        ));
+        const otherCardSamePlayer = prompt.options.find((option: any) => (
+            option.value?.cardUid !== 'hand-card' && option.value?.targetPlayerId === '1'
+        ));
+        for (const invalid of [sameCardOtherPlayer, otherCardSamePlayer]) {
+            expect(invalid).toBeDefined();
+            const rejected = respondToPromptOptions(promptState, [playerOneChoice!.id, invalid!.id], '0', FIXED_RANDOM);
+            expect(rejected.success).toBe(false);
+            expect(rejected.finalState.sys.interaction.current?.id).toBe(promptState.sys.interaction.current?.id);
+        }
+
+        const aiActions = buildSmashUpAiLegalActions({ playerId: '0', state: promptState });
+        expect(aiActions.length).toBeGreaterThan(0);
+        for (const action of aiActions) {
+            const payload = action.commands[0].payload as { optionIds?: string[] };
+            const selected = (payload.optionIds ?? []).map(id => prompt.options.find((option: any) => option.id === id));
+            expect(selected).toHaveLength(2);
+            expect(new Set(selected.map((option: any) => option.value.cardUid)).size).toBe(2);
+            expect(new Set(selected.map((option: any) => option.value.targetPlayerId)).size).toBe(2);
+        }
+        const aiCommand = aiActions[0].commands[0];
+        const aiResolved = runCommand(promptState, { ...aiCommand, playerId: '0' } as any, FIXED_RANDOM);
+        expect(aiResolved.success, aiResolved.error).toBe(true);
+        expect(aiResolved.finalState.sys.interaction.current).toBeFalsy();
+        expect(aiResolved.finalState.core.players['0'].actionLimit).toBe(2);
 
         const resolved = respondToPromptOptions(
             promptState,

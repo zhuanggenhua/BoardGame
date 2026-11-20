@@ -320,6 +320,7 @@
     "selected_count_with_max": "Selected {{count}} / {{max}}",
     "selected_minimum": ", at least {{min}}",
     "clear_selection": "Clear Selection",
+    "selection_contains_duplicates": "Your selection contains duplicates. Adjust it before confirming.",
     "reaction_select_hand_or_pass": "Click a highlighted hand card to respond, or pass",
     "reaction_select_target_after_hand": "Click a highlighted target to play the response card",
     "select_max_available": "Select Maximum",
