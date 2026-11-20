@@ -368,6 +368,10 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(aiResolved.success, aiResolved.error).toBe(true);
         expect(aiResolved.finalState.sys.interaction.current).toBeFalsy();
         expect(aiResolved.finalState.core.players['0'].actionLimit).toBe(2);
+        const nextAiActions = buildSmashUpAiLegalActions({ playerId: '0', state: aiResolved.finalState });
+        expect(nextAiActions.length).toBeGreaterThan(0);
+        const nextAiResult = runCommand(aiResolved.finalState, { ...nextAiActions[0].commands[0], playerId: '0' } as any, FIXED_RANDOM);
+        expect(nextAiResult.success, nextAiResult.error).toBe(true);
 
         const resolved = respondToPromptOptions(
             promptState,

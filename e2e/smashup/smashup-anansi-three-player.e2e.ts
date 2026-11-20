@@ -95,5 +95,7 @@ test('智慧之锅在三人局必须分别给两名玩家不同的牌', async ({
       actionLimit: players['0'].actionLimit,
     };
   }).toEqual({ p1: ['gift-a'], p2: ['gift-b'], actionLimit: 2 });
+  await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="gift-a"]')).toHaveCount(0, { timeout: 10000 });
+  await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="gift-b"]')).toHaveCount(0, { timeout: 10000 });
   await game.screenshot('智慧之锅-分别赠牌完成', testInfo);
 });
