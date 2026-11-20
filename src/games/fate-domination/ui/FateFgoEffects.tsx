@@ -12,7 +12,7 @@ import { createFgoBattleRuntime, type FgoBattleEffect } from '../fgo-runtime/fgo
 import { createFgoSceneRuntime } from '../fgo-runtime/fgoSceneRuntime';
 import { fateFgoSequencesFor, type FgoSequence } from './fgoSequence';
 import { playSound } from '../../../lib/audio/useGameAudio';
-import { FATE_BATTLE_IMPACT } from '../audio.config';
+import { FATE_BATTLE_IMPACT, FATE_EXCALIBUR_BEAM } from '../audio.config';
 import { FateBattleFx } from './FateBattleFx';
 import './fgo-effects.css';
 
@@ -80,6 +80,8 @@ function NobleMotion({ onComplete }: { onComplete: () => void }) {
     const loaded = loadedFgoNoble();
     if (!host.current || !loaded) { finish(); return; }
     let alive = true;
+    let beamPlayed = false;
+    const beamAt = loaded.effects.timeline.find(event => event.type === 'playEffect' && event.target === '100100_beam_light')?.time;
     const fade = loaded.effects.timeline.filter(event => event.type === 'fade').sort((a, b) => b.time - a.time)[0];
     const fadeKeys = fade && (Array.isArray(fade.fadeCurve) ? fade.fadeCurve : fade.fadeCurve?.m_Curve);
     const endAt = fade && fadeKeys?.at(-1)?.value === 1
@@ -88,6 +90,10 @@ function NobleMotion({ onComplete }: { onComplete: () => void }) {
       const runtime = createFgoSceneRuntime(host.current, loaded, {
         autoplay: true, shouldAttach: () => alive,
         onStatus: status => {
+          if (!beamPlayed && alive && !finished.current && beamAt !== undefined && status.time >= beamAt && status.time < endAt) {
+            beamPlayed = true;
+            playSound(FATE_EXCALIBUR_BEAM);
+          }
           if (alive && status.time >= endAt) finish();
         },
       });

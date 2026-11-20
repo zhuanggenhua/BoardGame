@@ -309,6 +309,7 @@ export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', {
     mode: MovementMode;
     manaSpent: number;
     claimBattlefieldTerrain?: true;
+    abilityId?: string;
     context?: {
         allowAnyDestination?: boolean;
         ignoreEngagement?: boolean;

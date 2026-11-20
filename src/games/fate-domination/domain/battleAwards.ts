@@ -1,4 +1,4 @@
-import type { BattleResult, FateBattleScoreAdjustedEvent, FateDominationCore, FateGameResult, LocationId } from './types';
+import type { BattleResult, FateBattleScoreAdjustedEvent, FateDominationCore, FateGameResult, LocationId, PlayerState } from './types';
 import { calculateFatePower } from './power';
 import { normalizeFateRuleState } from './mechanics';
 import { fateAbilityUsageKey } from './abilitySource';
@@ -77,8 +77,7 @@ export function fateFinalResult(core: FateDominationCore, results: BattleResult[
     const eligible = core.playerIds.filter(id => !core.players[id].eliminated);
     const excaliburWinner = core.round === 11 && results.find(result => {
         const player = core.players[result.playerId];
-        return result.status === 'representative-win' && !player.eliminated && player.servantId === 'servant-saber'
-            && player.activeSkills.some(id => id.split(':')[0] === 'sc_saber_np' && player.usedAbilityIds.includes(fateAbilityUsageKey(id, 'battle')));
+        return result.status === 'representative-win' && !player.eliminated && fateExcaliburWasInvoked(player);
     });
     if (excaliburWinner) return { winner: excaliburWinner.playerId, scores, victoryCondition: 'excalibur' };
     const highest = Math.max(...eligible.map(id => scores[id]));
@@ -86,6 +85,11 @@ export function fateFinalResult(core: FateDominationCore, results: BattleResult[
     if (tied.length === 1) return { winner: tied[0], scores };
     const miyamaWinners = tied.filter(id => results.some(result => result.playerId === id && result.locationId === 'miyama' && result.status === 'representative-win'));
     return miyamaWinners.length === 1 ? { winner: miyamaWinners[0], scores } : { winners: [], draw: false, scores };
+}
+
+export function fateExcaliburWasInvoked(player: PlayerState): boolean {
+    return player.servantId === 'servant-saber' && player.activeSkills.some(id =>
+        id.split(':')[0] === 'sc_saber_np' && player.usedAbilityIds.includes(fateAbilityUsageKey(id, 'battle')));
 }
 
 /** Empty battle still needs a cleanup carrier, never an invented victory. */

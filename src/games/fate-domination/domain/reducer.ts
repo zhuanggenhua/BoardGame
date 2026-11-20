@@ -2,7 +2,7 @@ import { afterFateLocationResolved, fateResidualDeploymentRewards, isFateFieldAt
 import { prepareFatePostBattleEvents } from './postBattleChoice';
 import { resolveFateAbilitySource, fateAbilityUsageKey } from './abilitySource';
 import { reduceFateRound } from './roundLifecycle';
-import { applyFateBattleScoreAdjustment, fateLocationResults } from './battleAwards';
+import { applyFateBattleScoreAdjustment, fateExcaliburWasInvoked, fateLocationResults } from './battleAwards';
 import {nextFateDeploymentSlot,fateDeploymentManaGain,fateOccupiedDeploymentSlots} from './deployment';
 import {hasFateSpecialAttack,resolveFateAttack,resolveFateAttackConfirmation,selectedFateAttackCost} from './attackSelection';
 import { fatePreBattleDefeatEvents } from './preBattleEffects';
@@ -150,8 +150,7 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
             const results = fateLocationResults(core, locationId);
             const noblePlayerIds = results.filter(result => {
                 const player = core.players[result.playerId];
-                return player.isRevealed && player.servantId === 'servant-saber'
-                    && player.activeSkills.some(id => id.split(':')[0] === 'sc_saber_np');
+                return player.isRevealed && fateExcaliburWasInvoked(player);
             }).map(result => result.playerId);
             const events: FateDominationEvent[] = [{ type: 'LOCATION_RESOLVED', payload: { locationId, results, noblePlayerIds }, ...meta }];
             const projectedResults = [...core.resolvedResults, ...results];

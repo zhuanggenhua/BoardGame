@@ -332,6 +332,7 @@ for (const id of ['m_kirei_s2', 'sc_diarmuid_3', 'sc_cu_2', 'sc_medusa_np', 'car
           path: [...resolution.path],
           mode: resolution.mode,
           manaSpent: resolution.cost,
+          abilityId: context.sourceId,
           ...(effect.claimBattlefieldTerrain && { claimBattlefieldTerrain: effect.claimBattlefieldTerrain }),
           context: {
             allowAnyDestination: effect.allowAnyDestination,
