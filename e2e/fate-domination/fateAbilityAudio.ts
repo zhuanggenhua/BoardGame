@@ -1,15 +1,13 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { disableTutorial, enableTestMode, injectDirectApiServerUrl, injectDirectGameServerUrl, setChineseLocale } from '../helpers/common';
+import { initContext } from '../helpers/common';
 
 export async function initFateAudioContext(context: BrowserContext) {
-    await enableTestMode(context);
-    await injectDirectApiServerUrl(context);
-    await injectDirectGameServerUrl(context);
-    await setChineseLocale(context);
-    await disableTutorial(context);
+    await initContext(context, { enableAudio: true });
     await context.addInitScript(() => {
         localStorage.setItem('audio_muted', 'false');
         localStorage.setItem('audio_master_volume', '1');
+        localStorage.setItem('audio_sfx_volume', '1');
+        localStorage.setItem('audio_bgm_volume', '1');
     });
 }
 

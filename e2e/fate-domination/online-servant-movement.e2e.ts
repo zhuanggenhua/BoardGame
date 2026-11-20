@@ -83,9 +83,9 @@ for (const { name, servant, cost, target, label, source, climax } of scenarios) 
         test.setTimeout(150_000);
         const medusa = servant === 'servant-medusa';
         if (!medusa && target === 'recon') await page.setViewportSize({ width: 1280, height: 720 });
-        await initContext(context, { skipImageGate: false });
         const checkAudio = target === 'shinto' && !climax;
         if (checkAudio) await initFateAudioContext(context);
+        else await initContext(context, { skipImageGate: false });
         await startSourceSession(context, baseURL!);
         try {
             const { read } = await openFateRepresentativeBoard(page, context, state => prepareMovement(state, servant, target, climax));

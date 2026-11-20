@@ -5,7 +5,7 @@ import type { FateDominationCore } from './domain/types';
 
 const CARD_PLAY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
 const CARD_DRAW = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_draw_1';
-const MEDUSA_RIDING_CARDS = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_3';
+const RIDING_CARDS = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_3';
 const FOOTSTEP = 'footsteps.kenney_impact_sounds.footstep_concrete_000';
 const SPELL = 'magic.general.simple_magic_sound_fx_pack_vol.shock.lightning_bolt_cast_a';
 const ABILITY_ACTIVATION_SOUNDS: ReadonlyMap<string, string> = new Map([
@@ -26,7 +26,7 @@ const SORCERER = 'bgm.fantasy.fantasy_music_pack_vol.sorcerer_rt_3.sorcerer_main
 
 const events = defineEvents({
     ATTACKS_CONFIRMED: { audio: 'immediate', sound: CARD_PLAY },
-    FATE_RIDING_CARDS_PLAYED: { audio: 'immediate', sound: CARD_PLAY },
+    FATE_RIDING_CARDS_PLAYED: { audio: 'immediate', sound: RIDING_CARDS },
     FATE_CARDS_DRAWN: { audio: 'immediate', sound: CARD_DRAW },
     MASTER_DEPLOYED: { audio: 'immediate', sound: FOOTSTEP },
     PLAYER_MOVED: { audio: 'immediate', sound: FOOTSTEP },
@@ -40,7 +40,7 @@ const resolveSound = createFeedbackResolver(events);
 export const FATE_DOMINATION_AUDIO_CONFIG: GameAudioConfig = {
     basePath: COMMON_AUDIO_BASE_PATH,
     criticalSounds: collectPreloadKeys(events),
-    warmSounds: [FATE_BATTLE_IMPACT, FATE_EXCALIBUR_BEAM, MEDUSA_RIDING_CARDS, ...ABILITY_ACTIVATION_SOUNDS.values(), ...ABILITY_MOVEMENT_SOUNDS.values()],
+    warmSounds: [FATE_BATTLE_IMPACT, FATE_EXCALIBUR_BEAM, ...ABILITY_ACTIVATION_SOUNDS.values(), ...ABILITY_MOVEMENT_SOUNDS.values()],
     bgm: [
         { key: MOONVEIL, name: 'Moonveil', src: 'bgm/fantasy/Fantasy Music Pack Vol. 8/Moonveil (RT 5.625)/Fantasy Vol8 Moonveil Main.ogg', volume: .38 },
         { key: SORCERER, name: 'Sorcerer', src: 'bgm/fantasy/Fantasy Music Pack Vol. 3/Sorcerer (RT 3.75)/Sorcerer Main.ogg', volume: .4 },
@@ -53,10 +53,7 @@ export const FATE_DOMINATION_AUDIO_CONFIG: GameAudioConfig = {
     feedbackResolver: (event, context) => {
         const payload = event.payload as { playerId?: string; drawn?: unknown[]; cardIds?: unknown[]; mode?: string; effect?: string; skillId?: string; abilityId?: string } | undefined;
         if (event.type === 'FATE_CARDS_DRAWN' && (!payload?.drawn?.length || payload.playerId !== (context.ctx as { playerId?: string } | undefined)?.playerId)) return null;
-        if (event.type === 'FATE_RIDING_CARDS_PLAYED') {
-            if (!payload?.cardIds?.length) return null;
-            return payload.skillId?.split(':')[0] === 'sc_medusa_1' ? MEDUSA_RIDING_CARDS : CARD_PLAY;
-        }
+        if (event.type === 'FATE_RIDING_CARDS_PLAYED' && !payload?.cardIds?.length) return null;
         if (event.type === 'COMMAND_SPELL_USED' && payload?.effect === 'move') return null;
         if (event.type === 'PLAYER_MOVED' && payload?.mode === 'effect') return ABILITY_MOVEMENT_SOUNDS.get(payload.abilityId?.split(':')[0] ?? '') ?? SPELL;
         if (event.type === 'FATE_ABILITY_USED' && payload?.skillId) return ABILITY_ACTIVATION_SOUNDS.get(payload.skillId.split(':')[0]) ?? null;

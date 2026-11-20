@@ -4,7 +4,6 @@ import { expect, test } from '@playwright/test';
 import { FATE_MASTER_BY_ID, FATE_SERVANT_BY_ID, FATE_SITUATIONS } from '../../src/games/fate-domination/data';
 import { fateAbilityUsageKey } from '../../src/games/fate-domination/domain/abilitySource';
 import { createFateAttackDeck } from '../../src/games/fate-domination/domain/setup';
-import { initContext } from '../helpers/common';
 import { createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory } from '../framework/evidenceScreenshots';
 import { captureEvidenceSourceIdentity, releaseSourceSession, startSourceSession } from '../framework/sourceIdentity';
 import { initFateAudioContext, trackFateAbilitySounds } from './fateAbilityAudio';
@@ -62,7 +61,6 @@ for (const { name, skill, cost, againstTwo, protectedTarget, source, verifyTrack
     const resultExpectation = verifyTrack ? '并查看棋盘战果' : protectedTarget ? '并查看幸运抵挡日志' : '并查看结果';
     test(`在线库·丘林发动${name}${resultExpectation}`, async ({ page, context, baseURL }, testInfo) => {
         test.setTimeout(150_000);
-        if (againstTwo) await initContext(context, { skipImageGate: false });
         await initFateAudioContext(context);
         await startSourceSession(context, baseURL!);
         try {

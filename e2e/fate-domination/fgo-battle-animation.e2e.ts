@@ -208,7 +208,6 @@ for (const attacker of [
 for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续行动' : '代表态真实出牌确认释放誓约胜利之剑，宝具演出不拦截行动', async ({ page, context }, testInfo) => {
   test.setTimeout(240000);
   if (!skip) await page.setViewportSize({ width: 1280, height: 800 });
-  await initContext(context, { skipImageGate: false });
   await initFateAudioContext(context);
   const { read, connectPeer } = await openBoard(page, context, ({ core }) => {
     prepareSeatedPlayers(core, 'servant-medusa');
@@ -241,7 +240,6 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   });
   await waitForAssets(page, true);
   const beamCue = 'Divine Magic Hallowed Beam 001.ogg';
-  const playedSounds = await trackFateAbilitySounds(page, [beamCue]);
   const initial = (await read()).core;
   const cardId = initial.players['0'].hand[0].id;
   const nobleId = initial.players['0'].skills.find(item => item.id.startsWith('sc_saber_np:'))!.id;
@@ -249,6 +247,7 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   await expect(skill).toBeVisible();
   await skill.click();
   await page.locator(`[data-card-id=${JSON.stringify(cardId)}]`).click();
+  const playedSounds = await trackFateAbilitySounds(page, [beamCue]);
   const action = page.getByTestId('fate-domination-primary-action');
   await expect(action).toBeEnabled();
   await waitForBoardArtwork(page);

@@ -532,6 +532,7 @@ type InitContextOptions = {
     apiServerBaseURL?: string;
     locale?: E2ETestLocale;
     blockCdnAssets?: boolean;
+    enableAudio?: boolean;
 };
 
 const normalizeInitContextOptions = (
@@ -550,7 +551,7 @@ export const initContext = async (
 ) => {
     const resolved = normalizeInitContextOptions(opts);
     await enableTestMode(context); // 启用测试模式
-    await blockAudioRequests(context);
+    if (!resolved.enableAudio) await blockAudioRequests(context);
     if (resolved.blockLobbySocket !== false) {
         await blockLobbySocket(context);
     }
@@ -563,6 +564,6 @@ export const initContext = async (
     await setTestLocale(context, resolved.locale ?? DEFAULT_E2E_LOCALE);
     await resetMatchStorage(context, resolved.storageKey);
     if (resolved.skipTutorial !== false) await disableTutorial(context);
-    await disableAudio(context);
+    if (!resolved.enableAudio) await disableAudio(context);
     return context; // ✅ 返回 context
 };

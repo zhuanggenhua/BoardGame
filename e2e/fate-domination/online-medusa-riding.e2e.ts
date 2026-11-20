@@ -6,7 +6,6 @@ import { createFateAttackDeck } from '../../src/games/fate-domination/domain/set
 import { isFateRidingChoice } from '../../src/games/fate-domination/domain/ridingChoice';
 import { createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory } from '../framework/evidenceScreenshots';
 import { captureEvidenceSourceIdentity, releaseSourceSession, startSourceSession } from '../framework/sourceIdentity';
-import { initContext } from '../helpers/common';
 import { openFateRepresentativeBoard, type FateState } from './onlineRepresentativeBoard';
 import { initFateAudioContext, trackFateAbilitySounds } from './fateAbilityAudio';
 
@@ -48,7 +47,6 @@ function prepareMedusaRiding({ core }: FateState) {
 
 test('在线美杜莎骑乘先抽一张，再在手牌内追加并结算费用', async ({ page, context, baseURL }, testInfo) => {
     test.setTimeout(150_000);
-    await initContext(context, { skipImageGate: false });
     await initFateAudioContext(context);
     await startSourceSession(context, baseURL!);
     try {

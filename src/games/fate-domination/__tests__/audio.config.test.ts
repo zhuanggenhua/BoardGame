@@ -7,7 +7,7 @@ const runtime = { G: { phase: 'action' }, ctx: { playerId: '0' } };
 it('正式出牌及移动有即时音，战斗冲击帧和纯准备状态不会重复从事件流播放', () => {
     const play = config.feedbackResolver({ type: 'ATTACKS_CONFIRMED' }, runtime);
     expect(play).toMatch(/card_play/);
-    expect(config.feedbackResolver({ type: 'FATE_RIDING_CARDS_PLAYED', payload: { cardIds: ['one'] } }, runtime)).toBe(play);
+    expect(config.feedbackResolver({ type: 'FATE_RIDING_CARDS_PLAYED', payload: { cardIds: ['one'] } }, runtime)).toMatch(/sfx_card_play_3$/);
     expect(config.feedbackResolver({ type: 'FATE_RIDING_CARDS_PLAYED', payload: { cardIds: [] } }, runtime)).toBeNull();
     expect(config.feedbackResolver({ type: 'PLAYER_MOVED', payload: { mode: 'normal' } }, runtime)).toMatch(/footstep/);
     const spell = config.feedbackResolver({ type: 'PLAYER_MOVED', payload: { mode: 'effect' } }, runtime);
@@ -52,7 +52,7 @@ it('骑乘只在实际追加牌时播放，专属移动声取代通用效果移�
     expect(eventSound('FATE_RIDING_CHOICE_REQUESTED', { skillId: 'sc_medusa_1:4' })).toBeNull();
     expect(eventSound('FATE_RIDING_CARDS_PLAYED', { skillId: 'sc_medusa_1:4', cardIds: [] })).toBeNull();
     expect(eventSound('FATE_RIDING_CARDS_PLAYED', { skillId: 'sc_medusa_1:4', cardIds: ['one'] })).toMatch(/sfx_card_play_3$/);
-    expect(eventSound('FATE_RIDING_CARDS_PLAYED', { skillId: 'sc_iskandar_1:4', cardIds: ['one'] })).toMatch(/sfx_card_play_1$/);
+    expect(eventSound('FATE_RIDING_CARDS_PLAYED', { skillId: 'sc_iskandar_1:4', cardIds: ['one'] })).toMatch(/sfx_card_play_3$/);
     expect(eventSound('PLAYER_MOVED', { abilityId: 'sc_medusa_np:5', mode: 'effect' })).toMatch(/echoing_gust_cast$/);
     expect(eventSound('PLAYER_MOVED', { abilityId: 'sc_cu_2:5', mode: 'effect' })).toMatch(/whsh_cloth_whoosh_04$/);
 });
