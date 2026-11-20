@@ -91,8 +91,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
         } catch (cause) { setError(cause instanceof Error ? cause.message : t('platform.uploadWorkspace.submitFailed')); }
         finally { setBusy(false); }
     }}>
-        <header className="platform-upload-form-heading"><h2>{source ? source.name : t('platform.uploadWorkspace.title')}</h2>{headerAction}</header>
-        {!ownedGame && <RoomSdkGuideLink />}
+        <header className="platform-upload-form-heading"><div className="platform-upload-title"><h2>{source ? source.name : t('platform.uploadWorkspace.title')}</h2>{!ownedGame && <RoomSdkGuideLink />}</div>{headerAction}</header>
         <p>{ownedGame ? t('platform.uploadWorkspace.editDescription') : t('platform.uploadWorkspace.description')}</p>
         {record && <p role="status">{t(statusLabelKeys[record.status])}{record.reviewComment ? ` · ${record.reviewComment}` : ''}</p>}
         {record?.status === 'pending' && <p>{t('platform.uploadWorkspace.pendingLocked')}</p>}
@@ -194,8 +193,7 @@ export function PlatformUploadWorkspace({ onLogin, submissionId: selectedId, onS
     const queryKey = ['game-submissions', user?.id] as const;
     const records = useQuery({ queryKey, queryFn: () => listGameSubmissions(token!), enabled: Boolean(token && user) });
     if (!user) return <section className="platform-upload-login">
-        <h2>{t('platform.uploadWorkspace.title')}</h2>
-        <RoomSdkGuideLink />
+        <div className="platform-upload-title"><h2>{t('platform.uploadWorkspace.title')}</h2><RoomSdkGuideLink /></div>
         <p>{t('platform.uploadWorkspace.loginPrompt')}</p>
         <button type="button" onClick={onLogin}>{t('platform.profile.login')}</button>
     </section>;

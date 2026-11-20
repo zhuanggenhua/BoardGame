@@ -100,8 +100,11 @@ services:
     volumes:
       - ./runtime/retained-web-assets:/app/retained-web-assets:ro
       - web_game_packages:/app/web-game-packages
+      - ugc_uploads:/app/uploads
 
 volumes:
+  ugc_uploads:
+    driver: local
   web_game_packages:
     driver: local
   mongodb_data:

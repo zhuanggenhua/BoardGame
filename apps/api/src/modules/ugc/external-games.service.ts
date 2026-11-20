@@ -125,7 +125,7 @@ export class ExternalGamesService implements OnModuleInit {
         const values = editableGameFields(fields);
         const fieldUpdate = gameFieldsUpdate(fields);
         const update = {
-            ...fieldUpdate.$set, coverUrl, published: true, ...(rulesDocument ? { rulesDocument } : {}), ...(webZipName ? { webZipName } : {}),
+            ...fieldUpdate.$set, ...(coverUrl?.trim() ? { coverUrl } : {}), published: true, ...(rulesDocument ? { rulesDocument } : {}), ...(webZipName ? { webZipName } : {}),
             ...(existing && existing.url !== values.url ? { embedStatus: 'unknown', embedReason: '', embedCheckedUrl: null, embedCheckedAt: null } : {}),
         };
         const record = await this.games.findOneAndUpdate({ submissionId }, {

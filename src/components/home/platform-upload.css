@@ -6,10 +6,11 @@
 .platform-submission-form { width: 100%; padding: 32px 40px; max-width: 1240px; margin-inline: auto; }
 .platform-upload-form h2, .platform-upload-login h2 { font-size: 28px; font-weight: 800; }
 .platform-upload-form-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; margin-bottom: 12px; }
-.platform-upload-form-heading > h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.platform-upload-title { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0; }
+.platform-upload-title h2 { margin: 0; overflow-wrap: anywhere; }
+.platform-upload-sdk-guide { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .platform-upload-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .platform-upload-delete { min-height: 44px; padding: 8px 14px; border: 2px solid currentColor; font-weight: 700; }
-.platform-upload-sdk-guide { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .platform-upload-form > p { margin: 12px 0 24px; }
 .platform-upload-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .platform-submission-form > .platform-upload-fields { grid-template-columns: minmax(0, 1fr) 256px; grid-template-areas: 'basic cover' 'content content' 'published published'; gap: 28px 40px; align-items: start; }
@@ -104,7 +105,7 @@
     .platform-upload-workspace { display: block; }
     .platform-upload-list { display: none; border-right: 0; }
     .platform-upload-form-heading { align-items: flex-start; flex-wrap: wrap; }
-    .platform-upload-form-heading > h2 { min-height: 44px; min-width: min(100%,10rem); flex: 1 1 10rem; font-size: 24px; }
+    .platform-upload-form-heading .platform-upload-title h2 { min-height: 44px; font-size: 24px; }
     .platform-upload-list-toggle { display: flex; align-items: center; justify-content: center; max-width:100%; margin: 0 0 0 auto; }
     .platform-upload-form { padding: 16px; }
     .platform-upload-back { margin: 16px 16px 0; }

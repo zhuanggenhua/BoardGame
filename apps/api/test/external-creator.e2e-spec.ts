@@ -15,6 +15,7 @@ import { AuthService } from '../src/modules/auth/auth.service';
 import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema';
 import { UgcModule } from '../src/modules/ugc/ugc.module';
 import { ExternalGameRecord } from '../src/modules/ugc/schemas/external-game.schema';
+import { GameSubmission } from '../src/modules/ugc/schemas/game-submission.schema';
 import { ExternalPlayRecord, type ExternalPlayDocument } from '../src/modules/ugc/schemas/external-play.schema';
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
@@ -99,6 +100,16 @@ describe('外链收录、作者认领与停留时间 HTTP 合同', () => {
             .send({ decision: 'approved', comment: '审核通过', revision: resubmitted.body.updatedAt }).expect(201);
         const gameId = approved.body.gameId as string;
         expect((await api().get(`/ugc/external-games/${gameId}`).expect(200)).body).toMatchObject({ name: data.name, ownerUserId: null, uploaderName: 'creator-submitter' });
+
+        const games = app.get<Model<{ submissionId: string; coverUrl: string }>>(getModelToken(ExternalGameRecord.name));
+        const submissions = app.get<Model<{ submissionId: string; coverUrl: string }>>(getModelToken(GameSubmission.name));
+        const publishedCover = (await games.findOne({ submissionId }).lean())!.coverUrl;
+        await submissions.updateOne({ submissionId }, { $set: { coverUrl: '' } });
+        await api().put(`/ugc/submissions/${submissionId}`).auth(submitter.token, { type: 'bearer' }).send(data).expect(200);
+        const nextReview = await api().post(`/ugc/submissions/${submissionId}/submit`).auth(submitter.token, { type: 'bearer' }).expect(201);
+        await api().post(`/ugc/creator-review/submissions/${submissionId}`).auth(admin.token, { type: 'bearer' })
+            .send({ decision: 'approved', revision: nextReview.body.updatedAt }).expect(201);
+        expect((await games.findOne({ submissionId }).lean())!.coverUrl).toBe(publishedCover);
 
         const claim = await submitClaim(author.token, gameId, 'creator-author');
         await api().post(`/ugc/creator-claims/${claim.claimId}/evidence`).auth(author.token, { type: 'bearer' }).attach('file', picture, 'changed.png').expect(403);
