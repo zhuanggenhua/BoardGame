@@ -11,6 +11,8 @@ import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
 import { hasControlCharacters, isSandboxedWebGame, resolveExternalEmbed, type ExternalGame } from '../shared/externalGames';
 import { SandboxedWebGameFrame } from '../components/external/SandboxedWebGameFrame';
 import { NativeExternalRoomGame } from '../components/external/NativeExternalRoomGame';
+import { ExternalRoomSession } from '../components/external/ExternalRoomSession';
+import { NativeExternalRoomSession } from '../components/external/NativeExternalRoomSession';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import './external-game-page.css';
 
@@ -29,6 +31,18 @@ function externalFrame({ gameId, url, webZipName }: ExternalGame) {
     };
 }
 export default function ExternalGamePage() {
+    const { gameId = '' } = useParams();
+    const [search] = useSearchParams();
+    const roomId = search.get('room');
+    if (!roomId) return <ExternalGameLaunch />;
+    return <main className="external-page">
+        {search.get('native') === '1'
+            ? <NativeExternalRoomSession key={roomId} gameId={gameId} roomId={roomId} />
+            : <ExternalRoomSession key={roomId} gameId={gameId} roomId={roomId} />}
+    </main>;
+}
+
+function ExternalGameLaunch() {
     const { t } = useTranslation('lobby');
     const { gameId = '' } = useParams();
     const [search] = useSearchParams();

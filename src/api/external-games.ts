@@ -40,6 +40,8 @@ export const joinExternalRoom = (identity: ExternalRoomIdentity, roomId: string,
     request<ExternalRoomView>(`/external-rooms/${id(roomId)}/join`, { ...identity, method: 'POST', ...(password ? { data: { password } } : {}) });
 export const readExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>
     request<ExternalRoomView>(`/external-rooms/${id(roomId)}`, identity);
+export const getExternalRoomEntry = (roomId: string) =>
+    request<{ gameId: string; native: boolean }>(`/external-rooms/${id(roomId)}/entry`);
 export const externalRoomAction = (identity: ExternalRoomIdentity, roomId: string, data: Record<string, unknown>) =>
     request<ExternalRoomView>(`/external-rooms/${id(roomId)}/action`, { ...identity, method: 'POST', data, keepalive: data.type === 'ready' });
 export const leaveExternalRoom = (identity: ExternalRoomIdentity, roomId: string) =>

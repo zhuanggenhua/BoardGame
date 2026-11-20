@@ -25,6 +25,11 @@ export class ExternalRoomsController {
         return this.rooms.join(roomId, roomOwner(user, guest), body?.native === true, body?.password);
     }
 
+    @Get(':id/entry')
+    entry(@Param('id') roomId: string) {
+        return this.rooms.getEntry(roomId);
+    }
+
     @Get(':id')
     get(@CurrentUser() user: { userId: string } | null, @Headers('x-external-room-guest') guest: string | undefined, @Param('id') roomId: string) {
         return this.rooms.get(roomId, roomOwner(user, guest));

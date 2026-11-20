@@ -125,8 +125,7 @@ const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() =
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const ExternalGamePage = React.lazy(() => import('./pages/ExternalGamePage'));
 const ExternalRoomSdkGuidePage = React.lazy(() => import('./pages/ExternalRoomSdkGuidePage'));
-const ExternalRoomPage = React.lazy(() => import('./pages/ExternalRoomPage'));
-const NativeExternalRoomPage = React.lazy(() => import('./pages/NativeExternalRoomPage'));
+const LegacyExternalRoomRedirect = React.lazy(() => import('./pages/LegacyExternalRoomRedirect'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
 const CreatorReview = React.lazy(() => import('./pages/admin/CreatorReview'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
@@ -299,8 +298,8 @@ const AppContent = () => {
                     />
                     <Route path="/external/:gameId" element={<React.Suspense fallback={playRouteFallback}><ExternalGamePage /></React.Suspense>} />
                     <Route path={EXTERNAL_ROOM_SDK_GUIDE_PATH} element={<React.Suspense fallback={playRouteFallback}><ExternalRoomSdkGuidePage /></React.Suspense>} />
-                    <Route path="/external/rooms/:roomId" element={<React.Suspense fallback={playRouteFallback}><ExternalRoomPage /></React.Suspense>} />
-                    <Route path="/external/native-room/:roomId" element={<React.Suspense fallback={playRouteFallback}><NativeExternalRoomPage /></React.Suspense>} />
+                    <Route path="/external/rooms/:roomId" element={<React.Suspense fallback={null}><LegacyExternalRoomRedirect /></React.Suspense>} />
+                    <Route path="/external/native-room/:roomId" element={<React.Suspense fallback={null}><LegacyExternalRoomRedirect /></React.Suspense>} />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(

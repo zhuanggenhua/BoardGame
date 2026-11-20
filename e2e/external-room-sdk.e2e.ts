@@ -21,6 +21,7 @@ test('易桌游建密码房、游客验证密码、平台开局，SDK 将两人�
     const roomPassword = 'vale-274';
     hostContext.setDefaultTimeout(15_000);
     guestContext.setDefaultTimeout(15_000);
+    inviteContext.setDefaultTimeout(15_000);
     try {
         const entry = await storeWebGameZip(randomUUID(), await readFile(archive!));
         const plainEntry = await storeWebGameZip(randomUUID(), Buffer.from(zipSync({ 'index.html': strToU8('<title>单人网页</title>') })));
@@ -67,14 +68,17 @@ test('易桌游建密码房、游客验证密码、平台开局，SDK 将两人�
         const created = await createResponse;
         expect(created.ok()).toBeTruthy();
         expect(await created.text()).not.toContain(roomPassword);
-        await expect(host).toHaveURL(/\/external\/rooms\/[\da-f-]+/);
-        const start = host.getByRole('button', { name: '开始对局', exact: true });
-        await expect(start).toBeDisabled();
-        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+        await expect(host).toHaveURL(new RegExp(`/external/${gameId}\\?room=[\\da-f-]+$`));
         await expect(host.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
         await capture(host, '房主03-在游戏里等待访客');
 
+        await host.getByRole('button', { name: '房间', exact: true }).click();
+        const start = host.getByRole('button', { name: '开始对局', exact: true });
+        await expect(start).toBeDisabled();
+        const roomStatus = host.getByTestId('fab-panel-external-room').getByRole('status');
+        await expect(roomStatus).toContainText('1 / 2');
         const invite = await host.getByRole('textbox', { name: '邀请链接', exact: true }).inputValue();
+        expect(invite).toBe(host.url());
         expect(invite).not.toContain(roomPassword);
         await inviteContext.addInitScript(() => localStorage.setItem('i18nextLng', 'zh-CN'));
         const invited = await inviteContext.newPage();
@@ -82,13 +86,19 @@ test('易桌游建密码房、游客验证密码、平台开局，SDK 将两人�
         const invitePassword = invited.getByTestId('room-password-modal');
         await expect(invitePassword).toBeVisible();
         await expect(invited.locator('.external-player iframe')).toHaveCount(0);
+        const roomId = new URL(invite).searchParams.get('room');
+        await invited.goto(`/external/rooms/${roomId}?join=1`);
+        await expect(invited).toHaveURL(invite);
+        await expect(invitePassword).toBeVisible();
         await capture(invited, '访客邀请链接也要求密码');
         await invitePassword.getByTestId('room-password-input').fill(roomPassword);
         await invitePassword.getByTestId('room-password-confirm').click();
         await expect(invited.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
-        await invited.getByRole('button', { name: '返回', exact: true }).click();
+        await invited.getByRole('button', { name: '房间', exact: true }).click();
+        await invited.getByRole('button', { name: '离开', exact: true }).click();
+        await invited.getByRole('button', { name: '返回大厅', exact: true }).click();
         await expect(invited).toHaveURL(/\?game=/);
-        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+        await expect(roomStatus).toContainText('1 / 2');
 
         await initHome(guest);
         await expect(guest.locator('.external-player iframe')).toHaveCount(0);
@@ -107,14 +117,13 @@ test('易桌游建密码房、游客验证密码、平台开局，SDK 将两人�
         await passwordModal.getByTestId('room-password-confirm').click();
         await expect(passwordModal.getByRole('alert')).toHaveText('房间密码错误');
         await expect(guest.locator('.external-player iframe')).toHaveCount(0);
-        await expect(host.getByRole('status').filter({ hasText: '等待入座' })).toContainText('1 / 2');
+        await expect(roomStatus).toContainText('1 / 2');
         await capture(guest, '访客密码错误仍在平台列表');
         await passwordModal.getByTestId('room-password-input').fill(roomPassword);
         await passwordModal.getByTestId('room-password-confirm').click();
-        await expect(guest).toHaveURL(/\/external\/rooms\/[\da-f-]+/);
+        await expect(guest).toHaveURL(invite);
         await expect(guest.getByTestId('auth-login-account-input')).toHaveCount(0);
         await expect(start).toBeEnabled({ timeout: 45_000 });
-        await expect(guest.locator('.external-room-seats')).toContainText('游客');
         await expect(guest.frameLocator('.external-player iframe').locator('#screen-home.active')).toBeVisible();
         await capture(guest, '访客02-在游戏里等待开局');
         await capture(host, '房主04-游戏画面中可开局');

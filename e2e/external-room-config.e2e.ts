@@ -46,6 +46,7 @@ test('SDK 声明决定建房配置，双方进入使用同一配置的游戏', a
             data: { gameId, expectedEntry: url, capacity: 2, settings: { board: 'forged' } } });
         expect(invalid.status()).toBe(400);
         await form.getByTestId('create-room-confirm-button').click();
+        await expect(host).toHaveURL(new RegExp(`/external/${gameId}\\?room=[\\da-f-]+$`));
         const hostGame = host.frameLocator('.external-player iframe');
         await expect(hostGame.locator('#status')).toHaveText('等待开局 · 1/2');
         await expect(hostGame.locator('#board > span')).toHaveCount(25);
@@ -56,7 +57,9 @@ test('SDK 声明决定建房配置，双方进入使用同一配置的游戏', a
         const guide = await host.request.get('/developers/external-room-sdk.md');
         expect(guide.ok()).toBe(true);
         expect((await guide.text()).match(/^#### (\d+\.\d+\.\d+)$/m)?.[1]).toBe(sdkRelease);
+        await expect(host.locator('.external-room-controls, .external-room-panel')).toHaveCount(0);
         await capture(host, '配置02-游戏应用配置并等待');
+        const gameRoomUrl = host.url();
 
         await initHome(guest);
         await expect(guest.locator('iframe[data-entry-url]')).toHaveCount(0);
@@ -66,14 +69,17 @@ test('SDK 声明决定建房配置，双方进入使用同一配置的游戏', a
         await expect(rooms.getByRole('button', { name: '加入', exact: true })).toBeVisible();
         await capture(guest, '配置03-访客在平台查看房间');
         await rooms.getByRole('button', { name: '加入', exact: true }).click();
+        await expect(guest).toHaveURL(gameRoomUrl);
         const guestGame = guest.frameLocator('.external-player iframe');
         await expect(guestGame.locator('#board > span')).toHaveCount(25);
         await expect(guestGame.locator('#status')).toHaveText('等待开局 · 2/2');
         await expect(hostGame.locator('#status')).toHaveText('等待开局 · 2/2');
         await expect(guestGame.locator('#room-id')).toHaveText(await hostGame.locator('#room-id').innerText());
+        await capture(guest, '配置04-访客点击加入后进入游戏');
+        await host.getByRole('button', { name: '房间', exact: true }).click();
         const start = host.getByRole('button', { name: '开始对局', exact: true });
         await expect(start).toBeDisabled();
-        await capture(guest, '配置04-访客点击加入后进入游戏');
+        await expect(host.getByRole('textbox', { name: '邀请链接' })).toHaveValue(gameRoomUrl);
 
         await hostGame.getByRole('button', { name: '准备', exact: true }).click();
         await expect(hostGame.getByRole('button', { name: '取消准备', exact: true })).toBeVisible();
@@ -83,6 +89,8 @@ test('SDK 声明决定建房配置，双方进入使用同一配置的游戏', a
         await start.click();
         await expect(hostGame.locator('#status')).toHaveText('对局已开始');
         await expect(guestGame.locator('#status')).toHaveText('对局已开始');
+        await expect(host).toHaveURL(gameRoomUrl);
+        await expect(start).toHaveCount(0);
         await capture(host, '配置05-房主开局');
         await capture(guest, '配置06-访客进入同一对局');
     } finally {

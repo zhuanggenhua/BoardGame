@@ -7,6 +7,7 @@ import { externalRoomPlayerLimits } from '../../shared/externalRoom';
 import type { ExternalGame } from '../../shared/externalGames';
 import { CreateRoomModal, type RoomConfig, type RoomCreationGame } from '../lobby/CreateRoomModal';
 import { getExternalRoomGuestKey } from './nativeRoomGuestKey';
+import { externalRoomPath } from './externalRoomPath';
 
 export function CreateExternalRoomDialog({ game, onClose }: { game: ExternalGame; onClose: () => void }) {
     const { token, user, isLoading } = useAuth();
@@ -35,7 +36,7 @@ export function CreateExternalRoomDialog({ game, onClose }: { game: ExternalGame
         ),
         onSuccess: view => {
             query.setQueryData(['external-room', view.room.roomId, user?.id], view);
-            navigate(`/external/rooms/${view.room.roomId}`);
+            navigate(externalRoomPath(view.gameId, view.room.roomId));
         },
     });
     return <CreateRoomModal isOpen onClose={onClose} onConfirm={create.mutate} gameManifest={roomGame}

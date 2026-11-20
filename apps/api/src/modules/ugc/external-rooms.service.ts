@@ -86,6 +86,12 @@ export class ExternalRoomsService {
         });
     }
 
+    async getEntry(roomId: string) {
+        const { gameId, native } = await this.read(roomId);
+        if (!await this.games.canListNativeRooms(gameId)) throw new NotFoundException('游戏尚未公开');
+        return { gameId, native: Boolean(native) };
+    }
+
     async get(roomId: string, userId: string) {
         const room = await this.read(roomId);
         const view = this.view(room, userId);

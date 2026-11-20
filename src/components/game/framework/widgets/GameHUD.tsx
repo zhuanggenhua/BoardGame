@@ -84,6 +84,7 @@ interface GameHUDProps {
         isConnected?: boolean;
     }>;
     onLeave?: () => void;
+    externalRoomAction?: FabAction;
     onDestroy?: () => void;
     onForceExit?: () => void;
     showForceEndAiPhase?: boolean;
@@ -129,6 +130,7 @@ export const GameHUD = ({
     presenceReady,
     players,
     onLeave,
+    externalRoomAction,
     onDestroy,
     onForceExit,
     showForceEndAiPhase,
@@ -1001,7 +1003,9 @@ export const GameHUD = ({
             <FabMenu
                 className={isExternal ? 'platform-global-fab external-game-fab' : 'platform-global-fab'}
                 isDark={false}
-                items={isExternal ? items.filter(item => item.id === 'exit' || item.id === 'social') : items}
+                items={isExternal
+                    ? [...(externalRoomAction ? [externalRoomAction] : []), ...items.filter(item => item.id === 'exit' || item.id === 'social')]
+                    : items}
                 position={fabMenuPosition}
                 initialOffset={gameHudFabLayout?.resolveInitialOffset?.(viewportHeight)
                     ?? (isQidahenTutorialLandscape

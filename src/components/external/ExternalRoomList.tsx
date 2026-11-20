@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { joinExternalRoom, listExternalRooms } from '../../api/external-games';
+import { joinExternalRoom, joinNativeExternalRoom, listExternalRooms } from '../../api/external-games';
 import { useAuth } from '../../contexts/AuthContext';
 import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
 import { RoomList } from '../lobby/RoomList';
 import type { RoomItem } from '../lobby/roomActions';
 import { getExternalRoomGuestKey } from './nativeRoomGuestKey';
+import { externalRoomPath } from './externalRoomPath';
 
 export function ExternalRoomList({ gameId }: { gameId: string }) {
     const { t } = useTranslation('lobby');
@@ -16,13 +17,18 @@ export function ExternalRoomList({ gameId }: { gameId: string }) {
     const { token, user, isLoading } = useAuth();
     const client = useQueryClient();
     const [lockedRoomId, setLockedRoomId] = useState<string>();
-    const joinLocked = useMutation({
-        mutationFn: ({ roomId, password }: { roomId: string; password: string }) => joinExternalRoom(
-            { token, guestKey: token ? undefined : getExternalRoomGuestKey() }, roomId, password,
-        ),
+    const join = useMutation({
+        mutationFn: ({ roomId, password, native }: { roomId: string; password?: string; native?: boolean }) => {
+            const identity = { token, guestKey: token ? undefined : getExternalRoomGuestKey() };
+            return native ? joinNativeExternalRoom(identity, roomId) : joinExternalRoom(identity, roomId, password);
+        },
         onSuccess: view => {
-            client.setQueryData(['external-room', view.room.roomId, user?.id], view);
-            navigate(`/external/rooms/${view.room.roomId}`);
+            if (view.native) {
+                client.setQueryData(['native-external-room-join', view.room.roomId, user?.id ?? getExternalRoomGuestKey()], view);
+            } else {
+                client.setQueryData(['external-room', view.room.roomId, user?.id], view);
+            }
+            navigate(externalRoomPath(view.gameId, view.room.roomId, view.native));
         },
     });
     const query = useQuery({
@@ -49,20 +55,21 @@ export function ExternalRoomList({ gameId }: { gameId: string }) {
         gameKey: gameId,
     }));
     return <section aria-label={t('platform.externalRoom.list')}>
+        {!lockedRoomId && join.error && <p role="alert">{join.error.message}</p>}
         <RoomList showPrimaryActions={false} roomItems={items}
             isLobbyLoading={query.isPending} connectionError={query.isError} onRetryConnection={() => void query.refetch()}
             onJoinRequest={roomId => {
                 const room = rooms.find(item => item.roomId === roomId);
-                if (!room) return;
+                if (!room || isLoading || join.isPending) return;
                 if (room.isLocked) {
-                    joinLocked.reset();
+                    join.reset();
                     setLockedRoomId(roomId);
                 } else {
-                    navigate(room.native ? `/external/native-room/${roomId}` : `/external/rooms/${roomId}?join=1`);
+                    join.mutate({ roomId, native: room.native });
                 }
             }} />
-        {lockedRoomId && createPortal(<PasswordEntryModal open isLoading={isLoading || joinLocked.isPending}
-            error={joinLocked.error?.message} onClose={() => setLockedRoomId(undefined)}
-            onConfirm={password => joinLocked.mutate({ roomId: lockedRoomId, password })} />, document.body)}
+        {lockedRoomId && createPortal(<PasswordEntryModal open isLoading={isLoading || join.isPending}
+            error={join.error?.message} onClose={() => { join.reset(); setLockedRoomId(undefined); }}
+            onConfirm={password => join.mutate({ roomId: lockedRoomId, password })} />, document.body)}
     </section>;
 }
